@@ -233,6 +233,26 @@ class AdsTxtRecordModel {
       );
     });
   }
+  /**
+   * Get a record by ID
+   * @param id - The record ID
+   * @returns Promise with the record or null if not found
+   */
+  getById(id: string): Promise<AdsTxtRecord | null> {
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM ads_txt_records WHERE id = ?',
+        [id],
+        (err, row: AdsTxtRecord) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(row || null);
+        }
+      );
+    });
+  }
 }
 
 export default new AdsTxtRecordModel();

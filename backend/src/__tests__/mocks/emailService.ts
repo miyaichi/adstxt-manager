@@ -1,4 +1,7 @@
 // Mock for the email service
+// This export makes Jest not treat this as a test file
+export const __IGNORED__ = true;
+
 const emailServiceMock = {
   sendPublisherRequestNotification: jest.fn().mockResolvedValue(true),
   sendRequesterConfirmation: jest.fn().mockResolvedValue(true),

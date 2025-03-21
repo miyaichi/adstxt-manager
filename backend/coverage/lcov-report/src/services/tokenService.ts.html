@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -102,8 +102,8 @@
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
 <a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -116,9 +116,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -129,7 +129,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -137,12 +137,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import crypto from 'crypto';</span>
-<span class="cstat-no" title="statement not covered" >import config from '../config/config';</span>
+<span class="cline-any cline-yes">5x</span></td><td class="text"><pre class="prettyprint lang-js">import crypto from 'crypto';
+import config from '../config/config';
 &nbsp;
 /**
  * Service to generate and validate tokens
@@ -154,10 +154,10 @@ class TokenService {
    * @param email - The email address associated with the token
    * @returns A secure SHA256 hash token
    */
-<span class="fstat-no" title="function not covered" >  generateToken(</span>requestId: string, email: string): string {
-    const timestamp = <span class="cstat-no" title="statement not covered" >Date.now().toString();</span>
-    const data = <span class="cstat-no" title="statement not covered" >`${requestId}:${email}:${timestamp}:${config.security.tokenSecret}`;</span>
-<span class="cstat-no" title="statement not covered" >    return crypto.createHash('sha256').update(data).digest('hex');</span>
+  generateToken(requestId: string, email: string): string {
+    const timestamp = Date.now().toString();
+    const data = `${requestId}:${email}:${timestamp}:${config.security.tokenSecret}`;
+    return crypto.createHash('sha256').update(data).digest('hex');
   }
 &nbsp;
   /**
@@ -166,28 +166,28 @@ class TokenService {
    * @param storedToken - The token stored in the database
    * @returns Boolean indicating if the token is valid
    */
-<span class="fstat-no" title="function not covered" >  verifyToken(</span>token: string, storedToken: string): boolean {
+  verifyToken(token: string, storedToken: string): boolean {
     // Simple comparison for now - could add more complex validation if needed
-<span class="cstat-no" title="statement not covered" >    return token === storedToken;</span>
+    return token === storedToken;
   }
 &nbsp;
   /**
    * Generate a unique request ID
    * @returns A unique UUID-like string
    */
-<span class="fstat-no" title="function not covered" >  generateRequestId(</span>): string {
-<span class="cstat-no" title="statement not covered" >    return crypto.randomUUID();</span>
+  generateRequestId(): string {
+    return crypto.randomUUID();
   }
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default new TokenService();</span></pre></td></tr></table></pre>
+export default new TokenService();</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-21T07:56:30.256Z
+                at 2025-03-21T08:46:57.495Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

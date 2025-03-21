@@ -1,171 +1,313 @@
-import request from 'supertest';
-import { v4 as uuidv4 } from 'uuid';
-import app from '../../app';
-import db from '../../config/database';
+import { Request, Response, NextFunction } from 'express';
+import * as messageController from '../messageController';
+import MessageModel from '../../models/Message';
+import RequestModel from '../../models/Request';
 import emailService from '../../services/emailService';
-import tokenService from '../../services/tokenService';
+import { isValidEmail } from '../../utils/validation';
+import { ApiError } from '../../middleware/errorHandler';
 
-// Mock the email service
-jest.mock('../../services/emailService', () => ({
-  sendPublisherRequestNotification: jest.fn().mockResolvedValue(true),
-  sendRequesterConfirmation: jest.fn().mockResolvedValue(true),
-  sendStatusUpdateNotification: jest.fn().mockResolvedValue(true),
-  sendMessageNotification: jest.fn().mockResolvedValue(true)
-}));
+// Mock the models and services
+jest.mock('../../models/Message');
+jest.mock('../../models/Request');
+jest.mock('../../services/emailService');
+jest.mock('../../utils/validation');
 
-describe('Message Controller', () => {
-  // Sample request data for testing
-  const requestId = uuidv4();
-  const publisherEmail = 'publisher@test.com';
-  const requesterEmail = 'requester@test.com';
-  const requesterName = 'Test Requester';
-  let token: string;
+// Mock the asyncHandler middleware
+jest.mock('../../middleware/errorHandler', () => {
+  const originalModule = jest.requireActual('../../middleware/errorHandler');
+  return {
+    ...originalModule,
+    // Adding types to fix TypeScript errors
+    asyncHandler: (fn: Function) => 
+      (req: Request, res: Response, next: NextFunction) => 
+        Promise.resolve(fn(req, res, next)).catch(next)
+  };
+});
+
+describe('Message Controller Tests', () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+  let next: NextFunction;
+  let mockRequest: any;
+  let mockMessage: any;
   
-  // Set up test data before tests
-  beforeAll(async () => {
-    // Generate token
-    token = tokenService.generateToken(requestId, publisherEmail);
+  beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
     
-    // Create a test request to use for message tests
-    await new Promise<void>((resolve, reject) => {
-      const now = new Date().toISOString();
-      db.run(
-        `INSERT INTO requests 
-         (id, publisher_email, requester_email, requester_name, status, token, created_at, updated_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [requestId, publisherEmail, requesterEmail, requesterName, 'pending', token, now, now],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
+    // Setup mocks
+    req = {};
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      send: jest.fn()
+    };
+    next = jest.fn();
+    
+    // Mock the isValidEmail function to return true by default
+    (isValidEmail as jest.Mock).mockReturnValue(true);
+    
+    // Setup test data
+    mockRequest = {
+      id: 'request-123',
+      publisher_email: 'publisher@example.com',
+      publisher_name: 'Test Publisher',
+      requester_email: 'requester@example.com',
+      requester_name: 'Test Requester',
+      status: 'pending',
+      token: 'valid-token-123',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    mockMessage = {
+      id: 'message-123',
+      request_id: 'request-123',
+      sender_email: 'requester@example.com',
+      content: 'This is a test message',
+      created_at: new Date().toISOString()
+    };
+  });
+  
+  describe('createMessage', () => {
+    it('should create a new message when valid data is provided', async () => {
+      // Arrange
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'requester@example.com',
+        content: 'This is a test message',
+        token: 'valid-token-123'
+      };
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(mockRequest);
+      (MessageModel.create as jest.Mock).mockResolvedValue(mockMessage);
+      (emailService.sendMessageNotification as jest.Mock).mockResolvedValue(true);
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(RequestModel.getByIdWithToken).toHaveBeenCalledWith('request-123', 'valid-token-123');
+      expect(MessageModel.create).toHaveBeenCalledWith({
+        request_id: 'request-123',
+        sender_email: 'requester@example.com',
+        content: 'This is a test message'
+      });
+      expect(emailService.sendMessageNotification).toHaveBeenCalledWith(
+        'publisher@example.com', // The recipient should be the publisher
+        'request-123',
+        'Test Requester', // The sender name
+        'valid-token-123'
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: mockMessage
+      });
+      expect(next).not.toHaveBeenCalled();
+    });
+    
+    it('should send notification to requester when publisher is the sender', async () => {
+      // Arrange
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'publisher@example.com', // Publisher is the sender
+        content: 'Reply from publisher',
+        token: 'valid-token-123'
+      };
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(mockRequest);
+      (MessageModel.create as jest.Mock).mockResolvedValue({
+        ...mockMessage,
+        sender_email: 'publisher@example.com',
+        content: 'Reply from publisher'
+      });
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(emailService.sendMessageNotification).toHaveBeenCalledWith(
+        'requester@example.com', // The recipient should be the requester
+        'request-123',
+        'Test Publisher', // The sender name
+        'valid-token-123'
       );
     });
-  });
-  
-  // Clean up after tests
-  afterAll(async () => {
-    await new Promise<void>((resolve, reject) => {
-      db.run('DELETE FROM messages', (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
+    
+    it('should return 400 when required fields are missing', async () => {
+      // Arrange - missing content
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'requester@example.com',
+        token: 'valid-token-123'
+        // content is missing
+      };
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message: expect.stringContaining('Request ID, sender email, content, and token are required')
+        })
+      );
     });
     
-    await new Promise<void>((resolve, reject) => {
-      db.run('DELETE FROM requests', (err) => {
-        if (err) reject(err);
-        else resolve();
+    it('should return 400 when sender email is invalid', async () => {
+      // Arrange
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'invalid-email',
+        content: 'This is a test message',
+        token: 'valid-token-123'
+      };
+      
+      (isValidEmail as jest.Mock).mockReturnValue(false);
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(isValidEmail).toHaveBeenCalledWith('invalid-email');
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message: expect.stringContaining('Invalid sender email address')
+        })
+      );
+    });
+    
+    it('should return 404 when request is not found or token is invalid', async () => {
+      // Arrange
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'requester@example.com',
+        content: 'This is a test message',
+        token: 'invalid-token'
+      };
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(null);
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(RequestModel.getByIdWithToken).toHaveBeenCalledWith('request-123', 'invalid-token');
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 404,
+          message: expect.stringContaining('Request not found or invalid token')
+        })
+      );
+    });
+    
+    it('should still create message even if email notification fails', async () => {
+      // Arrange
+      req.body = {
+        request_id: 'request-123',
+        sender_email: 'requester@example.com',
+        content: 'This is a test message',
+        token: 'valid-token-123'
+      };
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(mockRequest);
+      (MessageModel.create as jest.Mock).mockResolvedValue(mockMessage);
+      (emailService.sendMessageNotification as jest.Mock).mockRejectedValue(new Error('SMTP error'));
+      
+      // Spy on console.error
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      // Act
+      const handler = messageController.createMessage;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(MessageModel.create).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: mockMessage
       });
     });
   });
   
-  // Reset mocks before each test
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-  
-  // Test creating a message
-  it('should create a new message', async () => {
-    // Arrange
-    const messageData = {
-      request_id: requestId,
-      sender_email: requesterEmail,
-      content: 'This is a test message from API',
-      token
-    };
-    
-    // Act
-    const response = await request(app)
-      .post('/api/messages')
-      .send(messageData);
-    
-    // Assert
-    expect(response.status).toBe(201);
-    expect(response.body.success).toBe(true);
-    expect(response.body.data).toBeDefined();
-    expect(response.body.data.request_id).toBe(requestId);
-    expect(response.body.data.sender_email).toBe(requesterEmail);
-    expect(response.body.data.content).toBe(messageData.content);
-    
-    // Check if email notification was called
-    expect(emailService.sendMessageNotification).toHaveBeenCalledWith(
-      publisherEmail,
-      requestId,
-      expect.any(String),
-      token
-    );
-  });
-  
-  // Test validations for creating a message
-  it('should return 400 for missing required fields', async () => {
-    // Act
-    const response = await request(app)
-      .post('/api/messages')
-      .send({
-        // Missing fields
+  describe('getMessagesByRequestId', () => {
+    it('should return all messages for a valid request ID and token', async () => {
+      // Arrange
+      req.params = { requestId: 'request-123' };
+      req.query = { token: 'valid-token-123' };
+      
+      const mockMessages = [mockMessage, { ...mockMessage, id: 'message-456' }];
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(mockRequest);
+      (MessageModel.getByRequestId as jest.Mock).mockResolvedValue(mockMessages);
+      
+      // Act
+      const handler = messageController.getMessagesByRequestId;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(RequestModel.getByIdWithToken).toHaveBeenCalledWith('request-123', 'valid-token-123');
+      expect(MessageModel.getByRequestId).toHaveBeenCalledWith('request-123');
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: mockMessages
       });
+      expect(next).not.toHaveBeenCalled();
+    });
     
-    // Assert
-    expect(response.status).toBe(400);
-    expect(response.body.success).toBe(false);
-    expect(response.body.error).toBeDefined();
-  });
-  
-  // Test invalid token
-  it('should return 404 for invalid token', async () => {
-    // Arrange
-    const messageData = {
-      request_id: requestId,
-      sender_email: requesterEmail,
-      content: 'This is a test message',
-      token: 'invalid-token'
-    };
+    it('should return 401 when token is missing', async () => {
+      // Arrange
+      req.params = { requestId: 'request-123' };
+      // No token
+      
+      // Act
+      const handler = messageController.getMessagesByRequestId;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 401,
+          message: expect.stringContaining('Access token is required')
+        })
+      );
+    });
     
-    // Act
-    const response = await request(app)
-      .post('/api/messages')
-      .send(messageData);
-    
-    // Assert
-    expect(response.status).toBe(404);
-    expect(response.body.success).toBe(false);
-    expect(response.body.error).toBeDefined();
-  });
-  
-  // Test getting messages for a request
-  it('should get messages for a request', async () => {
-    // Arrange - create a test message
-    await request(app)
-      .post('/api/messages')
-      .send({
-        request_id: requestId,
-        sender_email: requesterEmail,
-        content: 'Message for get test',
-        token
-      });
-    
-    // Act
-    const response = await request(app)
-      .get(`/api/messages/${requestId}`)
-      .query({ token });
-    
-    // Assert
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThanOrEqual(1);
-    expect(response.body.data[0].request_id).toBe(requestId);
-  });
-  
-  // Test getting messages with invalid token
-  it('should return 404 when getting messages with invalid token', async () => {
-    // Act
-    const response = await request(app)
-      .get(`/api/messages/${requestId}`)
-      .query({ token: 'invalid-token' });
-    
-    // Assert
-    expect(response.status).toBe(404);
-    expect(response.body.success).toBe(false);
+    it('should return 404 when request is not found or token is invalid', async () => {
+      // Arrange
+      req.params = { requestId: 'request-123' };
+      req.query = { token: 'invalid-token' };
+      
+      (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue(null);
+      
+      // Act
+      const handler = messageController.getMessagesByRequestId;
+      await handler(req as Request, res as Response, next);
+      
+      // Assert
+      expect(RequestModel.getByIdWithToken).toHaveBeenCalledWith('request-123', 'invalid-token');
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 404,
+          message: expect.stringContaining('Request not found or invalid token')
+        })
+      );
+    });
   });
 });

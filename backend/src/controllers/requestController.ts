@@ -64,12 +64,13 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         certification_authority_id: record.certification_authority_id,
         relationship: record.relationship
       }));
-    } catch (error) {
-      throw new ApiError(400, `Error parsing Ads.txt file: ${error.message || 'Invalid format'}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid format';
+      throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`);
     }
   } else if (req.body.records) {
     // Process JSON records
-    adsTxtRecords = req.body.records.map((record: any) => ({
+    adsTxtRecords = req.body.records.map((record: { domain: string; account_id: string; account_type: string; certification_authority_id?: string; relationship?: 'DIRECT' | 'RESELLER' }) => ({
       request_id: request.id,
       domain: record.domain,
       account_id: record.account_id,
@@ -168,7 +169,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
   }
   
   // Update the status
-  const updatedRequest = await RequestModel.updateStatus(id, status as any);
+  const updatedRequest = await RequestModel.updateStatus(id, status as 'pending' | 'approved' | 'rejected' | 'updated');
   
   if (!updatedRequest) {
     throw new ApiError(500, 'Failed to update request status');

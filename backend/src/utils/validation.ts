@@ -166,9 +166,18 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
 export function isValidEmail(email: string): boolean {
   // More comprehensive email validation
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  if (!email || email.includes('..') || email.includes(' ')) {
+  
+  // Check for invalid email patterns first
+  if (!email || 
+      email.includes('..') || 
+      email.includes(' ') || 
+      !email.includes('@') || 
+      email.indexOf('@') === 0 || 
+      email.indexOf('@') === email.length - 1 ||
+      !email.includes('.', email.indexOf('@'))) {
     return false;
   }
+  
   return emailRegex.test(email);
 }
 

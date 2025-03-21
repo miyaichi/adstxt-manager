@@ -35,7 +35,7 @@ export const updateRecordStatus = asyncHandler(async (req: Request, res: Respons
   }
   
   // Update the status
-  const updatedRecord = await AdsTxtRecordModel.updateStatus(id, status as any);
+  const updatedRecord = await AdsTxtRecordModel.updateStatus(id, status as 'pending' | 'approved' | 'rejected');
   
   if (!updatedRecord) {
     throw new ApiError(500, 'Failed to update record status');
@@ -72,8 +72,9 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
         invalidRecords: parsedRecords.filter(r => !r.is_valid).length
       }
     });
-  } catch (error) {
-    throw new ApiError(400, `Error parsing Ads.txt file: ${error.message || 'Invalid format'}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Invalid format';
+    throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`);
   }
 });
 

@@ -153,7 +153,7 @@ class RequestModel {
       db.run(
         'UPDATE requests SET status = ?, updated_at = ? WHERE id = ?',
         [status, now, id],
-        function(err) {
+        function(this: { changes: number }, err: Error | null) {
           if (err) {
             reject(err);
             return;
@@ -164,10 +164,19 @@ class RequestModel {
             return;
           }
           
-          this.getById(id)
-            .then(request => resolve(request))
-            .catch(err => reject(err));
-        }.bind(this)
+          // Get the updated record directly
+          db.get(
+            'SELECT * FROM requests WHERE id = ?',
+            [id],
+            (getErr: Error | null, row: Request) => {
+              if (getErr) {
+                reject(getErr);
+                return;
+              }
+              resolve(row || null);
+            }
+          );
+        }
       );
     });
   }
@@ -186,7 +195,7 @@ class RequestModel {
       db.run(
         'UPDATE requests SET publisher_name = ?, publisher_domain = ?, updated_at = ? WHERE id = ?',
         [publisherName, publisherDomain, now, id],
-        function(err) {
+        function(this: { changes: number }, err: Error | null) {
           if (err) {
             reject(err);
             return;
@@ -197,10 +206,19 @@ class RequestModel {
             return;
           }
           
-          this.getById(id)
-            .then(request => resolve(request))
-            .catch(err => reject(err));
-        }.bind(this)
+          // Get the updated record directly
+          db.get(
+            'SELECT * FROM requests WHERE id = ?',
+            [id],
+            (getErr: Error | null, row: Request) => {
+              if (getErr) {
+                reject(getErr);
+                return;
+              }
+              resolve(row || null);
+            }
+          );
+        }
       );
     });
   }

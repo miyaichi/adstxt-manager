@@ -1,5 +1,8 @@
-// Jest setup file
+// Jest setup file - not a test suite
 import dotenv from 'dotenv';
+
+// This export makes Jest not treat this as a test file
+export const __IGNORED__ = true;
 
 // Configure environment for tests
 dotenv.config({ path: '.env.test' });

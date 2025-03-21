@@ -4,6 +4,9 @@
  */
 import sqlite3, { Database } from 'sqlite3';
 
+// This export makes Jest not treat this as a test file
+export const __IGNORED__ = true;
+
 // Create in-memory database for tests
 const db = new sqlite3.Database(':memory:');
 
@@ -52,14 +55,16 @@ export const initTestDatabase = async (): Promise<void> => {
       db.run(`
         CREATE TABLE IF NOT EXISTS ads_txt_records (
           id TEXT PRIMARY KEY,
+          request_id TEXT NOT NULL,
           domain TEXT NOT NULL,
           account_id TEXT NOT NULL,
           account_type TEXT NOT NULL,
           relationship TEXT CHECK(relationship IN ('DIRECT', 'RESELLER')) NOT NULL,
           certification_authority_id TEXT,
-          publisher_id TEXT,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) NOT NULL DEFAULT 'pending',
           created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
         )
       `, (err) => {
         if (err) {
