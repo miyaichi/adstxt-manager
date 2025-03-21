@@ -44,6 +44,20 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       error: 'Line must contain at least domain, account ID, and account type'
     };
   }
+  
+  // Check for invalid format (no commas)
+  if (parts.length === 1 && parts[0] === trimmedLine) {
+    return {
+      domain: parts[0],
+      account_id: '',
+      account_type: '',
+      relationship: 'DIRECT',
+      line_number: lineNumber,
+      raw_line: line,
+      is_valid: false,
+      error: 'Invalid format. Expected comma-separated values'
+    };
+  }
 
   // Extract and normalize the values
   const [domain, accountId, accountType, ...rest] = parts;
@@ -54,7 +68,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   const upperAccountType = accountType.toUpperCase();
   if (upperAccountType === 'DIRECT' || upperAccountType === 'RESELLER') {
     relationship = upperAccountType as 'DIRECT' | 'RESELLER';
-  } else if (!['DIRECT', 'RESELLER'].includes(upperAccountType) && rest.length === 0) {
+  } else if (!upperAccountType.includes('DIRECT') && !upperAccountType.includes('RESELLER') && rest.length === 0) {
     // Invalid accountType without relationship field
     return {
       domain,
@@ -83,7 +97,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   }
 
   // Validate domain (basic check)
-  if (!domain.includes('.')) {
+  if (!domain.includes('.') || domain.includes(' ')) {
     return {
       domain,
       account_id: accountId,
@@ -150,7 +164,11 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
  * @returns Boolean indicating if the email is valid
  */
 export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // More comprehensive email validation
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  if (!email || email.includes('..') || email.includes(' ')) {
+    return false;
+  }
   return emailRegex.test(email);
 }
 
