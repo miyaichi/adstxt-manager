@@ -1,3 +1,5 @@
+import * as psl from 'psl';
+
 /**
  * Utility to validate and parse Ads.txt data
  */
@@ -187,7 +189,5 @@ export function isValidEmail(email: string): boolean {
  * @returns Boolean indicating if the domain is valid
  */
 export function isValidDomain(domain: string): boolean {
-  // Basic domain validation - contains at least one dot and no spaces
-  const domainRegex = /^[^.\s]+(\.[^.\s]+)+$/;
-  return domainRegex.test(domain);
+  return psl.isValid(domain);
 }
