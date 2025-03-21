@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+mailhog:
+image: mailhog/mailhog
+ports:
+- "1025:1025"  # SMTP server
+- "8025:8025"  # Web UI
+networks:
+- app-network
+
+backend:
+build:
+context: .
+dockerfile: Dockerfile
+ports:
+- "4000:4000"
+environment:
+- NODE_ENV=development
+- PORT=4000
+- APP_URL=http://localhost:3000
+- SMTP_HOST=mailhog
+- SMTP_PORT=1025
+- SMTP_FROM=adstxt-manager@example.com
+- SMTP_FROM_NAME=Ads.txt Manager
+volumes:
+- ./src:/app/src
+- ./dist:/app/dist
+- ./.env:/app/.env
+depends_on:
+- mailhog
+networks:
+- app-network
+
+networks:
+app-network:
+driver: bridge
