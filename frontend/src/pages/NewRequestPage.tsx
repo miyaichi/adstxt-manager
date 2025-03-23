@@ -9,10 +9,10 @@ const NewRequestPage: React.FC = () => {
       <Breadcrumbs
         items={[
           { label: 'ホーム', href: '/' },
-          { label: '新規リクエスト', isCurrent: true }
+          { label: '新規リクエスト', isCurrent: true },
         ]}
       />
-      
+
       <RequestForm />
     </Flex>
   );

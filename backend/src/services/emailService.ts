@@ -35,7 +35,7 @@ class EmailService {
         <p><a href="${requestUrl}">View Request</a></p>
         <p>This link is unique to you and should not be shared with others.</p>
         <p>Thank you,<br>Ads.txt Manager</p>
-      `
+      `,
     };
 
     return transporter.sendMail(mailOptions);
@@ -71,7 +71,7 @@ class EmailService {
         <p><a href="${requestUrl}">View Request Status</a></p>
         <p>This link is unique to you and should not be shared with others.</p>
         <p>Thank you,<br>Ads.txt Manager</p>
-      `
+      `,
     };
 
     return transporter.sendMail(mailOptions);
@@ -104,7 +104,7 @@ class EmailService {
         <p>To view the request details, please click the link below:</p>
         <p><a href="${requestUrl}">View Request</a></p>
         <p>Thank you,<br>Ads.txt Manager</p>
-      `
+      `,
     };
 
     return transporter.sendMail(mailOptions);
@@ -136,7 +136,7 @@ class EmailService {
         <p>To view the message, please click the link below:</p>
         <p><a href="${requestUrl}">View Message</a></p>
         <p>Thank you,<br>Ads.txt Manager</p>
-      `
+      `,
     };
 
     return transporter.sendMail(mailOptions);

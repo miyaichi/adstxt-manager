@@ -35,13 +35,13 @@ describe('API Service Tests', () => {
       };
       const mockResponse = {
         success: true,
-        data: { request_id: '123', token: 'abc' }
+        data: { request_id: '123', token: 'abc' },
       };
-      
+
       (requestApi.createRequest as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await requestApi.createRequest(mockData);
-      
+
       expect(requestApi.createRequest).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(mockResponse);
     });
@@ -50,13 +50,13 @@ describe('API Service Tests', () => {
       const mockEmail = 'test@example.com';
       const mockResponse = {
         success: true,
-        data: [{ id: '123', status: 'pending' }]
+        data: [{ id: '123', status: 'pending' }],
       };
-      
+
       (requestApi.getRequestsByEmail as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await requestApi.getRequestsByEmail(mockEmail);
-      
+
       expect(requestApi.getRequestsByEmail).toHaveBeenCalledWith(mockEmail);
       expect(result).toEqual(mockResponse);
     });
@@ -68,17 +68,17 @@ describe('API Service Tests', () => {
         request_id: '123',
         sender_email: 'test@example.com',
         content: 'Test message',
-        token: 'abc'
+        token: 'abc',
       };
       const mockResponse = {
         success: true,
-        data: { id: '456', content: 'Test message' }
+        data: { id: '456', content: 'Test message' },
       };
-      
+
       (messageApi.createMessage as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await messageApi.createMessage(mockData);
-      
+
       expect(messageApi.createMessage).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(mockResponse);
     });
@@ -88,13 +88,13 @@ describe('API Service Tests', () => {
       const mockToken = 'abc';
       const mockResponse = {
         success: true,
-        data: [{ id: '456', content: 'Test message' }]
+        data: [{ id: '456', content: 'Test message' }],
       };
-      
+
       (messageApi.getMessagesByRequestId as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await messageApi.getMessagesByRequestId(mockRequestId, mockToken);
-      
+
       expect(messageApi.getMessagesByRequestId).toHaveBeenCalledWith(mockRequestId, mockToken);
       expect(result).toEqual(mockResponse);
     });
@@ -107,13 +107,13 @@ describe('API Service Tests', () => {
       const mockToken = 'abc';
       const mockResponse = {
         success: true,
-        data: { id: '123', status: 'approved' }
+        data: { id: '123', status: 'approved' },
       };
-      
+
       (adsTxtApi.updateRecordStatus as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await adsTxtApi.updateRecordStatus(mockId, mockStatus, mockToken);
-      
+
       expect(adsTxtApi.updateRecordStatus).toHaveBeenCalledWith(mockId, mockStatus, mockToken);
       expect(result).toEqual(mockResponse);
     });
@@ -122,13 +122,13 @@ describe('API Service Tests', () => {
       const mockFile = new File([], 'test.txt');
       const mockResponse = {
         success: true,
-        data: { records: [], totalRecords: 0 }
+        data: { records: [], totalRecords: 0 },
       };
-      
+
       (adsTxtApi.processAdsTxtFile as jest.Mock).mockResolvedValue(mockResponse);
-      
+
       const result = await adsTxtApi.processAdsTxtFile(mockFile);
-      
+
       expect(adsTxtApi.processAdsTxtFile).toHaveBeenCalledWith(mockFile);
       expect(result).toEqual(mockResponse);
     });

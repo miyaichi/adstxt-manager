@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 // Mock the window.matchMedia function which is not implemented in JSDOM
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,

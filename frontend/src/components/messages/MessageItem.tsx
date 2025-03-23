@@ -8,10 +8,10 @@ interface MessageItemProps {
 
 const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
   const { tokens } = useTheme();
-  
+
   // Format date to locale string
   const formattedDate = new Date(message.created_at).toLocaleString();
-  
+
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">
       <Flex direction="column" gap="0.5rem">
@@ -21,10 +21,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             {formattedDate}
           </Text>
         </Flex>
-        
-        <Text style={{ whiteSpace: 'pre-wrap' }}>
-          {message.content}
-        </Text>
+
+        <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
       </Flex>
     </Card>
   );

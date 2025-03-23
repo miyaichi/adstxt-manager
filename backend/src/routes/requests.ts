@@ -5,17 +5,17 @@ import {
   getRequest,
   getRequestsByEmail,
   updatePublisherInfo,
-  updateRequestStatus
+  updateRequestStatus,
 } from '../controllers/requestController';
 
 const router = express.Router();
 
 // Configure multer for file uploads (store in memory)
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
 });
 
 // Routes

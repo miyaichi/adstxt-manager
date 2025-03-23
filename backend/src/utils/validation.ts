@@ -31,8 +31,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
 
   // Split the line into its components
   // Format: domain, account_id, type, [certification_authority_id]
-  const parts = trimmedLine.split(',').map(part => part.trim());
-  
+  const parts = trimmedLine.split(',').map((part) => part.trim());
+
   // Basic validation - must have at least domain, account ID, and type
   if (parts.length < 3) {
     return {
@@ -43,10 +43,10 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Line must contain at least domain, account ID, and account type'
+      error: 'Line must contain at least domain, account ID, and account type',
     };
   }
-  
+
   // Check for invalid format (no commas)
   if (parts.length === 1 && parts[0] === trimmedLine) {
     return {
@@ -57,7 +57,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Invalid format. Expected comma-separated values'
+      error: 'Invalid format. Expected comma-separated values',
     };
   }
 
@@ -70,7 +70,11 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   const upperAccountType = accountType.toUpperCase();
   if (upperAccountType === 'DIRECT' || upperAccountType === 'RESELLER') {
     relationship = upperAccountType as 'DIRECT' | 'RESELLER';
-  } else if (!upperAccountType.includes('DIRECT') && !upperAccountType.includes('RESELLER') && rest.length === 0) {
+  } else if (
+    !upperAccountType.includes('DIRECT') &&
+    !upperAccountType.includes('RESELLER') &&
+    rest.length === 0
+  ) {
     // Invalid accountType without relationship field
     return {
       domain,
@@ -80,7 +84,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Account type must be valid and relationship (DIRECT/RESELLER) must be specified'
+      error: 'Account type must be valid and relationship (DIRECT/RESELLER) must be specified',
     };
   }
 
@@ -109,7 +113,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Domain must be valid'
+      error: 'Domain must be valid',
     };
   }
 
@@ -124,7 +128,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Account ID must not be empty'
+      error: 'Account ID must not be empty',
     };
   }
 
@@ -137,7 +141,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
     relationship,
     line_number: lineNumber,
     raw_line: line,
-    is_valid: true
+    is_valid: true,
   };
 }
 
@@ -149,14 +153,14 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
 export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
   const lines = content.split('\n');
   const records: ParsedAdsTxtRecord[] = [];
-  
+
   lines.forEach((line, index) => {
     const parsedRecord = parseAdsTxtLine(line, index + 1);
     if (parsedRecord) {
       records.push(parsedRecord);
     }
   });
-  
+
   return records;
 }
 
@@ -167,19 +171,22 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
  */
 export function isValidEmail(email: string): boolean {
   // More comprehensive email validation
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  
+  const emailRegex =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
   // Check for invalid email patterns first
-  if (!email || 
-      email.includes('..') || 
-      email.includes(' ') || 
-      !email.includes('@') || 
-      email.indexOf('@') === 0 || 
-      email.indexOf('@') === email.length - 1 ||
-      !email.includes('.', email.indexOf('@'))) {
+  if (
+    !email ||
+    email.includes('..') ||
+    email.includes(' ') ||
+    !email.includes('@') ||
+    email.indexOf('@') === 0 ||
+    email.indexOf('@') === email.length - 1 ||
+    !email.includes('.', email.indexOf('@'))
+  ) {
     return false;
   }
-  
+
   return emailRegex.test(email);
 }
 

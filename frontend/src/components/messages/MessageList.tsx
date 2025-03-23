@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Flex, 
-  Heading, 
-  Text, 
-  Alert, 
-  Loader,
-  Divider
-} from '@aws-amplify/ui-react';
+import { Alert, Divider, Flex, Heading, Loader, Text } from '@aws-amplify/ui-react';
+import React, { useEffect, useState } from 'react';
 import { messageApi } from '../../api';
 import { Message } from '../../models';
-import MessageItem from './MessageItem';
 import { createLogger } from '../../utils/logger';
+import MessageItem from './MessageItem';
 
 interface MessageListProps {
   requestId: string;
@@ -18,37 +11,44 @@ interface MessageListProps {
   messages?: Message[];
 }
 
-// コンポーネント用のロガーを作成
+// Create a logger for the component
 const logger = createLogger('MessageList');
 
-const MessageList: React.FC<MessageListProps> = ({ requestId, token, messages: initialMessages }) => {
-  logger.debug('Rendered with props:', { requestId, token, initialMessagesLength: initialMessages?.length });
+const MessageList: React.FC<MessageListProps> = ({
+  requestId,
+  token,
+  messages: initialMessages,
+}) => {
+  logger.debug('Rendered with props:', {
+    requestId,
+    token,
+    initialMessagesLength: initialMessages?.length,
+  });
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 親コンポーネントから渡されたメッセージがある場合は、それを使用
+    // Use the provided messages if there are any
     if (initialMessages && initialMessages.length > 0) {
       logger.debug('Using provided messages:', initialMessages);
       setMessages(initialMessages);
       setLoading(false);
       return;
     }
-    
-    // そうでなければAPIから取得
+
+    // If not, fetch messages from the API
     const fetchMessages = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         logger.debug('Fetching messages for request:', requestId);
-        // リクエストIDとトークンを直接ログに出力
         logger.debug('RequestID=', JSON.stringify(requestId));
         logger.debug('Token=', JSON.stringify(token));
-        
+
         const response = await messageApi.getMessagesByRequestId(requestId, token);
-        
+
         if (response.success) {
           logger.debug('Messages fetched successfully:', response.data);
           setMessages(response.data || []);
@@ -63,7 +63,7 @@ const MessageList: React.FC<MessageListProps> = ({ requestId, token, messages: i
         setLoading(false);
       }
     };
-    
+
     fetchMessages();
   }, [requestId, token, initialMessages]);
 
@@ -76,23 +76,19 @@ const MessageList: React.FC<MessageListProps> = ({ requestId, token, messages: i
   }
 
   if (error) {
-    return (
-      <Alert variation="error">
-        {error}
-      </Alert>
-    );
+    return <Alert variation="error">{error}</Alert>;
   }
 
   return (
     <Flex direction="column" gap="1rem">
       <Heading level={4}>メッセージ履歴</Heading>
       <Divider />
-      
+
       {messages.length === 0 ? (
         <Text>このリクエストにはまだメッセージがありません</Text>
       ) : (
         <Flex direction="column" gap="0.5rem">
-          {messages.map(message => (
+          {messages.map((message) => (
             <MessageItem key={message.id} message={message} />
           ))}
         </Flex>

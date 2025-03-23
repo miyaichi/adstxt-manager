@@ -10,7 +10,7 @@ router.get('/status', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API is running',
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
   });
 });
 

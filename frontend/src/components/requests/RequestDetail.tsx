@@ -9,7 +9,7 @@ import {
   Loader,
   Text,
   useTheme,
-  View
+  View,
 } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react';
 import { adsTxtApi, messageApi, requestApi } from '../../api';
@@ -24,12 +24,12 @@ interface RequestDetailProps {
   token: string;
 }
 
-// コンポーネント用のロガーを作成
+// Create a logger for the component
 const logger = createLogger('RequestDetail');
 
 const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   logger.debug('Rendering with props:', { requestId, token });
-  
+
   const [request, setRequest] = useState<RequestWithRecords | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +45,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await requestApi.getRequest(requestId, token);
-      
+
       if (response.success) {
         setRequest(response.data);
       } else {
@@ -65,7 +65,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     try {
       logger.debug('fetchMessages starting for request:', requestId);
       setMessageLoading(true);
-      
+
       const response = await messageApi.getMessagesByRequestId(requestId, token);
       if (response.success) {
         logger.debug('Messages fetched successfully:', response.data);
@@ -92,21 +92,25 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
   const handleStatusChange = async (newStatus: 'pending' | 'approved' | 'rejected') => {
     if (!request) return;
-    
+
     try {
       setLoading(true);
-      
+
       const response = await requestApi.updateRequestStatus(requestId, newStatus, token);
-      
+
       if (response.success) {
         // Update the local state with the new status
-        setRequest(prev => prev ? {
-          ...prev,
-          request: {
-            ...prev.request,
-            status: newStatus
-          }
-        } : null);
+        setRequest((prev) =>
+          prev
+            ? {
+                ...prev,
+                request: {
+                  ...prev.request,
+                  status: newStatus,
+                },
+              }
+            : null
+        );
       } else {
         setError(response.error?.message || 'ステータスの更新中にエラーが発生しました');
       }
@@ -118,24 +122,25 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     }
   };
 
-  const handleRecordStatusChange = async (recordId: string, status: 'pending' | 'approved' | 'rejected') => {
+  const handleRecordStatusChange = async (
+    recordId: string,
+    status: 'pending' | 'approved' | 'rejected'
+  ) => {
     try {
       setLoading(true);
-      
+
       const response = await adsTxtApi.updateRecordStatus(recordId, status, token);
-      
+
       if (response.success) {
         // Update the local state with the new record status
-        setRequest(prev => {
+        setRequest((prev) => {
           if (!prev) return null;
-          
+
           return {
             ...prev,
-            records: prev.records.map(record => 
-              record.id === recordId 
-                ? { ...record, status } 
-                : record
-            )
+            records: prev.records.map((record) =>
+              record.id === recordId ? { ...record, status } : record
+            ),
           };
         });
       } else {
@@ -150,7 +155,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   };
 
   const handleMessageSent = (message: Message) => {
-    setMessages(prev => [...prev, message]);
+    setMessages((prev) => [...prev, message]);
   };
 
   const getStatusBadge = (status: string) => {
@@ -168,12 +173,12 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     }
   };
 
-  // データの初期取得
+  // Fetch request details when the component mounts
   useEffect(() => {
     fetchRequestDetails();
   }, [requestId, token]);
 
-  // メッセージタブが選択されたときにメッセージを取得
+  // Fetch messages when the message tab is selected
   useEffect(() => {
     logger.debug('messageTabSelected changed:', messageTabSelected);
     if (messageTabSelected) {
@@ -191,11 +196,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   }
 
   if (error) {
-    return (
-      <Alert variation="error">
-        {error}
-      </Alert>
-    );
+    return <Alert variation="error">{error}</Alert>;
   }
 
   if (!request) {
@@ -206,9 +207,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     );
   }
 
-  const approvedRecords = request.records.filter(record => record.status === 'approved');
-  const pendingRecords = request.records.filter(record => record.status === 'pending');
-  const rejectedRecords = request.records.filter(record => record.status === 'rejected');
+  const approvedRecords = request.records.filter((record) => record.status === 'approved');
+  const pendingRecords = request.records.filter((record) => record.status === 'pending');
+  const rejectedRecords = request.records.filter((record) => record.status === 'rejected');
 
   return (
     <Card padding="1.5rem" variation="outlined">
@@ -217,12 +218,12 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           <Heading level={2}>リクエスト詳細</Heading>
           {getStatusBadge(request.request.status)}
         </Flex>
-        
+
         <Divider />
-        
+
         <Flex direction="column" gap="1rem">
           <Heading level={3}>基本情報</Heading>
-          
+
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>パブリッシャー情報</Heading>
@@ -240,7 +241,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 </Text>
               )}
             </Card>
-            
+
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>リクエスト者情報</Heading>
               <Text>
@@ -251,7 +252,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
               </Text>
             </Card>
           </Flex>
-          
+
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>リクエスト情報</Heading>
@@ -265,7 +266,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 <strong>更新日:</strong> {new Date(request.request.updated_at).toLocaleString()}
               </Text>
             </Card>
-            
+
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>リクエスト統計</Heading>
               <Text>
@@ -282,7 +283,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
               </Text>
             </Card>
           </Flex>
-          
+
           {request.request.status === 'pending' && (
             <Flex gap="1rem" marginTop="1rem">
               <Button
@@ -304,19 +305,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             </Flex>
           )}
         </Flex>
-        
+
         <Divider />
-        
+
         <Flex direction="column" gap="1rem">
           <Flex className="custom-tabs">
-            <Button 
+            <Button
               onClick={() => setActiveTab(0)}
-              variation={activeTab === 0 ? "primary" : "link"}
+              variation={activeTab === 0 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
             >
               Ads.txtレコード
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setActiveTab(1);
                 if (!messageTabSelected) {
@@ -324,39 +325,36 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                   setMessageTabSelected(true);
                 }
               }}
-              variation={activeTab === 1 ? "primary" : "link"}
+              variation={activeTab === 1 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
             >
               メッセージ
             </Button>
           </Flex>
-          
+
           <Divider />
-          
+
           <View padding="1rem">
             {activeTab === 0 ? (
-              // Ads.txtレコードタブ
+              // Ads.txt Record tab
               <>
                 <AdsTxtRecordList
                   records={request.records}
                   onStatusChange={handleRecordStatusChange}
                   isEditable={request.request.status === 'pending'}
                 />
-                
+
                 {approvedRecords.length > 0 && (
-                  <Button
-                    onClick={generateAdsTxtContent}
-                    marginTop="1rem"
-                  >
+                  <Button onClick={generateAdsTxtContent} marginTop="1rem">
                     Ads.txtコンテンツを生成
                   </Button>
                 )}
-                
+
                 {showAdsTxtContent && (
-                  <Card 
-                    variation="outlined" 
-                    padding="1rem" 
-                    marginTop="1rem" 
+                  <Card
+                    variation="outlined"
+                    padding="1rem"
+                    marginTop="1rem"
                     backgroundColor={tokens.colors.background.secondary}
                   >
                     <Flex justifyContent="space-between" alignItems="center" marginBottom="0.5rem">
@@ -370,26 +368,28 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                         コピー
                       </Button>
                     </Flex>
-                    <pre style={{ 
-                      whiteSpace: 'pre-wrap', 
-                      fontFamily: 'monospace',
-                      overflow: 'auto',
-                      maxHeight: '300px'
-                    }}>
+                    <pre
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: 'monospace',
+                        overflow: 'auto',
+                        maxHeight: '300px',
+                      }}
+                    >
                       {adsTxtContent}
                     </pre>
                   </Card>
                 )}
               </>
             ) : (
-              // メッセージタブ
+              // Message tab
               <>
-                {logger.debug('Rendering message tab content', { 
-                  messageTabSelected, 
-                  messageLoading, 
-                  messagesCount: messages.length 
+                {logger.debug('Rendering message tab content', {
+                  messageTabSelected,
+                  messageLoading,
+                  messagesCount: messages.length,
                 })}
-                
+
                 {messageTabSelected ? (
                   messageLoading ? (
                     <Flex direction="column" alignItems="center" padding="2rem">
@@ -398,14 +398,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                     </Flex>
                   ) : (
                     <Flex direction="column" gap="1rem">
-                      <MessageList
-                        messages={messages}
-                        requestId={requestId}
-                        token={token}
-                      />
-                      
+                      <MessageList messages={messages} requestId={requestId} token={token} />
+
                       <Divider marginBlock="1rem" />
-                      
+
                       <MessageForm
                         requestId={requestId}
                         token={token}
@@ -416,7 +412,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 ) : (
                   <Flex direction="column" alignItems="center" padding="2rem">
                     <Text>タブを選択すると、メッセージが表示されます</Text>
-                    <Button 
+                    <Button
                       onClick={() => {
                         logger.debug('Manual message loading button clicked');
                         setMessageTabSelected(true);

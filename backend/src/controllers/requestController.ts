@@ -10,18 +10,19 @@ import { isValidEmail, parseAdsTxtContent } from '../utils/validation';
  * @route POST /api/requests
  */
 export const createRequest = asyncHandler(async (req: Request, res: Response) => {
-  const { publisher_email, requester_email, requester_name, publisher_name, publisher_domain } = req.body;
-  
+  const { publisher_email, requester_email, requester_name, publisher_name, publisher_domain } =
+    req.body;
+
   // Validate required fields
   if (!publisher_email || !requester_email || !requester_name) {
     throw new ApiError(400, 'Publisher email, requester email, and requester name are required');
   }
-  
+
   // Validate email addresses
   if (!isValidEmail(publisher_email) || !isValidEmail(requester_email)) {
     throw new ApiError(400, 'Invalid email address');
   }
-  
+
   // Parse records if it's a string (from FormData)
   let recordsArray: any[] = [];
   if (req.body.records) {
@@ -40,43 +41,43 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   if (!req.file && recordsArray.length === 0) {
     throw new ApiError(400, 'Ads.txt records are required (either file upload or JSON data)');
   }
-  
+
   // Create the request
   const requestData: CreateRequestDTO = {
     publisher_email,
     requester_email,
     requester_name,
     publisher_name,
-    publisher_domain
+    publisher_domain,
   };
-  
+
   const request = await RequestModel.create(requestData);
-  
+
   // Parse and store Ads.txt records
   let adsTxtRecords: CreateAdsTxtRecordDTO[] = [];
-  
+
   if (req.file) {
     // Process uploaded CSV file
     try {
       const fileBuffer = req.file.buffer;
       const fileContent = fileBuffer.toString('utf8');
-      
+
       // Parse the content
       const parsedRecords = parseAdsTxtContent(fileContent);
-      const validRecords = parsedRecords.filter(record => record.is_valid);
-      
+      const validRecords = parsedRecords.filter((record) => record.is_valid);
+
       if (validRecords.length === 0) {
         throw new ApiError(400, 'No valid Ads.txt records found in the uploaded file');
       }
-      
+
       // Convert to DTOs
-      adsTxtRecords = validRecords.map(record => ({
+      adsTxtRecords = validRecords.map((record) => ({
         request_id: request.id,
         domain: record.domain,
         account_id: record.account_id,
         account_type: record.account_type,
         certification_authority_id: record.certification_authority_id,
-        relationship: record.relationship
+        relationship: record.relationship,
       }));
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid format';
@@ -84,19 +85,27 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
     }
   } else if (recordsArray.length > 0) {
     // Process JSON records
-    adsTxtRecords = recordsArray.map((record: { domain: string; account_id: string; account_type: string; certification_authority_id?: string; relationship?: 'DIRECT' | 'RESELLER' }) => ({
-      request_id: request.id,
-      domain: record.domain,
-      account_id: record.account_id,
-      account_type: record.account_type,
-      certification_authority_id: record.certification_authority_id,
-      relationship: record.relationship || 'DIRECT'
-    }));
+    adsTxtRecords = recordsArray.map(
+      (record: {
+        domain: string;
+        account_id: string;
+        account_type: string;
+        certification_authority_id?: string;
+        relationship?: 'DIRECT' | 'RESELLER';
+      }) => ({
+        request_id: request.id,
+        domain: record.domain,
+        account_id: record.account_id,
+        account_type: record.account_type,
+        certification_authority_id: record.certification_authority_id,
+        relationship: record.relationship || 'DIRECT',
+      })
+    );
   }
-  
+
   // Store the records
   await AdsTxtRecordModel.bulkCreate(adsTxtRecords);
-  
+
   // Send notification emails
   try {
     await Promise.all([
@@ -113,19 +122,19 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         publisher_email,
         request.id,
         request.token
-      )
+      ),
     ]);
   } catch (error) {
     console.error('Error sending emails:', error);
     // Continue even if emails fail - we'll log but not fail the request
   }
-  
+
   res.status(201).json({
     success: true,
     data: {
       request_id: request.id,
-      token: request.token
-    }
+      token: request.token,
+    },
   });
 });
 
@@ -136,26 +145,26 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
 export const getRequest = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { token } = req.query;
-  
+
   if (!token || typeof token !== 'string') {
     throw new ApiError(401, 'Access token is required');
   }
-  
+
   const request = await RequestModel.getByIdWithToken(id, token);
-  
+
   if (!request) {
     throw new ApiError(404, 'Request not found or invalid token');
   }
-  
+
   // Get associated Ads.txt records
   const adsTxtRecords = await AdsTxtRecordModel.getByRequestId(id);
-  
+
   res.status(200).json({
     success: true,
     data: {
       request,
-      records: adsTxtRecords
-    }
+      records: adsTxtRecords,
+    },
   });
 });
 
@@ -166,39 +175,42 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
 export const updateRequestStatus = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status, token } = req.body;
-  
+
   if (!token || typeof token !== 'string') {
     throw new ApiError(401, 'Access token is required');
   }
-  
+
   if (!status || !['pending', 'approved', 'rejected', 'updated'].includes(status)) {
     throw new ApiError(400, 'Valid status is required (pending, approved, rejected, or updated)');
   }
-  
+
   // Verify the token
   const request = await RequestModel.getByIdWithToken(id, token);
-  
+
   if (!request) {
     throw new ApiError(404, 'Request not found or invalid token');
   }
-  
+
   // Update the status
-  const updatedRequest = await RequestModel.updateStatus(id, status as 'pending' | 'approved' | 'rejected' | 'updated');
-  
+  const updatedRequest = await RequestModel.updateStatus(
+    id,
+    status as 'pending' | 'approved' | 'rejected' | 'updated'
+  );
+
   if (!updatedRequest) {
     throw new ApiError(500, 'Failed to update request status');
   }
-  
+
   // When approving a request, update all pending Ads.txt records to approved
   if (status === 'approved') {
     const records = await AdsTxtRecordModel.getByRequestId(id);
     await Promise.all(
       records
-        .filter(record => record.status === 'pending')
-        .map(record => AdsTxtRecordModel.updateStatus(record.id, 'approved'))
+        .filter((record) => record.status === 'pending')
+        .map((record) => AdsTxtRecordModel.updateStatus(record.id, 'approved'))
     );
   }
-  
+
   // Send email notifications
   try {
     // Notify the requester of the status change
@@ -212,10 +224,10 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
     console.error('Error sending status update email:', error);
     // Continue even if emails fail
   }
-  
+
   res.status(200).json({
     success: true,
-    data: updatedRequest
+    data: updatedRequest,
   });
 });
 
@@ -226,32 +238,36 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
 export const updatePublisherInfo = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { publisher_name, publisher_domain, token } = req.body;
-  
+
   if (!token || typeof token !== 'string') {
     throw new ApiError(401, 'Access token is required');
   }
-  
+
   if (!publisher_name || !publisher_domain) {
     throw new ApiError(400, 'Publisher name and domain are required');
   }
-  
+
   // Verify the token
   const request = await RequestModel.getByIdWithToken(id, token);
-  
+
   if (!request) {
     throw new ApiError(404, 'Request not found or invalid token');
   }
-  
+
   // Update publisher info
-  const updatedRequest = await RequestModel.updatePublisherInfo(id, publisher_name, publisher_domain);
-  
+  const updatedRequest = await RequestModel.updatePublisherInfo(
+    id,
+    publisher_name,
+    publisher_domain
+  );
+
   if (!updatedRequest) {
     throw new ApiError(500, 'Failed to update publisher information');
   }
-  
+
   res.status(200).json({
     success: true,
-    data: updatedRequest
+    data: updatedRequest,
   });
 });
 
@@ -262,11 +278,11 @@ export const updatePublisherInfo = asyncHandler(async (req: Request, res: Respon
 export const getRequestsByEmail = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.params;
   const { role } = req.query;
-  
+
   if (!isValidEmail(email)) {
     throw new ApiError(400, 'Invalid email address');
   }
-  
+
   let requests;
   if (role === 'publisher') {
     requests = await RequestModel.getByPublisherEmail(email);
@@ -278,9 +294,9 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
     const requesterRequests = await RequestModel.getByRequesterEmail(email);
     requests = [...publisherRequests, ...requesterRequests];
   }
-  
+
   res.status(200).json({
     success: true,
-    data: requests
+    data: requests,
   });
 });

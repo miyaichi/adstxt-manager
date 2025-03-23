@@ -15,7 +15,8 @@ export const initTestDatabase = async (): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     db.serialize(() => {
       // Create requests table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS requests (
           id TEXT PRIMARY KEY,
           publisher_email TEXT NOT NULL,
@@ -27,15 +28,18 @@ export const initTestDatabase = async (): Promise<void> => {
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       // Create messages table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS messages (
           id TEXT PRIMARY KEY,
           request_id TEXT NOT NULL,
@@ -44,15 +48,18 @@ export const initTestDatabase = async (): Promise<void> => {
           created_at TEXT NOT NULL,
           FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       // Create ads_txt_records table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS ads_txt_records (
           id TEXT PRIMARY KEY,
           request_id TEXT NOT NULL,
@@ -66,12 +73,14 @@ export const initTestDatabase = async (): Promise<void> => {
           updated_at TEXT NOT NULL,
           FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       resolve();
     });
@@ -88,14 +97,14 @@ export const clearTestDatabase = async (): Promise<void> => {
           return;
         }
       });
-      
+
       db.run('DELETE FROM ads_txt_records', (err) => {
         if (err) {
           reject(err);
           return;
         }
       });
-      
+
       db.run('DELETE FROM requests', (err) => {
         if (err) {
           reject(err);

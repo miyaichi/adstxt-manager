@@ -8,7 +8,7 @@ describe('AdsTxtRecord Model Tests', () => {
   const requestId = uuidv4();
   const token = 'test-token-for-adstxt-test';
   let recordId: string;
-  
+
   // Set up test data before this test suite
   beforeAll(async () => {
     // Insert a test request to use for ads.txt records
@@ -18,7 +18,16 @@ describe('AdsTxtRecord Model Tests', () => {
         `INSERT INTO requests 
          (id, publisher_email, requester_email, requester_name, status, token, created_at, updated_at) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [requestId, 'publisher@test.com', 'requester@test.com', 'Test Requester', 'pending', token, now, now],
+        [
+          requestId,
+          'publisher@test.com',
+          'requester@test.com',
+          'Test Requester',
+          'pending',
+          token,
+          now,
+          now,
+        ],
         (err) => {
           if (err) {
             console.error('Error creating test request:', err);
@@ -30,7 +39,7 @@ describe('AdsTxtRecord Model Tests', () => {
       );
     });
   });
-  
+
   // Test creating a record
   it('should create a new Ads.txt record', async () => {
     // Arrange
@@ -39,13 +48,13 @@ describe('AdsTxtRecord Model Tests', () => {
       domain: 'example.com',
       account_id: 'pub-1234567890',
       account_type: 'DIRECT',
-      relationship: 'DIRECT'
+      relationship: 'DIRECT',
     };
-    
+
     // Act
     const record = await AdsTxtRecordModel.create(recordData);
     recordId = record.id; // Save for other tests
-    
+
     // Assert
     expect(record).toBeDefined();
     expect(record.id).toBeDefined();
@@ -56,7 +65,7 @@ describe('AdsTxtRecord Model Tests', () => {
     expect(record.status).toBe('pending');
     expect(record.created_at).toBeDefined();
     expect(record.updated_at).toBeDefined();
-    
+
     // Verify record was actually saved in the database
     const savedRecord = await new Promise<AdsTxtRecord | undefined>((resolve, reject) => {
       db.get(
@@ -68,49 +77,49 @@ describe('AdsTxtRecord Model Tests', () => {
         }
       );
     });
-    
+
     expect(savedRecord).toBeDefined();
     expect(savedRecord?.domain).toBe('example.com');
   });
-  
+
   // Test retrieving a record by ID
   it('should get a record by ID', async () => {
     // Make sure we have a record ID from the previous test
     expect(recordId).toBeDefined();
-    
+
     // Act
     const record = await AdsTxtRecordModel.getById(recordId);
-    
+
     // Assert
     expect(record).toBeDefined();
     expect(record?.id).toBe(recordId);
     expect(record?.domain).toBe('example.com');
   });
-  
+
   // Test getting records by request ID
   it('should get records by request ID', async () => {
     // Act
     const records = await AdsTxtRecordModel.getByRequestId(requestId);
-    
+
     // Assert
     expect(Array.isArray(records)).toBe(true);
     expect(records.length).toBeGreaterThanOrEqual(1);
-    
+
     // Make sure at least one record has the correct request_id
-    const hasMatchingRecord = records.some(r => r.request_id === requestId);
+    const hasMatchingRecord = records.some((r) => r.request_id === requestId);
     expect(hasMatchingRecord).toBe(true);
   });
-  
+
   // Test updating status
   it('should update record status', async () => {
     // Act
     const updatedRecord = await AdsTxtRecordModel.updateStatus(recordId, 'approved');
-    
+
     // Assert
     expect(updatedRecord).toBeDefined();
     expect(updatedRecord?.id).toBe(recordId);
     expect(updatedRecord?.status).toBe('approved');
-    
+
     // Check that updated_at was changed
     if (updatedRecord) {
       const createdDate = new Date(updatedRecord.created_at).getTime();
@@ -118,18 +127,22 @@ describe('AdsTxtRecord Model Tests', () => {
       expect(updatedDate).toBeGreaterThanOrEqual(createdDate);
     }
   });
-  
+
   // Test checking if a record exists
   it('should check if a record exists', async () => {
     // Act
     const exists = await AdsTxtRecordModel.recordExists('example.com', 'pub-1234567890', 'DIRECT');
-    const notExists = await AdsTxtRecordModel.recordExists('nonexistent.com', 'pub-0000000', 'DIRECT');
-    
+    const notExists = await AdsTxtRecordModel.recordExists(
+      'nonexistent.com',
+      'pub-0000000',
+      'DIRECT'
+    );
+
     // Assert
     expect(exists).toBe(true);
     expect(notExists).toBe(false);
   });
-  
+
   // Test bulk creating records
   it('should bulk create multiple records', async () => {
     // Arrange
@@ -139,7 +152,7 @@ describe('AdsTxtRecord Model Tests', () => {
         domain: 'bulktest1.com',
         account_id: 'pub-111',
         account_type: 'adsense',
-        relationship: 'DIRECT'
+        relationship: 'DIRECT',
       },
       {
         request_id: requestId,
@@ -147,20 +160,20 @@ describe('AdsTxtRecord Model Tests', () => {
         account_id: 'pub-222',
         account_type: 'adexchange',
         relationship: 'RESELLER',
-        certification_authority_id: 'abc123'
-      }
+        certification_authority_id: 'abc123',
+      },
     ];
-    
+
     // Act
     const createdRecords = await AdsTxtRecordModel.bulkCreate(records);
-    
+
     // Assert
     expect(createdRecords).toBeDefined();
     expect(createdRecords.length).toBe(2);
     expect(createdRecords[0].domain).toBe('bulktest1.com');
     expect(createdRecords[1].domain).toBe('bulktest2.com');
     expect(createdRecords[1].certification_authority_id).toBe('abc123');
-    
+
     // Verify the records were saved in the database
     const savedRecords = await new Promise<AdsTxtRecord[]>((resolve, reject) => {
       db.all(
@@ -171,7 +184,7 @@ describe('AdsTxtRecord Model Tests', () => {
         }
       );
     });
-    
+
     expect(savedRecords.length).toBe(2);
   });
 });

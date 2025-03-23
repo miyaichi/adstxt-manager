@@ -1,15 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Flex, 
-  Heading, 
-  Button, 
-  useTheme 
-} from '@aws-amplify/ui-react';
+import { Flex, Heading, Button, useTheme } from '@aws-amplify/ui-react';
 
 const Header: React.FC = () => {
   const { tokens } = useTheme();
-  
+
   return (
     <Flex
       as="header"
@@ -25,21 +20,13 @@ const Header: React.FC = () => {
           <Heading level={3}>Ads.txt マネージャー</Heading>
         </Link>
       </Flex>
-      
+
       <Flex gap="1rem">
-        <Button
-          as={Link}
-          to="/new-request"
-          variation="primary"
-        >
+        <Button as={Link} to="/new-request" variation="primary">
           新規リクエスト
         </Button>
-        
-        <Button
-          as={Link}
-          to="/"
-          variation="link"
-        >
+
+        <Button as={Link} to="/" variation="link">
           ホーム
         </Button>
       </Flex>

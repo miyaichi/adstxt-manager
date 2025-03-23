@@ -8,21 +8,16 @@ interface ErrorMessageProps {
   showHomeButton?: boolean;
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({ 
-  title = 'エラーが発生しました', 
-  message, 
-  showHomeButton = true 
+const ErrorMessage: React.FC<ErrorMessageProps> = ({
+  title = 'エラーが発生しました',
+  message,
+  showHomeButton = true,
 }) => {
   return (
-    <Alert
-      variation="error"
-      isDismissible={false}
-      hasIcon={true}
-      heading={title}
-    >
+    <Alert variation="error" isDismissible={false} hasIcon={true} heading={title}>
       <Flex direction="column" gap="1rem">
         <Text>{message}</Text>
-        
+
         {showHomeButton && (
           <Button as={Link} to="/" variation="primary">
             ホームに戻る

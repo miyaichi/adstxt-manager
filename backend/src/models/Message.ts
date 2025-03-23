@@ -25,19 +25,19 @@ class MessageModel {
     return new Promise((resolve, reject) => {
       const id = uuidv4();
       const now = new Date().toISOString();
-      
+
       const message: Message = {
         id,
         request_id: messageData.request_id,
         sender_email: messageData.sender_email,
         content: messageData.content,
-        created_at: now
+        created_at: now,
       };
 
       db.run(
         'INSERT INTO messages (id, request_id, sender_email, content, created_at) VALUES (?, ?, ?, ?, ?)',
         [message.id, message.request_id, message.sender_email, message.content, message.created_at],
-        function(err) {
+        function (err) {
           if (err) {
             reject(err);
             return;
@@ -76,21 +76,17 @@ class MessageModel {
    */
   getById(id: string): Promise<Message | null> {
     return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM messages WHERE id = ?',
-        [id],
-        (err, row: Message) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          if (!row) {
-            resolve(null);
-            return;
-          }
-          resolve(row);
+      db.get('SELECT * FROM messages WHERE id = ?', [id], (err, row: Message) => {
+        if (err) {
+          reject(err);
+          return;
         }
-      );
+        if (!row) {
+          resolve(null);
+          return;
+        }
+        resolve(row);
+      });
     });
   }
 }

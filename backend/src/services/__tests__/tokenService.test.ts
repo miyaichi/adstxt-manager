@@ -6,10 +6,10 @@ import crypto from 'crypto';
 jest.mock('crypto', () => ({
   createHash: jest.fn().mockReturnValue({
     update: jest.fn().mockReturnValue({
-      digest: jest.fn().mockReturnValue('mocked-token-hash')
-    })
+      digest: jest.fn().mockReturnValue('mocked-token-hash'),
+    }),
   }),
-  randomUUID: jest.fn().mockReturnValue('mocked-uuid')
+  randomUUID: jest.fn().mockReturnValue('mocked-uuid'),
 }));
 
 describe('TokenService', () => {
@@ -22,28 +22,28 @@ describe('TokenService', () => {
       // Arrange
       const requestId = 'request-123';
       const email = 'user@example.com';
-      
+
       // Mock Date.now to return a consistent timestamp for testing
       const originalDateNow = Date.now;
       const mockTimestamp = 1615000000000;
       Date.now = jest.fn(() => mockTimestamp);
-      
+
       // Act
       const token = tokenService.generateToken(requestId, email);
-      
+
       // Assert
       expect(crypto.createHash).toHaveBeenCalledWith('sha256');
-      
+
       const updateMock = crypto.createHash('sha256').update;
       expect(updateMock).toHaveBeenCalledWith(
         `${requestId}:${email}:${mockTimestamp}:${config.security.tokenSecret}`
       );
-      
+
       const digestMock = updateMock('').digest;
       expect(digestMock).toHaveBeenCalledWith('hex');
-      
+
       expect(token).toBe('mocked-token-hash');
-      
+
       // Restore original Date.now
       Date.now = originalDateNow;
     });
@@ -54,10 +54,10 @@ describe('TokenService', () => {
       // Arrange
       const token = 'valid-token-123';
       const storedToken = 'valid-token-123';
-      
+
       // Act
       const result = tokenService.verifyToken(token, storedToken);
-      
+
       // Assert
       expect(result).toBe(true);
     });
@@ -66,10 +66,10 @@ describe('TokenService', () => {
       // Arrange
       const token = 'invalid-token-123';
       const storedToken = 'valid-token-123';
-      
+
       // Act
       const result = tokenService.verifyToken(token, storedToken);
-      
+
       // Assert
       expect(result).toBe(false);
     });
@@ -86,7 +86,7 @@ describe('TokenService', () => {
     it('should generate a request ID using crypto.randomUUID', () => {
       // Act
       const requestId = tokenService.generateRequestId();
-      
+
       // Assert
       expect(crypto.randomUUID).toHaveBeenCalledTimes(1);
       expect(requestId).toBe('mocked-uuid');

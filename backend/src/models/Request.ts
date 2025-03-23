@@ -34,7 +34,7 @@ class RequestModel {
       const id = uuidv4();
       const token = tokenService.generateToken(id, requestData.publisher_email);
       const now = new Date().toISOString();
-      
+
       const request: Request = {
         id,
         publisher_email: requestData.publisher_email,
@@ -45,7 +45,7 @@ class RequestModel {
         status: 'pending',
         token,
         created_at: now,
-        updated_at: now
+        updated_at: now,
       };
 
       const sql = `
@@ -67,9 +67,9 @@ class RequestModel {
           request.status,
           request.token,
           request.created_at,
-          request.updated_at
+          request.updated_at,
         ],
-        function(err) {
+        function (err) {
           if (err) {
             reject(err);
             return;
@@ -88,28 +88,24 @@ class RequestModel {
    */
   getByIdWithToken(id: string, token: string): Promise<Request | null> {
     return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM requests WHERE id = ?',
-        [id],
-        (err, row: Request) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          
-          if (!row) {
-            resolve(null);
-            return;
-          }
-
-          if (!tokenService.verifyToken(token, row.token)) {
-            resolve(null);
-            return;
-          }
-
-          resolve(row);
+      db.get('SELECT * FROM requests WHERE id = ?', [id], (err, row: Request) => {
+        if (err) {
+          reject(err);
+          return;
         }
-      );
+
+        if (!row) {
+          resolve(null);
+          return;
+        }
+
+        if (!tokenService.verifyToken(token, row.token)) {
+          resolve(null);
+          return;
+        }
+
+        resolve(row);
+      });
     });
   }
 
@@ -120,23 +116,19 @@ class RequestModel {
    */
   getById(id: string): Promise<Request | null> {
     return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM requests WHERE id = ?',
-        [id],
-        (err, row: Request) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          
-          if (!row) {
-            resolve(null);
-            return;
-          }
-
-          resolve(row);
+      db.get('SELECT * FROM requests WHERE id = ?', [id], (err, row: Request) => {
+        if (err) {
+          reject(err);
+          return;
         }
-      );
+
+        if (!row) {
+          resolve(null);
+          return;
+        }
+
+        resolve(row);
+      });
     });
   }
 
@@ -146,24 +138,27 @@ class RequestModel {
    * @param status - The new status
    * @returns Promise with the updated request
    */
-  updateStatus(id: string, status: 'pending' | 'approved' | 'rejected' | 'updated'): Promise<Request | null> {
+  updateStatus(
+    id: string,
+    status: 'pending' | 'approved' | 'rejected' | 'updated'
+  ): Promise<Request | null> {
     return new Promise((resolve, reject) => {
       const now = new Date().toISOString();
-      
+
       db.run(
         'UPDATE requests SET status = ?, updated_at = ? WHERE id = ?',
         [status, now, id],
-        function(this: { changes: number }, err: Error | null) {
+        function (this: { changes: number }, err: Error | null) {
           if (err) {
             reject(err);
             return;
           }
-          
+
           if (this.changes === 0) {
             resolve(null);
             return;
           }
-          
+
           // Get the updated record directly
           db.get(
             'SELECT * FROM requests WHERE id = ?',
@@ -188,24 +183,28 @@ class RequestModel {
    * @param publisherDomain - The publisher domain
    * @returns Promise with the updated request
    */
-  updatePublisherInfo(id: string, publisherName: string, publisherDomain: string): Promise<Request | null> {
+  updatePublisherInfo(
+    id: string,
+    publisherName: string,
+    publisherDomain: string
+  ): Promise<Request | null> {
     return new Promise((resolve, reject) => {
       const now = new Date().toISOString();
-      
+
       db.run(
         'UPDATE requests SET publisher_name = ?, publisher_domain = ?, updated_at = ? WHERE id = ?',
         [publisherName, publisherDomain, now, id],
-        function(this: { changes: number }, err: Error | null) {
+        function (this: { changes: number }, err: Error | null) {
           if (err) {
             reject(err);
             return;
           }
-          
+
           if (this.changes === 0) {
             resolve(null);
             return;
           }
-          
+
           // Get the updated record directly
           db.get(
             'SELECT * FROM requests WHERE id = ?',

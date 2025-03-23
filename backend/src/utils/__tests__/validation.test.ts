@@ -1,9 +1,4 @@
-import {
-  isValidDomain,
-  isValidEmail,
-  parseAdsTxtContent,
-  parseAdsTxtLine
-} from '../validation';
+import { isValidDomain, isValidEmail, parseAdsTxtContent, parseAdsTxtLine } from '../validation';
 
 describe('Validation Utilities', () => {
   describe('Email Validation', () => {
@@ -13,15 +8,15 @@ describe('Validation Utilities', () => {
         'test@example.com',
         'user.name@domain.co.uk',
         'user+tag@example.org',
-        'user-name@domain.com'
+        'user-name@domain.com',
       ];
-      
+
       // Act & Assert
-      validEmails.forEach(email => {
+      validEmails.forEach((email) => {
         expect(isValidEmail(email)).toBe(true);
       });
     });
-    
+
     it('should invalidate incorrect email addresses', () => {
       // Arrange
       const invalidEmails = [
@@ -31,16 +26,16 @@ describe('Validation Utilities', () => {
         'test@com',
         'test@example.',
         'test with spaces@example.com',
-        'test..two-dots@example.com'
+        'test..two-dots@example.com',
       ];
-      
+
       // Act & Assert
-      invalidEmails.forEach(email => {
+      invalidEmails.forEach((email) => {
         expect(isValidEmail(email)).toBe(false);
       });
     });
   });
-  
+
   describe('Domain Validation', () => {
     it('should validate correct domains', () => {
       // Arrange
@@ -48,15 +43,15 @@ describe('Validation Utilities', () => {
         'example.com',
         'sub.domain.co.uk',
         'domain.io',
-        'sub-domain.example.org'
+        'sub-domain.example.org',
       ];
-      
+
       // Act & Assert
-      validDomains.forEach(domain => {
+      validDomains.forEach((domain) => {
         expect(isValidDomain(domain)).toBe(true);
       });
     });
-    
+
     it('should invalidate incorrect domains', () => {
       // Arrange
       const invalidDomains = [
@@ -64,16 +59,16 @@ describe('Validation Utilities', () => {
         '.com',
         'domain.',
         'domain with spaces.com',
-        'domain..com'
+        'domain..com',
       ];
-      
+
       // Act & Assert
-      invalidDomains.forEach(domain => {
+      invalidDomains.forEach((domain) => {
         expect(isValidDomain(domain)).toBe(false);
       });
     });
   });
-  
+
   describe('Ads.txt Line Parsing', () => {
     it('should parse valid Ads.txt lines', () => {
       // Arrange
@@ -81,9 +76,9 @@ describe('Validation Utilities', () => {
         'google.com, pub-1234567890, DIRECT',
         'adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0',
         'example.com, 12345, DIRECT, #This is a comment',
-        'domain.com, ID123, RESELLER'
+        'domain.com, ID123, RESELLER',
       ];
-      
+
       // Act & Assert
       validLines.forEach((line, index) => {
         const parsed = parseAdsTxtLine(line, index + 1);
@@ -91,44 +86,40 @@ describe('Validation Utilities', () => {
         expect(parsed?.is_valid).toBe(true);
       });
     });
-    
+
     it('should identify invalid Ads.txt lines', () => {
       // Arrange
       const invalidLines = [
         'google.com', // Missing fields
         'domain, ID', // Missing account type
-        'domain .com, ID, DIRECT' // Invalid domain with space
+        'domain .com, ID, DIRECT', // Invalid domain with space
       ];
-      
+
       // Act & Assert
       invalidLines.forEach((line, index) => {
         const parsed = parseAdsTxtLine(line, index + 1);
         expect(parsed?.is_valid).toBe(false);
       });
     });
-    
+
     it('should ignore comments and empty lines', () => {
       // Arrange
-      const comments = [
-        '# This is a comment',
-        '   # Indented comment',
-        ''
-      ];
-      
+      const comments = ['# This is a comment', '   # Indented comment', ''];
+
       // Act & Assert
       comments.forEach((line, index) => {
         const parsed = parseAdsTxtLine(line, index + 1);
         expect(parsed).toBeNull();
       });
     });
-    
+
     it('should extract all components correctly', () => {
       // Arrange
       const line = 'adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0';
-      
+
       // Act
       const parsed = parseAdsTxtLine(line, 1);
-      
+
       // Assert
       expect(parsed).not.toBeNull();
       expect(parsed?.domain).toBe('adnetwork.com');
@@ -141,7 +132,7 @@ describe('Validation Utilities', () => {
       expect(parsed?.is_valid).toBe(true);
     });
   });
-  
+
   describe('Ads.txt Content Parsing', () => {
     it('should parse a complete Ads.txt file', () => {
       // Arrange
@@ -152,28 +143,28 @@ adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0
 # Partners
 partner1.com, 12345, DIRECT
 partner2.com, 67890, RESELLER`;
-      
+
       // Act
       const records = parseAdsTxtContent(content);
-      
+
       // Assert
       expect(records.length).toBe(4); // Should ignore the comments and empty line
       expect(records[0].domain).toBe('google.com');
       expect(records[1].domain).toBe('adnetwork.com');
       expect(records[2].domain).toBe('partner1.com');
       expect(records[3].domain).toBe('partner2.com');
-      expect(records.every(r => r.is_valid)).toBe(true);
+      expect(records.every((r) => r.is_valid)).toBe(true);
     });
-    
+
     it('should handle mixed valid and invalid lines', () => {
       // Arrange
       const content = `valid.com, 12345, DIRECT
 invalid.com
 another.com, 67890, RESELLER`;
-      
+
       // Act
       const records = parseAdsTxtContent(content);
-      
+
       // Assert
       expect(records.length).toBe(3);
       expect(records[0].is_valid).toBe(true);

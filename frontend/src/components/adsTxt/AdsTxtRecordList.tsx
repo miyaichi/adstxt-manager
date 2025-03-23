@@ -4,7 +4,7 @@ import AdsTxtRecordItem from './AdsTxtRecordItem';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 
 interface AdsTxtRecordListProps {
-  records: (AdsTxtRecord | (ParsedAdsTxtRecord & { id: string, status: string }))[];
+  records: (AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string }))[];
   showValidation?: boolean;
   onStatusChange?: (id: string, status: 'pending' | 'approved' | 'rejected') => void;
   isEditable?: boolean;
@@ -16,14 +16,14 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
   showValidation = false,
   onStatusChange,
   isEditable = false,
-  title = 'Ads.txtレコード'
+  title = 'Ads.txtレコード',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
 
   // Filter records based on search query
-  const filteredRecords = records.filter(record => {
+  const filteredRecords = records.filter((record) => {
     const query = searchQuery.toLowerCase();
     return (
       record.domain.toLowerCase().includes(query) ||
@@ -54,7 +54,7 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
             label="レコードを検索"
             placeholder="ドメインやアカウントIDを入力"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             marginBottom="1rem"
           />
 
@@ -63,8 +63,8 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
           ) : (
             <>
               <Text>合計 {filteredRecords.length} 件のレコード</Text>
-              
-              {currentRecords.map(record => (
+
+              {currentRecords.map((record) => (
                 <AdsTxtRecordItem
                   key={record.id}
                   record={record}
@@ -73,13 +73,13 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
                   isEditable={isEditable}
                 />
               ))}
-              
+
               {totalPages > 1 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  onNext={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  onPrevious={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   onChange={(newPage) => setCurrentPage(newPage || 1)}
                 />
               )}

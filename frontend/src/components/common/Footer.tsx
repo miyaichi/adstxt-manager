@@ -4,7 +4,7 @@ import { Flex, Text, Divider, useTheme } from '@aws-amplify/ui-react';
 const Footer: React.FC = () => {
   const { tokens } = useTheme();
   const currentYear = new Date().getFullYear();
-  
+
   return (
     <Flex
       as="footer"
@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
       backgroundColor={tokens.colors.background.secondary}
     >
       <Divider marginBottom="1rem" />
-      
+
       <Flex
         direction="row"
         justifyContent="space-between"
@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
         gap="1rem"
       >
         <Text>© {currentYear} Ads.txt マネージャー</Text>
-        
+
         <Flex gap="1rem">
           <Text>利用規約</Text>
           <Text>プライバシーポリシー</Text>

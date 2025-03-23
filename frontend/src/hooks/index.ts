@@ -6,9 +6,9 @@ export const useFormInput = <T>(initialState: T) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setValues(prev => ({
+    setValues((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -20,7 +20,7 @@ export const useFormInput = <T>(initialState: T) => {
     values,
     setValues,
     handleChange,
-    reset
+    reset,
   };
 };
 
@@ -55,7 +55,7 @@ export const useAsync = <T>(asyncFn: () => Promise<T>, immediate = true) => {
     data,
     loading,
     error,
-    execute
+    execute,
   };
 };
 
@@ -73,8 +73,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {

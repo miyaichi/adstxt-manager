@@ -11,9 +11,9 @@ const axiosMock = {
     headers: {
       common: {},
       get: {},
-      post: {}
-    }
-  }
+      post: {},
+    },
+  },
 };
 
 module.exports = axiosMock;

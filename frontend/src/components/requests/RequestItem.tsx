@@ -1,13 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Card, 
-  Flex, 
-  Text, 
-  Badge, 
-  Button,
-  Heading
-} from '@aws-amplify/ui-react';
+import { Card, Flex, Text, Badge, Button, Heading } from '@aws-amplify/ui-react';
 import { Request } from '../../models';
 
 interface RequestItemProps {
@@ -16,7 +9,7 @@ interface RequestItemProps {
 
 const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const formattedDate = new Date(request.updated_at).toLocaleString();
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -31,7 +24,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
         return <Badge>{status}</Badge>;
     }
   };
-  
+
   return (
     <Card variation="outlined" padding="1rem">
       <Flex direction="column" gap="0.5rem">
@@ -41,7 +34,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
           </Heading>
           {getStatusBadge(request.status)}
         </Flex>
-        
+
         <Flex direction={{ base: 'column', medium: 'row' }} gap="1rem" wrap="wrap">
           <Flex direction="column" flex="1" minWidth="200px">
             <Text fontWeight="bold">パブリッシャー情報:</Text>
@@ -49,13 +42,13 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
             {request.publisher_name && <Text>{request.publisher_name}</Text>}
             {request.publisher_domain && <Text>{request.publisher_domain}</Text>}
           </Flex>
-          
+
           <Flex direction="column" flex="1" minWidth="200px">
             <Text fontWeight="bold">リクエスト者情報:</Text>
             <Text>{request.requester_email}</Text>
             <Text>{request.requester_name}</Text>
           </Flex>
-          
+
           <Flex direction="column" flex="1" minWidth="200px">
             <Text fontWeight="bold">作成日:</Text>
             <Text>{new Date(request.created_at).toLocaleString()}</Text>
@@ -63,7 +56,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
             <Text>{formattedDate}</Text>
           </Flex>
         </Flex>
-        
+
         <Flex justifyContent="flex-end" marginTop="0.5rem">
           <Button
             as={Link}

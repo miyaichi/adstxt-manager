@@ -7,16 +7,16 @@ const migrationPath = path.join(__dirname, 'setup.sql');
 
 async function runMigrations() {
   console.log('Running database migrations...');
-  
+
   try {
     // Read the SQL file
     const sql = fs.readFileSync(migrationPath, 'utf8');
-    
+
     // Run the migrations in a transaction for atomicity
     await new Promise<void>((resolve, reject) => {
       db.exec('BEGIN TRANSACTION', (err) => {
         if (err) reject(err);
-        
+
         db.exec(sql, (err) => {
           if (err) {
             db.exec('ROLLBACK', () => reject(err));

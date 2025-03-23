@@ -5,16 +5,32 @@ import { AdsTxtRecord } from '../../../models';
 
 // Mock the AWS Amplify UI components
 jest.mock('@aws-amplify/ui-react', () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
-  Flex: ({ children, ...props }: any) => <div data-testid="flex" {...props}>{children}</div>,
-  Text: ({ children, ...props }: any) => <p data-testid="text" {...props}>{children}</p>,
+  Card: ({ children, ...props }: any) => (
+    <div data-testid="card" {...props}>
+      {children}
+    </div>
+  ),
+  Flex: ({ children, ...props }: any) => (
+    <div data-testid="flex" {...props}>
+      {children}
+    </div>
+  ),
+  Text: ({ children, ...props }: any) => (
+    <p data-testid="text" {...props}>
+      {children}
+    </p>
+  ),
   Badge: ({ children, variation, ...props }: any) => (
-    <span data-testid={`badge-${variation || 'default'}`} {...props}>{children}</span>
+    <span data-testid={`badge-${variation || 'default'}`} {...props}>
+      {children}
+    </span>
   ),
   Button: ({ children, onClick, ...props }: any) => (
-    <button data-testid="button" onClick={onClick} {...props}>{children}</button>
+    <button data-testid="button" onClick={onClick} {...props}>
+      {children}
+    </button>
   ),
-  useTheme: () => ({ tokens: { colors: { font: { secondary: '#666' } } } })
+  useTheme: () => ({ tokens: { colors: { font: { secondary: '#666' } } } }),
 }));
 
 // Mock record for testing
@@ -28,7 +44,7 @@ const mockRecord: AdsTxtRecord = {
   relationship: 'DIRECT',
   status: 'pending',
   created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z'
+  updated_at: '2023-01-01T00:00:00Z',
 };
 
 // Mock function for onStatusChange
@@ -41,12 +57,12 @@ describe('AdsTxtRecordItem component', () => {
 
   test('renders record information correctly', () => {
     render(<AdsTxtRecordItem record={mockRecord} />);
-    
+
     // Check domain is displayed
     const textElements = screen.getAllByTestId('text');
-    const domainText = textElements.find(el => el.textContent?.includes('example.com'));
+    const domainText = textElements.find((el) => el.textContent?.includes('example.com'));
     expect(domainText).toBeInTheDocument();
-    
+
     // Check status badge is displayed
     const pendingBadge = screen.getByTestId('badge-warning');
     expect(pendingBadge).toBeInTheDocument();
@@ -55,17 +71,13 @@ describe('AdsTxtRecordItem component', () => {
 
   test('calls onStatusChange with approved status when approve button is clicked', () => {
     render(
-      <AdsTxtRecordItem 
-        record={mockRecord} 
-        isEditable={true} 
-        onStatusChange={mockOnStatusChange} 
-      />
+      <AdsTxtRecordItem record={mockRecord} isEditable={true} onStatusChange={mockOnStatusChange} />
     );
-    
+
     // Find and click the approve button
     const buttons = screen.getAllByTestId('button');
-    const approveButton = buttons.find(b => b.textContent === '承認');
-    
+    const approveButton = buttons.find((b) => b.textContent === '承認');
+
     if (approveButton) {
       fireEvent.click(approveButton);
       expect(mockOnStatusChange).toHaveBeenCalledWith('test-id', 'approved');
@@ -76,17 +88,13 @@ describe('AdsTxtRecordItem component', () => {
 
   test('calls onStatusChange with rejected status when reject button is clicked', () => {
     render(
-      <AdsTxtRecordItem 
-        record={mockRecord} 
-        isEditable={true} 
-        onStatusChange={mockOnStatusChange} 
-      />
+      <AdsTxtRecordItem record={mockRecord} isEditable={true} onStatusChange={mockOnStatusChange} />
     );
-    
+
     // Find and click the reject button
     const buttons = screen.getAllByTestId('button');
-    const rejectButton = buttons.find(b => b.textContent === '却下');
-    
+    const rejectButton = buttons.find((b) => b.textContent === '却下');
+
     if (rejectButton) {
       fireEvent.click(rejectButton);
       expect(mockOnStatusChange).toHaveBeenCalledWith('test-id', 'rejected');

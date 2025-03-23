@@ -4,16 +4,18 @@ import config from '../../config/config';
 
 // Mock the nodemailer transporter
 jest.mock('../../config/email', () => ({
-  sendMail: jest.fn().mockImplementation((mailOptions) => Promise.resolve({
-    messageId: 'test-message-id',
-    envelope: {
-      from: mailOptions.from,
-      to: [mailOptions.to]
-    },
-    accepted: [mailOptions.to],
-    rejected: [],
-    response: '250 Message accepted'
-  }))
+  sendMail: jest.fn().mockImplementation((mailOptions) =>
+    Promise.resolve({
+      messageId: 'test-message-id',
+      envelope: {
+        from: mailOptions.from,
+        to: [mailOptions.to],
+      },
+      accepted: [mailOptions.to],
+      rejected: [],
+      response: '250 Message accepted',
+    })
+  ),
 }));
 
 describe('EmailService', () => {
@@ -30,7 +32,7 @@ describe('EmailService', () => {
       const requesterName = 'John Doe';
       const requesterEmail = 'johndoe@example.com';
       const token = 'secure-token-123';
-      
+
       // Act
       const result = await emailService.sendPublisherRequestNotification(
         publisherEmail,
@@ -39,24 +41,30 @@ describe('EmailService', () => {
         requesterEmail,
         token
       );
-      
+
       // Assert
       expect(transporter.sendMail).toHaveBeenCalledTimes(1);
-      
+
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
       expect(mailOptions.from).toBe(`"${config.email.fromName}" <${config.email.from}>`);
       expect(mailOptions.to).toBe(publisherEmail);
       expect(mailOptions.subject).toBe(`New Ads.txt Update Request from ${requesterName}`);
-      expect(mailOptions.html).toContain(`${requesterName} (${requesterEmail}) has requested to update your Ads.txt file`);
-      expect(mailOptions.html).toContain(`${config.server.appUrl}/request/${requestId}?token=${token}`);
-      
-      expect(result).toEqual(expect.objectContaining({
-        messageId: 'test-message-id',
-        envelope: expect.any(Object),
-        accepted: [publisherEmail],
-        rejected: [],
-        response: '250 Message accepted'
-      }));
+      expect(mailOptions.html).toContain(
+        `${requesterName} (${requesterEmail}) has requested to update your Ads.txt file`
+      );
+      expect(mailOptions.html).toContain(
+        `${config.server.appUrl}/request/${requestId}?token=${token}`
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          messageId: 'test-message-id',
+          envelope: expect.any(Object),
+          accepted: [publisherEmail],
+          rejected: [],
+          response: '250 Message accepted',
+        })
+      );
     });
   });
 
@@ -68,7 +76,7 @@ describe('EmailService', () => {
       const publisherEmail = 'publisher@example.com';
       const requestId = 'request-123';
       const token = 'secure-token-123';
-      
+
       // Act
       const result = await emailService.sendRequesterConfirmation(
         requesterEmail,
@@ -77,25 +85,29 @@ describe('EmailService', () => {
         requestId,
         token
       );
-      
+
       // Assert
       expect(transporter.sendMail).toHaveBeenCalledTimes(1);
-      
+
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
       expect(mailOptions.from).toBe(`"${config.email.fromName}" <${config.email.from}>`);
       expect(mailOptions.to).toBe(requesterEmail);
       expect(mailOptions.subject).toBe('Your Ads.txt Request Has Been Submitted');
       expect(mailOptions.html).toContain(`Hello ${requesterName}`);
       expect(mailOptions.html).toContain(`publisher ${publisherEmail}`);
-      expect(mailOptions.html).toContain(`${config.server.appUrl}/request/${requestId}?token=${token}`);
-      
-      expect(result).toEqual(expect.objectContaining({
-        messageId: 'test-message-id',
-        envelope: expect.any(Object),
-        accepted: [requesterEmail],
-        rejected: [],
-        response: '250 Message accepted'
-      }));
+      expect(mailOptions.html).toContain(
+        `${config.server.appUrl}/request/${requestId}?token=${token}`
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          messageId: 'test-message-id',
+          envelope: expect.any(Object),
+          accepted: [requesterEmail],
+          rejected: [],
+          response: '250 Message accepted',
+        })
+      );
     });
   });
 
@@ -106,7 +118,7 @@ describe('EmailService', () => {
       const requestId = 'request-123';
       const status = 'approved';
       const token = 'secure-token-123';
-      
+
       // Act
       const result = await emailService.sendStatusUpdateNotification(
         email,
@@ -114,24 +126,28 @@ describe('EmailService', () => {
         status,
         token
       );
-      
+
       // Assert
       expect(transporter.sendMail).toHaveBeenCalledTimes(1);
-      
+
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
       expect(mailOptions.from).toBe(`"${config.email.fromName}" <${config.email.from}>`);
       expect(mailOptions.to).toBe(email);
       expect(mailOptions.subject).toBe('Ads.txt Request Status: Approved');
       expect(mailOptions.html).toContain('has been updated to: <strong>Approved</strong>');
-      expect(mailOptions.html).toContain(`${config.server.appUrl}/request/${requestId}?token=${token}`);
-      
-      expect(result).toEqual(expect.objectContaining({
-        messageId: 'test-message-id',
-        envelope: expect.any(Object),
-        accepted: [email],
-        rejected: [],
-        response: '250 Message accepted'
-      }));
+      expect(mailOptions.html).toContain(
+        `${config.server.appUrl}/request/${requestId}?token=${token}`
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          messageId: 'test-message-id',
+          envelope: expect.any(Object),
+          accepted: [email],
+          rejected: [],
+          response: '250 Message accepted',
+        })
+      );
     });
 
     it('should properly capitalize the status in the subject and body', async () => {
@@ -140,15 +156,10 @@ describe('EmailService', () => {
       const requestId = 'request-123';
       const status = 'rejected';
       const token = 'secure-token-123';
-      
+
       // Act
-      await emailService.sendStatusUpdateNotification(
-        email,
-        requestId,
-        status,
-        token
-      );
-      
+      await emailService.sendStatusUpdateNotification(email, requestId, status, token);
+
       // Assert
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
       expect(mailOptions.subject).toBe('Ads.txt Request Status: Rejected');
@@ -163,7 +174,7 @@ describe('EmailService', () => {
       const requestId = 'request-123';
       const senderName = 'Jane Smith';
       const token = 'secure-token-123';
-      
+
       // Act
       const result = await emailService.sendMessageNotification(
         email,
@@ -171,24 +182,28 @@ describe('EmailService', () => {
         senderName,
         token
       );
-      
+
       // Assert
       expect(transporter.sendMail).toHaveBeenCalledTimes(1);
-      
+
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
       expect(mailOptions.from).toBe(`"${config.email.fromName}" <${config.email.from}>`);
       expect(mailOptions.to).toBe(email);
       expect(mailOptions.subject).toBe('New Message on Ads.txt Request');
       expect(mailOptions.html).toContain(`received a new message from ${senderName}`);
-      expect(mailOptions.html).toContain(`${config.server.appUrl}/request/${requestId}?token=${token}`);
-      
-      expect(result).toEqual(expect.objectContaining({
-        messageId: 'test-message-id',
-        envelope: expect.any(Object),
-        accepted: [email],
-        rejected: [],
-        response: '250 Message accepted'
-      }));
+      expect(mailOptions.html).toContain(
+        `${config.server.appUrl}/request/${requestId}?token=${token}`
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          messageId: 'test-message-id',
+          envelope: expect.any(Object),
+          accepted: [email],
+          rejected: [],
+          response: '250 Message accepted',
+        })
+      );
     });
   });
 
@@ -196,7 +211,7 @@ describe('EmailService', () => {
     it('should propagate errors from the mail transport', async () => {
       // Arrange
       (transporter.sendMail as jest.Mock).mockRejectedValueOnce(new Error('SMTP error'));
-      
+
       // Act & Assert
       await expect(
         emailService.sendMessageNotification(

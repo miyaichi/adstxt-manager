@@ -14,12 +14,12 @@ async function seedDatabase() {
   try {
     // Read the SQL file
     const sql = fs.readFileSync(seedPath, 'utf8');
-    
+
     // Run the seeds in a transaction for atomicity
     await new Promise<void>((resolve, reject) => {
       db.exec('BEGIN TRANSACTION', (err) => {
         if (err) reject(err);
-        
+
         db.exec(sql, (err) => {
           if (err) {
             db.exec('ROLLBACK', () => reject(err));

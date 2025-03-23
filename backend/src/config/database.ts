@@ -31,7 +31,8 @@ export const initializeDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       // Create requests table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS requests (
           id TEXT PRIMARY KEY,
           publisher_email TEXT NOT NULL,
@@ -44,15 +45,18 @@ export const initializeDatabase = (): Promise<void> => {
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       // Create messages table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS messages (
           id TEXT PRIMARY KEY,
           request_id TEXT NOT NULL,
@@ -61,15 +65,18 @@ export const initializeDatabase = (): Promise<void> => {
           created_at TEXT NOT NULL,
           FOREIGN KEY (request_id) REFERENCES requests (id)
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       // Create ads_txt_records table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS ads_txt_records (
           id TEXT PRIMARY KEY,
           request_id TEXT NOT NULL,
@@ -83,12 +90,14 @@ export const initializeDatabase = (): Promise<void> => {
           updated_at TEXT NOT NULL,
           FOREIGN KEY (request_id) REFERENCES requests (id)
         )
-      `, (err) => {
-        if (err) {
-          reject(err);
-          return;
+      `,
+        (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
         }
-      });
+      );
 
       resolve();
     });

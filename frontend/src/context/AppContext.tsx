@@ -14,11 +14,7 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  return (
-    <AppContext.Provider value={{ userEmail, setUserEmail }}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={{ userEmail, setUserEmail }}>{children}</AppContext.Provider>;
 };
 
 export const useApp = (): AppContextType => {
