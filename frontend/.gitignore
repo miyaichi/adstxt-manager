@@ -1,14 +1,18 @@
 # Build artifacts
-dist/
+build/
 node_modules/
 _site/
 .sass-cache/
-build/
-frontend/build/
+coverage/
 
 # Dependency management
 vendor/
 Gemfile.lock
+
+# Environment variables
+.env
+*.env
+.env.*
 
 # Editor/IDE config
 .vscode/
@@ -19,26 +23,7 @@ Gemfile.lock
 logs/
 *.log
 
-# Cache
-npm-cache/
-yarn.lock
-
 # Misc
 .tmp*
 *.swp
 test/results
-checkserver.js
-
-# Environment variables
-.env
-*.env
-.env.*
-
-# Virtual environments
-venv/
-.venv/
-
-# Database files
-*.sqlite
-*.sqlite3
-
