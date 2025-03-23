@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#2563eb" />
+  <g fill="#ffffff">
+    <!-- A stylized "A" for Ads.txt -->
+    <path d="M150 130 L100 380 L140 380 L150 350 L230 350 L240 380 L280 380 L230 130 L150 130 Z M160 180 L220 180 L200 310 L180 310 L160 180 Z" />
+    <!-- Text-like elements representing ".txt" -->
+    <rect x="290" y="200" width="120" height="20" rx="5" />
+    <rect x="290" y="240" width="120" height="20" rx="5" />
+    <rect x="290" y="280" width="120" height="20" rx="5" />
+    <!-- A document-like shape -->
+    <path d="M290 130 L390 130 L410 150 L410 380 L290 380 L290 130 Z M310 150 L310 360 L390 360 L390 160 L380 150 L310 150 Z" />
+  </g>
+</svg>
