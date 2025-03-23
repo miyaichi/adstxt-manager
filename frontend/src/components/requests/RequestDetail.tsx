@@ -15,18 +15,24 @@ import {
   SelectField,
   useTheme
 } from '@aws-amplify/ui-react';
-import { requestApi, adsTxtApi } from '../../api';
+import { requestApi, adsTxtApi, messageApi } from '../../api';
 import { RequestWithRecords, AdsTxtRecord, Message } from '../../models';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
 import MessageList from '../messages/MessageList';
 import MessageForm from '../messages/MessageForm';
+import { createLogger } from '../../utils/logger';
 
 interface RequestDetailProps {
   requestId: string;
   token: string;
 }
 
+// コンポーネント用のロガーを作成
+const logger = createLogger('RequestDetail');
+
 const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
+  logger.debug('Rendering with props:', { requestId, token });
+  
   const [request, setRequest] = useState<RequestWithRecords | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +40,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [showAdsTxtContent, setShowAdsTxtContent] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [messageTabSelected, setMessageTabSelected] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
   const { tokens } = useTheme();
 
   const fetchRequestDetails = async () => {
@@ -58,12 +66,20 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
   const fetchMessages = async () => {
     try {
-      const response = await adsTxtApi.getRecordsByRequestId(requestId, token);
+      logger.debug('fetchMessages starting for request:', requestId);
+      setMessageLoading(true);
+      
+      const response = await messageApi.getMessagesByRequestId(requestId, token);
       if (response.success) {
-        // Messages are already in the request
+        logger.debug('Messages fetched successfully:', response.data);
+        setMessages(response.data);
+      } else {
+        logger.error('Error in response when fetching messages:', response.error);
       }
     } catch (err) {
-      console.error('メッセージの取得中にエラーが発生しました:', err);
+      logger.error('Exception when fetching messages:', err);
+    } finally {
+      setMessageLoading(false);
     }
   };
 
@@ -155,10 +171,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     }
   };
 
+  // データの初期取得
   useEffect(() => {
     fetchRequestDetails();
-    fetchMessages();
   }, [requestId, token]);
+
+  // メッセージタブが選択されたときにメッセージを取得
+  useEffect(() => {
+    logger.debug('messageTabSelected changed:', messageTabSelected);
+    if (messageTabSelected) {
+      logger.debug('Calling fetchMessages() due to messageTabSelected change');
+      fetchMessages();
+    }
+  }, [messageTabSelected, requestId, token]);
 
   if (loading && !request) {
     return (
@@ -287,7 +312,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
         
         <Tabs
           currentIndex={activeTab}
-          onChange={index => setActiveTab(typeof index === 'number' ? index : 0)}
+          onChange={index => {
+            logger.debug('Tab changed to index:', index);
+            const newIndex = typeof index === 'number' ? index : 0;
+            setActiveTab(newIndex);
+            // タブ切り替え時にメッセージを再フェッチする
+            if (newIndex === 1) {
+              logger.debug('Message tab selected, setting messageTabSelected to true');
+              setMessageTabSelected(true);
+            }
+          }}
         >
           <TabItem title="Ads.txtレコード">
             <View padding="1rem">
@@ -339,19 +373,58 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           
           <TabItem title="メッセージ">
             <View padding="1rem">
-              <MessageList
-                messages={messages}
-                requestId={requestId}
-                token={token}
-              />
-              
-              <Divider marginBlock="1rem" />
-              
-              <MessageForm
-                requestId={requestId}
-                token={token}
-                onMessageSent={handleMessageSent}
-              />
+              {/* 表示前にデバッグログを出力 */}
+              {(() => {
+                logger.debug('Rendering message tab', { 
+                  messageTabSelected, 
+                  messageLoading, 
+                  messagesCount: messages.length 
+                });
+                
+                if (messageTabSelected) {
+                  if (messageLoading) {
+                    return (
+                      <Flex direction="column" alignItems="center" padding="2rem">
+                        <Text>メッセージを読み込み中...</Text>
+                        <Loader size="large" />
+                      </Flex>
+                    );
+                  } else {
+                    return (
+                      <Flex direction="column" gap="1rem">
+                        <MessageList
+                          messages={messages}
+                          requestId={requestId}
+                          token={token}
+                        />
+                        
+                        <Divider marginBlock="1rem" />
+                        
+                        <MessageForm
+                          requestId={requestId}
+                          token={token}
+                          onMessageSent={handleMessageSent}
+                        />
+                      </Flex>
+                    );
+                  }
+                } else {
+                  return (
+                    <Flex direction="column" alignItems="center" padding="2rem">
+                      <Text>タブを選択すると、メッセージが表示されます</Text>
+                      <Button 
+                        onClick={() => {
+                          logger.debug('Manual message loading button clicked');
+                          setMessageTabSelected(true);
+                        }}
+                        marginTop="1rem"
+                      >
+                        メッセージを読み込む
+                      </Button>
+                    </Flex>
+                  );
+                }
+              })()}
             </View>
           </TabItem>
         </Tabs>

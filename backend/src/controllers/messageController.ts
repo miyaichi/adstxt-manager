@@ -4,6 +4,7 @@ import MessageModel, { CreateMessageDTO } from '../models/Message';
 import RequestModel from '../models/Request';
 import emailService from '../services/emailService';
 import { isValidEmail } from '../utils/validation';
+import { createLogger } from '../utils/logger';
 
 /**
  * Create a new message
@@ -71,11 +72,17 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
  * Get all messages for a request
  * @route GET /api/messages/:requestId
  */
+// メッセージコントローラー用のロガーを作成
+const logger = createLogger('MessageController');
+
 export const getMessagesByRequestId = asyncHandler(async (req: Request, res: Response) => {
   const { requestId } = req.params;
   const { token } = req.query;
   
+  logger.debug('getMessagesByRequestId called with:', { requestId, token: token?.toString().substring(0, 5) + '...' });
+  
   if (!token || typeof token !== 'string') {
+    logger.warn('Error: Access token is required');
     throw new ApiError(401, 'Access token is required');
   }
   
@@ -83,11 +90,15 @@ export const getMessagesByRequestId = asyncHandler(async (req: Request, res: Res
   const request = await RequestModel.getByIdWithToken(requestId, token);
   
   if (!request) {
+    logger.warn('Error: Request not found or invalid token', { requestId });
     throw new ApiError(404, 'Request not found or invalid token');
   }
   
   // Get all messages for the request
   const messages = await MessageModel.getByRequestId(requestId);
+  logger.debug(`Found ${messages.length} messages for request ${requestId}`, { 
+    messageIds: messages.map(m => m.id) 
+  });
   
   res.status(200).json({
     success: true,

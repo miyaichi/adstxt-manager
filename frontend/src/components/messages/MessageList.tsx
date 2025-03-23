@@ -10,6 +10,7 @@ import {
 import { messageApi } from '../../api';
 import { Message } from '../../models';
 import MessageItem from './MessageItem';
+import { createLogger } from '../../utils/logger';
 
 interface MessageListProps {
   requestId: string;
@@ -17,32 +18,47 @@ interface MessageListProps {
   messages?: Message[];
 }
 
+// コンポーネント用のロガーを作成
+const logger = createLogger('MessageList');
+
 const MessageList: React.FC<MessageListProps> = ({ requestId, token, messages: initialMessages }) => {
+  logger.debug('Rendered with props:', { requestId, token, initialMessagesLength: initialMessages?.length });
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
-  const [loading, setLoading] = useState(!initialMessages);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialMessages) {
+    // 親コンポーネントから渡されたメッセージがある場合は、それを使用
+    if (initialMessages && initialMessages.length > 0) {
+      logger.debug('Using provided messages:', initialMessages);
       setMessages(initialMessages);
+      setLoading(false);
       return;
     }
     
+    // そうでなければAPIから取得
     const fetchMessages = async () => {
       try {
         setLoading(true);
         setError(null);
         
+        logger.debug('Fetching messages for request:', requestId);
+        // リクエストIDとトークンを直接ログに出力
+        logger.debug('RequestID=', JSON.stringify(requestId));
+        logger.debug('Token=', JSON.stringify(token));
+        
         const response = await messageApi.getMessagesByRequestId(requestId, token);
         
         if (response.success) {
-          setMessages(response.data);
+          logger.debug('Messages fetched successfully:', response.data);
+          setMessages(response.data || []);
         } else {
+          logger.error('Error fetching messages:', response.error);
           setError(response.error?.message || 'メッセージの取得中にエラーが発生しました');
         }
       } catch (err) {
         setError('メッセージの取得中にエラーが発生しました');
-        console.error(err);
+        logger.error('Error fetching messages:', err);
       } finally {
         setLoading(false);
       }

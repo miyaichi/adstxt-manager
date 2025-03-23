@@ -10,6 +10,7 @@ import {
   RequestResponse,
   RequestWithRecords
 } from '../models';
+import { createLogger } from '../utils/logger';
 
 // Ensure FormData and File are available in the global scope
 declare global {
@@ -18,6 +19,9 @@ declare global {
     File: typeof File;
   }
 }
+
+// APIモジュール用のロガーを作成
+const logger = createLogger('API');
 
 // Configure axios
 const api = axios.create({
@@ -105,8 +109,29 @@ export const messageApi = {
   
   // Get messages by request ID
   async getMessagesByRequestId(requestId: string, token: string): Promise<ApiResponse<Message[]>> {
-    const response = await api.get<ApiResponse<Message[]>>(`/messages/${requestId}?token=${token}`);
-    return response.data;
+    logger.debug('API Call: getMessagesByRequestId', { requestId, token });
+    try {
+      // URIエンコード処理を追加して安全にパラメータを送信
+      const encodedToken = encodeURIComponent(token);
+      const url = `/messages/${requestId}?token=${encodedToken}`;
+      logger.debug('Request URL:', url);
+      
+      const response = await api.get<ApiResponse<Message[]>>(url);
+      logger.debug('API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('API Error in getMessagesByRequestId:', error);
+      if (axios.isAxiosError(error)) {
+        logger.error('Request details:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          responseData: error.response?.data
+        });
+      }
+      throw error;
+    }
   }
 };
 
