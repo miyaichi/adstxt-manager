@@ -22,8 +22,22 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, 'Invalid email address');
   }
   
+  // Parse records if it's a string (from FormData)
+  let recordsArray: any[] = [];
+  if (req.body.records) {
+    try {
+      if (typeof req.body.records === 'string') {
+        recordsArray = JSON.parse(req.body.records);
+      } else if (Array.isArray(req.body.records)) {
+        recordsArray = req.body.records;
+      }
+    } catch (error) {
+      console.error('Error parsing records JSON:', error);
+    }
+  }
+
   // Check for Ads.txt records in the request
-  if (!req.file && (!req.body.records || !Array.isArray(req.body.records) || req.body.records.length === 0)) {
+  if (!req.file && recordsArray.length === 0) {
     throw new ApiError(400, 'Ads.txt records are required (either file upload or JSON data)');
   }
   
@@ -68,9 +82,9 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       const errorMessage = error instanceof Error ? error.message : 'Invalid format';
       throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`);
     }
-  } else if (req.body.records) {
+  } else if (recordsArray.length > 0) {
     // Process JSON records
-    adsTxtRecords = req.body.records.map((record: { domain: string; account_id: string; account_type: string; certification_authority_id?: string; relationship?: 'DIRECT' | 'RESELLER' }) => ({
+    adsTxtRecords = recordsArray.map((record: { domain: string; account_id: string; account_type: string; certification_authority_id?: string; relationship?: 'DIRECT' | 'RESELLER' }) => ({
       request_id: request.id,
       domain: record.domain,
       account_id: record.account_id,

@@ -17,9 +17,6 @@ router.get('/status', (req, res) => {
 // Mount sub-routers
 router.use('/requests', requestRoutes);
 router.use('/messages', messageRoutes);
-router.use('/adstxt', adsTxtRoutes);
-
-// For backwards compatibility (in case frontend uses a different case)
 router.use('/adsTxt', adsTxtRoutes);
 
 export default router;
