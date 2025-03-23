@@ -3,8 +3,8 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import MessageModel, { CreateMessageDTO } from '../models/Message';
 import RequestModel from '../models/Request';
 import emailService from '../services/emailService';
-import { isValidEmail } from '../utils/validation';
 import { createLogger } from '../utils/logger';
+import { isValidEmail } from '../utils/validation';
 
 /**
  * Create a new message
@@ -72,7 +72,6 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
  * Get all messages for a request
  * @route GET /api/messages/:requestId
  */
-// メッセージコントローラー用のロガーを作成
 const logger = createLogger('MessageController');
 
 export const getMessagesByRequestId = asyncHandler(async (req: Request, res: Response) => {

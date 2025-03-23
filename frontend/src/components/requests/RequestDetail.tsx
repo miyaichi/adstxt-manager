@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
 import {
-  Card,
-  Flex,
-  Text,
-  Heading,
+  Alert,
   Badge,
   Button,
-  Alert,
-  Loader,
+  Card,
   Divider,
-  Tabs,
-  TabItem,
-  View,
-  SelectField,
-  useTheme
+  Flex,
+  Heading,
+  Loader,
+  Text,
+  useTheme,
+  View
 } from '@aws-amplify/ui-react';
-import { requestApi, adsTxtApi, messageApi } from '../../api';
-import { RequestWithRecords, AdsTxtRecord, Message } from '../../models';
-import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
-import MessageList from '../messages/MessageList';
-import MessageForm from '../messages/MessageForm';
+import React, { useEffect, useState } from 'react';
+import { adsTxtApi, messageApi, requestApi } from '../../api';
+import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
+import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
+import MessageForm from '../messages/MessageForm';
+import MessageList from '../messages/MessageList';
 
 interface RequestDetailProps {
   requestId: string;
@@ -310,124 +307,130 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
         
         <Divider />
         
-        <Tabs
-          currentIndex={activeTab}
-          onChange={index => {
-            logger.debug('Tab changed to index:', index);
-            const newIndex = typeof index === 'number' ? index : 0;
-            setActiveTab(newIndex);
-            // タブ切り替え時にメッセージを再フェッチする
-            if (newIndex === 1) {
-              logger.debug('Message tab selected, setting messageTabSelected to true');
-              setMessageTabSelected(true);
-            }
-          }}
-        >
-          <TabItem title="Ads.txtレコード">
-            <View padding="1rem">
-              <AdsTxtRecordList
-                records={request.records}
-                onStatusChange={handleRecordStatusChange}
-                isEditable={request.request.status === 'pending'}
-              />
-              
-              {approvedRecords.length > 0 && (
-                <Button
-                  onClick={generateAdsTxtContent}
-                  marginTop="1rem"
-                >
-                  Ads.txtコンテンツを生成
-                </Button>
-              )}
-              
-              {showAdsTxtContent && (
-                <Card 
-                  variation="outlined" 
-                  padding="1rem" 
-                  marginTop="1rem" 
-                  backgroundColor={tokens.colors.background.secondary}
-                >
-                  <Flex justifyContent="space-between" alignItems="center" marginBottom="0.5rem">
-                    <Heading level={4}>生成されたAds.txtコンテンツ</Heading>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        navigator.clipboard.writeText(adsTxtContent);
-                      }}
-                    >
-                      コピー
-                    </Button>
-                  </Flex>
-                  <pre style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    fontFamily: 'monospace',
-                    overflow: 'auto',
-                    maxHeight: '300px'
-                  }}>
-                    {adsTxtContent}
-                  </pre>
-                </Card>
-              )}
-            </View>
-          </TabItem>
+        <Flex direction="column" gap="1rem">
+          <Flex className="custom-tabs">
+            <Button 
+              onClick={() => setActiveTab(0)}
+              variation={activeTab === 0 ? "primary" : "link"}
+              className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
+            >
+              Ads.txtレコード
+            </Button>
+            <Button 
+              onClick={() => {
+                setActiveTab(1);
+                if (!messageTabSelected) {
+                  logger.debug('Message tab selected via custom tabs');
+                  setMessageTabSelected(true);
+                }
+              }}
+              variation={activeTab === 1 ? "primary" : "link"}
+              className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
+            >
+              メッセージ
+            </Button>
+          </Flex>
           
-          <TabItem title="メッセージ">
-            <View padding="1rem">
-              {/* 表示前にデバッグログを出力 */}
-              {(() => {
-                logger.debug('Rendering message tab', { 
+          <Divider />
+          
+          <View padding="1rem">
+            {activeTab === 0 ? (
+              // Ads.txtレコードタブ
+              <>
+                <AdsTxtRecordList
+                  records={request.records}
+                  onStatusChange={handleRecordStatusChange}
+                  isEditable={request.request.status === 'pending'}
+                />
+                
+                {approvedRecords.length > 0 && (
+                  <Button
+                    onClick={generateAdsTxtContent}
+                    marginTop="1rem"
+                  >
+                    Ads.txtコンテンツを生成
+                  </Button>
+                )}
+                
+                {showAdsTxtContent && (
+                  <Card 
+                    variation="outlined" 
+                    padding="1rem" 
+                    marginTop="1rem" 
+                    backgroundColor={tokens.colors.background.secondary}
+                  >
+                    <Flex justifyContent="space-between" alignItems="center" marginBottom="0.5rem">
+                      <Heading level={4}>生成されたAds.txtコンテンツ</Heading>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          navigator.clipboard.writeText(adsTxtContent);
+                        }}
+                      >
+                        コピー
+                      </Button>
+                    </Flex>
+                    <pre style={{ 
+                      whiteSpace: 'pre-wrap', 
+                      fontFamily: 'monospace',
+                      overflow: 'auto',
+                      maxHeight: '300px'
+                    }}>
+                      {adsTxtContent}
+                    </pre>
+                  </Card>
+                )}
+              </>
+            ) : (
+              // メッセージタブ
+              <>
+                {logger.debug('Rendering message tab content', { 
                   messageTabSelected, 
                   messageLoading, 
                   messagesCount: messages.length 
-                });
+                })}
                 
-                if (messageTabSelected) {
-                  if (messageLoading) {
-                    return (
-                      <Flex direction="column" alignItems="center" padding="2rem">
-                        <Text>メッセージを読み込み中...</Text>
-                        <Loader size="large" />
-                      </Flex>
-                    );
-                  } else {
-                    return (
-                      <Flex direction="column" gap="1rem">
-                        <MessageList
-                          messages={messages}
-                          requestId={requestId}
-                          token={token}
-                        />
-                        
-                        <Divider marginBlock="1rem" />
-                        
-                        <MessageForm
-                          requestId={requestId}
-                          token={token}
-                          onMessageSent={handleMessageSent}
-                        />
-                      </Flex>
-                    );
-                  }
-                } else {
-                  return (
+                {messageTabSelected ? (
+                  messageLoading ? (
                     <Flex direction="column" alignItems="center" padding="2rem">
-                      <Text>タブを選択すると、メッセージが表示されます</Text>
-                      <Button 
-                        onClick={() => {
-                          logger.debug('Manual message loading button clicked');
-                          setMessageTabSelected(true);
-                        }}
-                        marginTop="1rem"
-                      >
-                        メッセージを読み込む
-                      </Button>
+                      <Text>メッセージを読み込み中...</Text>
+                      <Loader size="large" />
                     </Flex>
-                  );
-                }
-              })()}
-            </View>
-          </TabItem>
-        </Tabs>
+                  ) : (
+                    <Flex direction="column" gap="1rem">
+                      <MessageList
+                        messages={messages}
+                        requestId={requestId}
+                        token={token}
+                      />
+                      
+                      <Divider marginBlock="1rem" />
+                      
+                      <MessageForm
+                        requestId={requestId}
+                        token={token}
+                        onMessageSent={handleMessageSent}
+                      />
+                    </Flex>
+                  )
+                ) : (
+                  <Flex direction="column" alignItems="center" padding="2rem">
+                    <Text>タブを選択すると、メッセージが表示されます</Text>
+                    <Button 
+                      onClick={() => {
+                        logger.debug('Manual message loading button clicked');
+                        setMessageTabSelected(true);
+                      }}
+                      marginTop="1rem"
+                    >
+                      メッセージを読み込む
+                    </Button>
+                  </Flex>
+                )}
+              </>
+            )}
+          </View>
+        </Flex>
       </Flex>
     </Card>
   );
