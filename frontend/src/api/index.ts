@@ -114,7 +114,7 @@ export const messageApi = {
 export const adsTxtApi = {
   // Update record status
   async updateRecordStatus(id: string, status: string, token: string): Promise<ApiResponse<AdsTxtRecord>> {
-    const response = await api.patch<ApiResponse<AdsTxtRecord>>(`/adstxt/${id}/status`, {
+    const response = await api.patch<ApiResponse<AdsTxtRecord>>(`/adsTxt/${id}/status`, {
       status,
       token
     });
@@ -126,7 +126,7 @@ export const adsTxtApi = {
     const formData = new FormData();
     formData.append('adsTxtFile', file);
     
-    const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adstxt/process', formData, {
+    const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adsTxt/process', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -136,13 +136,13 @@ export const adsTxtApi = {
   
   // Get records by request ID
   async getRecordsByRequestId(requestId: string, token: string): Promise<ApiResponse<AdsTxtRecord[]>> {
-    const response = await api.get<ApiResponse<AdsTxtRecord[]>>(`/adstxt/request/${requestId}?token=${token}`);
+    const response = await api.get<ApiResponse<AdsTxtRecord[]>>(`/adsTxt/request/${requestId}?token=${token}`);
     return response.data;
   },
   
   // Generate Ads.txt content
   async generateAdsTxtContent(requestId: string, token: string): Promise<string> {
-    const response = await api.get<string>(`/adstxt/generate/${requestId}?token=${token}`, {
+    const response = await api.get<string>(`/adsTxt/generate/${requestId}?token=${token}`, {
       responseType: 'text'
     });
     return response.data;
