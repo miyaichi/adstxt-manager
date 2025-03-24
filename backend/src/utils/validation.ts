@@ -175,6 +175,24 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
 }
 
 /**
+ * Cross-check parsed Ads.txt records against publisher domain
+ * This function will be used to validate records against the publisher's domain
+ * Currently, it just returns the input records as-is, but can be extended in the future
+ * 
+ * @param publisherDomain - The publisher's domain for cross-checking
+ * @param parsedRecords - The parsed Ads.txt records to check
+ * @returns The validated/filtered records
+ */
+export function crossCheckAdsTxtRecords(
+  publisherDomain: string | undefined,
+  parsedRecords: ParsedAdsTxtRecord[]
+): ParsedAdsTxtRecord[] {
+  // For now, just return the records as-is
+  // In the future, implement cross-check logic here
+  return parsedRecords;
+}
+
+/**
  * Check if an email address is valid
  * @param email - The email address to validate
  * @returns Boolean indicating if the email is valid

@@ -1,4 +1,4 @@
-import { isValidEmail, parseAdsTxtContent, parseAdsTxtLine } from '../validation';
+import { isValidEmail, parseAdsTxtContent, parseAdsTxtLine, crossCheckAdsTxtRecords } from '../validation';
 
 describe('Validation Utilities', () => {
   describe('Email Validation', () => {
@@ -139,6 +139,64 @@ another.com, 67890, RESELLER`;
       expect(records[0].is_valid).toBe(true);
       expect(records[1].is_valid).toBe(false);
       expect(records[2].is_valid).toBe(true);
+    });
+  });
+
+  describe('Ads.txt Cross-Check', () => {
+    it('should return the same records when cross-checking (current implementation)', () => {
+      // Arrange
+      const publisherDomain = 'example.com';
+      const records = [
+        {
+          domain: 'google.com',
+          account_id: '12345',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT' as 'DIRECT',
+          line_number: 1,
+          raw_line: 'google.com, 12345, DIRECT',
+          is_valid: true
+        },
+        {
+          domain: 'adnetwork.com',
+          account_id: 'abcd',
+          account_type: 'RESELLER',
+          relationship: 'RESELLER' as 'RESELLER',
+          line_number: 2,
+          raw_line: 'adnetwork.com, abcd, RESELLER',
+          is_valid: true
+        }
+      ];
+
+      // Act
+      const result = crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result).toBe(records); // Should return the same array reference
+      expect(result.length).toBe(2);
+      expect(result[0].domain).toBe('google.com');
+      expect(result[1].domain).toBe('adnetwork.com');
+    });
+
+    it('should handle undefined publisher domain', () => {
+      // Arrange
+      const records = [
+        {
+          domain: 'google.com',
+          account_id: '12345',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT' as 'DIRECT',
+          line_number: 1,
+          raw_line: 'google.com, 12345, DIRECT',
+          is_valid: true
+        }
+      ];
+
+      // Act
+      const result = crossCheckAdsTxtRecords(undefined, records);
+
+      // Assert
+      expect(result).toBe(records);
+      expect(result.length).toBe(1);
     });
   });
 });

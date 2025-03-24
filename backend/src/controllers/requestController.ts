@@ -3,7 +3,7 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel, { CreateAdsTxtRecordDTO } from '../models/AdsTxtRecord';
 import RequestModel, { CreateRequestDTO } from '../models/Request';
 import emailService from '../services/emailService';
-import { isValidEmail, parseAdsTxtContent } from '../utils/validation';
+import { isValidEmail, parseAdsTxtContent, crossCheckAdsTxtRecords } from '../utils/validation';
 
 /**
  * Create a new request
@@ -72,7 +72,9 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
 
       // Parse the content
       const parsedRecords = parseAdsTxtContent(fileContent);
-      const validRecords = parsedRecords.filter((record) => record.is_valid);
+      // Cross-check records against publisher domain
+      const crossCheckedRecords = crossCheckAdsTxtRecords(publisher_domain, parsedRecords);
+      const validRecords = crossCheckedRecords.filter((record) => record.is_valid);
 
       if (validRecords.length === 0) {
         throw new ApiError(
