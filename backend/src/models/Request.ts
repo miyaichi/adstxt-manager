@@ -24,60 +24,32 @@ export interface CreateRequestDTO {
 }
 
 class RequestModel {
+  private readonly tableName = 'requests';
+
   /**
    * Create a new request
    * @param requestData - The data for the new request
    * @returns Promise with the created request
    */
-  create(requestData: CreateRequestDTO): Promise<Request> {
-    return new Promise((resolve, reject) => {
-      const id = uuidv4();
-      const token = tokenService.generateToken(id, requestData.publisher_email);
-      const now = new Date().toISOString();
+  async create(requestData: CreateRequestDTO): Promise<Request> {
+    const id = uuidv4();
+    const token = tokenService.generateToken(id, requestData.publisher_email);
+    const now = new Date().toISOString();
 
-      const request: Request = {
-        id,
-        publisher_email: requestData.publisher_email,
-        requester_email: requestData.requester_email,
-        requester_name: requestData.requester_name,
-        publisher_name: requestData.publisher_name,
-        publisher_domain: requestData.publisher_domain,
-        status: 'pending',
-        token,
-        created_at: now,
-        updated_at: now,
-      };
+    const request: Request = {
+      id,
+      publisher_email: requestData.publisher_email,
+      requester_email: requestData.requester_email,
+      requester_name: requestData.requester_name,
+      publisher_name: requestData.publisher_name,
+      publisher_domain: requestData.publisher_domain,
+      status: 'pending',
+      token,
+      created_at: now,
+      updated_at: now,
+    };
 
-      const sql = `
-        INSERT INTO requests 
-        (id, publisher_email, requester_email, requester_name, publisher_name, 
-         publisher_domain, status, token, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      db.run(
-        sql,
-        [
-          request.id,
-          request.publisher_email,
-          request.requester_email,
-          request.requester_name,
-          request.publisher_name || null,
-          request.publisher_domain || null,
-          request.status,
-          request.token,
-          request.created_at,
-          request.updated_at,
-        ],
-        function (err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(request);
-        }
-      );
-    });
+    return await (db as any).insert(this.tableName, request);
   }
 
   /**
@@ -86,27 +58,18 @@ class RequestModel {
    * @param token - The access token
    * @returns Promise with the request or null if not found/invalid token
    */
-  getByIdWithToken(id: string, token: string): Promise<Request | null> {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM requests WHERE id = ?', [id], (err, row: Request) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+  async getByIdWithToken(id: string, token: string): Promise<Request | null> {
+    const request = await (db as any).getById(this.tableName, id) as Request | null;
+    
+    if (!request) {
+      return null;
+    }
 
-        if (!row) {
-          resolve(null);
-          return;
-        }
+    if (!tokenService.verifyToken(token, request.token)) {
+      return null;
+    }
 
-        if (!tokenService.verifyToken(token, row.token)) {
-          resolve(null);
-          return;
-        }
-
-        resolve(row);
-      });
-    });
+    return request;
   }
 
   /**
@@ -114,22 +77,8 @@ class RequestModel {
    * @param id - The request ID
    * @returns Promise with the request or null if not found
    */
-  getById(id: string): Promise<Request | null> {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM requests WHERE id = ?', [id], (err, row: Request) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        if (!row) {
-          resolve(null);
-          return;
-        }
-
-        resolve(row);
-      });
-    });
+  async getById(id: string): Promise<Request | null> {
+    return await (db as any).getById(this.tableName, id) as Request | null;
   }
 
   /**
@@ -138,42 +87,16 @@ class RequestModel {
    * @param status - The new status
    * @returns Promise with the updated request
    */
-  updateStatus(
+  async updateStatus(
     id: string,
     status: 'pending' | 'approved' | 'rejected' | 'updated'
   ): Promise<Request | null> {
-    return new Promise((resolve, reject) => {
-      const now = new Date().toISOString();
-
-      db.run(
-        'UPDATE requests SET status = ?, updated_at = ? WHERE id = ?',
-        [status, now, id],
-        function (this: { changes: number }, err: Error | null) {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          if (this.changes === 0) {
-            resolve(null);
-            return;
-          }
-
-          // Get the updated record directly
-          db.get(
-            'SELECT * FROM requests WHERE id = ?',
-            [id],
-            (getErr: Error | null, row: Request) => {
-              if (getErr) {
-                reject(getErr);
-                return;
-              }
-              resolve(row || null);
-            }
-          );
-        }
-      );
-    });
+    const now = new Date().toISOString();
+    
+    return await (db as any).update(this.tableName, id, {
+      status,
+      updated_at: now
+    }) as Request | null;
   }
 
   /**
@@ -183,43 +106,18 @@ class RequestModel {
    * @param publisherDomain - The publisher domain
    * @returns Promise with the updated request
    */
-  updatePublisherInfo(
+  async updatePublisherInfo(
     id: string,
     publisherName: string,
     publisherDomain: string
   ): Promise<Request | null> {
-    return new Promise((resolve, reject) => {
-      const now = new Date().toISOString();
-
-      db.run(
-        'UPDATE requests SET publisher_name = ?, publisher_domain = ?, updated_at = ? WHERE id = ?',
-        [publisherName, publisherDomain, now, id],
-        function (this: { changes: number }, err: Error | null) {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          if (this.changes === 0) {
-            resolve(null);
-            return;
-          }
-
-          // Get the updated record directly
-          db.get(
-            'SELECT * FROM requests WHERE id = ?',
-            [id],
-            (getErr: Error | null, row: Request) => {
-              if (getErr) {
-                reject(getErr);
-                return;
-              }
-              resolve(row || null);
-            }
-          );
-        }
-      );
-    });
+    const now = new Date().toISOString();
+    
+    return await (db as any).update(this.tableName, id, {
+      publisher_name: publisherName,
+      publisher_domain: publisherDomain,
+      updated_at: now
+    }) as Request | null;
   }
 
   /**
@@ -227,20 +125,11 @@ class RequestModel {
    * @param email - The publisher email
    * @returns Promise with an array of requests
    */
-  getByPublisherEmail(email: string): Promise<Request[]> {
-    return new Promise((resolve, reject) => {
-      db.all(
-        'SELECT * FROM requests WHERE publisher_email = ? ORDER BY updated_at DESC',
-        [email],
-        (err, rows: Request[]) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(rows || []);
-        }
-      );
-    });
+  async getByPublisherEmail(email: string): Promise<Request[]> {
+    return await (db as any).query(this.tableName, {
+      where: { publisher_email: email },
+      order: { field: 'updated_at', direction: 'DESC' }
+    }) as Request[];
   }
 
   /**
@@ -248,20 +137,11 @@ class RequestModel {
    * @param email - The requester email
    * @returns Promise with an array of requests
    */
-  getByRequesterEmail(email: string): Promise<Request[]> {
-    return new Promise((resolve, reject) => {
-      db.all(
-        'SELECT * FROM requests WHERE requester_email = ? ORDER BY updated_at DESC',
-        [email],
-        (err, rows: Request[]) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(rows || []);
-        }
-      );
-    });
+  async getByRequesterEmail(email: string): Promise<Request[]> {
+    return await (db as any).query(this.tableName, {
+      where: { requester_email: email },
+      order: { field: 'updated_at', direction: 'DESC' }
+    }) as Request[];
   }
 }
 

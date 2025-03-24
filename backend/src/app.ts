@@ -36,7 +36,7 @@ initializeDatabase()
   .then(() => {
     console.log('Database initialized successfully');
   })
-  .catch((err) => {
+  .catch((err: Error) => {
     console.error('Database initialization failed:', err);
     process.exit(1);
   });
