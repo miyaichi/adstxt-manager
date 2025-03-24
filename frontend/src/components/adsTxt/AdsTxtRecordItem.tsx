@@ -1,6 +1,8 @@
 import React from 'react';
 import { Flex, Text, Badge, Button, Card, Icon } from '@aws-amplify/ui-react';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface AdsTxtRecordItemProps {
   record: AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string });
@@ -15,17 +17,18 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   onStatusChange,
   isEditable = false,
 }) => {
+  const { language } = useApp();
   // Check if the record has error property (which means it's a ParsedAdsTxtRecord)
   const isParsedRecord = 'is_valid' in record;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variation="success">承認済み</Badge>;
+        return <Badge variation="success">{t('common.status.approved', language)}</Badge>;
       case 'rejected':
-        return <Badge variation="error">却下</Badge>;
+        return <Badge variation="error">{t('common.status.rejected', language)}</Badge>;
       case 'pending':
-        return <Badge variation="warning">保留中</Badge>;
+        return <Badge variation="warning">{t('common.status.pending', language)}</Badge>;
       default:
         return <Badge variation="info">{status}</Badge>;
     }
@@ -53,17 +56,17 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         <Flex gap="1rem" wrap="wrap">
           <Text>
-            <strong>アカウントID:</strong> {record.account_id}
+            <strong>{t('adsTxt.recordItem.accountId', language)}:</strong> {record.account_id}
           </Text>
           <Text>
-            <strong>アカウントタイプ:</strong> {record.account_type}
+            <strong>{t('adsTxt.recordItem.accountType', language)}:</strong> {record.account_type}
           </Text>
           <Text>
-            <strong>関係:</strong> {record.relationship}
+            <strong>{t('adsTxt.recordItem.relationship', language)}:</strong> {record.relationship}
           </Text>
           {record.certification_authority_id && (
             <Text>
-              <strong>認証局ID:</strong> {record.certification_authority_id}
+              <strong>{t('adsTxt.recordItem.certificationAuthorityId', language)}:</strong> {record.certification_authority_id}
             </Text>
           )}
         </Flex>
@@ -71,10 +74,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         {isParsedRecord && showValidation && (
           <Flex gap="0.5rem" alignItems="center">
             {(record as ParsedAdsTxtRecord).is_valid ? (
-              <Badge variation="success">有効</Badge>
+              <Badge variation="success">{t('common.valid', language)}</Badge>
             ) : (
               <Flex direction="column" width="100%">
-                <Badge variation="error">無効</Badge>
+                <Badge variation="error">{t('common.invalid', language)}</Badge>
                 <Text color="red" fontSize="0.875rem">
                   {(record as ParsedAdsTxtRecord).error}
                 </Text>
@@ -87,12 +90,12 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           <Flex justifyContent="flex-end" gap="0.5rem" marginTop="0.5rem">
             {record.status !== 'approved' && (
               <Button size="small" variation="primary" onClick={handleApprove}>
-                承認
+                {t('common.approve', language)}
               </Button>
             )}
             {record.status !== 'rejected' && (
               <Button size="small" variation="destructive" onClick={handleReject}>
-                却下
+                {t('common.reject', language)}
               </Button>
             )}
           </Flex>

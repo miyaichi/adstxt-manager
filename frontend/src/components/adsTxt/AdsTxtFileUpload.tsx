@@ -3,12 +3,15 @@ import { Card, Button, Text, Flex, Loader, Alert, Heading } from '@aws-amplify/u
 import { adsTxtApi } from '../../api';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 import AdsTxtRecordList from './AdsTxtRecordList';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface AdsTxtFileUploadProps {
   onRecordsSelected: (records: AdsTxtRecord[]) => void;
 }
 
 const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }) => {
+  const { language } = useApp();
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -46,7 +49,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
 
   const handleUpload = async () => {
     if (!file) {
-      setError('ファイルを選択してください');
+      setError(t('common.fileRequired', language));
       return;
     }
 
@@ -82,10 +85,10 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
 
         onRecordsSelected(validRecords);
       } else {
-        setError(response.error?.message || 'ファイルの解析中にエラーが発生しました');
+        setError(response.error?.message || t('common.parseError', language));
       }
     } catch (err) {
-      setError('ファイルの解析中にエラーが発生しました');
+      setError(t('common.parseError', language));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -106,7 +109,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
   return (
     <Card variation="outlined" padding="1.5rem">
       <Heading level={3} marginBottom="1rem">
-        Ads.txtファイルアップロード
+        {t('adsTxt.fileUpload.title', language)}
       </Heading>
 
       <div
@@ -130,17 +133,17 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
           accept=".txt,.csv"
           style={{ display: 'none' }}
         />
-        <Text>ファイルをクリックまたはドラッグ＆ドロップしてください</Text>
+        <Text>{t('common.dropFileHere', language)}</Text>
         {fileName && (
           <Text fontWeight="bold" marginTop="0.5rem">
-            選択ファイル: {fileName}
+            {t('common.selectFile', language)} {fileName}
           </Text>
         )}
       </div>
 
       <Flex direction="row" gap="1rem" marginBottom="1rem">
         <Button variation="primary" isDisabled={!file || isLoading} onClick={handleUpload} flex="1">
-          {isLoading ? <Loader size="small" /> : 'アップロード'}
+          {isLoading ? <Loader size="small" /> : t('common.upload', language)}
         </Button>
         <Button
           variation="destructive"
@@ -148,7 +151,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
           onClick={handleClear}
           flex="1"
         >
-          クリア
+          {t('common.clear', language)}
         </Button>
       </Flex>
 
@@ -161,7 +164,11 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
       {stats && (
         <Flex direction="column" marginBottom="1rem">
           <Text>
-            レコード数: {stats.total} | 有効: {stats.valid} | 無効: {stats.invalid}
+            {t('adsTxt.fileUpload.stats', language, {
+              total: stats.total,
+              valid: stats.valid,
+              invalid: stats.invalid
+            })}
           </Text>
         </Flex>
       )}

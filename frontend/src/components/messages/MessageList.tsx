@@ -4,6 +4,8 @@ import { messageApi } from '../../api';
 import { Message } from '../../models';
 import { createLogger } from '../../utils/logger';
 import MessageItem from './MessageItem';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface MessageListProps {
   requestId: string;
@@ -19,6 +21,7 @@ const MessageList: React.FC<MessageListProps> = ({
   token,
   messages: initialMessages,
 }) => {
+  const { language } = useApp();
   logger.debug('Rendered with props:', {
     requestId,
     token,
@@ -54,10 +57,10 @@ const MessageList: React.FC<MessageListProps> = ({
           setMessages(response.data || []);
         } else {
           logger.error('Error fetching messages:', response.error);
-          setError(response.error?.message || 'メッセージの取得中にエラーが発生しました');
+          setError(response.error?.message || t('messages.list.fetchError', language));
         }
       } catch (err) {
-        setError('メッセージの取得中にエラーが発生しました');
+        setError(t('messages.list.fetchError', language));
         logger.error('Error fetching messages:', err);
       } finally {
         setLoading(false);
@@ -65,7 +68,7 @@ const MessageList: React.FC<MessageListProps> = ({
     };
 
     fetchMessages();
-  }, [requestId, token, initialMessages]);
+  }, [requestId, token, initialMessages, language]);
 
   if (loading) {
     return (
@@ -81,11 +84,11 @@ const MessageList: React.FC<MessageListProps> = ({
 
   return (
     <Flex direction="column" gap="1rem">
-      <Heading level={4}>メッセージ履歴</Heading>
+      <Heading level={4}>{t('messages.list.title', language)}</Heading>
       <Divider />
 
       {messages.length === 0 ? (
-        <Text>このリクエストにはまだメッセージがありません</Text>
+        <Text>{t('messages.list.noMessages', language)}</Text>
       ) : (
         <Flex direction="column" gap="0.5rem">
           {messages.map((message) => (

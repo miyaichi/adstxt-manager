@@ -48,6 +48,86 @@ export const translations = {
       en: 'Error',
       ja: 'エラー',
     },
+    errorOccurred: {
+      en: 'An error occurred',
+      ja: 'エラーが発生しました',
+    },
+    backToHome: {
+      en: 'Back to Home',
+      ja: 'ホームに戻る',
+    },
+    upload: {
+      en: 'Upload',
+      ja: 'アップロード',
+    },
+    clear: {
+      en: 'Clear',
+      ja: 'クリア',
+    },
+    selectFile: {
+      en: 'Selected file:',
+      ja: '選択ファイル:',
+    },
+    dropFileHere: {
+      en: 'Click or drag and drop files here',
+      ja: 'ファイルをクリックまたはドラッグ＆ドロップしてください',
+    },
+    fileRequired: {
+      en: 'Please select a file',
+      ja: 'ファイルを選択してください',
+    },
+    parseError: {
+      en: 'An error occurred while parsing the file',
+      ja: 'ファイルの解析中にエラーが発生しました',
+    },
+    termsOfService: {
+      en: 'Terms of Service',
+      ja: '利用規約',
+    },
+    privacyPolicy: {
+      en: 'Privacy Policy',
+      ja: 'プライバシーポリシー',
+    },
+    contact: {
+      en: 'Contact Us',
+      ja: 'お問い合わせ',
+    },
+    approve: {
+      en: 'Approve',
+      ja: '承認',
+    },
+    reject: {
+      en: 'Reject',
+      ja: '却下',
+    },
+    valid: {
+      en: 'Valid',
+      ja: '有効',
+    },
+    invalid: {
+      en: 'Invalid',
+      ja: '無効',
+    },
+    send: {
+      en: 'Send',
+      ja: '送信',
+    },
+    required: {
+      en: 'Required fields',
+      ja: '必須項目',
+    },
+    success: {
+      en: 'Success',
+      ja: '成功',
+    },
+    submit: {
+      en: 'Submit',
+      ja: '送信',
+    },
+    view: {
+      en: 'View',
+      ja: '表示',
+    },
   },
   homePage: {
     title: {
@@ -209,6 +289,358 @@ export const translations = {
       },
     },
   },
+  adsTxt: {
+    fileUpload: {
+      title: {
+        en: 'Ads.txt File Upload',
+        ja: 'Ads.txtファイルアップロード',
+      },
+      stats: {
+        en: 'Records: {{total}} | Valid: {{valid}} | Invalid: {{invalid}}',
+        ja: 'レコード数: {{total}} | 有効: {{valid}} | 無効: {{invalid}}',
+      },
+    },
+    recordItem: {
+      domain: {
+        en: 'Domain',
+        ja: 'ドメイン',
+      },
+      accountId: {
+        en: 'Account ID',
+        ja: 'アカウントID',
+      },
+      accountType: {
+        en: 'Account Type',
+        ja: 'アカウントタイプ',
+      },
+      relationship: {
+        en: 'Relationship',
+        ja: '関係',
+      },
+      certificationAuthorityId: {
+        en: 'Certification Authority ID',
+        ja: '認証局ID',
+      },
+    },
+    recordList: {
+      title: {
+        en: 'Ads.txt Records',
+        ja: 'Ads.txtレコード',
+      },
+      searchLabel: {
+        en: 'Search Records',
+        ja: 'レコードを検索',
+      },
+      searchPlaceholder: {
+        en: 'Enter domain or account ID',
+        ja: 'ドメインやアカウントIDを入力',
+      },
+      noRecords: {
+        en: 'No records',
+        ja: 'レコードがありません',
+      },
+      noMatchingRecords: {
+        en: 'No records match your search criteria',
+        ja: '検索条件に一致するレコードはありません',
+      },
+      totalRecords: {
+        en: 'Total {{count}} records',
+        ja: '合計 {{count}} 件のレコード',
+      },
+    },
+  },
+  messages: {
+    form: {
+      title: {
+        en: 'New Message',
+        ja: '新規メッセージ',
+      },
+      emailLabel: {
+        en: 'Email Address',
+        ja: 'メールアドレス',
+      },
+      messageLabel: {
+        en: 'Message',
+        ja: 'メッセージ',
+      },
+      messagePlaceholder: {
+        en: 'Enter your message here...',
+        ja: 'メッセージ内容を入力してください...',
+      },
+      requiredFields: {
+        en: 'Message content and email address are required',
+        ja: 'メッセージ内容とメールアドレスは必須です',
+      },
+      sendError: {
+        en: 'An error occurred while sending the message',
+        ja: 'メッセージの送信中にエラーが発生しました',
+      },
+      sendSuccess: {
+        en: 'Message sent successfully',
+        ja: 'メッセージが送信されました',
+      },
+    },
+    list: {
+      title: {
+        en: 'Message History',
+        ja: 'メッセージ履歴',
+      },
+      noMessages: {
+        en: 'No messages yet',
+        ja: 'まだメッセージはありません',
+      },
+      fetchError: {
+        en: 'An error occurred while retrieving messages',
+        ja: 'メッセージの取得中にエラーが発生しました',
+      },
+    },
+    item: {
+      sender: {
+        en: 'From:',
+        ja: '送信者:',
+      },
+      sentAt: {
+        en: 'Sent:',
+        ja: '送信日時:',
+      },
+    },
+  },
+  requests: {
+    form: {
+      title: {
+        en: 'Create New Request',
+        ja: '新規リクエスト作成',
+      },
+      description: {
+        en: 'This form creates a request to update the Ads.txt file. The request will be sent to the publisher for review.',
+        ja: 'このフォームはAds.txtファイル更新のリクエストを作成します。パブリッシャーにリクエストが送信され、確認されます。',
+      },
+      basicInfo: {
+        en: 'Basic Information',
+        ja: '基本情報',
+      },
+      publisherEmail: {
+        en: "Publisher's Email Address *",
+        ja: 'パブリッシャーのメールアドレス *',
+      },
+      publisherName: {
+        en: 'Publisher Name',
+        ja: 'パブリッシャー名',
+      },
+      publisherDomain: {
+        en: 'Publisher Domain',
+        ja: 'パブリッシャードメイン',
+      },
+      requesterEmail: {
+        en: "Requester's Email Address *",
+        ja: 'リクエスターのメールアドレス *',
+      },
+      requesterName: {
+        en: 'Requester Name *',
+        ja: 'リクエスター名 *',
+      },
+      adsTxtRecords: {
+        en: 'Ads.txt Records',
+        ja: 'Ads.txtレコード',
+      },
+      fileUploadTab: {
+        en: 'File Upload',
+        ja: 'ファイルアップロード',
+      },
+      selectedRecordsTab: {
+        en: 'Selected Records',
+        ja: '選択レコード',
+      },
+      selectedRecords: {
+        en: 'Selected Records',
+        ja: '選択レコード',
+      },
+      noRecordsSelected: {
+        en: 'No records selected. Please upload a file to select records.',
+        ja: 'レコードが選択されていません。ファイルアップロードしてレコードを選択してください。',
+      },
+      submitRequest: {
+        en: 'Submit Request',
+        ja: 'リクエスト送信',
+      },
+      requiredFieldsError: {
+        en: "Publisher's email, requester's email, and requester name are required",
+        ja: 'パブリッシャーのメールアドレス、リクエスターのメールアドレス、リクエスター名は必須です',
+      },
+      recordsRequiredError: {
+        en: 'Please select at least one Ads.txt record',
+        ja: '少なくとも1つのAds.txtレコードを選択してください',
+      },
+      processingError: {
+        en: 'An error occurred while processing your request',
+        ja: 'リクエスト処理中にエラーが発生しました',
+      },
+    },
+    success: {
+      title: {
+        en: 'Request Submitted Successfully',
+        ja: 'リクエスト送信完了',
+      },
+      message: {
+        en: 'The request has been sent to the publisher. Please save the Request ID and Access Token.',
+        ja: 'リクエストがパブリッシャーに送信されました。リクエストIDとトークンを保存してください。',
+      },
+      requestId: {
+        en: 'Request ID:',
+        ja: 'リクエストID:',
+      },
+      accessToken: {
+        en: 'Access Token:',
+        ja: 'アクセストークン:',
+      },
+      saveInfo: {
+        en: 'You will need this information to check or update your request.',
+        ja: 'リクエストの確認や更新のためにこの情報が必要になります。',
+      },
+      viewRequest: {
+        en: 'View Request',
+        ja: 'リクエストを表示',
+      },
+    },
+    detail: {
+      title: {
+        en: 'Request Details',
+        ja: 'リクエスト詳細',
+      },
+      status: {
+        en: 'Status:',
+        ja: 'ステータス:',
+      },
+      created: {
+        en: 'Created:',
+        ja: '作成日時:',
+      },
+      updated: {
+        en: 'Last Updated:',
+        ja: '最終更新:',
+      },
+      publisher: {
+        title: {
+          en: 'Publisher Information',
+          ja: 'パブリッシャー情報',
+        },
+        email: {
+          en: 'Email:',
+          ja: 'メールアドレス:',
+        },
+        name: {
+          en: 'Name:',
+          ja: '名前:',
+        },
+        domain: {
+          en: 'Domain:',
+          ja: 'ドメイン:',
+        },
+      },
+      requester: {
+        title: {
+          en: 'Requester Information',
+          ja: 'リクエスター情報',
+        },
+        email: {
+          en: 'Email:',
+          ja: 'メールアドレス:',
+        },
+        name: {
+          en: 'Name:',
+          ja: '名前:',
+        },
+      },
+      records: {
+        title: {
+          en: 'Ads.txt Records',
+          ja: 'Ads.txtレコード',
+        },
+      },
+      actions: {
+        title: {
+          en: 'Actions',
+          ja: 'アクション',
+        },
+        approve: {
+          en: 'Approve Request',
+          ja: 'リクエストを承認',
+        },
+        reject: {
+          en: 'Reject Request',
+          ja: 'リクエストを却下',
+        },
+        download: {
+          en: 'Download Ads.txt',
+          ja: 'Ads.txtをダウンロード',
+        },
+        approveConfirm: {
+          en: 'Are you sure you want to approve this request?',
+          ja: 'このリクエストを承認してもよろしいですか？',
+        },
+        rejectConfirm: {
+          en: 'Are you sure you want to reject this request?',
+          ja: 'このリクエストを却下してもよろしいですか？',
+        },
+      },
+      loading: {
+        en: 'Loading request details...',
+        ja: 'リクエスト詳細を読み込み中...',
+      },
+      error: {
+        fetchError: {
+          en: 'Failed to fetch request details',
+          ja: 'リクエスト詳細の取得に失敗しました',
+        },
+        updateError: {
+          en: 'Failed to update request status',
+          ja: 'リクエストステータスの更新に失敗しました',
+        },
+      },
+    },
+    item: {
+      status: {
+        en: 'Status:',
+        ja: 'ステータス:',
+      },
+      created: {
+        en: 'Created:',
+        ja: '作成日時:',
+      },
+      publisher: {
+        en: 'Publisher:',
+        ja: 'パブリッシャー:',
+      },
+      requester: {
+        en: 'Requester:',
+        ja: 'リクエスター:',
+      },
+      domain: {
+        en: 'Domain:',
+        ja: 'ドメイン:',
+      },
+      recordCount: {
+        en: 'Records: {{count}}',
+        ja: 'レコード数: {{count}}',
+      },
+      viewDetails: {
+        en: 'View Details',
+        ja: '詳細を表示',
+      },
+    },
+  },
+  footer: {
+    copyright: {
+      en: '© {{year}} Ads.txt Manager',
+      ja: '© {{year}} Ads.txt マネージャー',
+    },
+  },
+  errorMessage: {
+    defaultTitle: {
+      en: 'An error occurred',
+      ja: 'エラーが発生しました',
+    },
+  }
 };
 
 // Create a translation helper function

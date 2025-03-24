@@ -18,6 +18,8 @@ import { createLogger } from '../../utils/logger';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
 import MessageForm from '../messages/MessageForm';
 import MessageList from '../messages/MessageList';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface RequestDetailProps {
   requestId: string;
@@ -29,6 +31,7 @@ const logger = createLogger('RequestDetail');
 
 const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   logger.debug('Rendering with props:', { requestId, token });
+  const { language } = useApp();
 
   const [request, setRequest] = useState<RequestWithRecords | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -51,10 +54,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       if (response.success) {
         setRequest(response.data);
       } else {
-        setError(response.error?.message || 'リクエストの取得中にエラーが発生しました');
+        setError(response.error?.message || t('requests.detail.error.fetchError', language));
       }
     } catch (err) {
-      setError('リクエストの取得中にエラーが発生しました');
+      setError(t('requests.detail.error.fetchError', language));
       console.error(err);
     } finally {
       setLoading(false);
@@ -86,7 +89,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       setAdsTxtContent(content);
       setShowAdsTxtContent(true);
     } catch (err) {
-      console.error('Ads.txtコンテンツの生成中にエラーが発生しました:', err);
+      console.error(t('requests.detail.error.generateError', language), err);
     }
   };
 
@@ -112,10 +115,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             : null
         );
       } else {
-        setError(response.error?.message || 'ステータスの更新中にエラーが発生しました');
+        setError(response.error?.message || t('requests.detail.error.updateError', language));
       }
     } catch (err) {
-      setError('ステータスの更新中にエラーが発生しました');
+      setError(t('requests.detail.error.updateError', language));
       console.error(err);
     } finally {
       setLoading(false);
@@ -144,10 +147,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           };
         });
       } else {
-        setError(response.error?.message || 'レコードステータスの更新中にエラーが発生しました');
+        setError(response.error?.message || t('requests.detail.error.updateError', language));
       }
     } catch (err) {
-      setError('レコードステータスの更新中にエラーが発生しました');
+      setError(t('requests.detail.error.updateError', language));
       console.error(err);
     } finally {
       setLoading(false);
@@ -161,13 +164,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variation="success">承認済み</Badge>;
+        return <Badge variation="success">{t('common.status.approved', language)}</Badge>;
       case 'rejected':
-        return <Badge variation="error">拒否</Badge>;
+        return <Badge variation="error">{t('common.status.rejected', language)}</Badge>;
       case 'pending':
-        return <Badge variation="warning">保留中</Badge>;
+        return <Badge variation="warning">{t('common.status.pending', language)}</Badge>;
       case 'updated':
-        return <Badge variation="info">更新済み</Badge>;
+        return <Badge variation="info">{t('common.status.updated', language)}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -202,7 +205,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   if (!request) {
     return (
       <Alert variation="warning">
-        リクエストが見つかりませんでした。IDとトークンを確認してください。
+        {t('requests.detail.error.fetchError', language)}
       </Alert>
     );
   }
@@ -211,75 +214,82 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const pendingRecords = request.records.filter((record) => record.status === 'pending');
   const rejectedRecords = request.records.filter((record) => record.status === 'rejected');
 
+  const createdDate = new Date(request.request.created_at).toLocaleString(
+    language === 'ja' ? 'ja-JP' : 'en-US'
+  );
+  const updatedDate = new Date(request.request.updated_at).toLocaleString(
+    language === 'ja' ? 'ja-JP' : 'en-US'
+  );
+
   return (
     <Card padding="1.5rem" variation="outlined">
       <Flex direction="column" gap="1.5rem">
         <Flex justifyContent="space-between" alignItems="center">
-          <Heading level={2}>リクエスト詳細</Heading>
+          <Heading level={2}>{t('requests.detail.title', language)}</Heading>
           {getStatusBadge(request.request.status)}
         </Flex>
 
         <Divider />
 
         <Flex direction="column" gap="1rem">
-          <Heading level={3}>基本情報</Heading>
+          <Heading level={3}>{t('requests.form.basicInfo', language)}</Heading>
 
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>パブリッシャー情報</Heading>
+              <Heading level={5}>{t('requests.detail.publisher.title', language)}</Heading>
               <Text>
-                <strong>メール:</strong> {request.request.publisher_email}
+                <strong>{t('requests.detail.publisher.email', language)}</strong> {request.request.publisher_email}
               </Text>
               {request.request.publisher_name && (
                 <Text>
-                  <strong>名前:</strong> {request.request.publisher_name}
+                  <strong>{t('requests.detail.publisher.name', language)}</strong> {request.request.publisher_name}
                 </Text>
               )}
               {request.request.publisher_domain && (
                 <Text>
-                  <strong>ドメイン:</strong> {request.request.publisher_domain}
+                  <strong>{t('requests.detail.publisher.domain', language)}</strong> {request.request.publisher_domain}
                 </Text>
               )}
             </Card>
 
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>リクエスト者情報</Heading>
+              <Heading level={5}>{t('requests.detail.requester.title', language)}</Heading>
               <Text>
-                <strong>メール:</strong> {request.request.requester_email}
+                <strong>{t('requests.detail.requester.email', language)}</strong> {request.request.requester_email}
               </Text>
               <Text>
-                <strong>名前:</strong> {request.request.requester_name}
+                <strong>{t('requests.detail.requester.name', language)}</strong> {request.request.requester_name}
               </Text>
             </Card>
           </Flex>
 
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>リクエスト情報</Heading>
+              <Heading level={5}>{t('requests.detail.title', language)}</Heading>
               <Text>
-                <strong>リクエストID:</strong> {request.request.id}
+                <strong>ID:</strong> {request.request.id}
               </Text>
               <Text>
-                <strong>作成日:</strong> {new Date(request.request.created_at).toLocaleString()}
+                <strong>{t('requests.detail.created', language)}</strong> {createdDate}
               </Text>
               <Text>
-                <strong>更新日:</strong> {new Date(request.request.updated_at).toLocaleString()}
+                <strong>{t('requests.detail.updated', language)}</strong> {updatedDate}
               </Text>
             </Card>
 
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>リクエスト統計</Heading>
+              <Heading level={5}>{t('requests.detail.records.title', language)}</Heading>
               <Text>
-                <strong>合計レコード数:</strong> {request.records.length}
+                <strong>{t('requests.item.recordCount', language, { count: request.records.length })}</strong>
               </Text>
               <Text>
-                <strong>承認済み:</strong> {approvedRecords.length}
+                <strong>{t('common.status.approved', language)}:</strong> {approvedRecords.length}
               </Text>
               <Text>
-                <strong>保留中:</strong> {pendingRecords.length}
+                <strong>{t('common.status.pending', language)}:</strong> {pendingRecords.length}
               </Text>
               <Text>
-                <strong>拒否:</strong> {rejectedRecords.length}
+                <strong>{t('common.status.rejected', language)}:</strong> {rejectedRecords.length}
               </Text>
             </Card>
           </Flex>
@@ -288,19 +298,27 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             <Flex gap="1rem" marginTop="1rem">
               <Button
                 variation="primary"
-                onClick={() => handleStatusChange('approved')}
+                onClick={() => {
+                  if (window.confirm(t('requests.detail.actions.approveConfirm', language))) {
+                    handleStatusChange('approved');
+                  }
+                }}
                 isLoading={loading}
                 flex="1"
               >
-                リクエストを承認
+                {t('requests.detail.actions.approve', language)}
               </Button>
               <Button
                 variation="destructive"
-                onClick={() => handleStatusChange('rejected')}
+                onClick={() => {
+                  if (window.confirm(t('requests.detail.actions.rejectConfirm', language))) {
+                    handleStatusChange('rejected');
+                  }
+                }}
                 isLoading={loading}
                 flex="1"
               >
-                リクエストを拒否
+                {t('requests.detail.actions.reject', language)}
               </Button>
             </Flex>
           )}
@@ -315,7 +333,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
               variation={activeTab === 0 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
             >
-              Ads.txtレコード
+              {t('requests.detail.records.title', language)}
             </Button>
             <Button
               onClick={() => {
@@ -328,7 +346,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
               variation={activeTab === 1 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
             >
-              メッセージ
+              {t('messages.list.title', language)}
             </Button>
           </Flex>
 
@@ -346,7 +364,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
                 {approvedRecords.length > 0 && (
                   <Button onClick={generateAdsTxtContent} marginTop="1rem">
-                    Ads.txtコンテンツを生成
+                    {t('requests.detail.actions.download', language)}
                   </Button>
                 )}
 
@@ -358,14 +376,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                     backgroundColor={tokens.colors.background.secondary}
                   >
                     <Flex justifyContent="space-between" alignItems="center" marginBottom="0.5rem">
-                      <Heading level={4}>生成されたAds.txtコンテンツ</Heading>
+                      <Heading level={4}>Ads.txt Content</Heading>
                       <Button
                         size="small"
                         onClick={() => {
                           navigator.clipboard.writeText(adsTxtContent);
                         }}
                       >
-                        コピー
+                        Copy
                       </Button>
                     </Flex>
                     <pre
@@ -393,7 +411,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 {messageTabSelected ? (
                   messageLoading ? (
                     <Flex direction="column" alignItems="center" padding="2rem">
-                      <Text>メッセージを読み込み中...</Text>
+                      <Text>{t('requests.detail.loading', language)}</Text>
                       <Loader size="large" />
                     </Flex>
                   ) : (
@@ -411,7 +429,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                   )
                 ) : (
                   <Flex direction="column" alignItems="center" padding="2rem">
-                    <Text>タブを選択すると、メッセージが表示されます</Text>
+                    <Text>Select tab to view messages</Text>
                     <Button
                       onClick={() => {
                         logger.debug('Manual message loading button clicked');
@@ -419,7 +437,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                       }}
                       marginTop="1rem"
                     >
-                      メッセージを読み込む
+                      Load Messages
                     </Button>
                   </Flex>
                 )}

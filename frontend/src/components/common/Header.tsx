@@ -3,31 +3,11 @@ import { Link } from 'react-router-dom';
 import { Flex, Heading, Button, useTheme } from '@aws-amplify/ui-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useApp } from '../../context/AppContext';
-
-// Simple translations
-const translations = {
-  appName: {
-    en: 'Ads.txt Manager',
-    ja: 'Ads.txt マネージャー',
-  },
-  newRequest: {
-    en: 'New Request',
-    ja: '新規リクエスト',
-  },
-  home: {
-    en: 'Home',
-    ja: 'ホーム',
-  },
-};
+import { t } from '../../i18n/translations';
 
 const Header: React.FC = () => {
   const { tokens } = useTheme();
   const { language } = useApp();
-
-  // Helper function to get translated text
-  const t = (key: keyof typeof translations) => {
-    return translations[key][language as 'en' | 'ja'] || translations[key]['en'];
-  };
 
   return (
     <Flex
@@ -41,7 +21,7 @@ const Header: React.FC = () => {
     >
       <Flex alignItems="center" gap="1rem">
         <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Heading level={3}>{t('appName')}</Heading>
+          <Heading level={3}>{t('homePage.title', language)}</Heading>
         </Link>
       </Flex>
 
@@ -49,11 +29,11 @@ const Header: React.FC = () => {
         <LanguageSwitcher />
 
         <Button as={Link} to="/new-request" variation="primary">
-          {t('newRequest')}
+          {t('newRequestPage.breadcrumb', language)}
         </Button>
 
         <Button as={Link} to="/" variation="link">
-          {t('home')}
+          {t('common.home', language)}
         </Button>
       </Flex>
     </Flex>

@@ -18,8 +18,11 @@ import { AdsTxtRecord, CreateRequestData } from '../../models';
 import { requestApi } from '../../api';
 import AdsTxtFileUpload from '../adsTxt/AdsTxtFileUpload';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 const RequestForm: React.FC = () => {
+  const { language } = useApp();
   const [formData, setFormData] = useState<CreateRequestData>({
     publisher_email: '',
     requester_email: '',
@@ -54,14 +57,12 @@ const RequestForm: React.FC = () => {
 
   const validateForm = () => {
     if (!formData.publisher_email || !formData.requester_email || !formData.requester_name) {
-      setError(
-        'パブリッシャーのメールアドレス、リクエスターのメールアドレス、リクエスター名は必須です'
-      );
+      setError(t('requests.form.requiredFieldsError', language));
       return false;
     }
 
     if (records.length === 0) {
-      setError('少なくとも1つのAds.txtレコードを選択してください');
+      setError(t('requests.form.recordsRequiredError', language));
       return false;
     }
 
@@ -99,10 +100,10 @@ const RequestForm: React.FC = () => {
         });
         setRecords([]);
       } else {
-        setError(response.error?.message || 'リクエスト処理中にエラーが発生しました');
+        setError(response.error?.message || t('requests.form.processingError', language));
       }
     } catch (err) {
-      setError('リクエスト処理中にエラーが発生しました');
+      setError(t('requests.form.processingError', language));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -119,9 +120,9 @@ const RequestForm: React.FC = () => {
     return (
       <Card padding="2rem" variation="elevated">
         <Flex direction="column" gap="1rem" alignItems="center">
-          <Heading level={2}>リクエスト送信完了</Heading>
+          <Heading level={2}>{t('requests.success.title', language)}</Heading>
           <Alert variation="success">
-            リクエストがパブリッシャーに送信されました。リクエストIDとトークンを保存してください。
+            {t('requests.success.message', language)}
           </Alert>
 
           <Flex
@@ -130,17 +131,17 @@ const RequestForm: React.FC = () => {
             width="100%"
             backgroundColor={tokens.colors.background.secondary}
           >
-            <Text fontWeight="bold">リクエストID:</Text>
+            <Text fontWeight="bold">{t('requests.success.requestId', language)}</Text>
             <Text fontFamily="monospace">{success.requestId}</Text>
             <Divider marginBlock="1rem" />
-            <Text fontWeight="bold">アクセストークン:</Text>
+            <Text fontWeight="bold">{t('requests.success.accessToken', language)}</Text>
             <Text fontFamily="monospace">{success.token}</Text>
           </Flex>
 
-          <Text>リクエストの確認や更新のためにこの情報が必要になります。</Text>
+          <Text>{t('requests.success.saveInfo', language)}</Text>
 
           <Button onClick={handleViewRequest} variation="primary">
-            リクエストを表示
+            {t('requests.success.viewRequest', language)}
           </Button>
         </Flex>
       </Card>
@@ -151,23 +152,22 @@ const RequestForm: React.FC = () => {
     <Card padding="1.5rem" variation="outlined">
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1.5rem">
-          <Heading level={2}>新規リクエスト作成</Heading>
+          <Heading level={2}>{t('requests.form.title', language)}</Heading>
 
           <Text>
-            このフォームはAds.txtファイル更新のリクエストを作成します。
-            パブリッシャーにリクエストが送信され、確認されます。
+            {t('requests.form.description', language)}
           </Text>
 
           {error && <Alert variation="error">{error}</Alert>}
 
           <Divider />
 
-          <Heading level={3}>基本情報</Heading>
+          <Heading level={3}>{t('requests.form.basicInfo', language)}</Heading>
 
           <Flex direction="column" gap="1rem">
             <TextField
               name="publisher_email"
-              label="パブリッシャーのメールアドレス *"
+              label={t('requests.form.publisherEmail', language)}
               placeholder="publisher@example.com"
               value={formData.publisher_email}
               onChange={handleInputChange}
@@ -176,7 +176,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="publisher_name"
-              label="パブリッシャー名"
+              label={t('requests.form.publisherName', language)}
               placeholder="Example Media Inc."
               value={formData.publisher_name}
               onChange={handleInputChange}
@@ -184,7 +184,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="publisher_domain"
-              label="パブリッシャードメイン"
+              label={t('requests.form.publisherDomain', language)}
               placeholder="example.com"
               value={formData.publisher_domain}
               onChange={handleInputChange}
@@ -192,7 +192,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="requester_email"
-              label="リクエスターのメールアドレス *"
+              label={t('requests.form.requesterEmail', language)}
               placeholder="requester@adnetwork.com"
               value={formData.requester_email}
               onChange={handleInputChange}
@@ -201,7 +201,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="requester_name"
-              label="リクエスター名 *"
+              label={t('requests.form.requesterName', language)}
               placeholder="Ad Network Inc."
               value={formData.requester_name}
               onChange={handleInputChange}
@@ -211,20 +211,23 @@ const RequestForm: React.FC = () => {
 
           <Divider />
 
-          <Heading level={3}>Ads.txtレコード</Heading>
+          <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
 
           <Tabs>
-            <TabItem title="ファイルアップロード">
+            <TabItem title={t('requests.form.fileUploadTab', language)}>
               <AdsTxtFileUpload onRecordsSelected={handleRecordsSelected} />
             </TabItem>
 
-            <TabItem title="選択したレコード">
+            <TabItem title={t('requests.form.selectedRecordsTab', language)}>
               <View padding="1rem">
-                <AdsTxtRecordList records={records} title="選択レコード" />
+                <AdsTxtRecordList 
+                  records={records} 
+                  title={t('requests.form.selectedRecords', language)} 
+                />
 
                 {records.length === 0 && (
                   <Text>
-                    レコードが選択されていません。ファイルアップロードしてレコードを選択してください。
+                    {t('requests.form.noRecordsSelected', language)}
                   </Text>
                 )}
               </View>
@@ -239,7 +242,7 @@ const RequestForm: React.FC = () => {
             isLoading={isLoading}
             isDisabled={records.length === 0}
           >
-            リクエスト送信
+            {t('requests.form.submitRequest', language)}
           </Button>
         </Flex>
       </form>

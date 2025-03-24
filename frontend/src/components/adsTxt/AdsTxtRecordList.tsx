@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Flex, Heading, Text, Divider, SearchField, Pagination } from '@aws-amplify/ui-react';
 import AdsTxtRecordItem from './AdsTxtRecordItem';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface AdsTxtRecordListProps {
   records: (AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string }))[];
@@ -16,11 +18,14 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
   showValidation = false,
   onStatusChange,
   isEditable = false,
-  title = 'Ads.txtレコード',
+  title,
 }) => {
+  const { language } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
+
+  const defaultTitle = t('adsTxt.recordList.title', language);
 
   // Filter records based on search query
   const filteredRecords = records.filter((record) => {
@@ -43,26 +48,26 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
 
   return (
     <Flex direction="column" gap="1rem">
-      <Heading level={3}>{title}</Heading>
+      <Heading level={3}>{title || defaultTitle}</Heading>
       <Divider />
 
       {records.length === 0 ? (
-        <Text>レコードがありません</Text>
+        <Text>{t('adsTxt.recordList.noRecords', language)}</Text>
       ) : (
         <>
           <SearchField
-            label="レコードを検索"
-            placeholder="ドメインやアカウントIDを入力"
+            label={t('adsTxt.recordList.searchLabel', language)}
+            placeholder={t('adsTxt.recordList.searchPlaceholder', language)}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             marginBottom="1rem"
           />
 
           {filteredRecords.length === 0 ? (
-            <Text>検索条件に一致するレコードはありません</Text>
+            <Text>{t('adsTxt.recordList.noMatchingRecords', language)}</Text>
           ) : (
             <>
-              <Text>合計 {filteredRecords.length} 件のレコード</Text>
+              <Text>{t('adsTxt.recordList.totalRecords', language, { count: filteredRecords.length })}</Text>
 
               {currentRecords.map((record) => (
                 <AdsTxtRecordItem

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Card, Flex, TextField, Button, Alert, Heading } from '@aws-amplify/ui-react';
 import { messageApi } from '../../api';
 import { Message } from '../../models';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 
 interface MessageFormProps {
   requestId: string;
@@ -10,6 +12,7 @@ interface MessageFormProps {
 }
 
 const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSent }) => {
+  const { language } = useApp();
   const [content, setContent] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +23,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
     e.preventDefault();
 
     if (!content || !senderEmail) {
-      setError('メッセージ内容とメールアドレスは必須です');
+      setError(t('messages.form.requiredFields', language));
       return;
     }
 
@@ -44,10 +47,10 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
           onMessageSent(response.data);
         }
       } else {
-        setError(response.error?.message || 'メッセージの送信中にエラーが発生しました');
+        setError(response.error?.message || t('messages.form.sendError', language));
       }
     } catch (err) {
-      setError('メッセージの送信中にエラーが発生しました');
+      setError(t('messages.form.sendError', language));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -56,16 +59,16 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
 
   return (
     <Card variation="outlined" padding="1rem">
-      <Heading level={4}>新規メッセージ</Heading>
+      <Heading level={4}>{t('messages.form.title', language)}</Heading>
 
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1rem" marginTop="1rem">
           {error && <Alert variation="error">{error}</Alert>}
 
-          {success && <Alert variation="success">メッセージが送信されました</Alert>}
+          {success && <Alert variation="success">{t('messages.form.sendSuccess', language)}</Alert>}
 
           <TextField
-            label="メールアドレス"
+            label={t('messages.form.emailLabel', language)}
             value={senderEmail}
             onChange={(e) => setSenderEmail(e.target.value)}
             placeholder="your@email.com"
@@ -74,10 +77,10 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
           />
 
           <TextField
-            label="メッセージ"
+            label={t('messages.form.messageLabel', language)}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="メッセージ内容を入力してください..."
+            placeholder={t('messages.form.messagePlaceholder', language)}
             isRequired
             as="textarea"
             rows={4}
@@ -89,7 +92,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
             isLoading={isLoading}
             isDisabled={!content || !senderEmail}
           >
-            送信
+            {t('common.send', language)}
           </Button>
         </Flex>
       </form>
