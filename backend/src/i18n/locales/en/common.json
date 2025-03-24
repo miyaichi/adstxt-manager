@@ -1,0 +1,7 @@
+{
+  "appName": "Ads.txt Manager",
+  "errors": {
+    "internalServerError": "Internal Server Error",
+    "notFound": "Not Found - {{url}}"
+  }
+}

@@ -14,7 +14,7 @@ const LOG_LEVELS = {
 };
 
 type LogLevel = keyof typeof LOG_LEVELS;
-const currentLogLevel = LOG_LEVELS[(LOG_LEVEL as LogLevel)] || LOG_LEVELS.info;
+const currentLogLevel = LOG_LEVELS[LOG_LEVEL as LogLevel] || LOG_LEVELS.info;
 
 class Logger {
   private prefix: string;

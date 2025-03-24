@@ -13,25 +13,29 @@ export const updateRecordStatus = asyncHandler(async (req: Request, res: Respons
   const { status, token } = req.body;
 
   if (!token || typeof token !== 'string') {
-    throw new ApiError(401, 'Access token is required');
+    throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
 
   if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
-    throw new ApiError(400, 'Valid status is required (pending, approved, or rejected)');
+    throw new ApiError(
+      400,
+      'Valid status is required (pending, approved, or rejected)',
+      'errors:invalidStatus'
+    );
   }
 
   // Get the record first to find its request_id
   const record = await AdsTxtRecordModel.getById(id);
 
   if (!record) {
-    throw new ApiError(404, 'Ads.txt record not found');
+    throw new ApiError(404, 'Ads.txt record not found', 'errors:recordNotFound');
   }
 
   // Verify the token with the associated request
   const request = await RequestModel.getByIdWithToken(record.request_id, token);
 
   if (!request) {
-    throw new ApiError(404, 'Request not found or invalid token');
+    throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
 
   // Update the status
@@ -41,7 +45,7 @@ export const updateRecordStatus = asyncHandler(async (req: Request, res: Respons
   );
 
   if (!updatedRecord) {
-    throw new ApiError(500, 'Failed to update record status');
+    throw new ApiError(500, 'Failed to update record status', 'errors:failedToUpdate.recordStatus');
   }
 
   res.status(200).json({
@@ -56,7 +60,7 @@ export const updateRecordStatus = asyncHandler(async (req: Request, res: Respons
  */
 export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) {
-    throw new ApiError(400, 'No file uploaded');
+    throw new ApiError(400, 'No file uploaded', 'errors:noFileUploaded');
   }
 
   try {
@@ -77,7 +81,9 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-    throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`);
+    throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`, 'errors:parsingError', {
+      message: errorMessage,
+    });
   }
 });
 
@@ -90,14 +96,14 @@ export const getRecordsByRequestId = asyncHandler(async (req: Request, res: Resp
   const { token } = req.query;
 
   if (!token || typeof token !== 'string') {
-    throw new ApiError(401, 'Access token is required');
+    throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
 
   // Verify the token and request
   const request = await RequestModel.getByIdWithToken(requestId, token);
 
   if (!request) {
-    throw new ApiError(404, 'Request not found or invalid token');
+    throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
 
   // Get all records for the request
@@ -118,14 +124,14 @@ export const generateAdsTxtContent = asyncHandler(async (req: Request, res: Resp
   const { token } = req.query;
 
   if (!token || typeof token !== 'string') {
-    throw new ApiError(401, 'Access token is required');
+    throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
 
   // Verify the token and request
   const request = await RequestModel.getByIdWithToken(requestId, token);
 
   if (!request) {
-    throw new ApiError(404, 'Request not found or invalid token');
+    throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
 
   // Get approved records for the request

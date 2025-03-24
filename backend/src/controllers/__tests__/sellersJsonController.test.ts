@@ -24,25 +24,25 @@ describe('SellersJson Controller Tests', () => {
   let res: Partial<Response>;
   let next: NextFunction;
   let mockCache: any;
-  
+
   // Sample sellers.json response for OpenX
   const mockOpenXSellersJson = {
     sellers: [
       {
-        seller_id: "123456789",
-        name: "OpenX",
-        domain: "openx.com",
-        seller_type: "INTERMEDIARY"
+        seller_id: '123456789',
+        name: 'OpenX',
+        domain: 'openx.com',
+        seller_type: 'INTERMEDIARY',
       },
       {
-        seller_id: "987654321",
-        name: "OpenX Europe",
-        domain: "uk.openx.com", 
-        seller_type: "INTERMEDIARY"
-      }
+        seller_id: '987654321',
+        name: 'OpenX Europe',
+        domain: 'uk.openx.com',
+        seller_type: 'INTERMEDIARY',
+      },
     ],
-    contact_email: "support@openx.com",
-    version: "1.0"
+    contact_email: 'support@openx.com',
+    version: '1.0',
   };
 
   beforeEach(() => {
@@ -74,7 +74,7 @@ describe('SellersJson Controller Tests', () => {
     it('should return cached data if it exists and is not expired', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock cache response (not expired)
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(mockCache);
       (SellersJsonCacheModel.isCacheExpired as jest.Mock).mockReturnValue(false);
@@ -102,18 +102,18 @@ describe('SellersJson Controller Tests', () => {
     it('should fetch new data if cache is expired', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock expired cache
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(mockCache);
       (SellersJsonCacheModel.isCacheExpired as jest.Mock).mockReturnValue(true);
-      
+
       // Mock axios response
       (axios.get as jest.Mock).mockResolvedValue({
         status: 200,
         headers: { 'content-type': 'application/json' },
         data: mockOpenXSellersJson,
       });
-      
+
       // Mock saveCache
       const updatedCache = { ...mockCache, updated_at: new Date().toISOString() };
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue(updatedCache);
@@ -142,17 +142,17 @@ describe('SellersJson Controller Tests', () => {
     it('should fetch new data if no cache exists', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock no cache
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       // Mock axios response
       (axios.get as jest.Mock).mockResolvedValue({
         status: 200,
         headers: { 'content-type': 'application/json' },
         data: mockOpenXSellersJson,
       });
-      
+
       // Mock saveCache
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue(mockCache);
 
@@ -179,17 +179,17 @@ describe('SellersJson Controller Tests', () => {
     it('should handle 404 not found responses', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock no cache
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       // Mock 404 response
       (axios.get as jest.Mock).mockResolvedValue({
         status: 404,
         headers: { 'content-type': 'text/html' },
         data: '<html><body>Not Found</body></html>',
       });
-      
+
       // Mock saveCache
       const notFoundCache = {
         ...mockCache,
@@ -206,11 +206,13 @@ describe('SellersJson Controller Tests', () => {
 
       // Assert
       expect(axios.get).toHaveBeenCalledWith('https://openx.com/sellers.json', expect.any(Object));
-      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(expect.objectContaining({
-        domain: 'openx.com',
-        status: 'not_found',
-        status_code: 404,
-      }));
+      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: 'openx.com',
+          status: 'not_found',
+          status_code: 404,
+        })
+      );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -227,17 +229,17 @@ describe('SellersJson Controller Tests', () => {
     it('should handle invalid JSON format responses', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock no cache
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       // Mock response with invalid content type
       (axios.get as jest.Mock).mockResolvedValue({
         status: 200,
         headers: { 'content-type': 'text/html' },
         data: '<html><body>Some HTML content</body></html>',
       });
-      
+
       // Mock saveCache
       const invalidFormatCache = {
         ...mockCache,
@@ -254,10 +256,12 @@ describe('SellersJson Controller Tests', () => {
 
       // Assert
       expect(axios.get).toHaveBeenCalledWith('https://openx.com/sellers.json', expect.any(Object));
-      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(expect.objectContaining({
-        domain: 'openx.com',
-        status: 'invalid_format',
-      }));
+      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: 'openx.com',
+          status: 'invalid_format',
+        })
+      );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -272,14 +276,14 @@ describe('SellersJson Controller Tests', () => {
     it('should handle network errors', async () => {
       // Arrange
       req.params = { domain: 'openx.com' };
-      
+
       // Mock no cache
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       // Mock network error
       const networkError = new Error('Network Error');
       (axios.get as jest.Mock).mockRejectedValue(networkError);
-      
+
       // Mock saveCache
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue({
         domain: 'openx.com',
@@ -308,7 +312,7 @@ describe('SellersJson Controller Tests', () => {
     it('should return 400 if no domain is provided', async () => {
       // Arrange
       req.params = {}; // No domain
-      
+
       // Act
       const handler = sellersJsonController.getSellersJson;
       await handler(req as Request, res as Response, next);

@@ -17,11 +17,14 @@ import { requestApi } from '../api';
 import { Request } from '../models';
 import RequestItem from '../components/requests/RequestItem';
 import ErrorMessage from '../components/common/ErrorMessage';
+import { useApp } from '../context/AppContext';
+import { t } from '../i18n/translations';
 
 const RequestListPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');
   const role = searchParams.get('role') as 'publisher' | 'requester' | null;
+  const { language } = useApp();
 
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +44,10 @@ const RequestListPage: React.FC = () => {
         if (response.success) {
           setRequests(response.data);
         } else {
-          setError(response.error?.message || 'リクエストの取得中にエラーが発生しました');
+          setError(response.error?.message || t('requestListPage.errors.fetchError', language));
         }
       } catch (err) {
-        setError('リクエストの取得中にエラーが発生しました');
+        setError(t('requestListPage.errors.fetchError', language));
         console.error(err);
       } finally {
         setLoading(false);
@@ -52,13 +55,13 @@ const RequestListPage: React.FC = () => {
     };
 
     fetchRequests();
-  }, [email, role]);
+  }, [email, role, language]);
 
   if (!email) {
     return (
       <ErrorMessage
-        title="メールアドレスが指定されていません"
-        message="リクエスト表示にはメールアドレスが必要です"
+        title={t('requestListPage.errors.noEmail', language)}
+        message={t('requestListPage.errors.noEmailDescription', language)}
       />
     );
   }
@@ -83,26 +86,29 @@ const RequestListPage: React.FC = () => {
   const rejectedRequests = filteredRequests.filter((req) => req.status === 'rejected');
   const updatedRequests = filteredRequests.filter((req) => req.status === 'updated');
 
+  // Get role name based on current language
+  const getRoleName = (roleType: 'publisher' | 'requester') => {
+    return t(`common.role.${roleType}`, language);
+  };
+
   return (
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: 'ホーム', href: '/' },
-          { label: 'リクエスト一覧', isCurrent: true },
+          { label: t('common.home', language), href: '/' },
+          { label: t('requestListPage.breadcrumb', language), isCurrent: true },
         ]}
       />
 
       <Card variation="outlined" padding="1.5rem">
         <Flex direction="column" gap="1.5rem">
           <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap="1rem">
-            <Heading level={2}>リクエスト一覧</Heading>
+            <Heading level={2}>{t('requestListPage.title', language)}</Heading>
             <Flex gap="0.5rem" alignItems="center">
-              <Text>メールアドレス: {email}</Text>
-              {role && (
-                <Badge variation="info">
-                  {role === 'publisher' ? 'パブリッシャー' : 'リクエスター'}
-                </Badge>
-              )}
+              <Text>
+                {t('requestListPage.emailLabel', language)} {email}
+              </Text>
+              {role && <Badge variation="info">{getRoleName(role)}</Badge>}
             </Flex>
           </Flex>
 
@@ -115,26 +121,34 @@ const RequestListPage: React.FC = () => {
           ) : (
             <Flex direction="column" gap="1.5rem">
               <TextField
-                label="リクエスト検索"
-                placeholder="検索内容を入力"
+                label={t('requestListPage.searchLabel', language)}
+                placeholder={t('requestListPage.searchPlaceholder', language)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
 
               {filteredRequests.length === 0 ? (
                 <Alert variation="warning">
-                  <Text>リクエストが見つかりませんでした</Text>
-                  {searchQuery && <Text>検索条件を変更してください</Text>}
+                  <Text>{t('requestListPage.noRequests', language)}</Text>
+                  {searchQuery && <Text>{t('requestListPage.changeSearch', language)}</Text>}
                 </Alert>
               ) : (
                 <>
                   <Flex justifyContent="flex-end" gap="0.5rem">
-                    <Text>合計 {filteredRequests.length} 件のリクエスト</Text>
+                    <Text>
+                      {t('requestListPage.totalRequests', language, {
+                        count: filteredRequests.length,
+                      })}
+                    </Text>
                   </Flex>
 
                   {pendingRequests.length > 0 && (
                     <Flex direction="column" gap="1rem">
-                      <Heading level={3}>保留中 ({pendingRequests.length})</Heading>
+                      <Heading level={3}>
+                        {t('requestListPage.pendingTitle', language, {
+                          count: pendingRequests.length,
+                        })}
+                      </Heading>
                       <Divider />
                       {pendingRequests.map((request) => (
                         <RequestItem key={request.id} request={request} />
@@ -144,7 +158,11 @@ const RequestListPage: React.FC = () => {
 
                   {updatedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
-                      <Heading level={3}>更新済み ({updatedRequests.length})</Heading>
+                      <Heading level={3}>
+                        {t('requestListPage.updatedTitle', language, {
+                          count: updatedRequests.length,
+                        })}
+                      </Heading>
                       <Divider />
                       {updatedRequests.map((request) => (
                         <RequestItem key={request.id} request={request} />
@@ -154,7 +172,11 @@ const RequestListPage: React.FC = () => {
 
                   {approvedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
-                      <Heading level={3}>承認済み ({approvedRequests.length})</Heading>
+                      <Heading level={3}>
+                        {t('requestListPage.approvedTitle', language, {
+                          count: approvedRequests.length,
+                        })}
+                      </Heading>
                       <Divider />
                       {approvedRequests.map((request) => (
                         <RequestItem key={request.id} request={request} />
@@ -164,7 +186,11 @@ const RequestListPage: React.FC = () => {
 
                   {rejectedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
-                      <Heading level={3}>却下 ({rejectedRequests.length})</Heading>
+                      <Heading level={3}>
+                        {t('requestListPage.rejectedTitle', language, {
+                          count: rejectedRequests.length,
+                        })}
+                      </Heading>
                       <Divider />
                       {rejectedRequests.map((request) => (
                         <RequestItem key={request.id} request={request} />

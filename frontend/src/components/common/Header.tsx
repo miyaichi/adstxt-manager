@@ -1,9 +1,33 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Flex, Heading, Button, useTheme } from '@aws-amplify/ui-react';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useApp } from '../../context/AppContext';
+
+// Simple translations
+const translations = {
+  appName: {
+    en: 'Ads.txt Manager',
+    ja: 'Ads.txt マネージャー',
+  },
+  newRequest: {
+    en: 'New Request',
+    ja: '新規リクエスト',
+  },
+  home: {
+    en: 'Home',
+    ja: 'ホーム',
+  },
+};
 
 const Header: React.FC = () => {
   const { tokens } = useTheme();
+  const { language } = useApp();
+
+  // Helper function to get translated text
+  const t = (key: keyof typeof translations) => {
+    return translations[key][language as 'en' | 'ja'] || translations[key]['en'];
+  };
 
   return (
     <Flex
@@ -17,17 +41,19 @@ const Header: React.FC = () => {
     >
       <Flex alignItems="center" gap="1rem">
         <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Heading level={3}>Ads.txt マネージャー</Heading>
+          <Heading level={3}>{t('appName')}</Heading>
         </Link>
       </Flex>
 
-      <Flex gap="1rem">
+      <Flex gap="1rem" alignItems="center">
+        <LanguageSwitcher />
+
         <Button as={Link} to="/new-request" variation="primary">
-          新規リクエスト
+          {t('newRequest')}
         </Button>
 
         <Button as={Link} to="/" variation="link">
-          ホーム
+          {t('home')}
         </Button>
       </Flex>
     </Flex>

@@ -1,0 +1,24 @@
+{
+  "accessTokenRequired": "Access token is required",
+  "invalidEmail": "Invalid email address",
+  "invalidSenderEmail": "Invalid sender email address",
+  "missingFields": {
+    "message": "Request ID, sender email, content, and token are required",
+    "publisherInfo": "Publisher name and domain are required",
+    "request": "Publisher email, requester email, and requester name are required",
+    "records": "Ads.txt records are required (either file upload or JSON data)"
+  },
+  "notFoundOrInvalidToken": "Request not found or invalid token",
+  "recordNotFound": "Ads.txt record not found",
+  "failedToUpdate": {
+    "status": "Failed to update request status",
+    "publisherInfo": "Failed to update publisher information",
+    "recordStatus": "Failed to update record status"
+  },
+  "invalidStatus": "Valid status is required (pending, approved, rejected, or updated)",
+  "noValidRecords": "No valid Ads.txt records found in the uploaded file",
+  "noFileUploaded": "No file uploaded",
+  "parsingError": "Error parsing Ads.txt file: {{message}}",
+  "domainRequired": "Domain parameter is required",
+  "sellersFetchError": "Error fetching sellers.json: {{message}}"
+}

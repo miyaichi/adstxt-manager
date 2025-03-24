@@ -17,10 +17,14 @@ mockAxios.createResponse = (data: any, status = 200, headers = {}): AxiosRespons
     statusText: status === 200 ? 'OK' : 'ERROR',
     headers,
     config: {
-      headers: {},
+      headers: {
+        common: {},
+        get: {},
+        post: {},
+      } as any,
       timeout: 0,
       baseURL: '',
-      method: 'get'
+      method: 'get',
     },
   };
 };

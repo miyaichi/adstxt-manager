@@ -23,12 +23,31 @@ declare global {
 // Create a logger for the API module
 const logger = createLogger('API');
 
+// Get current language preference
+const getLanguage = (): string => {
+  // Try to get from localStorage first
+  const savedLanguage = localStorage.getItem('userLanguage');
+  if (savedLanguage) {
+    return savedLanguage;
+  }
+
+  // Otherwise, use browser language or default to English
+  const browserLanguage = navigator.language.split('-')[0];
+  return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
+};
+
 // Configure axios
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Add request interceptor to update language on each request
+api.interceptors.request.use((config) => {
+  config.headers['Accept-Language'] = getLanguage();
+  return config;
 });
 
 // Request API calls

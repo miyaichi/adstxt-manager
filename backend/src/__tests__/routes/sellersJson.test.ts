@@ -22,20 +22,20 @@ describe('Sellers.json API Routes', () => {
   const mockOpenXSellersJson = {
     sellers: [
       {
-        seller_id: "123456789",
-        name: "OpenX",
-        domain: "openx.com",
-        seller_type: "INTERMEDIARY"
+        seller_id: '123456789',
+        name: 'OpenX',
+        domain: 'openx.com',
+        seller_type: 'INTERMEDIARY',
       },
       {
-        seller_id: "987654321",
-        name: "OpenX Europe",
-        domain: "uk.openx.com", 
-        seller_type: "INTERMEDIARY"
-      }
+        seller_id: '987654321',
+        name: 'OpenX Europe',
+        domain: 'uk.openx.com',
+        seller_type: 'INTERMEDIARY',
+      },
     ],
-    contact_email: "support@openx.com",
-    version: "1.0"
+    contact_email: 'support@openx.com',
+    version: '1.0',
   };
 
   const mockCache = {
@@ -77,13 +77,13 @@ describe('Sellers.json API Routes', () => {
       // Arrange
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(mockCache);
       (SellersJsonCacheModel.isCacheExpired as jest.Mock).mockReturnValue(true);
-      
+
       (axios.get as jest.Mock).mockResolvedValue({
         status: 200,
         headers: { 'content-type': 'application/json' },
         data: mockOpenXSellersJson,
       });
-      
+
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue({
         ...mockCache,
         updated_at: new Date().toISOString(),
@@ -107,13 +107,13 @@ describe('Sellers.json API Routes', () => {
     it('should handle 404 not found responses', async () => {
       // Arrange
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       (axios.get as jest.Mock).mockResolvedValue({
         status: 404,
         headers: { 'content-type': 'text/html' },
         data: '<html><body>Not Found</body></html>',
       });
-      
+
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue({
         id: 'cache-123',
         domain: 'openx.com',
@@ -135,23 +135,25 @@ describe('Sellers.json API Routes', () => {
       expect(response.body.data.content).toBeNull();
       expect(response.body.data.status).toBe('not_found');
       expect(response.body.data.status_code).toBe(404);
-      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(expect.objectContaining({
-        domain: 'openx.com',
-        status: 'not_found',
-        status_code: 404,
-      }));
+      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: 'openx.com',
+          status: 'not_found',
+          status_code: 404,
+        })
+      );
     });
 
     it('should handle invalid format responses', async () => {
       // Arrange
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       (axios.get as jest.Mock).mockResolvedValue({
         status: 200,
         headers: { 'content-type': 'text/html' },
         data: '<html><body>Some HTML content</body></html>',
       });
-      
+
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue({
         id: 'cache-123',
         domain: 'openx.com',
@@ -172,10 +174,12 @@ describe('Sellers.json API Routes', () => {
       expect(response.body.data.domain).toBe('openx.com');
       expect(response.body.data.content).toBeNull();
       expect(response.body.data.status).toBe('invalid_format');
-      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(expect.objectContaining({
-        domain: 'openx.com',
-        status: 'invalid_format',
-      }));
+      expect(SellersJsonCacheModel.saveCache).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: 'openx.com',
+          status: 'invalid_format',
+        })
+      );
     });
 
     it('should return 400 for request without domain', async () => {
@@ -189,10 +193,10 @@ describe('Sellers.json API Routes', () => {
     it('should handle network errors', async () => {
       // Arrange
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(null);
-      
+
       const networkError = new Error('Network Error');
       (axios.get as jest.Mock).mockRejectedValue(networkError);
-      
+
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue({
         id: 'cache-123',
         domain: 'openx.com',

@@ -1,15 +1,19 @@
 import React from 'react';
 import RequestForm from '../components/requests/RequestForm';
-import { Flex, Heading, Breadcrumbs } from '@aws-amplify/ui-react';
+import { Flex, Breadcrumbs } from '@aws-amplify/ui-react';
 import { Link } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { t } from '../i18n/translations';
 
 const NewRequestPage: React.FC = () => {
+  const { language } = useApp();
+
   return (
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: 'ホーム', href: '/' },
-          { label: '新規リクエスト', isCurrent: true },
+          { label: t('common.home', language), href: '/' },
+          { label: t('newRequestPage.breadcrumb', language), isCurrent: true },
         ]}
       />
 

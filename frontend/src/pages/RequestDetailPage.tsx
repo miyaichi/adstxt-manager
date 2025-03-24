@@ -3,17 +3,20 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Flex, Breadcrumbs, Alert } from '@aws-amplify/ui-react';
 import RequestDetail from '../components/requests/RequestDetail';
 import ErrorMessage from '../components/common/ErrorMessage';
+import { useApp } from '../context/AppContext';
+import { t } from '../i18n/translations';
 
 const RequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const { language } = useApp();
 
   if (!id) {
     return (
       <ErrorMessage
-        title="リクエストIDがありません"
-        message="リクエストIDが指定されていません。URLを確認してください"
+        title={t('requestDetailPage.errors.noId', language)}
+        message={t('requestDetailPage.errors.noIdDescription', language)}
       />
     );
   }
@@ -21,8 +24,8 @@ const RequestDetailPage: React.FC = () => {
   if (!token) {
     return (
       <ErrorMessage
-        title="トークンがありません"
-        message="アクセストークンが指定されていません。URLを確認してください"
+        title={t('requestDetailPage.errors.noToken', language)}
+        message={t('requestDetailPage.errors.noTokenDescription', language)}
       />
     );
   }
@@ -31,8 +34,8 @@ const RequestDetailPage: React.FC = () => {
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: 'ホーム', href: '/' },
-          { label: 'リクエスト詳細', isCurrent: true },
+          { label: t('common.home', language), href: '/' },
+          { label: t('requestDetailPage.breadcrumb', language), isCurrent: true },
         ]}
       />
 

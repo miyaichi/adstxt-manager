@@ -1,0 +1,24 @@
+{
+  "accessTokenRequired": "アクセストークンが必要です",
+  "invalidEmail": "無効なメールアドレスです",
+  "invalidSenderEmail": "無効な送信者メールアドレスです",
+  "missingFields": {
+    "message": "リクエストID、送信者メール、内容、トークンが必要です",
+    "publisherInfo": "パブリッシャー名とドメインが必要です",
+    "request": "パブリッシャーメール、リクエスト者メール、リクエスト者名が必要です",
+    "records": "Ads.txtレコードが必要です（ファイルアップロードまたはJSONデータ）"
+  },
+  "notFoundOrInvalidToken": "リクエストが見つからないか、無効なトークンです",
+  "recordNotFound": "Ads.txtレコードが見つかりません",
+  "failedToUpdate": {
+    "status": "リクエストステータスの更新に失敗しました",
+    "publisherInfo": "パブリッシャー情報の更新に失敗しました",
+    "recordStatus": "レコードステータスの更新に失敗しました"
+  },
+  "invalidStatus": "有効なステータスが必要です（pending、approved、rejected、または updated）",
+  "noValidRecords": "アップロードされたファイルに有効なAds.txtレコードがありません",
+  "noFileUploaded": "ファイルがアップロードされていません",
+  "parsingError": "Ads.txtファイルの解析エラー: {{message}}",
+  "domainRequired": "ドメインパラメータが必要です",
+  "sellersFetchError": "sellers.jsonの取得エラー: {{message}}"
+}

@@ -75,49 +75,50 @@ class SellersJsonCacheModel {
    * @param data - The sellers.json cache data
    * @returns Promise with the created/updated record
    */
-  saveCache(data: Omit<SellersJsonCache, 'id' | 'created_at' | 'updated_at'>): Promise<SellersJsonCache> {
+  saveCache(
+    data: Omit<SellersJsonCache, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<SellersJsonCache> {
     return new Promise((resolve, reject) => {
       const now = new Date().toISOString();
-      
+
       // Check if entry already exists for this domain
       db.get(
         'SELECT * FROM sellers_json_cache WHERE domain = ?',
         [data.domain],
         (err, existingRow: SellersJsonCache | undefined) => {
           if (err) {
-            logger.error(`Error checking existing sellers.json cache for domain ${data.domain}:`, err);
+            logger.error(
+              `Error checking existing sellers.json cache for domain ${data.domain}:`,
+              err
+            );
             reject(err);
             return;
           }
-          
+
           if (existingRow) {
             // Update existing record
             db.run(
               `UPDATE sellers_json_cache 
                SET content = ?, status = ?, status_code = ?, error_message = ?, updated_at = ? 
                WHERE domain = ?`,
-              [
-                data.content,
-                data.status,
-                data.status_code,
-                data.error_message,
-                now,
-                data.domain
-              ],
-              function(err) {
+              [data.content, data.status, data.status_code, data.error_message, now, data.domain],
+              function (err) {
                 if (err) {
                   logger.error(`Error updating sellers.json cache for domain ${data.domain}:`, err);
                   reject(err);
                   return;
                 }
-                
+
                 // Get updated record
                 db.get(
                   'SELECT * FROM sellers_json_cache WHERE domain = ?',
                   [data.domain],
                   (err, row: SellersJsonCache) => {
                     if (err) {
-                      logger.error(`Error fetching updated sellers.json cache for domain ${data.domain}:`, err);
+                      logger.error(
+                        `Error fetching updated sellers.json cache for domain ${data.domain}:`,
+                        err
+                      );
                       reject(err);
                       return;
                     }
@@ -129,7 +130,7 @@ class SellersJsonCacheModel {
           } else {
             // Insert new record
             const id = uuidv4();
-            
+
             db.run(
               `INSERT INTO sellers_json_cache 
                (id, domain, content, status, status_code, error_message, created_at, updated_at)
@@ -142,15 +143,18 @@ class SellersJsonCacheModel {
                 data.status_code,
                 data.error_message,
                 now,
-                now
+                now,
               ],
-              function(err) {
+              function (err) {
                 if (err) {
-                  logger.error(`Error inserting sellers.json cache for domain ${data.domain}:`, err);
+                  logger.error(
+                    `Error inserting sellers.json cache for domain ${data.domain}:`,
+                    err
+                  );
                   reject(err);
                   return;
                 }
-                
+
                 const newRecord: SellersJsonCache = {
                   id,
                   domain: data.domain,
@@ -159,9 +163,9 @@ class SellersJsonCacheModel {
                   status_code: data.status_code,
                   error_message: data.error_message,
                   created_at: now,
-                  updated_at: now
+                  updated_at: now,
                 };
-                
+
                 resolve(newRecord);
               }
             );

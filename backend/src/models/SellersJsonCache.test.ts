@@ -72,7 +72,7 @@ describe('SellersJsonCache Model', () => {
     it('should return true for data older than 1 day', () => {
       // Create a date more than 1 day in the past
       const oneDayAgo = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
-      
+
       // Call the method
       const result = SellersJsonCacheModel.isCacheExpired(oneDayAgo);
 
@@ -83,7 +83,7 @@ describe('SellersJsonCache Model', () => {
     it('should return false for data less than 1 day old', () => {
       // Create a date less than 1 day in the past
       const lessThanOneDayAgo = new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString();
-      
+
       // Call the method
       const result = SellersJsonCacheModel.isCacheExpired(lessThanOneDayAgo);
 

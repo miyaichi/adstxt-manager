@@ -1,5 +1,6 @@
 import config from '../config/config';
 import transporter from '../config/email';
+import i18next from '../i18n';
 
 /**
  * Service to handle email sending functionality
@@ -12,6 +13,7 @@ class EmailService {
    * @param requesterName - The name of the requester
    * @param requesterEmail - The email of the requester
    * @param token - The secure token for accessing the request
+   * @param language - The language code to use for the email
    * @returns Promise resolving to the nodemailer info object
    */
   async sendPublisherRequestNotification(
@@ -19,23 +21,27 @@ class EmailService {
     requestId: string,
     requesterName: string,
     requesterEmail: string,
-    token: string
+    token: string,
+    language: string = 'en'
   ) {
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+
+    const subject = i18next.t('email:request.publisher.subject', { requesterName, lng: language });
+    const html = `
+      <h1>${i18next.t('email:request.publisher.title', { lng: language })}</h1>
+      <p>${i18next.t('email:request.publisher.greeting', { lng: language })}</p>
+      <p>${i18next.t('email:request.publisher.message', { requesterName, requesterEmail, lng: language })}</p>
+      <p>${i18next.t('email:request.publisher.action', { lng: language })}</p>
+      <p><a href="${requestUrl}">${i18next.t('email:request.publisher.linkText', { lng: language })}</a></p>
+      <p>${i18next.t('email:request.publisher.warning', { lng: language })}</p>
+      <p>${i18next.t('email:request.publisher.signature', { lng: language })}</p>
+    `;
 
     const mailOptions = {
       from: `"${config.email.fromName}" <${config.email.from}>`,
       to: publisherEmail,
-      subject: `New Ads.txt Update Request from ${requesterName}`,
-      html: `
-        <h1>New Ads.txt Update Request</h1>
-        <p>Dear Publisher,</p>
-        <p>${requesterName} (${requesterEmail}) has requested to update your Ads.txt file.</p>
-        <p>To review this request, please click the link below:</p>
-        <p><a href="${requestUrl}">View Request</a></p>
-        <p>This link is unique to you and should not be shared with others.</p>
-        <p>Thank you,<br>Ads.txt Manager</p>
-      `,
+      subject,
+      html,
     };
 
     return transporter.sendMail(mailOptions);
@@ -48,6 +54,7 @@ class EmailService {
    * @param publisherEmail - The email of the publisher
    * @param requestId - The ID of the request
    * @param token - The secure token for accessing the request
+   * @param language - The language code to use for the email
    * @returns Promise resolving to the nodemailer info object
    */
   async sendRequesterConfirmation(
@@ -55,23 +62,27 @@ class EmailService {
     requesterName: string,
     publisherEmail: string,
     requestId: string,
-    token: string
+    token: string,
+    language: string = 'en'
   ) {
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+
+    const subject = i18next.t('email:request.requester.subject', { lng: language });
+    const html = `
+      <h1>${i18next.t('email:request.requester.title', { lng: language })}</h1>
+      <p>${i18next.t('email:request.requester.greeting', { requesterName, lng: language })}</p>
+      <p>${i18next.t('email:request.requester.message', { publisherEmail, lng: language })}</p>
+      <p>${i18next.t('email:request.requester.action', { lng: language })}</p>
+      <p><a href="${requestUrl}">${i18next.t('email:request.requester.linkText', { lng: language })}</a></p>
+      <p>${i18next.t('email:request.requester.warning', { lng: language })}</p>
+      <p>${i18next.t('email:request.requester.signature', { lng: language })}</p>
+    `;
 
     const mailOptions = {
       from: `"${config.email.fromName}" <${config.email.from}>`,
       to: requesterEmail,
-      subject: `Your Ads.txt Request Has Been Submitted`,
-      html: `
-        <h1>Ads.txt Update Request Submitted</h1>
-        <p>Hello ${requesterName},</p>
-        <p>Your request to update the Ads.txt file for publisher ${publisherEmail} has been submitted successfully.</p>
-        <p>You can track the status of your request using the link below:</p>
-        <p><a href="${requestUrl}">View Request Status</a></p>
-        <p>This link is unique to you and should not be shared with others.</p>
-        <p>Thank you,<br>Ads.txt Manager</p>
-      `,
+      subject,
+      html,
     };
 
     return transporter.sendMail(mailOptions);
@@ -83,28 +94,33 @@ class EmailService {
    * @param requestId - The ID of the request
    * @param status - The new status
    * @param token - The secure token for accessing the request
+   * @param language - The language code to use for the email
    * @returns Promise resolving to the nodemailer info object
    */
   async sendStatusUpdateNotification(
     email: string,
     requestId: string,
     status: string,
-    token: string
+    token: string,
+    language: string = 'en'
   ) {
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
     const statusText = status.charAt(0).toUpperCase() + status.slice(1);
 
+    const subject = i18next.t('email:statusUpdate.subject', { status: statusText, lng: language });
+    const html = `
+      <h1>${i18next.t('email:statusUpdate.title', { lng: language })}</h1>
+      <p>${i18next.t('email:statusUpdate.message', { status: statusText, lng: language })}</p>
+      <p>${i18next.t('email:statusUpdate.action', { lng: language })}</p>
+      <p><a href="${requestUrl}">${i18next.t('email:statusUpdate.linkText', { lng: language })}</a></p>
+      <p>${i18next.t('email:statusUpdate.signature', { lng: language })}</p>
+    `;
+
     const mailOptions = {
       from: `"${config.email.fromName}" <${config.email.from}>`,
       to: email,
-      subject: `Ads.txt Request Status: ${statusText}`,
-      html: `
-        <h1>Ads.txt Request Status Update</h1>
-        <p>The status of an Ads.txt request has been updated to: <strong>${statusText}</strong>.</p>
-        <p>To view the request details, please click the link below:</p>
-        <p><a href="${requestUrl}">View Request</a></p>
-        <p>Thank you,<br>Ads.txt Manager</p>
-      `,
+      subject,
+      html,
     };
 
     return transporter.sendMail(mailOptions);
@@ -116,27 +132,32 @@ class EmailService {
    * @param requestId - The ID of the request
    * @param senderName - The name of the message sender
    * @param token - The secure token for accessing the request
+   * @param language - The language code to use for the email
    * @returns Promise resolving to the nodemailer info object
    */
   async sendMessageNotification(
     email: string,
     requestId: string,
     senderName: string,
-    token: string
+    token: string,
+    language: string = 'en'
   ) {
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+
+    const subject = i18next.t('email:message.subject', { lng: language });
+    const html = `
+      <h1>${i18next.t('email:message.title', { lng: language })}</h1>
+      <p>${i18next.t('email:message.message', { senderName, lng: language })}</p>
+      <p>${i18next.t('email:message.action', { lng: language })}</p>
+      <p><a href="${requestUrl}">${i18next.t('email:message.linkText', { lng: language })}</a></p>
+      <p>${i18next.t('email:message.signature', { lng: language })}</p>
+    `;
 
     const mailOptions = {
       from: `"${config.email.fromName}" <${config.email.from}>`,
       to: email,
-      subject: `New Message on Ads.txt Request`,
-      html: `
-        <h1>New Message Received</h1>
-        <p>You have received a new message from ${senderName} regarding an Ads.txt request.</p>
-        <p>To view the message, please click the link below:</p>
-        <p><a href="${requestUrl}">View Message</a></p>
-        <p>Thank you,<br>Ads.txt Manager</p>
-      `,
+      subject,
+      html,
     };
 
     return transporter.sendMail(mailOptions);

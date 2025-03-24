@@ -15,19 +15,23 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
 
   // Validate required fields
   if (!request_id || !sender_email || !content || !token) {
-    throw new ApiError(400, 'Request ID, sender email, content, and token are required');
+    throw new ApiError(
+      400,
+      'Request ID, sender email, content, and token are required',
+      'errors:missingFields.message'
+    );
   }
 
   // Validate email address
   if (!isValidEmail(sender_email)) {
-    throw new ApiError(400, 'Invalid sender email address');
+    throw new ApiError(400, 'Invalid sender email address', 'errors:invalidSenderEmail');
   }
 
   // Verify the token and request
   const request = await RequestModel.getByIdWithToken(request_id, token);
 
   if (!request) {
-    throw new ApiError(404, 'Request not found or invalid token');
+    throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
 
   // Create the message
@@ -49,11 +53,15 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
         ? request.publisher_name || 'Publisher'
         : request.requester_name;
 
+    // Get the preferred language from the request header
+    const language = req.language || 'en';
+
     await emailService.sendMessageNotification(
       recipientEmail,
       request_id,
       senderName,
-      request.token
+      request.token,
+      language
     );
   } catch (error) {
     console.error('Error sending message notification email:', error);
@@ -83,7 +91,7 @@ export const getMessagesByRequestId = asyncHandler(async (req: Request, res: Res
 
   if (!token || typeof token !== 'string') {
     logger.warn('Error: Access token is required');
-    throw new ApiError(401, 'Access token is required');
+    throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
 
   // Verify the token and request
@@ -91,7 +99,7 @@ export const getMessagesByRequestId = asyncHandler(async (req: Request, res: Res
 
   if (!request) {
     logger.warn('Error: Request not found or invalid token', { requestId });
-    throw new ApiError(404, 'Request not found or invalid token');
+    throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
 
   // Get all messages for the request
