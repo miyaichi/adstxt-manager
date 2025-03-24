@@ -1,11 +1,10 @@
 import db from '../config/database';
-import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 
 export type AdsTxtCacheStatus = 'success' | 'error' | 'not_found' | 'invalid_format';
 
 export interface AdsTxtCache {
-  id: string;
+  id: number;
   domain: string;
   content: string | null;
   url: string | null;
@@ -115,17 +114,15 @@ class AdsTxtCacheModel {
               }
             );
           } else {
-            // Create a new entry
-            const id = uuidv4();
+            // Create a new entry - let SQLite auto-increment the id
             const query = `
-              INSERT INTO ads_txt_cache (id, domain, content, url, status, status_code, error_message, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO ads_txt_cache (domain, content, url, status, status_code, error_message, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
 
             db.run(
               query,
               [
-                id,
                 data.domain,
                 data.content,
                 data.url,
@@ -135,12 +132,15 @@ class AdsTxtCacheModel {
                 now,
                 now,
               ],
-              (err) => {
+              function(err) {
                 if (err) {
                   logger.error('Error creating ads.txt cache:', err);
                   reject(err);
                   return;
                 }
+
+                // Get the auto-generated id from the statement
+                const id = this.lastID;
 
                 // Return the new entry
                 const newEntry: AdsTxtCache = {

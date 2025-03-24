@@ -89,6 +89,17 @@ export interface ProcessAdsTxtResponse {
   invalidRecords: number;
 }
 
+export interface AdsTxtCacheResponse {
+  domain: string;
+  content: string | null;
+  url: string | null;
+  status: 'success' | 'error' | 'not_found' | 'invalid_format';
+  status_code: number | null;
+  error_message: string | null;
+  cached: boolean;
+  updated_at: string;
+}
+
 // API Response Wrappers
 export interface ApiResponse<T> {
   success: boolean;

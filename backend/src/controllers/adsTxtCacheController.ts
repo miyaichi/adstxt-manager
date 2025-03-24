@@ -95,8 +95,11 @@ async function tryFetchAdsTxt(
       });
 
       // If redirect happened, store the final URL
-      if (response.request.res.responseUrl) {
+      if (response.request && response.request.res && response.request.res.responseUrl) {
         redirectUrl = response.request.res.responseUrl;
+      } else if (response.request && response.request.responseURL) {
+        // Alternative property in some axios versions
+        redirectUrl = response.request.responseURL;
       }
 
       // If status is successful
@@ -218,14 +221,20 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
 
       // Determine error type
       let status: AdsTxtCacheStatus = 'error';
-      let statusCode = error.status || 500;
-      let errorMessage = error.message || 'Unknown error';
+      let statusCode = 500;
+      let errorMessage = 'Unknown error';
 
-      if (statusCode === 404) {
-        status = 'not_found';
-        errorMessage = 'ads.txt file not found';
-      } else if (error.message && error.message.includes('Invalid content')) {
-        status = 'invalid_format';
+      // Safely handle the error object
+      if (error && typeof error === 'object') {
+        statusCode = (error as any).status || 500;
+        errorMessage = (error as any).message || 'Unknown error';
+
+        if (statusCode === 404) {
+          status = 'not_found';
+          errorMessage = 'ads.txt file not found';
+        } else if ((error as any).message && (error as any).message.includes('Invalid content')) {
+          status = 'invalid_format';
+        }
       }
 
       // Save error to cache

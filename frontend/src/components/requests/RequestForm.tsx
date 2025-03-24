@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Card,
   Flex,
@@ -12,14 +12,32 @@ import {
   Heading,
   View,
   useTheme,
+  Badge,
+  Loader,
 } from '@aws-amplify/ui-react';
 import { useNavigate } from 'react-router-dom';
 import { AdsTxtRecord, CreateRequestData } from '../../models';
-import { requestApi } from '../../api';
+import { requestApi, adsTxtApi } from '../../api';
 import AdsTxtFileUpload from '../adsTxt/AdsTxtFileUpload';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('RequestForm');
+
+// Simple debounce function
+const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
+  let timeout: NodeJS.Timeout | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+};
 
 const RequestForm: React.FC = () => {
   const { language } = useApp();
@@ -40,8 +58,72 @@ const RequestForm: React.FC = () => {
     token: string;
   } | null>(null);
 
+  // Domain validation states
+  const [isDomainValidating, setIsDomainValidating] = useState(false);
+  const [domainValidationStatus, setDomainValidationStatus] = useState<
+    'none' | 'success' | 'error' | 'invalid'
+  >('none');
+  const [domainValidationMessage, setDomainValidationMessage] = useState<string | null>(null);
+  const [adsTxtContent, setAdsTxtContent] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { tokens } = useTheme();
+
+  // Domain validation
+  const validateDomain = async (domain: string) => {
+    // Reset validation states
+    setDomainValidationStatus('none');
+    setDomainValidationMessage(null);
+    setAdsTxtContent(null);
+
+    if (!domain) return;
+
+    // Simple domain format validation using regex
+    const domainRegex = /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})$/;
+    if (!domainRegex.test(domain)) {
+      setDomainValidationStatus('invalid');
+      setDomainValidationMessage(t('requests.form.domainValidation.invalidFormat', language));
+      return;
+    }
+
+    // Start validation
+    setIsDomainValidating(true);
+    try {
+      const response = await adsTxtApi.getAdsTxtFromDomain(domain);
+      logger.debug('Domain validation response:', response);
+
+      if (response.success) {
+        const { status, content } = response.data;
+
+        if (status === 'success' && content) {
+          setDomainValidationStatus('success');
+          setDomainValidationMessage(t('requests.form.domainValidation.success', language));
+          setAdsTxtContent(content);
+        } else {
+          setDomainValidationStatus('error');
+          setDomainValidationMessage(
+            response.data.error_message || t('requests.form.domainValidation.error', language)
+          );
+        }
+      } else {
+        setDomainValidationStatus('error');
+        setDomainValidationMessage(
+          response.error?.message || t('requests.form.domainValidation.error', language)
+        );
+      }
+    } catch (err) {
+      logger.error('Domain validation error:', err);
+      setDomainValidationStatus('error');
+      setDomainValidationMessage(t('requests.form.domainValidation.error', language));
+    } finally {
+      setIsDomainValidating(false);
+    }
+  };
+
+  // Create a debounced version of the validation function
+  const debouncedValidateDomain = useRef(
+    debounce((domain: string) => validateDomain(domain), 1000)
+  ).current;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,6 +131,11 @@ const RequestForm: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+
+    // If the domain field is being changed, trigger validation
+    if (name === 'publisher_domain' && value) {
+      debouncedValidateDomain(value);
+    }
   };
 
   const handleRecordsSelected = (selectedRecords: AdsTxtRecord[]) => {
@@ -184,6 +271,18 @@ const RequestForm: React.FC = () => {
               placeholder="example.com"
               value={formData.publisher_domain}
               onChange={handleInputChange}
+              hasError={domainValidationStatus === 'error' || domainValidationStatus === 'invalid'}
+              errorMessage={(domainValidationStatus === 'error' || domainValidationStatus === 'invalid') && domainValidationMessage ? domainValidationMessage : ''}
+              innerEndComponent={
+                isDomainValidating ? (
+                  <Flex alignItems="center" gap="0.5rem">
+                    <Loader size="small" />
+                    <Text fontSize="0.8rem">{t('requests.form.domainValidation.loading', language)}</Text>
+                  </Flex>
+                ) : domainValidationStatus === 'success' ? (
+                  <Badge variation="success">{domainValidationMessage}</Badge>
+                ) : null
+              }
             />
 
             <TextField
@@ -208,6 +307,66 @@ const RequestForm: React.FC = () => {
           <Divider />
 
           <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
+
+          {domainValidationStatus === 'success' && adsTxtContent && (
+            <Card variation="outlined" padding="1rem">
+              <Flex direction="column" gap="1rem">
+                <Heading level={4}>{t('adsTxt.fileUpload.foundOnDomain', language)}</Heading>
+                <Text>
+                  {adsTxtContent.length > 500
+                    ? `${adsTxtContent.substring(0, 500)}...`
+                    : adsTxtContent}
+                </Text>
+                <Button
+                  onClick={() => {
+                    // Send the content to the server to parse and process
+                    const handleAdsTxtContent = async () => {
+                      try {
+                        setIsLoading(true);
+                        // Create a blob from the content and convert to a file
+                        const blob = new Blob([adsTxtContent], { type: 'text/plain' });
+                        const file = new File([blob], 'ads.txt', { type: 'text/plain' });
+
+                        const response = await adsTxtApi.processAdsTxtFile(file);
+                        if (response.success) {
+                          // Convert ParsedAdsTxtRecord[] to AdsTxtRecord[]
+                          const newRecords: AdsTxtRecord[] = response.data.records
+                            .filter(record => record.is_valid)
+                            .map(record => ({
+                              id: `temp-${Math.random().toString(36).substr(2, 9)}`,
+                              request_id: '',
+                              domain: record.domain,
+                              account_id: record.account_id,
+                              account_type: record.account_type,
+                              certification_authority_id: record.certification_authority_id,
+                              relationship: record.relationship,
+                              status: 'pending',
+                              created_at: new Date().toISOString(),
+                              updated_at: new Date().toISOString()
+                            }));
+                          setRecords(newRecords);
+                        } else {
+                          setError(response.error?.message || t('common.parseError', language));
+                        }
+                      } catch (err) {
+                        logger.error('Error processing ads.txt content:', err);
+                        setError(t('common.parseError', language));
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    };
+
+                    handleAdsTxtContent();
+                  }}
+                  variation="primary"
+                  size="small"
+                  isLoading={isLoading}
+                >
+                  {t('adsTxt.fileUpload.useFoundFile', language)}
+                </Button>
+              </Flex>
+            </Card>
+          )}
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>

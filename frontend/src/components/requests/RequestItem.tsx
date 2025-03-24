@@ -33,7 +33,8 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
     }
   };
 
-  const recordCount = request.records_count || 0;
+  // Handle the records_count property which might not be in the type
+  const recordCount = (request as any).records_count || 0;
 
   return (
     <Card variation="outlined" padding="1rem">

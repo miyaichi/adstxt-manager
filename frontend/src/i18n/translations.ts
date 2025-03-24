@@ -299,6 +299,14 @@ export const translations = {
         en: 'Records: {{total}} | Valid: {{valid}} | Invalid: {{invalid}}',
         ja: 'レコード数: {{total}} | 有効: {{valid}} | 無効: {{invalid}}',
       },
+      foundOnDomain: {
+        en: 'Found ads.txt on this domain',
+        ja: 'このドメインでAds.txtが見つかりました',
+      },
+      useFoundFile: {
+        en: 'Use this file',
+        ja: 'このファイルを使用する',
+      },
     },
     recordItem: {
       domain: {
@@ -430,6 +438,24 @@ export const translations = {
       publisherDomain: {
         en: 'Publisher Domain',
         ja: 'パブリッシャードメイン',
+      },
+      domainValidation: {
+        loading: {
+          en: 'Validating domain...',
+          ja: 'ドメインを検証中...',
+        },
+        success: {
+          en: 'Ads.txt found on this domain',
+          ja: 'このドメインでAds.txtが見つかりました',
+        },
+        error: {
+          en: 'Could not find Ads.txt on this domain',
+          ja: 'このドメインでAds.txtが見つかりませんでした',
+        },
+        invalidFormat: {
+          en: 'Invalid domain format',
+          ja: '無効なドメイン形式です',
+        },
       },
       requesterEmail: {
         en: "Requester's Email Address *",

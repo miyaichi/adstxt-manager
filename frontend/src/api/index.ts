@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+  AdsTxtCacheResponse,
   AdsTxtRecord,
   ApiResponse,
   CreateMessageData,
@@ -213,6 +214,14 @@ export const adsTxtApi = {
     const response = await api.get<string>(`/adsTxt/generate/${requestId}?token=${token}`, {
       responseType: 'text',
     });
+    return response.data;
+  },
+
+  // Fetch ads.txt from a domain
+  async getAdsTxtFromDomain(domain: string): Promise<ApiResponse<AdsTxtCacheResponse>> {
+    const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(
+      `/adsTxtCache/domain/${encodeURIComponent(domain)}`
+    );
     return response.data;
   },
 };
