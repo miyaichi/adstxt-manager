@@ -13,7 +13,8 @@ const LOG_LEVELS = {
   debug: 3,
 };
 
-const currentLogLevel = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
+type LogLevel = keyof typeof LOG_LEVELS;
+const currentLogLevel = LOG_LEVELS[(LOG_LEVEL as LogLevel)] || LOG_LEVELS.info;
 
 class Logger {
   private prefix: string;
@@ -58,5 +59,7 @@ const defaultLogger = new Logger();
 export const createLogger = (name: string): Logger => {
   return new Logger(name);
 };
+
+export const logger = new Logger('SellersJson');
 
 export default defaultLogger;

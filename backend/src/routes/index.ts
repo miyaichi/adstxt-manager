@@ -2,6 +2,7 @@ import express from 'express';
 import adsTxtRoutes from './adsTxt';
 import messageRoutes from './messages';
 import requestRoutes from './requests';
+import sellersJsonRoutes from './sellersJson';
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.get('/status', (req, res) => {
 router.use('/requests', requestRoutes);
 router.use('/messages', messageRoutes);
 router.use('/adsTxt', adsTxtRoutes);
+router.use('/sellersJson', sellersJsonRoutes);
 
 export default router;
