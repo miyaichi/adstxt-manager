@@ -1,8 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/database';
+const typedDb = db as any;
 import tokenService from '../services/tokenService';
+import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
-export interface Request {
+export interface Request extends DatabaseRecord {
   id: string;
   publisher_email: string;
   requester_email: string;
@@ -22,6 +24,9 @@ export interface CreateRequestDTO {
   publisher_name?: string;
   publisher_domain?: string;
 }
+
+// Use the exported database instance, which implements IDatabaseAdapter
+// No need for type assertion since it's already typed correctly
 
 class RequestModel {
   private readonly tableName = 'requests';
@@ -49,7 +54,7 @@ class RequestModel {
       updated_at: now,
     };
 
-    return await (db as any).insert(this.tableName, request);
+    return await typedDb.insert(this.tableName, request);
   }
 
   /**
@@ -59,8 +64,8 @@ class RequestModel {
    * @returns Promise with the request or null if not found/invalid token
    */
   async getByIdWithToken(id: string, token: string): Promise<Request | null> {
-    const request = await (db as any).getById(this.tableName, id) as Request | null;
-    
+    const request = await typedDb.getById(this.tableName, id);
+
     if (!request) {
       return null;
     }
@@ -78,7 +83,7 @@ class RequestModel {
    * @returns Promise with the request or null if not found
    */
   async getById(id: string): Promise<Request | null> {
-    return await (db as any).getById(this.tableName, id) as Request | null;
+    return await typedDb.getById(this.tableName, id);
   }
 
   /**
@@ -92,11 +97,11 @@ class RequestModel {
     status: 'pending' | 'approved' | 'rejected' | 'updated'
   ): Promise<Request | null> {
     const now = new Date().toISOString();
-    
-    return await (db as any).update(this.tableName, id, {
+
+    return await typedDb.update(this.tableName, id, {
       status,
-      updated_at: now
-    }) as Request | null;
+      updated_at: now,
+    });
   }
 
   /**
@@ -112,12 +117,12 @@ class RequestModel {
     publisherDomain: string
   ): Promise<Request | null> {
     const now = new Date().toISOString();
-    
-    return await (db as any).update(this.tableName, id, {
+
+    return await typedDb.update(this.tableName, id, {
       publisher_name: publisherName,
       publisher_domain: publisherDomain,
-      updated_at: now
-    }) as Request | null;
+      updated_at: now,
+    });
   }
 
   /**
@@ -126,10 +131,10 @@ class RequestModel {
    * @returns Promise with an array of requests
    */
   async getByPublisherEmail(email: string): Promise<Request[]> {
-    return await (db as any).query(this.tableName, {
+    return await typedDb.query(this.tableName, {
       where: { publisher_email: email },
-      order: { field: 'updated_at', direction: 'DESC' }
-    }) as Request[];
+      order: { field: 'updated_at', direction: 'DESC' },
+    });
   }
 
   /**
@@ -138,10 +143,10 @@ class RequestModel {
    * @returns Promise with an array of requests
    */
   async getByRequesterEmail(email: string): Promise<Request[]> {
-    return await (db as any).query(this.tableName, {
+    return await typedDb.query(this.tableName, {
       where: { requester_email: email },
-      order: { field: 'updated_at', direction: 'DESC' }
-    }) as Request[];
+      order: { field: 'updated_at', direction: 'DESC' },
+    });
   }
 }
 

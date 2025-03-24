@@ -1,8 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/database';
+const typedDb = db as any;
 import { logger } from '../utils/logger';
+import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
-export interface SellersJsonCache {
+export interface SellersJsonCache extends DatabaseRecord {
   id: string;
   domain: string;
   content: string | null;
@@ -21,158 +23,120 @@ export interface SellersJsonContent {
     name?: string;
     domain?: string;
     seller_type?: string;
-    is_confidential?: number;
-    comment?: string;
-    [key: string]: any; // Allow other attributes according to spec
+    [key: string]: any;
   }>;
-  contact_email?: string;
-  contact_address?: string;
-  version?: string;
-  identifiers?: Array<{
-    name: string;
-    value: string;
-  }>;
-  [key: string]: any; // Allow other top-level attributes according to spec
+  [key: string]: any;
 }
 
+// Use the exported database instance, which implements IDatabaseAdapter
+// No need for type assertion since it's already typed correctly
+
 class SellersJsonCacheModel {
+  private readonly tableName = 'sellers_json_cache';
+
   /**
-   * Get cached sellers.json by domain
-   * @param domain - Domain to lookup
-   * @returns Promise with the cached data or null if not found
+   * Get a sellers.json cache entry by domain
+   * @param domain The domain to retrieve
+   * @returns The cache entry or null if not found
    */
-  getByDomain(domain: string): Promise<SellersJsonCache | null> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM sellers_json_cache WHERE domain = ?',
-        [domain],
-        (err, row: SellersJsonCache) => {
-          if (err) {
-            logger.error(`Error fetching sellers.json cache for domain ${domain}:`, err);
-            reject(err);
-            return;
-          }
-          resolve(row || null);
-        }
-      );
-    });
+  async getByDomain(domain: string): Promise<SellersJsonCache | null> {
+    try {
+      const results = await typedDb.query(this.tableName, {
+        where: { domain },
+        order: { field: 'updated_at', direction: 'DESC' },
+      });
+
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      logger.error('Error fetching sellers.json cache:', error);
+      throw error;
+    }
   }
 
   /**
-   * Check if cache is expired (older than 1 day)
-   * @param updatedAt - ISO timestamp of last update
-   * @returns boolean indicating if cache is expired
+   * Save a sellers.json cache entry
+   * @param data The cache data to save
+   * @returns The saved cache entry
    */
-  isCacheExpired(updatedAt: string): boolean {
-    const lastUpdate = new Date(updatedAt).getTime();
-    const now = new Date().getTime();
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    return now - lastUpdate > oneDayMs;
+  async saveCache(data: {
+    domain: string;
+    content: string | null;
+    status: SellersJsonCacheStatus;
+    status_code: number | null;
+    error_message: string | null;
+  }): Promise<SellersJsonCache> {
+    const { domain, content, status, status_code: statusCode, error_message: errorMessage } = data;
+    const now = new Date().toISOString();
+    const existingCache = await this.getByDomain(domain);
+
+    try {
+      if (existingCache) {
+        // Update existing entry
+        const updatedCache = await typedDb.update(this.tableName, existingCache.id, {
+          content,
+          status,
+          status_code: statusCode,
+          error_message: errorMessage,
+          updated_at: now,
+        });
+
+        if (!updatedCache) {
+          throw new Error(`Failed to update sellers.json cache for domain: ${domain}`);
+        }
+
+        return updatedCache;
+      } else {
+        // Create new entry
+        const newCache: SellersJsonCache = {
+          id: uuidv4(),
+          domain,
+          content,
+          status,
+          status_code: statusCode,
+          error_message: errorMessage,
+          created_at: now,
+          updated_at: now,
+        };
+
+        return await typedDb.insert(this.tableName, newCache);
+      }
+    } catch (error) {
+      logger.error('Error saving sellers.json cache:', error);
+      throw error;
+    }
   }
 
   /**
-   * Save or update sellers.json cache
-   * @param data - The sellers.json cache data
-   * @returns Promise with the created/updated record
+   * Check if a cache entry is expired
+   * @param updatedAt The timestamp when the cache was last updated
+   * @param expirationHours The number of hours after which the cache is considered expired (default 24)
+   * @returns True if the cache is expired, false otherwise
    */
-  saveCache(
-    data: Omit<SellersJsonCache, 'id' | 'created_at' | 'updated_at'>
-  ): Promise<SellersJsonCache> {
-    return new Promise((resolve, reject) => {
-      const now = new Date().toISOString();
+  isCacheExpired(updatedAt: string, expirationHours = 24): boolean {
+    const updatedDate = new Date(updatedAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - updatedDate.getTime());
+    const diffHours = diffTime / (1000 * 60 * 60);
 
-      // Check if entry already exists for this domain
-      db.get(
-        'SELECT * FROM sellers_json_cache WHERE domain = ?',
-        [data.domain],
-        (err, existingRow: SellersJsonCache | undefined) => {
-          if (err) {
-            logger.error(
-              `Error checking existing sellers.json cache for domain ${data.domain}:`,
-              err
-            );
-            reject(err);
-            return;
-          }
+    return diffHours > expirationHours;
+  }
 
-          if (existingRow) {
-            // Update existing record
-            db.run(
-              `UPDATE sellers_json_cache 
-               SET content = ?, status = ?, status_code = ?, error_message = ?, updated_at = ? 
-               WHERE domain = ?`,
-              [data.content, data.status, data.status_code, data.error_message, now, data.domain],
-              function (err) {
-                if (err) {
-                  logger.error(`Error updating sellers.json cache for domain ${data.domain}:`, err);
-                  reject(err);
-                  return;
-                }
+  /**
+   * Parse a sellers.json string into a structured object
+   * @param jsonString The sellers.json content as a string
+   * @returns The parsed content or null if parsing fails
+   */
+  parseContent(jsonString: string | null): SellersJsonContent | null {
+    if (!jsonString) {
+      return null;
+    }
 
-                // Get updated record
-                db.get(
-                  'SELECT * FROM sellers_json_cache WHERE domain = ?',
-                  [data.domain],
-                  (err, row: SellersJsonCache) => {
-                    if (err) {
-                      logger.error(
-                        `Error fetching updated sellers.json cache for domain ${data.domain}:`,
-                        err
-                      );
-                      reject(err);
-                      return;
-                    }
-                    resolve(row);
-                  }
-                );
-              }
-            );
-          } else {
-            // Insert new record
-            const id = uuidv4();
-
-            db.run(
-              `INSERT INTO sellers_json_cache 
-               (id, domain, content, status, status_code, error_message, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                id,
-                data.domain,
-                data.content,
-                data.status,
-                data.status_code,
-                data.error_message,
-                now,
-                now,
-              ],
-              function (err) {
-                if (err) {
-                  logger.error(
-                    `Error inserting sellers.json cache for domain ${data.domain}:`,
-                    err
-                  );
-                  reject(err);
-                  return;
-                }
-
-                const newRecord: SellersJsonCache = {
-                  id,
-                  domain: data.domain,
-                  content: data.content,
-                  status: data.status,
-                  status_code: data.status_code,
-                  error_message: data.error_message,
-                  created_at: now,
-                  updated_at: now,
-                };
-
-                resolve(newRecord);
-              }
-            );
-          }
-        }
-      );
-    });
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      logger.error('Error parsing sellers.json content:', error);
+      return null;
+    }
   }
 }
 

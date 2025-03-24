@@ -1,7 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/database';
+const typedDb = db as any;
+import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
-export interface Message {
+export interface Message extends DatabaseRecord {
   id: string;
   request_id: string;
   sender_email: string;
@@ -14,6 +16,9 @@ export interface CreateMessageDTO {
   sender_email: string;
   content: string;
 }
+
+// Use the exported database instance, which implements IDatabaseAdapter
+// No need for type assertion since it's already typed correctly
 
 class MessageModel {
   private readonly tableName = 'messages';
@@ -35,7 +40,7 @@ class MessageModel {
       created_at: now,
     };
 
-    return await (db as any).insert(this.tableName, message) as Message;
+    return await typedDb.insert(this.tableName, message);
   }
 
   /**
@@ -44,10 +49,10 @@ class MessageModel {
    * @returns Promise with an array of messages
    */
   async getByRequestId(requestId: string): Promise<Message[]> {
-    return await (db as any).query(this.tableName, {
+    return await typedDb.query(this.tableName, {
       where: { request_id: requestId },
-      order: { field: 'created_at', direction: 'ASC' }
-    }) as Message[];
+      order: { field: 'created_at', direction: 'ASC' },
+    });
   }
 
   /**
@@ -56,7 +61,7 @@ class MessageModel {
    * @returns Promise with the message or null if not found
    */
   async getById(id: string): Promise<Message | null> {
-    return await (db as any).getById(this.tableName, id) as Message | null;
+    return await typedDb.getById(this.tableName, id);
   }
 }
 

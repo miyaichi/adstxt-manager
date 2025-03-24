@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
-import AdsTxtCacheModel, { AdsTxtCacheStatus } from '../models/AdsTxtCache';
+import AdsTxtCacheModel, { AdsTxtCacheDTO, AdsTxtCacheStatus } from '../models/AdsTxtCache';
 import { logger } from '../utils/logger';
 import i18next from '../i18n';
 import psl from 'psl';
@@ -31,241 +31,165 @@ function extractRootDomain(domain: string): string {
     return parsed.domain;
   }
 
-  // If PSL couldn't parse the domain, return the original (cleaned) domain
+  // Fallback to original input if parsing fails
   return domain;
 }
 
 /**
- * Check if ads.txt content has SUBDOMAIN directive for the given subdomain
- * @param content The ads.txt content
- * @param subdomain The subdomain to check for
- * @returns True if the subdomain directive exists, false otherwise
- */
-function hasSubdomainDirective(content: string, subdomain: string): boolean {
-  const lines = content.split('\n');
-  const directiveRegex = new RegExp(`^\\s*SUBDOMAIN\\s*=\\s*${subdomain}\\s*`, 'i');
-
-  return lines.some((line) => {
-    // Remove comments and trim
-    const cleanLine = line.split('#')[0].trim();
-    return directiveRegex.test(cleanLine);
-  });
-}
-
-/**
- * Try to fetch ads.txt from a domain using multiple variations (http/https, www/no-www)
- * @param domain The domain to fetch from
- * @param subdomain Optional subdomain to check for in SUBDOMAIN directive
- * @returns Object containing the successful URL, content, and status code
- */
-async function tryFetchAdsTxt(
-  domain: string,
-  subdomain?: string
-): Promise<{
-  url: string;
-  content: string;
-  statusCode: number;
-}> {
-  // 1. Extract root domain if not a subdomain check
-  const rootDomain = subdomain ? domain : extractRootDomain(domain);
-
-  // 2. Create URLs to try
-  const urlsToTry = [
-    `https://${rootDomain}/ads.txt`,
-    `https://www.${rootDomain}/ads.txt`,
-    `http://${rootDomain}/ads.txt`,
-    `http://www.${rootDomain}/ads.txt`,
-  ];
-
-  // 3. Try each URL, stopping at the first success
-  let lastError: any = null;
-  let redirectUrl: string | null = null;
-
-  for (const url of urlsToTry) {
-    try {
-      const response = await axios.get(url, {
-        timeout: 10000,
-        maxRedirects: 5,
-        validateStatus: () => true, // Allow any status code
-        headers: {
-          'User-Agent': 'Ads.txt Manager/1.0',
-        },
-      });
-
-      // If redirect happened, store the final URL
-      if (response.request && response.request.res && response.request.res.responseUrl) {
-        redirectUrl = response.request.res.responseUrl;
-      } else if (response.request && response.request.responseURL) {
-        // Alternative property in some axios versions
-        redirectUrl = response.request.responseURL;
-      }
-
-      // If status is successful
-      if (response.status === 200) {
-        const content = response.data;
-
-        // If the content is not a string or is too large, reject
-        if (typeof content !== 'string' || content.length > 1000000) {
-          // 1MB limit
-          throw new Error('Invalid content type or size');
-        }
-
-        // If checking for a subdomain directive
-        if (subdomain) {
-          // If the root domain ads.txt has a subdomain directive for this subdomain
-          if (hasSubdomainDirective(content, subdomain)) {
-            // Now try to fetch the subdomain's ads.txt
-            return tryFetchAdsTxt(`${subdomain}.${rootDomain}`); // Recursive call without subdomain param
-          }
-          // No subdomain directive, return the root domain content
-        }
-
-        return {
-          url: redirectUrl || url,
-          content,
-          statusCode: response.status,
-        };
-      }
-
-      // For 404s and other errors, try the next URL
-      lastError = {
-        status: response.status,
-        message: `HTTP error ${response.status}`,
-      };
-    } catch (error) {
-      lastError = error;
-      // Continue to the next URL
-    }
-  }
-
-  // If we got here, all attempts failed
-  throw lastError || new Error('Failed to fetch ads.txt');
-}
-
-/**
- * Fetch ads.txt from a domain and return cached or fresh data
- * @route GET /api/adstxt/domain/:domain
+ * Get ads.txt for a domain
+ * If the ads.txt is cached and not expired, return the cached version
+ * Otherwise, fetch it from the domain and update the cache
  */
 export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
-  const { domain } = req.params;
-  const subdomain = req.query.subdomain as string | undefined;
+  const { domain: rawDomain } = req.params;
 
-  if (!domain) {
-    throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
+  if (!rawDomain) {
+    throw new ApiError(400, i18next.t('errors:domain_required'));
   }
 
-  try {
-    // Clean domain (remove protocol, path, etc.)
-    const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/i, '').split('/')[0];
+  // Clean and normalize the domain
+  const domain = extractRootDomain(rawDomain);
+  logger.info(`[AdsTxtManager] Getting ads.txt for domain: ${domain}`);
 
-    // Lookup key combines domain and subdomain if present
-    const lookupKey = subdomain ? `${subdomain}.${cleanDomain}` : cleanDomain;
+  // Try to get the cached ads.txt
+  const cachedAdsTxt = await AdsTxtCacheModel.getByDomain(domain);
 
-    // Check if we have a cached version
-    const cachedData = await AdsTxtCacheModel.getByDomain(lookupKey);
-
-    // If we have cached data and it's not expired, return it
-    if (cachedData && !AdsTxtCacheModel.isCacheExpired(cachedData.updated_at)) {
-      logger.info(`Serving cached ads.txt for domain: ${lookupKey}`);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          domain: lookupKey,
-          content: cachedData.content,
-          url: cachedData.url,
-          status: cachedData.status,
-          status_code: cachedData.status_code,
-          error_message: cachedData.error_message,
-          cached: true,
-          updated_at: cachedData.updated_at,
-        },
-      });
-    }
-
-    // Either no cache or cache expired, fetch fresh data
-    logger.info(`Fetching fresh ads.txt for domain: ${lookupKey}`);
-
-    try {
-      const result = await tryFetchAdsTxt(cleanDomain, subdomain);
-
-      // Save to cache
-      const cacheRecord = await AdsTxtCacheModel.saveCache({
-        domain: lookupKey,
-        content: result.content,
-        url: result.url,
-        status: 'success',
-        status_code: result.statusCode,
-        error_message: null,
-      });
-
-      // Return response
-      return res.status(200).json({
-        success: true,
-        data: {
-          domain: lookupKey,
-          content: cacheRecord.content,
-          url: cacheRecord.url,
-          status: cacheRecord.status,
-          status_code: cacheRecord.status_code,
-          error_message: cacheRecord.error_message,
-          cached: false,
-          updated_at: cacheRecord.updated_at,
-        },
-      });
-    } catch (error) {
-      // Handle fetch errors
-      logger.error(`Error fetching ads.txt for domain ${lookupKey}:`, error);
-
-      // Determine error type
-      let status: AdsTxtCacheStatus = 'error';
-      let statusCode = 500;
-      let errorMessage = 'Unknown error';
-
-      // Safely handle the error object
-      if (error && typeof error === 'object') {
-        statusCode = (error as any).status || 500;
-        errorMessage = (error as any).message || 'Unknown error';
-
-        if (statusCode === 404) {
-          status = 'not_found';
-          errorMessage = 'ads.txt file not found';
-        } else if ((error as any).message && (error as any).message.includes('Invalid content')) {
-          status = 'invalid_format';
-        }
-      }
-
-      // Save error to cache
-      const cacheRecord = await AdsTxtCacheModel.saveCache({
-        domain: lookupKey,
-        content: null,
-        url: null,
-        status,
-        status_code: statusCode,
-        error_message: errorMessage,
-      });
-
-      // Return error response but with 200 status (client will handle the error based on status field)
-      return res.status(200).json({
-        success: true,
-        data: {
-          domain: lookupKey,
-          content: null,
-          url: null,
-          status: cacheRecord.status,
-          status_code: cacheRecord.status_code,
-          error_message: cacheRecord.error_message,
-          cached: false,
-          updated_at: cacheRecord.updated_at,
-        },
-      });
-    }
-  } catch (error: any) {
-    logger.error(`Error in getAdsTxt for domain ${domain}:`, error);
-
-    const errorMessage = error.message || 'Unknown error';
-    throw new ApiError(500, `Error fetching ads.txt: ${errorMessage}`, 'errors:adsTxtFetchError', {
-      message: errorMessage,
+  // If we have a cache and it's not expired, return it
+  if (cachedAdsTxt && !AdsTxtCacheModel.isCacheExpired(cachedAdsTxt.updated_at)) {
+    logger.info(`[AdsTxtManager] Serving cached ads.txt for domain: ${domain}`);
+    return res.status(200).json({
+      success: true,
+      data: {
+        domain,
+        content: cachedAdsTxt.content,
+        url: cachedAdsTxt.url,
+        status: cachedAdsTxt.status,
+        status_code: cachedAdsTxt.status_code,
+        created_at: cachedAdsTxt.created_at,
+        updated_at: cachedAdsTxt.updated_at,
+      },
     });
   }
+
+  // Cache is expired or doesn't exist, fetch fresh ads.txt
+  logger.info(`[AdsTxtManager] Fetching ads.txt for domain: ${domain}`);
+
+  // Try common URLs for ads.txt
+  const urls = [`https://${domain}/ads.txt`, `https://www.${domain}/ads.txt`];
+
+  let content: string | null = null;
+  let url: string | null = null;
+  let status: AdsTxtCacheStatus = 'error';
+  let statusCode: number | null = null;
+  let errorMessage: string | null = null;
+
+  // Try each URL until we get a successful response
+  for (const targetUrl of urls) {
+    try {
+      const response = await axios.get(targetUrl, {
+        timeout: 5000, // 5 second timeout
+        maxContentLength: 1024 * 1024, // 1MB max
+        headers: {
+          'User-Agent': 'AdsTxtManager/1.0',
+        },
+      });
+
+      // If we get here, we have a successful response
+      content = response.data.toString();
+      url = targetUrl;
+      status = 'success';
+      statusCode = response.status;
+
+      // No need to try other URLs
+      break;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Request was made and server responded with a status code
+          // outside of 2xx range
+          if (error.response.status === 404) {
+            status = 'not_found';
+            statusCode = 404;
+            errorMessage = `Ads.txt not found at ${targetUrl}`;
+          } else {
+            status = 'error';
+            statusCode = error.response.status;
+            errorMessage = `Error fetching ads.txt: ${error.message}`;
+          }
+        } else if (error.request) {
+          // Request was made but no response received
+          status = 'error';
+          errorMessage = `No response from ${targetUrl}: ${error.message}`;
+        } else {
+          // Something happened in setting up the request
+          status = 'error';
+          errorMessage = `Error setting up request: ${error.message}`;
+        }
+      } else {
+        // Non-axios error
+        status = 'error';
+        errorMessage = `Error fetching ads.txt: ${(error as Error).message}`;
+      }
+    }
+  }
+
+  // If all URLs failed and status is still 'error', check if any had 404
+  if (status === 'error' && statusCode === 404) {
+    status = 'not_found';
+  }
+
+  // Check if content is valid ads.txt format if we have content
+  if (content && status === 'success') {
+    const lines = content.split('\n').filter((line) => {
+      // Remove comments and empty lines
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith('#');
+    });
+
+    // Check if there are any valid lines
+    if (lines.length === 0) {
+      status = 'invalid_format';
+      errorMessage = 'Ads.txt file is empty or contains only comments';
+    } else {
+      // Check a sample of lines for correct format
+      const checkSample = lines.slice(0, Math.min(5, lines.length));
+      const invalidLines = checkSample.filter((line) => {
+        const parts = line.split(',').map((part) => part.trim());
+        return parts.length < 3; // At minimum, need domain, pub ID, relationship
+      });
+
+      // If more than half the sample lines are invalid, flag as invalid format
+      if (invalidLines.length > checkSample.length / 2) {
+        status = 'invalid_format';
+        errorMessage = 'Ads.txt file appears to be in an invalid format';
+      }
+    }
+  }
+
+  // Save or update the cache
+  const cacheData: AdsTxtCacheDTO = {
+    domain,
+    content,
+    url,
+    status,
+    status_code: statusCode,
+    error_message: errorMessage,
+  };
+
+  const updatedCache = await AdsTxtCacheModel.saveCache(cacheData);
+
+  // Return the result
+  return res.status(200).json({
+    success: true,
+    data: {
+      domain,
+      content: updatedCache.content,
+      url: updatedCache.url,
+      status: updatedCache.status,
+      status_code: updatedCache.status_code,
+      error_message: updatedCache.error_message,
+      created_at: updatedCache.created_at,
+      updated_at: updatedCache.updated_at,
+    },
+  });
 });

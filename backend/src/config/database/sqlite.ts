@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import sqlite3, { Database as SQLiteDB } from 'sqlite3';
 import dotenv from 'dotenv';
-import { Database, DatabaseRecord, DatabaseQuery } from './index';
+import { DatabaseRecord, DatabaseQuery } from './index';
 
 // Import migration scripts
 import { runAdsTxtCacheMigration } from '../../db/migrations/run_ads_txt_cache';
@@ -10,7 +10,7 @@ import { runSellersJsonMigration } from '../../db/migrations/run_sellers_json';
 
 dotenv.config();
 
-export class SqliteDatabase implements Database {
+export class SqliteDatabase {
   private static instance: SqliteDatabase;
   private db: SQLiteDB;
 
@@ -21,7 +21,7 @@ export class SqliteDatabase implements Database {
     }
 
     const dbPath = process.env.DB_PATH || path.join(__dirname, '../../../db/database.sqlite');
-    
+
     // Ensure the directory exists
     const dbDir = path.dirname(dbPath);
     if (!fs.existsSync(dbDir)) {
@@ -151,12 +151,12 @@ export class SqliteDatabase implements Database {
   public async insert<T extends DatabaseRecord>(table: string, data: T): Promise<T> {
     const keys = Object.keys(data);
     const placeholders = keys.map(() => '?').join(', ');
-    const values = keys.map(key => data[key]);
-    
+    const values = keys.map((key) => data[key]);
+
     const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
-    
+
     return new Promise((resolve, reject) => {
-      this.db.run(sql, values, function(err) {
+      this.db.run(sql, values, function (err) {
         if (err) {
           reject(err);
           return;
@@ -170,29 +170,29 @@ export class SqliteDatabase implements Database {
    * Update a record in the specified table
    */
   public async update<T extends DatabaseRecord>(
-    table: string, 
-    id: string, 
+    table: string,
+    id: string,
     data: Partial<T>
   ): Promise<T | null> {
     const keys = Object.keys(data);
-    const setClause = keys.map(key => `${key} = ?`).join(', ');
-    const values = [...keys.map(key => data[key]), id];
-    
+    const setClause = keys.map((key) => `${key} = ?`).join(', ');
+    const values = [...keys.map((key) => data[key]), id];
+
     const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
-    
+
     return new Promise((resolve, reject) => {
       const self = this;
-      this.db.run(sql, values, function(this: { changes: number }, err) {
+      this.db.run(sql, values, function (this: { changes: number }, err) {
         if (err) {
           reject(err);
           return;
         }
-        
+
         if (this.changes === 0) {
           resolve(null);
           return;
         }
-        
+
         // Get the updated record
         const getSql = `SELECT * FROM ${table} WHERE id = ?`;
         self.db.get(getSql, [id], (getErr: Error | null, row: T) => {
@@ -227,30 +227,30 @@ export class SqliteDatabase implements Database {
   public async query<T>(table: string, query?: DatabaseQuery): Promise<T[]> {
     let sql = `SELECT * FROM ${table}`;
     const params: any[] = [];
-    
+
     // Add WHERE clauses if present
     if (query?.where) {
       const whereClauses = Object.entries(query.where).map(([key, value]) => {
         params.push(value);
         return `${key} = ?`;
       });
-      
+
       if (whereClauses.length > 0) {
         sql += ` WHERE ${whereClauses.join(' AND ')}`;
       }
     }
-    
+
     // Add ORDER BY clause if present
     if (query?.order) {
       sql += ` ORDER BY ${query.order.field} ${query.order.direction}`;
     }
-    
+
     // Add LIMIT clause if present
     if (query?.limit) {
       sql += ` LIMIT ?`;
       params.push(query.limit);
     }
-    
+
     return new Promise((resolve, reject) => {
       this.db.all(sql, params, (err, rows: T[]) => {
         if (err) {
@@ -268,20 +268,24 @@ export class SqliteDatabase implements Database {
   public async execute<T>(sql: string, params?: any[]): Promise<T | T[] | null> {
     return new Promise((resolve, reject) => {
       const method = sql.trim().toUpperCase().startsWith('SELECT') ? 'all' : 'run';
-      
-      this.db[method](sql, params || [], function(this: { changes?: number }, err: Error | null, rows?: T[]) {
-        if (err) {
-          reject(err);
-          return;
+
+      this.db[method](
+        sql,
+        params || [],
+        function (this: { changes?: number }, err: Error | null, rows?: T[]) {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          if (method === 'all') {
+            resolve(rows || []);
+          } else {
+            // For non-SELECT queries, return changes count
+            resolve(this.changes as any);
+          }
         }
-        
-        if (method === 'all') {
-          resolve(rows || []);
-        } else {
-          // For non-SELECT queries, return changes count
-          resolve(this.changes as any);
-        }
-      });
+      );
     });
   }
 

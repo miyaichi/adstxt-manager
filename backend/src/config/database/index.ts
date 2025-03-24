@@ -18,71 +18,82 @@ export interface DatabaseQuery {
   limit?: number;
 }
 
-export interface Database {
-  /**
-   * Insert a record into the specified table
-   * @param table The table name
-   * @param data The data to insert
-   */
+// Define interface for database operations
+export interface IDatabaseAdapter {
+  initialize(): Promise<void>;
   insert<T extends DatabaseRecord>(table: string, data: T): Promise<T>;
-
-  /**
-   * Update a record in the specified table
-   * @param table The table name
-   * @param id The record ID
-   * @param data The data to update
-   */
   update<T extends DatabaseRecord>(table: string, id: string, data: Partial<T>): Promise<T | null>;
-
-  /**
-   * Get a record by ID from the specified table
-   * @param table The table name
-   * @param id The record ID
-   */
   getById<T>(table: string, id: string): Promise<T | null>;
-
-  /**
-   * Query records from the specified table
-   * @param table The table name
-   * @param query The query parameters
-   */
   query<T>(table: string, query?: DatabaseQuery): Promise<T[]>;
-
-  /**
-   * Execute a custom query (for advanced use cases)
-   * @param sql The SQL query string (for SQLite) or custom query structure (for Amplify)
-   * @param params The query parameters
-   */
   execute<T>(sql: string, params?: any[]): Promise<T | T[] | null>;
 }
 
 /**
- * Get the appropriate database implementation based on the current environment
+ * A lightweight adapter for database operations
  */
-export const getDatabaseInstance = (): Database => {
-  const environment = getEnvironment();
+class DatabaseAdapter implements IDatabaseAdapter {
+  private implementation: SqliteDatabase | AmplifyDatabase;
 
-  if (environment === 'local') {
-    return SqliteDatabase.getInstance();
-  } else {
-    return AmplifyDatabase.getInstance();
+  constructor() {
+    const environment = getEnvironment();
+    this.implementation =
+      environment === 'local' ? SqliteDatabase.getInstance() : AmplifyDatabase.getInstance();
   }
-};
+
+  /**
+   * Initialize the database
+   */
+  async initialize(): Promise<void> {
+    return await this.implementation.initialize();
+  }
+
+  /**
+   * Insert a record into the specified table
+   */
+  async insert<T extends DatabaseRecord>(table: string, data: T): Promise<T> {
+    return await this.implementation.insert(table, data);
+  }
+
+  /**
+   * Update a record in the specified table
+   */
+  async update<T extends DatabaseRecord>(
+    table: string,
+    id: string,
+    data: Partial<T>
+  ): Promise<T | null> {
+    return await this.implementation.update(table, id, data);
+  }
+
+  /**
+   * Get a record by ID from the specified table
+   */
+  async getById<T>(table: string, id: string): Promise<T | null> {
+    return await this.implementation.getById(table, id);
+  }
+
+  /**
+   * Query records from the specified table
+   */
+  async query<T>(table: string, query?: DatabaseQuery): Promise<T[]> {
+    return await this.implementation.query(table, query);
+  }
+
+  /**
+   * Execute a custom query
+   */
+  async execute<T>(sql: string, params?: any[]): Promise<T | T[] | null> {
+    return await this.implementation.execute(sql, params);
+  }
+}
+
+// Create and export the database instance
+const db = new DatabaseAdapter();
+export default db as any;
 
 /**
- * Database instance - will be either SQLite or Amplify based on environment
+ * Initialize database - this must be called before using the database
  */
-const db = getDatabaseInstance();
-
-// Database initialization function
 export const initializeDatabase = async (): Promise<void> => {
-  if (db instanceof SqliteDatabase) {
-    return await db.initialize();
-  } else if (db instanceof AmplifyDatabase) {
-    return await db.initialize();
-  }
-  
-  throw new Error('Unknown database implementation');
+  return await db.initialize();
 };
-
-export default db;

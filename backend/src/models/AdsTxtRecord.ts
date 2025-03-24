@@ -1,7 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/database';
+const typedDb = db as any;
+import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
-export interface AdsTxtRecord {
+export interface AdsTxtRecord extends DatabaseRecord {
   id: string;
   request_id: string;
   domain: string;
@@ -23,127 +25,70 @@ export interface CreateAdsTxtRecordDTO {
   relationship?: 'DIRECT' | 'RESELLER';
 }
 
+// Use the exported database instance, which implements IDatabaseAdapter
+// No need for type assertion since it's already typed correctly
+
 class AdsTxtRecordModel {
+  private readonly tableName = 'ads_txt_records';
+
   /**
    * Create a new Ads.txt record
    * @param recordData - The data for the new record
    * @returns Promise with the created record
    */
-  create(recordData: CreateAdsTxtRecordDTO): Promise<AdsTxtRecord> {
-    return new Promise((resolve, reject) => {
-      const id = uuidv4();
-      const now = new Date().toISOString();
+  async create(recordData: CreateAdsTxtRecordDTO): Promise<AdsTxtRecord> {
+    const id = uuidv4();
+    const now = new Date().toISOString();
 
-      const record: AdsTxtRecord = {
-        id,
-        request_id: recordData.request_id,
-        domain: recordData.domain,
-        account_id: recordData.account_id,
-        account_type: recordData.account_type,
-        certification_authority_id: recordData.certification_authority_id,
-        relationship: recordData.relationship || 'DIRECT',
-        status: 'pending',
-        created_at: now,
-        updated_at: now,
-      };
+    const record: AdsTxtRecord = {
+      id,
+      request_id: recordData.request_id,
+      domain: recordData.domain,
+      account_id: recordData.account_id,
+      account_type: recordData.account_type,
+      certification_authority_id: recordData.certification_authority_id,
+      relationship: recordData.relationship || 'DIRECT',
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
 
-      db.run(
-        `INSERT INTO ads_txt_records 
-         (id, request_id, domain, account_id, account_type, certification_authority_id, 
-          relationship, status, created_at, updated_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          record.id,
-          record.request_id,
-          record.domain,
-          record.account_id,
-          record.account_type,
-          record.certification_authority_id || null,
-          record.relationship,
-          record.status,
-          record.created_at,
-          record.updated_at,
-        ],
-        function (err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(record);
-        }
-      );
-    });
+    return await typedDb.insert(this.tableName, record);
   }
 
   /**
-   * Bulk create multiple Ads.txt records
-   * @param records - Array of record data to create
-   * @returns Promise with the created records
+   * Get an Ads.txt record by ID
+   * @param id - The record ID
+   * @returns Promise with the record or null if not found
    */
-  bulkCreate(records: CreateAdsTxtRecordDTO[]): Promise<AdsTxtRecord[]> {
-    return new Promise((resolve, reject) => {
-      const createdRecords: AdsTxtRecord[] = [];
+  async getById(id: string): Promise<AdsTxtRecord | null> {
+    return await typedDb.getById(this.tableName, id);
+  }
 
-      // Use a transaction for bulk insert
-      db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-
-        const stmt = db.prepare(
-          `INSERT INTO ads_txt_records 
-           (id, request_id, domain, account_id, account_type, certification_authority_id, 
-            relationship, status, created_at, updated_at) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        );
-
-        try {
-          records.forEach((recordData) => {
-            const id = uuidv4();
-            const now = new Date().toISOString();
-
-            const record: AdsTxtRecord = {
-              id,
-              request_id: recordData.request_id,
-              domain: recordData.domain,
-              account_id: recordData.account_id,
-              account_type: recordData.account_type,
-              certification_authority_id: recordData.certification_authority_id,
-              relationship: recordData.relationship || 'DIRECT',
-              status: 'pending',
-              created_at: now,
-              updated_at: now,
-            };
-
-            stmt.run(
-              record.id,
-              record.request_id,
-              record.domain,
-              record.account_id,
-              record.account_type,
-              record.certification_authority_id || null,
-              record.relationship,
-              record.status,
-              record.created_at,
-              record.updated_at
-            );
-
-            createdRecords.push(record);
-          });
-
-          stmt.finalize();
-          db.run('COMMIT', (err) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            resolve(createdRecords);
-          });
-        } catch (err) {
-          db.run('ROLLBACK');
-          stmt.finalize();
-          reject(err);
-        }
-      });
+  /**
+   * Check if a record with the same attributes already exists
+   * @param requestId - The request ID
+   * @param domain - The domain
+   * @param accountId - The account ID
+   * @param accountType - The account type
+   * @returns Promise with true if the record exists, false otherwise
+   */
+  async recordExists(
+    requestId: string,
+    domain: string,
+    accountId: string,
+    accountType: string
+  ): Promise<boolean> {
+    const records = await typedDb.query(this.tableName, {
+      where: {
+        request_id: requestId,
+        domain,
+        account_id: accountId,
+        account_type: accountType,
+      },
     });
+
+    return records.length > 0;
   }
 
   /**
@@ -151,101 +96,79 @@ class AdsTxtRecordModel {
    * @param requestId - The request ID
    * @returns Promise with an array of records
    */
-  getByRequestId(requestId: string): Promise<AdsTxtRecord[]> {
-    return new Promise((resolve, reject) => {
-      db.all(
-        'SELECT * FROM ads_txt_records WHERE request_id = ?',
-        [requestId],
-        (err, rows: AdsTxtRecord[]) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(rows || []);
-        }
-      );
+  async getByRequestId(requestId: string): Promise<AdsTxtRecord[]> {
+    return await typedDb.query(this.tableName, {
+      where: { request_id: requestId },
     });
   }
 
   /**
-   * Update the status of a record
+   * Create multiple Ads.txt records in bulk
+   * @param recordsData - Array of record data to create
+   * @returns Promise with the created records
+   */
+  async bulkCreate(recordsData: CreateAdsTxtRecordDTO[]): Promise<AdsTxtRecord[]> {
+    const createdRecords: AdsTxtRecord[] = [];
+
+    for (const recordData of recordsData) {
+      // Skip existing records
+      const exists = await this.recordExists(
+        recordData.request_id,
+        recordData.domain,
+        recordData.account_id,
+        recordData.account_type
+      );
+
+      if (!exists) {
+        const record = await this.create(recordData);
+        createdRecords.push(record);
+      }
+    }
+
+    return createdRecords;
+  }
+
+  /**
+   * Update the status of an Ads.txt record
    * @param id - The record ID
    * @param status - The new status
    * @returns Promise with the updated record
    */
-  updateStatus(
+  async updateStatus(
     id: string,
     status: 'pending' | 'approved' | 'rejected'
   ): Promise<AdsTxtRecord | null> {
-    return new Promise((resolve, reject) => {
-      const now = new Date().toISOString();
+    const now = new Date().toISOString();
 
-      db.run(
-        'UPDATE ads_txt_records SET status = ?, updated_at = ? WHERE id = ?',
-        [status, now, id],
-        function (err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          if (this.changes === 0) {
-            resolve(null);
-            return;
-          }
-
-          db.get('SELECT * FROM ads_txt_records WHERE id = ?', [id], (err, row: AdsTxtRecord) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            if (!row) {
-              resolve(null);
-              return;
-            }
-            resolve(row);
-          });
-        }
-      );
+    return await typedDb.update(this.tableName, id, {
+      status,
+      updated_at: now,
     });
   }
 
   /**
-   * Check if a record already exists (to prevent duplicates)
-   * @param domain - The domain
-   * @param accountId - The account ID
-   * @param accountType - The account type
-   * @returns Promise with boolean indicating if record exists
+   * Get all records with a specific domain
+   * @param domain - The domain to search for
+   * @returns Promise with an array of records
    */
-  recordExists(domain: string, accountId: string, accountType: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT 1 FROM ads_txt_records WHERE domain = ? AND account_id = ? AND account_type = ?',
-        [domain, accountId, accountType],
-        (err, row) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(!!row);
-        }
-      );
+  async getByDomain(domain: string): Promise<AdsTxtRecord[]> {
+    return await typedDb.query(this.tableName, {
+      where: { domain },
     });
   }
+
   /**
-   * Get a record by ID
+   * Change the domain for a record
    * @param id - The record ID
-   * @returns Promise with the record or null if not found
+   * @param domain - The new domain
+   * @returns Promise with the updated record
    */
-  getById(id: string): Promise<AdsTxtRecord | null> {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM ads_txt_records WHERE id = ?', [id], (err, row: AdsTxtRecord) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(row || null);
-      });
+  async updateDomain(id: string, domain: string): Promise<AdsTxtRecord | null> {
+    const now = new Date().toISOString();
+
+    return await typedDb.update(this.tableName, id, {
+      domain,
+      updated_at: now,
     });
   }
 }
