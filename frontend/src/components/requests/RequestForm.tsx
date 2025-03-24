@@ -39,7 +39,6 @@ const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) =
   };
 };
 
-
 const RequestForm: React.FC = () => {
   const { language } = useApp();
   const [formData, setFormData] = useState<CreateRequestData>({
@@ -149,11 +148,13 @@ const RequestForm: React.FC = () => {
       setError(t('requests.form.recordsRequiredError', language));
       return false;
     }
-    
+
     // Validate domain if provided
     if (formData.publisher_domain) {
       if (domainValidationStatus === 'invalid' || domainValidationStatus === 'error') {
-        setError(domainValidationMessage || t('requests.form.domainValidation.invalidFormat', language));
+        setError(
+          domainValidationMessage || t('requests.form.domainValidation.invalidFormat', language)
+        );
         return false;
       }
     }
@@ -277,12 +278,19 @@ const RequestForm: React.FC = () => {
               value={formData.publisher_domain}
               onChange={handleInputChange}
               hasError={domainValidationStatus === 'error' || domainValidationStatus === 'invalid'}
-              errorMessage={(domainValidationStatus === 'error' || domainValidationStatus === 'invalid') && domainValidationMessage ? domainValidationMessage : ''}
+              errorMessage={
+                (domainValidationStatus === 'error' || domainValidationStatus === 'invalid') &&
+                domainValidationMessage
+                  ? domainValidationMessage
+                  : ''
+              }
               innerEndComponent={
                 isDomainValidating ? (
                   <Flex alignItems="center" gap="0.5rem">
                     <Loader size="small" />
-                    <Text fontSize="0.8rem">{t('requests.form.domainValidation.loading', language)}</Text>
+                    <Text fontSize="0.8rem">
+                      {t('requests.form.domainValidation.loading', language)}
+                    </Text>
                   </Flex>
                 ) : domainValidationStatus === 'success' ? (
                   <Badge variation="success">{domainValidationMessage}</Badge>
@@ -312,7 +320,6 @@ const RequestForm: React.FC = () => {
           <Divider />
 
           <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
-
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>

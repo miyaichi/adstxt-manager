@@ -1,4 +1,9 @@
-import { isValidEmail, parseAdsTxtContent, parseAdsTxtLine, crossCheckAdsTxtRecords } from '../validation';
+import {
+  isValidEmail,
+  parseAdsTxtContent,
+  parseAdsTxtLine,
+  crossCheckAdsTxtRecords,
+} from '../validation';
 
 describe('Validation Utilities', () => {
   describe('Email Validation', () => {
@@ -154,8 +159,8 @@ another.com, 67890, RESELLER`;
           relationship: 'DIRECT' as 'DIRECT',
           line_number: 1,
           raw_line: 'google.com, 12345, DIRECT',
-          is_valid: true
-        }
+          is_valid: true,
+        },
       ];
 
       // Act

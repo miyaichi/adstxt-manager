@@ -7,12 +7,12 @@ export const runSellersJsonMigration = (): Promise<void> => {
     try {
       // Read SQL file - use relative path that works both in src and dist
       let sqlPath = path.join(__dirname, 'sellers_json_cache.sql');
-      
+
       // If file doesn't exist (in dist), try src path
       if (!fs.existsSync(sqlPath)) {
         sqlPath = path.join(__dirname, '../../../src/db/migrations/sellers_json_cache.sql');
       }
-      
+
       const sql = fs.readFileSync(sqlPath, 'utf8');
 
       // Run migration

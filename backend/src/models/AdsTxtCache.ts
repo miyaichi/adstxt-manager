@@ -132,7 +132,7 @@ class AdsTxtCacheModel {
                 now,
                 now,
               ],
-              function(err) {
+              function (err) {
                 if (err) {
                   logger.error('Error creating ads.txt cache:', err);
                   reject(err);

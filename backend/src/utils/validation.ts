@@ -105,14 +105,11 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   // Validate domain using PSL
   const isValidRoot = psl.isValid(domain);
   const parsed = psl.parse(domain);
-  
+
   // A domain is a root domain if it's valid and the input domain equals the parsed domain
   // (not a subdomain like sub.example.com)
-  const isRootDomain = isValidRoot && 
-                      parsed && 
-                      'domain' in parsed && 
-                      parsed.domain === domain;
-                      
+  const isRootDomain = isValidRoot && parsed && 'domain' in parsed && parsed.domain === domain;
+
   if (!isRootDomain || domain.includes(' ')) {
     return {
       domain,
@@ -176,9 +173,9 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
 
 /**
  * Cross-check parsed Ads.txt records against publisher domain
- * This function checks for duplicate entries between submitted records and 
+ * This function checks for duplicate entries between submitted records and
  * existing ads.txt records from the publisher's domain
- * 
+ *
  * @param publisherDomain - The publisher's domain for cross-checking
  * @param parsedRecords - The parsed Ads.txt records to check
  * @returns The validated/filtered records with duplicate entries marked
@@ -195,45 +192,45 @@ export async function crossCheckAdsTxtRecords(
   try {
     // Import needed modules here to avoid circular dependencies
     const { default: AdsTxtCacheModel } = await import('../models/AdsTxtCache');
-    
+
     // Attempt to get cached ads.txt for the publisher domain
     const cachedData = await AdsTxtCacheModel.getByDomain(publisherDomain);
-    
+
     // If no cached data or not successful, return records as-is
     if (!cachedData || cachedData.status !== 'success' || !cachedData.content) {
       return parsedRecords;
     }
-    
+
     // Parse the cached ads.txt content
     const existingRecords = parseAdsTxtContent(cachedData.content);
-    
+
     // Create lookup map of existing records for faster checking
     // Key format: domain|account_id|relationship
     const existingRecordMap = new Map<string, ParsedAdsTxtRecord>();
-    
+
     for (const record of existingRecords) {
       if (record.is_valid) {
         const key = `${record.domain}|${record.account_id}|${record.relationship}`;
         existingRecordMap.set(key, record);
       }
     }
-    
+
     // Check each of the input records for duplicates and mark them
-    return parsedRecords.map(record => {
+    return parsedRecords.map((record) => {
       if (!record.is_valid) {
         return record; // Skip invalid records
       }
-      
+
       const key = `${record.domain}|${record.account_id}|${record.relationship}`;
       if (existingRecordMap.has(key)) {
         // It's a duplicate, create a new record with error
         return {
           ...record,
           is_valid: false,
-          error: `Duplicate entry found in publisher's ads.txt (${publisherDomain})`
+          error: `Duplicate entry found in publisher's ads.txt (${publisherDomain})`,
         };
       }
-      
+
       return record;
     });
   } catch (error) {

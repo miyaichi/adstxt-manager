@@ -26,11 +26,11 @@ function extractRootDomain(domain: string): string {
 
   // Use PSL to get the registered domain (root domain)
   const parsed = psl.parse(domain);
-  
+
   if (parsed && 'domain' in parsed && parsed.domain) {
     return parsed.domain;
   }
-  
+
   // If PSL couldn't parse the domain, return the original (cleaned) domain
   return domain;
 }
