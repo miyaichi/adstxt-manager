@@ -143,41 +143,8 @@ another.com, 67890, RESELLER`;
   });
 
   describe('Ads.txt Cross-Check', () => {
-    it('should return the same records when cross-checking (current implementation)', () => {
-      // Arrange
-      const publisherDomain = 'example.com';
-      const records = [
-        {
-          domain: 'google.com',
-          account_id: '12345',
-          account_type: 'DIRECT',
-          relationship: 'DIRECT' as 'DIRECT',
-          line_number: 1,
-          raw_line: 'google.com, 12345, DIRECT',
-          is_valid: true
-        },
-        {
-          domain: 'adnetwork.com',
-          account_id: 'abcd',
-          account_type: 'RESELLER',
-          relationship: 'RESELLER' as 'RESELLER',
-          line_number: 2,
-          raw_line: 'adnetwork.com, abcd, RESELLER',
-          is_valid: true
-        }
-      ];
-
-      // Act
-      const result = crossCheckAdsTxtRecords(publisherDomain, records);
-
-      // Assert
-      expect(result).toBe(records); // Should return the same array reference
-      expect(result.length).toBe(2);
-      expect(result[0].domain).toBe('google.com');
-      expect(result[1].domain).toBe('adnetwork.com');
-    });
-
-    it('should handle undefined publisher domain', () => {
+    // Testing the basic functionality without mocking the database
+    it('should handle undefined publisher domain', async () => {
       // Arrange
       const records = [
         {
@@ -192,11 +159,15 @@ another.com, 67890, RESELLER`;
       ];
 
       // Act
-      const result = crossCheckAdsTxtRecords(undefined, records);
+      const result = await crossCheckAdsTxtRecords(undefined, records);
 
       // Assert
-      expect(result).toBe(records);
+      expect(result).toEqual(records); // Use toEqual instead of toBe
       expect(result.length).toBe(1);
     });
+
+    // Note: For complete testing of the crossCheckAdsTxtRecords function,
+    // integration tests with a test database would be more appropriate
+    // due to the database interactions and dynamic module imports.
   });
 });

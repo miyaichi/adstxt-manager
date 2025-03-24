@@ -73,7 +73,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       // Parse the content
       const parsedRecords = parseAdsTxtContent(fileContent);
       // Cross-check records against publisher domain
-      const crossCheckedRecords = crossCheckAdsTxtRecords(publisher_domain, parsedRecords);
+      const crossCheckedRecords = await crossCheckAdsTxtRecords(publisher_domain, parsedRecords);
       const validRecords = crossCheckedRecords.filter((record) => record.is_valid);
 
       if (validRecords.length === 0) {
