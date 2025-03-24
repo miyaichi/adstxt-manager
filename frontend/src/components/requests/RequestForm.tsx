@@ -39,6 +39,7 @@ const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) =
   };
 };
 
+
 const RequestForm: React.FC = () => {
   const { language } = useApp();
   const [formData, setFormData] = useState<CreateRequestData>({
@@ -49,7 +50,6 @@ const RequestForm: React.FC = () => {
     publisher_domain: '',
   });
 
-  const [adsTxtFile, setAdsTxtFile] = useState<File | null>(null);
   const [records, setRecords] = useState<AdsTxtRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,6 @@ const RequestForm: React.FC = () => {
     'none' | 'success' | 'error' | 'invalid'
   >('none');
   const [domainValidationMessage, setDomainValidationMessage] = useState<string | null>(null);
-  const [adsTxtContent, setAdsTxtContent] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { tokens } = useTheme();
@@ -74,7 +73,6 @@ const RequestForm: React.FC = () => {
     // Reset validation states
     setDomainValidationStatus('none');
     setDomainValidationMessage(null);
-    setAdsTxtContent(null);
 
     if (!domain) return;
 
@@ -93,12 +91,11 @@ const RequestForm: React.FC = () => {
       logger.debug('Domain validation response:', response);
 
       if (response.success) {
-        const { status, content } = response.data;
+        const { status } = response.data;
 
-        if (status === 'success' && content) {
+        if (status === 'success') {
           setDomainValidationStatus('success');
           setDomainValidationMessage(t('requests.form.domainValidation.success', language));
-          setAdsTxtContent(content);
         } else {
           setDomainValidationStatus('error');
           setDomainValidationMessage(
@@ -151,6 +148,14 @@ const RequestForm: React.FC = () => {
     if (records.length === 0) {
       setError(t('requests.form.recordsRequiredError', language));
       return false;
+    }
+    
+    // Validate domain if provided
+    if (formData.publisher_domain) {
+      if (domainValidationStatus === 'invalid' || domainValidationStatus === 'error') {
+        setError(domainValidationMessage || t('requests.form.domainValidation.invalidFormat', language));
+        return false;
+      }
     }
 
     return true;
@@ -308,65 +313,6 @@ const RequestForm: React.FC = () => {
 
           <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
 
-          {domainValidationStatus === 'success' && adsTxtContent && (
-            <Card variation="outlined" padding="1rem">
-              <Flex direction="column" gap="1rem">
-                <Heading level={4}>{t('adsTxt.fileUpload.foundOnDomain', language)}</Heading>
-                <Text>
-                  {adsTxtContent.length > 500
-                    ? `${adsTxtContent.substring(0, 500)}...`
-                    : adsTxtContent}
-                </Text>
-                <Button
-                  onClick={() => {
-                    // Send the content to the server to parse and process
-                    const handleAdsTxtContent = async () => {
-                      try {
-                        setIsLoading(true);
-                        // Create a blob from the content and convert to a file
-                        const blob = new Blob([adsTxtContent], { type: 'text/plain' });
-                        const file = new File([blob], 'ads.txt', { type: 'text/plain' });
-
-                        const response = await adsTxtApi.processAdsTxtFile(file);
-                        if (response.success) {
-                          // Convert ParsedAdsTxtRecord[] to AdsTxtRecord[]
-                          const newRecords: AdsTxtRecord[] = response.data.records
-                            .filter(record => record.is_valid)
-                            .map(record => ({
-                              id: `temp-${Math.random().toString(36).substr(2, 9)}`,
-                              request_id: '',
-                              domain: record.domain,
-                              account_id: record.account_id,
-                              account_type: record.account_type,
-                              certification_authority_id: record.certification_authority_id,
-                              relationship: record.relationship,
-                              status: 'pending',
-                              created_at: new Date().toISOString(),
-                              updated_at: new Date().toISOString()
-                            }));
-                          setRecords(newRecords);
-                        } else {
-                          setError(response.error?.message || t('common.parseError', language));
-                        }
-                      } catch (err) {
-                        logger.error('Error processing ads.txt content:', err);
-                        setError(t('common.parseError', language));
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    };
-
-                    handleAdsTxtContent();
-                  }}
-                  variation="primary"
-                  size="small"
-                  isLoading={isLoading}
-                >
-                  {t('adsTxt.fileUpload.useFoundFile', language)}
-                </Button>
-              </Flex>
-            </Card>
-          )}
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>
