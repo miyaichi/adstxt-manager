@@ -60,6 +60,6 @@ export const createLogger = (name: string): Logger => {
   return new Logger(name);
 };
 
-export const logger = new Logger('SellersJson');
+export const logger = new Logger('AdsTxtManager');
 
 export default defaultLogger;
