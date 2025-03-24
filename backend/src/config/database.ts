@@ -26,8 +26,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
   console.log('Connected to the SQLite database');
 });
 
+// Import migration scripts
+import { runAdsTxtCacheMigration } from '../db/migrations/run_ads_txt_cache';
+import { runSellersJsonMigration } from '../db/migrations/run_sellers_json';
+
 // Initialize database with required tables
-export const initializeDatabase = (): Promise<void> => {
+export const initializeDatabase = async (): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       // Create requests table
@@ -99,7 +103,25 @@ export const initializeDatabase = (): Promise<void> => {
         }
       );
 
-      resolve();
+      // Run additional migrations
+      db.run(`SELECT 1`, async (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        try {
+          // Run the sellers.json migration
+          await runSellersJsonMigration();
+          
+          // Run the ads.txt cache migration
+          await runAdsTxtCacheMigration();
+          
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   });
 };

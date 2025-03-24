@@ -20,5 +20,6 @@
   "noFileUploaded": "ファイルがアップロードされていません",
   "parsingError": "Ads.txtファイルの解析エラー: {{message}}",
   "domainRequired": "ドメインパラメータが必要です",
-  "sellersFetchError": "sellers.jsonの取得エラー: {{message}}"
+  "sellersFetchError": "sellers.jsonの取得エラー: {{message}}",
+  "adsTxtFetchError": "ads.txtの取得エラー: {{message}}"
 }

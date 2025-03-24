@@ -20,5 +20,6 @@
   "noFileUploaded": "No file uploaded",
   "parsingError": "Error parsing Ads.txt file: {{message}}",
   "domainRequired": "Domain parameter is required",
-  "sellersFetchError": "Error fetching sellers.json: {{message}}"
+  "sellersFetchError": "Error fetching sellers.json: {{message}}",
+  "adsTxtFetchError": "Error fetching ads.txt: {{message}}"
 }
