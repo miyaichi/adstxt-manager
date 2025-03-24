@@ -4,9 +4,10 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtCacheModel, { AdsTxtCacheStatus } from '../models/AdsTxtCache';
 import { logger } from '../utils/logger';
 import i18next from '../i18n';
+import psl from 'psl';
 
 /**
- * Extract root domain from a domain string
+ * Extract root domain from a domain string using PSL (Public Suffix List)
  * @param domain The domain to extract from (e.g. "www.example.com")
  * @returns The root domain (e.g. "example.com")
  */
@@ -17,23 +18,20 @@ function extractRootDomain(domain: string): string {
   // Remove path or query parameters if present
   domain = domain.split('/')[0].split('?')[0].split('#')[0];
 
-  // Extract root domain (e.g., "example.com" from "sub.example.com")
-  const parts = domain.split('.');
-  if (parts.length > 2) {
-    // Check for special cases like .co.uk, .com.au, etc.
-    const secondLevelDomains = ['co', 'com', 'org', 'net', 'edu', 'gov', 'mil'];
-    const countryCode = parts[parts.length - 1];
-    const secondLevelDomain = parts[parts.length - 2];
-
-    if (countryCode.length === 2 && secondLevelDomains.includes(secondLevelDomain)) {
-      // For domains like example.co.uk
-      return `${parts[parts.length - 3]}.${secondLevelDomain}.${countryCode}`;
-    }
-
-    // Regular case: sub.example.com -> example.com
-    return `${parts[parts.length - 2]}.${parts[parts.length - 1]}`;
+  // Check if it's an IP address (simple check)
+  const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  if (ipRegex.test(domain)) {
+    return domain; // Return IP addresses as-is
   }
 
+  // Use PSL to get the registered domain (root domain)
+  const parsed = psl.parse(domain);
+  
+  if (parsed && 'domain' in parsed && parsed.domain) {
+    return parsed.domain;
+  }
+  
+  // If PSL couldn't parse the domain, return the original (cleaned) domain
   return domain;
 }
 

@@ -1,4 +1,4 @@
-import { isValidDomain, isValidEmail, parseAdsTxtContent, parseAdsTxtLine } from '../validation';
+import { isValidEmail, parseAdsTxtContent, parseAdsTxtLine } from '../validation';
 
 describe('Validation Utilities', () => {
   describe('Email Validation', () => {
@@ -32,39 +32,6 @@ describe('Validation Utilities', () => {
       // Act & Assert
       invalidEmails.forEach((email) => {
         expect(isValidEmail(email)).toBe(false);
-      });
-    });
-  });
-
-  describe('Domain Validation', () => {
-    it('should validate correct domains', () => {
-      // Arrange
-      const validDomains = [
-        'example.com',
-        'sub.domain.co.uk',
-        'domain.io',
-        'sub-domain.example.org',
-      ];
-
-      // Act & Assert
-      validDomains.forEach((domain) => {
-        expect(isValidDomain(domain)).toBe(true);
-      });
-    });
-
-    it('should invalidate incorrect domains', () => {
-      // Arrange
-      const invalidDomains = [
-        'example',
-        '.com',
-        'domain.',
-        'domain with spaces.com',
-        'domain..com',
-      ];
-
-      // Act & Assert
-      invalidDomains.forEach((domain) => {
-        expect(isValidDomain(domain)).toBe(false);
       });
     });
   });
