@@ -10,7 +10,12 @@ mockAxios.delete = jest.fn();
 mockAxios.patch = jest.fn();
 
 // Create a default response
-mockAxios.createResponse = (data: any, status = 200, headers = {}, responseUrl?: string): AxiosResponse => {
+mockAxios.createResponse = (
+  data: any,
+  status = 200,
+  headers = {},
+  responseUrl?: string
+): AxiosResponse => {
   return {
     data,
     status,
@@ -26,11 +31,13 @@ mockAxios.createResponse = (data: any, status = 200, headers = {}, responseUrl?:
       baseURL: '',
       method: 'get',
     },
-    request: responseUrl ? {
-      res: {
-        responseUrl
-      }
-    } : undefined
+    request: responseUrl
+      ? {
+          res: {
+            responseUrl,
+          },
+        }
+      : undefined,
   };
 };
 

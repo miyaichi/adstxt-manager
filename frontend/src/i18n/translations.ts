@@ -640,7 +640,7 @@ export const translations = {
       en: 'An error occurred',
       ja: 'エラーが発生しました',
     },
-  }
+  },
 };
 
 // Create a translation helper function

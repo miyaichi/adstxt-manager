@@ -109,14 +109,14 @@ export const initializeDatabase = async (): Promise<void> => {
           reject(err);
           return;
         }
-        
+
         try {
           // Run the sellers.json migration
           await runSellersJsonMigration();
-          
+
           // Run the ads.txt cache migration
           await runAdsTxtCacheMigration();
-          
+
           resolve();
         } catch (error) {
           reject(error);

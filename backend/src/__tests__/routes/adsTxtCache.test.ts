@@ -31,8 +31,8 @@ describe('Ads.txt Cache Routes', () => {
           status_code: 200,
           error_message: null,
           cached: true,
-          updated_at: '2023-01-01T00:00:00.000Z'
-        }
+          updated_at: '2023-01-01T00:00:00.000Z',
+        },
       };
 
       // Mock controller implementation
@@ -60,8 +60,8 @@ describe('Ads.txt Cache Routes', () => {
           status_code: 200,
           error_message: null,
           cached: true,
-          updated_at: '2023-01-01T00:00:00.000Z'
-        }
+          updated_at: '2023-01-01T00:00:00.000Z',
+        },
       };
 
       // Mock controller implementation
@@ -77,7 +77,7 @@ describe('Ads.txt Cache Routes', () => {
 
       expect(response.body).toEqual(mockResponse);
       expect(mockGetAdsTxt).toHaveBeenCalled();
-      
+
       // Verify the subdomain parameter was passed to the controller
       const controllerReq = mockGetAdsTxt.mock.calls[0][0];
       expect(controllerReq.query.subdomain).toBe('blog');

@@ -203,11 +203,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   }
 
   if (!request) {
-    return (
-      <Alert variation="warning">
-        {t('requests.detail.error.fetchError', language)}
-      </Alert>
-    );
+    return <Alert variation="warning">{t('requests.detail.error.fetchError', language)}</Alert>;
   }
 
   const approvedRecords = request.records.filter((record) => record.status === 'approved');
@@ -238,16 +234,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>{t('requests.detail.publisher.title', language)}</Heading>
               <Text>
-                <strong>{t('requests.detail.publisher.email', language)}</strong> {request.request.publisher_email}
+                <strong>{t('requests.detail.publisher.email', language)}</strong>{' '}
+                {request.request.publisher_email}
               </Text>
               {request.request.publisher_name && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.name', language)}</strong> {request.request.publisher_name}
+                  <strong>{t('requests.detail.publisher.name', language)}</strong>{' '}
+                  {request.request.publisher_name}
                 </Text>
               )}
               {request.request.publisher_domain && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.domain', language)}</strong> {request.request.publisher_domain}
+                  <strong>{t('requests.detail.publisher.domain', language)}</strong>{' '}
+                  {request.request.publisher_domain}
                 </Text>
               )}
             </Card>
@@ -255,10 +254,12 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>{t('requests.detail.requester.title', language)}</Heading>
               <Text>
-                <strong>{t('requests.detail.requester.email', language)}</strong> {request.request.requester_email}
+                <strong>{t('requests.detail.requester.email', language)}</strong>{' '}
+                {request.request.requester_email}
               </Text>
               <Text>
-                <strong>{t('requests.detail.requester.name', language)}</strong> {request.request.requester_name}
+                <strong>{t('requests.detail.requester.name', language)}</strong>{' '}
+                {request.request.requester_name}
               </Text>
             </Card>
           </Flex>
@@ -280,7 +281,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
               <Heading level={5}>{t('requests.detail.records.title', language)}</Heading>
               <Text>
-                <strong>{t('requests.item.recordCount', language, { count: request.records.length })}</strong>
+                <strong>
+                  {t('requests.item.recordCount', language, { count: request.records.length })}
+                </strong>
               </Text>
               <Text>
                 <strong>{t('common.status.approved', language)}:</strong> {approvedRecords.length}

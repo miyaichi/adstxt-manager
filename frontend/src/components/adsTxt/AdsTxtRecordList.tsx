@@ -67,7 +67,9 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
             <Text>{t('adsTxt.recordList.noMatchingRecords', language)}</Text>
           ) : (
             <>
-              <Text>{t('adsTxt.recordList.totalRecords', language, { count: filteredRecords.length })}</Text>
+              <Text>
+                {t('adsTxt.recordList.totalRecords', language, { count: filteredRecords.length })}
+              </Text>
 
               {currentRecords.map((record) => (
                 <AdsTxtRecordItem

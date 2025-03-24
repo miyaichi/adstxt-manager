@@ -34,14 +34,14 @@ class AdsTxtCacheModel {
   getByDomain(domain: string): Promise<AdsTxtCache | null> {
     return new Promise((resolve, reject) => {
       const query = `SELECT * FROM ads_txt_cache WHERE domain = ? ORDER BY updated_at DESC LIMIT 1`;
-      
+
       db.get(query, [domain], (err, row: AdsTxtCache | undefined) => {
         if (err) {
           logger.error('Error fetching ads.txt cache:', err);
           reject(err);
           return;
         }
-        
+
         resolve(row || null);
       });
     });
@@ -58,7 +58,7 @@ class AdsTxtCacheModel {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - updatedDate.getTime());
     const diffHours = diffTime / (1000 * 60 * 60);
-    
+
     return diffHours > expirationHours;
   }
 
@@ -70,7 +70,7 @@ class AdsTxtCacheModel {
   saveCache(data: AdsTxtCacheDTO): Promise<AdsTxtCache> {
     return new Promise((resolve, reject) => {
       const now = new Date().toISOString();
-      
+
       // Check if there is an existing entry for this domain
       this.getByDomain(data.domain)
         .then((existingCache) => {
@@ -81,7 +81,7 @@ class AdsTxtCacheModel {
               SET content = ?, url = ?, status = ?, status_code = ?, error_message = ?, updated_at = ?
               WHERE id = ?
             `;
-            
+
             db.run(
               query,
               [
@@ -91,7 +91,7 @@ class AdsTxtCacheModel {
                 data.status_code,
                 data.error_message,
                 now,
-                existingCache.id
+                existingCache.id,
               ],
               (err) => {
                 if (err) {
@@ -99,7 +99,7 @@ class AdsTxtCacheModel {
                   reject(err);
                   return;
                 }
-                
+
                 // Return the updated entry
                 const updatedEntry: AdsTxtCache = {
                   ...existingCache,
@@ -108,9 +108,9 @@ class AdsTxtCacheModel {
                   status: data.status,
                   status_code: data.status_code,
                   error_message: data.error_message,
-                  updated_at: now
+                  updated_at: now,
                 };
-                
+
                 resolve(updatedEntry);
               }
             );
@@ -121,17 +121,27 @@ class AdsTxtCacheModel {
               INSERT INTO ads_txt_cache (id, domain, content, url, status, status_code, error_message, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            
+
             db.run(
               query,
-              [id, data.domain, data.content, data.url, data.status, data.status_code, data.error_message, now, now],
+              [
+                id,
+                data.domain,
+                data.content,
+                data.url,
+                data.status,
+                data.status_code,
+                data.error_message,
+                now,
+                now,
+              ],
               (err) => {
                 if (err) {
                   logger.error('Error creating ads.txt cache:', err);
                   reject(err);
                   return;
                 }
-                
+
                 // Return the new entry
                 const newEntry: AdsTxtCache = {
                   id,
@@ -142,9 +152,9 @@ class AdsTxtCacheModel {
                   status_code: data.status_code,
                   error_message: data.error_message,
                   created_at: now,
-                  updated_at: now
+                  updated_at: now,
                 };
-                
+
                 resolve(newEntry);
               }
             );

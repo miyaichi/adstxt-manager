@@ -66,7 +66,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           </Text>
           {record.certification_authority_id && (
             <Text>
-              <strong>{t('adsTxt.recordItem.certificationAuthorityId', language)}:</strong> {record.certification_authority_id}
+              <strong>{t('adsTxt.recordItem.certificationAuthorityId', language)}:</strong>{' '}
+              {record.certification_authority_id}
             </Text>
           )}
         </Flex>

@@ -20,11 +20,11 @@ describe('adsTxtCacheController', () => {
     jsonMock = jest.fn();
     mockRequest = {
       params: {},
-      query: {}
+      query: {},
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jsonMock
+      json: jsonMock,
     };
 
     // Reset mocks
@@ -37,11 +37,7 @@ describe('adsTxtCacheController', () => {
       const mockNext = jest.fn();
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Verify next was called with ApiError
       expect(mockNext).toHaveBeenCalled();
@@ -64,7 +60,7 @@ describe('adsTxtCacheController', () => {
         status_code: 200,
         error_message: null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       // Mock model functions
@@ -72,11 +68,7 @@ describe('adsTxtCacheController', () => {
       mockAdsTxtCacheModel.isCacheExpired.mockReturnValue(false);
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify response
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -90,8 +82,8 @@ describe('adsTxtCacheController', () => {
           status_code: cachedData.status_code,
           error_message: cachedData.error_message,
           cached: true,
-          updated_at: cachedData.updated_at
-        }
+          updated_at: cachedData.updated_at,
+        },
       });
 
       // Verify no fetch was attempted
@@ -112,14 +104,14 @@ describe('adsTxtCacheController', () => {
         status_code: 200,
         error_message: null,
         created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // 48 hours ago
-        updated_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+        updated_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
       };
 
       // Mock new data after saving
       const updatedData = {
         ...cachedData,
         content: 'example.com, 12345, DIRECT, new content',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       // Mock model functions
@@ -133,17 +125,13 @@ describe('adsTxtCacheController', () => {
         data: 'example.com, 12345, DIRECT, new content',
         request: {
           res: {
-            responseUrl: 'https://example.com/ads.txt'
-          }
-        }
+            responseUrl: 'https://example.com/ads.txt',
+          },
+        },
       });
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify response
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -157,8 +145,8 @@ describe('adsTxtCacheController', () => {
           status_code: updatedData.status_code,
           error_message: updatedData.error_message,
           cached: false,
-          updated_at: updatedData.updated_at
-        }
+          updated_at: updatedData.updated_at,
+        },
       });
 
       // Verify fetch attempt
@@ -176,7 +164,7 @@ describe('adsTxtCacheController', () => {
         domain: 'example.com',
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Mock axios to fail for first 3 attempts and succeed on 4th
@@ -189,17 +177,13 @@ describe('adsTxtCacheController', () => {
           data: 'example.com, 12345, DIRECT, content',
           request: {
             res: {
-              responseUrl: 'http://www.example.com/ads.txt'
-            }
-          }
+              responseUrl: 'http://www.example.com/ads.txt',
+            },
+          },
         });
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify each URL was attempted
       expect(mockedAxios.get).toHaveBeenCalledTimes(4);
@@ -233,8 +217,8 @@ describe('adsTxtCacheController', () => {
           content: 'example.com, 12345, DIRECT, content',
           url: 'http://www.example.com/ads.txt',
           status: 'success',
-          cached: false
-        })
+          cached: false,
+        }),
       });
     });
 
@@ -250,7 +234,7 @@ describe('adsTxtCacheController', () => {
         domain: data.domain,
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Mock root domain response with subdomain directive
@@ -259,9 +243,9 @@ describe('adsTxtCacheController', () => {
         data: 'example.com, 12345, DIRECT\nSUBDOMAIN=blog\n# Comment',
         request: {
           res: {
-            responseUrl: 'https://example.com/ads.txt'
-          }
-        }
+            responseUrl: 'https://example.com/ads.txt',
+          },
+        },
       };
 
       // Mock subdomain response
@@ -270,22 +254,18 @@ describe('adsTxtCacheController', () => {
         data: 'blog.example.com, 98765, RESELLER',
         request: {
           res: {
-            responseUrl: 'https://blog.example.com/ads.txt'
-          }
-        }
+            responseUrl: 'https://blog.example.com/ads.txt',
+          },
+        },
       };
 
       // Setup axios mocks
       mockedAxios.get
-        .mockResolvedValueOnce(rootResponse)  // First call for root domain
+        .mockResolvedValueOnce(rootResponse) // First call for root domain
         .mockResolvedValueOnce(subdomainResponse); // Second call for subdomain
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify root domain was first checked
       expect(mockedAxios.get).toHaveBeenNthCalledWith(
@@ -309,8 +289,8 @@ describe('adsTxtCacheController', () => {
           domain: 'blog.example.com',
           content: 'blog.example.com, 98765, RESELLER',
           url: 'https://blog.example.com/ads.txt',
-          status: 'success'
-        })
+          status: 'success',
+        }),
       });
     });
 
@@ -325,22 +305,18 @@ describe('adsTxtCacheController', () => {
         domain: 'nonexistent.com',
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Mock 404 responses for all URL attempts
       mockedAxios.get.mockResolvedValue({
         status: 404,
         data: 'Not Found',
-        request: { res: { responseUrl: 'https://nonexistent.com/ads.txt' } }
+        request: { res: { responseUrl: 'https://nonexistent.com/ads.txt' } },
       });
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify response
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -351,15 +327,15 @@ describe('adsTxtCacheController', () => {
           content: null,
           status: 'not_found',
           status_code: 404,
-          error_message: expect.stringContaining('not found')
-        })
+          error_message: expect.stringContaining('not found'),
+        }),
       });
 
       // Verify cache saved with error status
       expect(mockAdsTxtCacheModel.saveCache).toHaveBeenCalledWith(
         expect.objectContaining({
           domain: 'nonexistent.com',
-          status: 'not_found'
+          status: 'not_found',
         })
       );
     });
@@ -375,7 +351,7 @@ describe('adsTxtCacheController', () => {
         domain: 'timeout.com',
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Mock network error for all attempts
@@ -383,11 +359,7 @@ describe('adsTxtCacheController', () => {
       mockedAxios.get.mockRejectedValue(networkError);
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify response
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -397,15 +369,15 @@ describe('adsTxtCacheController', () => {
           domain: 'timeout.com',
           content: null,
           status: 'error',
-          error_message: expect.stringContaining('Network Error')
-        })
+          error_message: expect.stringContaining('Network Error'),
+        }),
       });
 
       // Verify cache saved with error status
       expect(mockAdsTxtCacheModel.saveCache).toHaveBeenCalledWith(
         expect.objectContaining({
           domain: 'timeout.com',
-          status: 'error'
+          status: 'error',
         })
       );
     });
@@ -421,7 +393,7 @@ describe('adsTxtCacheController', () => {
         domain: data.domain,
         ...data,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Mock successful response
@@ -430,17 +402,13 @@ describe('adsTxtCacheController', () => {
         data: 'example.com, 12345, DIRECT',
         request: {
           res: {
-            responseUrl: 'https://example.com/ads.txt'
-          }
-        }
+            responseUrl: 'https://example.com/ads.txt',
+          },
+        },
       });
 
       // Call the controller
-      await getAdsTxt(
-        mockRequest as Request,
-        mockResponse as Response,
-        jest.fn()
-      );
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
       // Verify root domain was extracted correctly
       expect(mockedAxios.get).toHaveBeenNthCalledWith(
@@ -455,8 +423,8 @@ describe('adsTxtCacheController', () => {
         success: true,
         data: expect.objectContaining({
           domain: 'sub.example.com',
-          content: 'example.com, 12345, DIRECT'
-        })
+          content: 'example.com, 12345, DIRECT',
+        }),
       });
     });
   });

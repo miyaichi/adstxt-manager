@@ -167,7 +167,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
             {t('adsTxt.fileUpload.stats', language, {
               total: stats.total,
               valid: stats.valid,
-              invalid: stats.invalid
+              invalid: stats.invalid,
             })}
           </Text>
         </Flex>

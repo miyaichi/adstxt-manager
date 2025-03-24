@@ -10,11 +10,7 @@ interface ErrorMessageProps {
   showHomeButton?: boolean;
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({
-  title,
-  message,
-  showHomeButton = true,
-}) => {
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ title, message, showHomeButton = true }) => {
   const { language } = useApp();
   const defaultTitle = t('errorMessage.defaultTitle', language);
 

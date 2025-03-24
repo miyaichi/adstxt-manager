@@ -4,7 +4,7 @@ import AdsTxtCacheModel from './AdsTxtCache';
 // Mock the database
 jest.mock('../config/database', () => ({
   get: jest.fn(),
-  run: jest.fn()
+  run: jest.fn(),
 }));
 
 describe('AdsTxtCache Model', () => {
@@ -23,7 +23,7 @@ describe('AdsTxtCache Model', () => {
         status_code: 200,
         error_message: null,
         created_at: '2023-01-01T00:00:00.000Z',
-        updated_at: '2023-01-01T00:00:00.000Z'
+        updated_at: '2023-01-01T00:00:00.000Z',
       };
 
       // Mock db.get to return a cache entry
@@ -103,7 +103,7 @@ describe('AdsTxtCache Model', () => {
         status_code: 200,
         error_message: null,
         created_at: '2023-01-01T00:00:00.000Z',
-        updated_at: '2023-01-01T00:00:00.000Z'
+        updated_at: '2023-01-01T00:00:00.000Z',
       };
 
       // New data to save
@@ -113,7 +113,7 @@ describe('AdsTxtCache Model', () => {
         url: 'https://example.com/ads.txt',
         status: 'success',
         status_code: 200,
-        error_message: null
+        error_message: null,
       };
 
       // Mock getByDomain to return existing entry
@@ -139,7 +139,7 @@ describe('AdsTxtCache Model', () => {
       );
     });
 
-    it('should create a new cache entry if one doesn\'t exist', async () => {
+    it("should create a new cache entry if one doesn't exist", async () => {
       // New data to save
       const newData = {
         domain: 'newdomain.com',
@@ -147,7 +147,7 @@ describe('AdsTxtCache Model', () => {
         url: 'https://newdomain.com/ads.txt',
         status: 'success',
         status_code: 200,
-        error_message: null
+        error_message: null,
       };
 
       // Mock getByDomain to return null (no existing entry)
@@ -177,7 +177,7 @@ describe('AdsTxtCache Model', () => {
 
     it('should handle database errors during save', async () => {
       const dbError = new Error('Database error');
-      
+
       // Mock getByDomain to return null
       jest.spyOn(AdsTxtCacheModel, 'getByDomain').mockResolvedValue(null);
 
@@ -192,7 +192,7 @@ describe('AdsTxtCache Model', () => {
         url: 'https://example.com/ads.txt',
         status: 'success' as const,
         status_code: 200,
-        error_message: null
+        error_message: null,
       };
 
       await expect(AdsTxtCacheModel.saveCache(saveData)).rejects.toThrow(dbError);

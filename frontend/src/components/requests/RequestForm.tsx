@@ -121,9 +121,7 @@ const RequestForm: React.FC = () => {
       <Card padding="2rem" variation="elevated">
         <Flex direction="column" gap="1rem" alignItems="center">
           <Heading level={2}>{t('requests.success.title', language)}</Heading>
-          <Alert variation="success">
-            {t('requests.success.message', language)}
-          </Alert>
+          <Alert variation="success">{t('requests.success.message', language)}</Alert>
 
           <Flex
             direction="column"
@@ -154,9 +152,7 @@ const RequestForm: React.FC = () => {
         <Flex direction="column" gap="1.5rem">
           <Heading level={2}>{t('requests.form.title', language)}</Heading>
 
-          <Text>
-            {t('requests.form.description', language)}
-          </Text>
+          <Text>{t('requests.form.description', language)}</Text>
 
           {error && <Alert variation="error">{error}</Alert>}
 
@@ -220,15 +216,13 @@ const RequestForm: React.FC = () => {
 
             <TabItem title={t('requests.form.selectedRecordsTab', language)}>
               <View padding="1rem">
-                <AdsTxtRecordList 
-                  records={records} 
-                  title={t('requests.form.selectedRecords', language)} 
+                <AdsTxtRecordList
+                  records={records}
+                  title={t('requests.form.selectedRecords', language)}
                 />
 
                 {records.length === 0 && (
-                  <Text>
-                    {t('requests.form.noRecordsSelected', language)}
-                  </Text>
+                  <Text>{t('requests.form.noRecordsSelected', language)}</Text>
                 )}
               </View>
             </TabItem>
