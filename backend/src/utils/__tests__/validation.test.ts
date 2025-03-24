@@ -60,6 +60,8 @@ describe('Validation Utilities', () => {
         'google.com', // Missing fields
         'domain, ID', // Missing account type
         'domain .com, ID, DIRECT', // Invalid domain with space
+        'sub.example.com, 12345, DIRECT', // Subdomain instead of root domain
+        'www.google.com, 12345, DIRECT', // Subdomain instead of root domain
       ];
 
       // Act & Assert

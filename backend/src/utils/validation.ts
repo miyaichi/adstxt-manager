@@ -1,3 +1,5 @@
+import * as psl from 'psl';
+
 /**
  * Utility to validate and parse Ads.txt data
  */
@@ -100,8 +102,18 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
     }
   }
 
-  // Validate domain (basic check)
-  if (!domain.includes('.') || domain.includes(' ')) {
+  // Validate domain using PSL
+  const isValidRoot = psl.isValid(domain);
+  const parsed = psl.parse(domain);
+  
+  // A domain is a root domain if it's valid and the input domain equals the parsed domain
+  // (not a subdomain like sub.example.com)
+  const isRootDomain = isValidRoot && 
+                      parsed && 
+                      'domain' in parsed && 
+                      parsed.domain === domain;
+                      
+  if (!isRootDomain || domain.includes(' ')) {
     return {
       domain,
       account_id: accountId,
@@ -111,7 +123,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Domain must be valid',
+      error: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
     };
   }
 
