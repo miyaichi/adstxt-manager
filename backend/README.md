@@ -1,6 +1,6 @@
 # Ads.txt Manager Backend
 
-This is the backend server for the Ads.txt Manager application, handling request management, email notifications, and data processing.
+This is the backend server for the Ads.txt Manager application, handling request management, email notifications, ads.txt validation, and data processing.
 
 ## Technology Stack
 
@@ -10,6 +10,7 @@ This is the backend server for the Ads.txt Manager application, handling request
 - **SQLite**: Embedded database
 - **Nodemailer**: Email sending
 - **MailHog**: Email testing service
+- **Public Suffix List**: Domain validation
 
 ## Setup Instructions
 
@@ -105,7 +106,29 @@ This will start:
 - `POST /api/adstxt/process` - Process Ads.txt file
 - `GET /api/adstxt/request/:requestId` - Get records for a request
 - `GET /api/adstxt/generate/:requestId` - Generate Ads.txt content
+- `GET /api/adstxt/check/:requestId` - Cross-check Ads.txt records with publisher domain
+
+### Ads.txt Cache
+
+- `GET /api/adstxt-cache/:domain` - Get cached Ads.txt for domain
+- `POST /api/adstxt-cache/:domain` - Refresh cached Ads.txt for domain
+
+### Sellers.json Cache
+
+- `GET /api/sellers-json/:domain/:sellerId` - Get cached Sellers.json for domain and seller ID
 
 ## Email Testing
 
 The application uses MailHog for testing emails in development. After starting the Docker Compose setup, you can access the MailHog web interface at [http://localhost:8025](http://localhost:8025) to view sent emails.
+
+## Testing
+
+```
+npm test
+```
+
+For coverage report:
+
+```
+npm run test:coverage
+```

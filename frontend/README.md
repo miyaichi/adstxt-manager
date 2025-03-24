@@ -1,6 +1,6 @@
 # Ads.txt Manager Frontend
 
-This is the frontend for the Ads.txt Manager application, providing a user interface for publishers and advertisers to manage Ads.txt requests.
+This is the frontend for the Ads.txt Manager application, providing a user interface for publishers and advertisers to manage Ads.txt and Sellers.json data.
 
 ## Technology Stack
 
@@ -9,15 +9,19 @@ This is the frontend for the Ads.txt Manager application, providing a user inter
 - **AWS Amplify UI**: Component library for consistent design
 - **React Router**: For navigation and routing
 - **Axios**: For API requests
+- **i18next**: For internationalization
 
 ## Features
 
 - Create new Ads.txt update requests
-- Upload Ads.txt files for processing
+- Upload and validate Ads.txt files for processing
 - View and manage existing requests
 - Real-time messaging between publishers and requesters
 - Approve or reject Ads.txt records individually
+- Cross-check Ads.txt records against publisher domains
 - Download generated Ads.txt content
+- Query cached Sellers.json data for verification
+- Multi-language support (English and Japanese)
 
 ## Development Setup
 
@@ -26,7 +30,19 @@ This is the frontend for the Ads.txt Manager application, providing a user inter
 - Node.js (v14+)
 - npm or yarn
 
-### Installation
+### Quick Setup
+
+Run the setup script to install dependencies and prepare the environment:
+
+```bash
+# Make the setup script executable
+chmod +x setup.sh
+
+# Run the setup script
+./setup.sh
+```
+
+### Manual Installation
 
 1. Install dependencies:
    ```
@@ -39,6 +55,20 @@ This is the frontend for the Ads.txt Manager application, providing a user inter
    ```
 
 3. Access the application at [http://localhost:3000](http://localhost:3000)
+
+## Testing
+
+Run tests with:
+
+```
+npm test
+```
+
+Generate test coverage report:
+
+```
+npm run test:coverage
+```
 
 ## Building for Production
 
@@ -53,7 +83,9 @@ This is the frontend for the Ads.txt Manager application, providing a user inter
 
 - `src/api/`: API client for backend communication
 - `src/components/`: Reusable React components
+- `src/context/`: React context providers
 - `src/hooks/`: Custom React hooks
+- `src/i18n/`: Internationalization configuration and translations
 - `src/models/`: TypeScript interfaces and types
 - `src/pages/`: Page components for each route
 - `src/styles/`: Global styles and theme configuration
