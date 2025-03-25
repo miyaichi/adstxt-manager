@@ -1,6 +1,12 @@
 const psl = require('psl');
 const axios = require('axios');
 
+// Special domains with non-standard sellers.json URLs
+const SPECIAL_DOMAINS = {
+  'google.com': 'https://realtimebidding.google.com/sellers.json',
+  'advertising.com': 'https://dragon-advertising.com/sellers.json',
+};
+
 function extractRootDomain(domain) {
   domain = domain.replace(/^(https?:\/\/)?(www\.)?/i, '');
   domain = domain.split('/')[0].split('?')[0].split('#')[0];
@@ -51,32 +57,45 @@ async function fetchSellersJson(domain) {
   const rootDomain = extractRootDomain(domain);
   console.log(`Root domain: ${rootDomain}`);
   
-  // Try common URLs for sellers.json
-  const urls = [`https://${rootDomain}/sellers.json`, `https://www.${rootDomain}/sellers.json`];
+  // Determine URL to fetch
+  let url;
   
-  for (const url of urls) {
-    try {
-      console.log(`Trying URL: ${url}`);
-      const response = await axios.get(url, {
-        timeout: 5000,
-        maxContentLength: 10 * 1024 * 1024, // 10MB
-        headers: {
-          'User-Agent': 'AdsTxtManager/1.0',
-        },
-      });
-      
-      console.log(`Success! Status code: ${response.status}`);
-      const contentPreview = JSON.stringify(response.data).substring(0, 500);
-      console.log(`Content preview: ${contentPreview}...`);
-      return;
-    } catch (error) {
-      console.error(`Error fetching ${url}: ${error.message}`);
-    }
+  // Check if this is a special domain with a custom URL
+  if (rootDomain in SPECIAL_DOMAINS) {
+    url = SPECIAL_DOMAINS[rootDomain];
+    console.log(`Using special URL for ${rootDomain}: ${url}`);
+  } else {
+    // Use standard location
+    url = `https://${rootDomain}/sellers.json`;
   }
   
-  console.log('Failed to fetch sellers.json from all URLs');
+  try {
+    console.log(`Fetching from URL: ${url}`);
+    const response = await axios.get(url, {
+      timeout: 5000,
+      maxContentLength: 50 * 1024 * 1024, // 50MB
+      headers: {
+        'User-Agent': 'AdsTxtManager/1.0',
+      },
+    });
+    
+    console.log(`Success! Status code: ${response.status}`);
+    const contentPreview = JSON.stringify(response.data).substring(0, 500);
+    console.log(`Content preview: ${contentPreview}...`);
+  } catch (error) {
+    console.error(`Error fetching ${url}: ${error.message}`);
+    console.log('Failed to fetch sellers.json');
+  }
 }
 
-// Run the test for openx.com's sellers.json
-fetchSellersJson('openx.com');
+// Run tests for different domains
+async function runTests() {
+  // Test standard domain
+  await fetchSellersJson('openx.com');
+  
+  // Test special domain
+  await fetchSellersJson('google.com');
+}
+
+runTests();
 

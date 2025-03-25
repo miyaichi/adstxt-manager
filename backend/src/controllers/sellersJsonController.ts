@@ -8,6 +8,14 @@ import SellersJsonCacheModel, {
 import { logger } from '../utils/logger';
 
 /**
+ * Special domains with non-standard sellers.json URLs
+ */
+const SPECIAL_DOMAINS: Record<string, string> = {
+  'google.com': 'https://realtimebidding.google.com/sellers.json',
+  'advertising.com': 'https://dragon-advertising.com/sellers.json',
+};
+
+/**
  * Fetch sellers.json from a domain and return cached or fresh data
  * @route GET /api/sellersjson/:domain
  */
@@ -43,35 +51,30 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     // Either no cache or cache expired, fetch fresh data
     logger.info(`Fetching fresh sellers.json for domain: ${domain}`);
     
-    // Try both base domain and www subdomain
-    const urls = [`https://${domain}/sellers.json`, `https://www.${domain}/sellers.json`];
-    let response;
-    let currentUrl = '';
-    let fetchSuccess = false;
+    // Determine URL to fetch
+    let url: string;
     
-    for (const url of urls) {
-      try {
-        currentUrl = url;
-        logger.info(`Trying URL: ${url}`);
-        response = await axios.get(url, {
-          timeout: 10000,
-          validateStatus: () => true, // Allow any status code
-          maxContentLength: 10 * 1024 * 1024, // 10MB
-        });
-        
-        // If we got a 200 response, we're done
-        if (response.status === 200) {
-          fetchSuccess = true;
-          break;
-        }
-      } catch (error: any) {
-        logger.warn(`Error fetching from ${url}: ${error.message}`);
-        // Continue to next URL
-      }
+    // Check if this is a special domain with a custom URL
+    if (domain in SPECIAL_DOMAINS) {
+      url = SPECIAL_DOMAINS[domain];
+      logger.info(`Using special URL for ${domain}: ${url}`);
+    } else {
+      // Use standard location
+      url = `https://${domain}/sellers.json`;
     }
     
-    if (!fetchSuccess && !response) {
-      throw new Error(`Failed to fetch sellers.json from all URLs`);
+    // Fetch the sellers.json
+    let response;
+    try {
+      logger.info(`Fetching from URL: ${url}`);
+      response = await axios.get(url, {
+        timeout: 10000,
+        validateStatus: () => true, // Allow any status code
+        maxContentLength: 50 * 1024 * 1024, // 50MB
+      });
+    } catch (error: any) {
+      logger.error(`Error fetching from ${url}: ${error.message}`);
+      throw new Error(`Failed to fetch sellers.json: ${error.message}`);
     }
 
     // Prepare cache record
@@ -133,7 +136,7 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
       success: true,
       data: {
         domain,
-        url: currentUrl,
+        url: url,
         content: savedCache.content ? JSON.parse(savedCache.content) : null,
         status: savedCache.status,
         status_code: savedCache.status_code,
