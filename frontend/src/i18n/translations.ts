@@ -16,6 +16,14 @@ export const translations = {
       en: 'Email',
       ja: 'メールアドレス',
     },
+    process: {
+      en: 'Process',
+      ja: '処理',
+    },
+    contentRequired: {
+      en: 'Please enter some content',
+      ja: 'コンテンツを入力してください',
+    },
     status: {
       pending: {
         en: 'Pending',
@@ -290,6 +298,24 @@ export const translations = {
     },
   },
   adsTxt: {
+    input: {
+      title: {
+        en: 'Ads.txt Input',
+        ja: 'Ads.txt入力',
+      },
+      label: {
+        en: 'Ads.txt Content',
+        ja: 'Ads.txtコンテンツ',
+      },
+      placeholder: {
+        en: 'Enter Ads.txt content here...',
+        ja: 'Ads.txtコンテンツをここに入力してください...',
+      },
+      example: {
+        en: 'Example',
+        ja: '例を表示',
+      },
+    },
     fileUpload: {
       title: {
         en: 'Ads.txt File Upload',
