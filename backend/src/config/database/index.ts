@@ -23,8 +23,8 @@ export interface IDatabaseAdapter {
   initialize(): Promise<void>;
   insert<T extends DatabaseRecord>(table: string, data: T): Promise<T>;
   update<T extends DatabaseRecord>(table: string, id: string, data: Partial<T>): Promise<T | null>;
-  getById<T>(table: string, id: string): Promise<T | null>;
-  query<T>(table: string, query?: DatabaseQuery): Promise<T[]>;
+  getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null>;
+  query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]>;
   execute<T>(sql: string, params?: any[]): Promise<T | T[] | null>;
 }
 
@@ -68,15 +68,15 @@ class DatabaseAdapter implements IDatabaseAdapter {
   /**
    * Get a record by ID from the specified table
    */
-  async getById<T>(table: string, id: string): Promise<T | null> {
-    return await this.implementation.getById(table, id);
+  async getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null> {
+    return await this.implementation.getById<T>(table, id);
   }
 
   /**
    * Query records from the specified table
    */
-  async query<T>(table: string, query?: DatabaseQuery): Promise<T[]> {
-    return await this.implementation.query(table, query);
+  async query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]> {
+    return await this.implementation.query<T>(table, query);
   }
 
   /**
@@ -89,7 +89,7 @@ class DatabaseAdapter implements IDatabaseAdapter {
 
 // Create and export the database instance
 const db = new DatabaseAdapter();
-export default db as any;
+export default db;
 
 /**
  * Initialize database - this must be called before using the database

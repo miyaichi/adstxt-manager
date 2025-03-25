@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from '../config/database';
-const typedDb = db as any;
+import db from '../config/database/index';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
 export interface Message extends DatabaseRecord {
@@ -40,7 +39,7 @@ class MessageModel {
       created_at: now,
     };
 
-    return await typedDb.insert(this.tableName, message);
+    return await db.insert(this.tableName, message);
   }
 
   /**
@@ -49,7 +48,7 @@ class MessageModel {
    * @returns Promise with an array of messages
    */
   async getByRequestId(requestId: string): Promise<Message[]> {
-    return await typedDb.query(this.tableName, {
+    return await db.query(this.tableName, {
       where: { request_id: requestId },
       order: { field: 'created_at', direction: 'ASC' },
     });
@@ -61,7 +60,7 @@ class MessageModel {
    * @returns Promise with the message or null if not found
    */
   async getById(id: string): Promise<Message | null> {
-    return await typedDb.getById(this.tableName, id);
+    return await db.getById(this.tableName, id);
   }
 }
 

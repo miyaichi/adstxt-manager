@@ -1,5 +1,4 @@
-import db from '../config/database';
-const typedDb = db as any;
+import db from '../config/database/index';
 import { logger } from '../utils/logger';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
@@ -40,12 +39,12 @@ class AdsTxtCacheModel {
   async getByDomain(domain: string): Promise<AdsTxtCache | null> {
     try {
       // Using custom SQL with the database adapter
-      const results = await typedDb.query(this.tableName, {
+      const results = await db.query(this.tableName, {
         where: { domain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      return results.length > 0 ? results[0] : null;
+      return results.length > 0 ? results[0] as AdsTxtCache : null;
     } catch (error) {
       logger.error('Error fetching ads.txt cache:', error);
       throw error;
@@ -79,7 +78,7 @@ class AdsTxtCacheModel {
 
       if (existingCache) {
         // Update existing entry
-        const updatedCache = await typedDb.update(this.tableName, existingCache.id, {
+        const updatedCache = await db.update(this.tableName, existingCache.id, {
           content: data.content,
           url: data.url,
           status: data.status,
@@ -92,7 +91,7 @@ class AdsTxtCacheModel {
           throw new Error(`Failed to update ads.txt cache for domain: ${data.domain}`);
         }
 
-        return updatedCache;
+        return updatedCache as AdsTxtCache;
       } else {
         // Create a new entry with UUID
         const { v4: uuidv4 } = require('uuid');
@@ -109,7 +108,7 @@ class AdsTxtCacheModel {
           updated_at: now,
         };
 
-        return await typedDb.insert(this.tableName, newEntry);
+        return await db.insert(this.tableName, newEntry) as AdsTxtCache;
       }
     } catch (error) {
       logger.error('Error saving ads.txt cache:', error);

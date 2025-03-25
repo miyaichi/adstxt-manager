@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from '../config/database';
-const typedDb = db as any;
+import db from '../config/database/index';
 import tokenService from '../services/tokenService';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
@@ -54,7 +53,7 @@ class RequestModel {
       updated_at: now,
     };
 
-    return await typedDb.insert(this.tableName, request);
+    return await db.insert(this.tableName, request);
   }
 
   /**
@@ -64,7 +63,7 @@ class RequestModel {
    * @returns Promise with the request or null if not found/invalid token
    */
   async getByIdWithToken(id: string, token: string): Promise<Request | null> {
-    const request = await typedDb.getById(this.tableName, id);
+    const request = await db.getById<Request>(this.tableName, id);
 
     if (!request) {
       return null;
@@ -83,7 +82,7 @@ class RequestModel {
    * @returns Promise with the request or null if not found
    */
   async getById(id: string): Promise<Request | null> {
-    return await typedDb.getById(this.tableName, id);
+    return await db.getById(this.tableName, id);
   }
 
   /**
@@ -98,10 +97,10 @@ class RequestModel {
   ): Promise<Request | null> {
     const now = new Date().toISOString();
 
-    return await typedDb.update(this.tableName, id, {
+    return await db.update(this.tableName, id, {
       status,
       updated_at: now,
-    });
+    }) as Request | null;
   }
 
   /**
@@ -118,11 +117,11 @@ class RequestModel {
   ): Promise<Request | null> {
     const now = new Date().toISOString();
 
-    return await typedDb.update(this.tableName, id, {
+    return await db.update(this.tableName, id, {
       publisher_name: publisherName,
       publisher_domain: publisherDomain,
       updated_at: now,
-    });
+    }) as Request | null;
   }
 
   /**
@@ -131,7 +130,7 @@ class RequestModel {
    * @returns Promise with an array of requests
    */
   async getByPublisherEmail(email: string): Promise<Request[]> {
-    return await typedDb.query(this.tableName, {
+    return await db.query(this.tableName, {
       where: { publisher_email: email },
       order: { field: 'updated_at', direction: 'DESC' },
     });
@@ -143,7 +142,7 @@ class RequestModel {
    * @returns Promise with an array of requests
    */
   async getByRequesterEmail(email: string): Promise<Request[]> {
-    return await typedDb.query(this.tableName, {
+    return await db.query(this.tableName, {
       where: { requester_email: email },
       order: { field: 'updated_at', direction: 'DESC' },
     });

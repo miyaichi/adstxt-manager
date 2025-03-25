@@ -209,7 +209,7 @@ export class SqliteDatabase {
   /**
    * Get a record by ID from the specified table
    */
-  public async getById<T>(table: string, id: string): Promise<T | null> {
+  public async getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null> {
     return new Promise((resolve, reject) => {
       this.db.get(`SELECT * FROM ${table} WHERE id = ?`, [id], (err, row: T) => {
         if (err) {
@@ -224,7 +224,7 @@ export class SqliteDatabase {
   /**
    * Query records from the specified table
    */
-  public async query<T>(table: string, query?: DatabaseQuery): Promise<T[]> {
+  public async query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]> {
     let sql = `SELECT * FROM ${table}`;
     const params: any[] = [];
 

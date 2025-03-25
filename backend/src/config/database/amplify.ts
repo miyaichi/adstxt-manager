@@ -93,7 +93,7 @@ export class AmplifyDatabase {
   /**
    * Get a record by ID using Amplify DataStore
    */
-  public async getById<T>(table: string, id: string): Promise<T | null> {
+  public async getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null> {
     // In a real implementation, you would use DataStore.query()
     console.log(`[Amplify] Getting ${this.getModelName(table)} with ID ${id}`);
 
@@ -108,7 +108,7 @@ export class AmplifyDatabase {
   /**
    * Query records using Amplify DataStore
    */
-  public async query<T>(table: string, query?: DatabaseQuery): Promise<T[]> {
+  public async query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]> {
     // In a real implementation, you would translate the query to DataStore predicates
     console.log(`[Amplify] Querying ${this.getModelName(table)}:`, query);
 

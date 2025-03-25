@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from '../config/database';
-const typedDb = db as any;
+import db from '../config/database/index';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
 export interface AdsTxtRecord extends DatabaseRecord {
@@ -53,7 +52,7 @@ class AdsTxtRecordModel {
       updated_at: now,
     };
 
-    return await typedDb.insert(this.tableName, record);
+    return await db.insert(this.tableName, record);
   }
 
   /**
@@ -62,7 +61,7 @@ class AdsTxtRecordModel {
    * @returns Promise with the record or null if not found
    */
   async getById(id: string): Promise<AdsTxtRecord | null> {
-    return await typedDb.getById(this.tableName, id);
+    return await db.getById(this.tableName, id);
   }
 
   /**
@@ -79,7 +78,7 @@ class AdsTxtRecordModel {
     accountId: string,
     accountType: string
   ): Promise<boolean> {
-    const records = await typedDb.query(this.tableName, {
+    const records = await db.query(this.tableName, {
       where: {
         request_id: requestId,
         domain,
@@ -97,7 +96,7 @@ class AdsTxtRecordModel {
    * @returns Promise with an array of records
    */
   async getByRequestId(requestId: string): Promise<AdsTxtRecord[]> {
-    return await typedDb.query(this.tableName, {
+    return await db.query(this.tableName, {
       where: { request_id: requestId },
     });
   }
@@ -140,10 +139,10 @@ class AdsTxtRecordModel {
   ): Promise<AdsTxtRecord | null> {
     const now = new Date().toISOString();
 
-    return await typedDb.update(this.tableName, id, {
+    return await db.update(this.tableName, id, {
       status,
       updated_at: now,
-    });
+    }) as AdsTxtRecord | null;
   }
 
   /**
@@ -152,7 +151,7 @@ class AdsTxtRecordModel {
    * @returns Promise with an array of records
    */
   async getByDomain(domain: string): Promise<AdsTxtRecord[]> {
-    return await typedDb.query(this.tableName, {
+    return await db.query(this.tableName, {
       where: { domain },
     });
   }
@@ -166,10 +165,10 @@ class AdsTxtRecordModel {
   async updateDomain(id: string, domain: string): Promise<AdsTxtRecord | null> {
     const now = new Date().toISOString();
 
-    return await typedDb.update(this.tableName, id, {
+    return await db.update(this.tableName, id, {
       domain,
       updated_at: now,
-    });
+    }) as AdsTxtRecord | null;
   }
 }
 

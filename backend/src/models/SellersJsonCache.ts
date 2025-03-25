@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from '../config/database';
-const typedDb = db as any;
+import db from '../config/database/index';
 import { logger } from '../utils/logger';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
@@ -41,12 +40,12 @@ class SellersJsonCacheModel {
    */
   async getByDomain(domain: string): Promise<SellersJsonCache | null> {
     try {
-      const results = await typedDb.query(this.tableName, {
+      const results = await db.query(this.tableName, {
         where: { domain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      return results.length > 0 ? results[0] : null;
+      return results.length > 0 ? results[0] as SellersJsonCache : null;
     } catch (error) {
       logger.error('Error fetching sellers.json cache:', error);
       throw error;
@@ -72,7 +71,7 @@ class SellersJsonCacheModel {
     try {
       if (existingCache) {
         // Update existing entry
-        const updatedCache = await typedDb.update(this.tableName, existingCache.id, {
+        const updatedCache = await db.update(this.tableName, existingCache.id, {
           content,
           status,
           status_code: statusCode,
@@ -84,7 +83,7 @@ class SellersJsonCacheModel {
           throw new Error(`Failed to update sellers.json cache for domain: ${domain}`);
         }
 
-        return updatedCache;
+        return updatedCache as SellersJsonCache;
       } else {
         // Create new entry
         const newCache: SellersJsonCache = {
@@ -98,7 +97,7 @@ class SellersJsonCacheModel {
           updated_at: now,
         };
 
-        return await typedDb.insert(this.tableName, newCache);
+        return await db.insert(this.tableName, newCache) as SellersJsonCache;
       }
     } catch (error) {
       logger.error('Error saving sellers.json cache:', error);
