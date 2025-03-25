@@ -84,21 +84,24 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       });
       
       parser.on('startArray', () => {
-        if (currentPath.join('.') === 'sellers') {
+        const currentPathStr = currentPath.join('.');
+        if (currentPathStr === 'sellers') {
           inMetadata = false;
         }
       });
       
       parser.on('keyValue', ({ key, value }: { key: string, value: any }) => {
+        const currentPathStr = currentPath.join('.');
+        
         if (inMetadata) {
           // Process metadata fields
           if (key === 'contact_email' || key === 'contact_address' || key === 'version') {
             contactInfo[key] = value;
             if (key === 'version') version = value;
-          } else if (currentPath.join('.') === 'identifiers') {
+          } else if (currentPathStr === 'identifiers') {
             currentObject[key] = value;
           }
-        } else if (currentPath.join('.') === 'sellers') {
+        } else if (currentPathStr === 'sellers') {
           // We're inside a seller object in the sellers array
           currentObject[key] = value;
           
@@ -112,9 +115,11 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       });
       
       parser.on('endObject', () => {
-        if (currentPath.join('.') === 'identifiers') {
+        const currentPathStr = currentPath.join('.');
+        
+        if (currentPathStr === 'identifiers') {
           identifiers.push(currentObject);
-        } else if (sellerFound && currentPath.join('.') === 'sellers') {
+        } else if (sellerFound && currentPathStr === 'sellers') {
           // We found our seller, we can stop streaming and return the result
           stream.destroy(); // Stop the stream
           
@@ -133,11 +138,15 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       });
       
       parser.on('startKey', () => {
-        currentPath.push(currentKey);
+        if (currentKey) {
+          currentPath.push(currentKey);
+        }
       });
       
       parser.on('endKey', () => {
-        currentPath.pop();
+        if (currentPath.length > 0) {
+          currentPath.pop();
+        }
       });
       
       parser.on('end', () => {
