@@ -181,21 +181,34 @@ export const adsTxtApi = {
     return response.data;
   },
 
-  // Process Ads.txt file
-  async processAdsTxtFile(file: File): Promise<ApiResponse<ProcessAdsTxtResponse>> {
-    const formData = new FormData();
-    formData.append('adsTxtFile', file);
+  // Process Ads.txt file or text content
+  async processAdsTxtFile(fileOrContent: File | string): Promise<ApiResponse<ProcessAdsTxtResponse>> {
+    // If it's a file, use FormData
+    if (fileOrContent instanceof File) {
+      const formData = new FormData();
+      formData.append('adsTxtFile', fileOrContent);
 
-    const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>(
-      '/adsTxt/process',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    return response.data;
+      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>(
+        '/adsTxt/process',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } 
+    // If it's text content, send as JSON
+    else {
+      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>(
+        '/adsTxt/process',
+        {
+          adsTxtContent: fileOrContent
+        }
+      );
+      return response.data;
+    }
   },
 
   // Get records by request ID

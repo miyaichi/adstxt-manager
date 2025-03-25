@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Card, Button, Text, Flex, Loader, Alert, Heading } from '@aws-amplify/ui-react';
+import React, { useState } from 'react';
+import { Card, Button, Text, Flex, Loader, Alert, Heading, TextAreaField } from '@aws-amplify/ui-react';
 import { adsTxtApi } from '../../api';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 import AdsTxtRecordList from './AdsTxtRecordList';
@@ -12,8 +12,7 @@ interface AdsTxtFileUploadProps {
 
 const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }) => {
   const { language } = useApp();
-  const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState<string>('');
+  const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [parsedRecords, setParsedRecords] = useState<ParsedAdsTxtRecord[]>([]);
@@ -22,34 +21,15 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
     valid: number;
     invalid: number;
   } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      setFile(selectedFile);
-      setFileName(selectedFile.name);
-      setError(null);
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAdsTxtContent(e.target.value);
+    setError(null);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-      setFile(droppedFile);
-      setFileName(droppedFile.name);
-      setError(null);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      setError(t('common.fileRequired', language));
+  const handleProcess = async () => {
+    if (!adsTxtContent.trim()) {
+      setError(t('common.contentRequired', language));
       return;
     }
 
@@ -57,7 +37,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
       setIsLoading(true);
       setError(null);
 
-      const response = await adsTxtApi.processAdsTxtFile(file);
+      const response = await adsTxtApi.processAdsTxtFile(adsTxtContent);
 
       if (response.success) {
         setParsedRecords(response.data.records);
@@ -96,62 +76,62 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
   };
 
   const handleClear = () => {
-    setFile(null);
-    setFileName('');
+    setAdsTxtContent('');
     setParsedRecords([]);
     setStats(null);
     setError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  };
+
+  const handlePasteExample = () => {
+    // Add common Ads.txt format example
+    const example = `# Ads.txt example format
+example.com, pub-id123456789, DIRECT, f08c47fec0942fa0
+google.com, pub-1234567891234567, RESELLER, f08c47fec0942fa0
+openx.com, 123456789, RESELLER
+appnexus.com, 1234, DIRECT
+`;
+    setAdsTxtContent(example);
+    setError(null);
   };
 
   return (
     <Card variation="outlined" padding="1.5rem">
       <Heading level={3} marginBottom="1rem">
-        {t('adsTxt.fileUpload.title', language)}
+        {t('adsTxt.input.title', language) || 'Ads.txt Input'}
       </Heading>
 
-      <div
-        style={{
-          border: '2px dashed #ccc',
-          borderRadius: '4px',
-          padding: '2rem',
-          textAlign: 'center',
-          marginBottom: '1rem',
-          backgroundColor: '#f8f8f8',
-          cursor: 'pointer',
-        }}
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept=".txt,.csv"
-          style={{ display: 'none' }}
-        />
-        <Text>{t('common.dropFileHere', language)}</Text>
-        {fileName && (
-          <Text fontWeight="bold" marginTop="0.5rem">
-            {t('common.selectFile', language)} {fileName}
-          </Text>
-        )}
-      </div>
+      <TextAreaField
+        label={t('adsTxt.input.label', language) || 'Ads.txt Content'}
+        placeholder={t('adsTxt.input.placeholder', language) || 'Enter Ads.txt content here...'}
+        rows={10}
+        value={adsTxtContent}
+        onChange={handleInputChange}
+        marginBottom="1rem"
+      />
 
-      <Flex direction="row" gap="1rem" marginBottom="1rem">
-        <Button variation="primary" isDisabled={!file || isLoading} onClick={handleUpload} flex="1">
-          {isLoading ? <Loader size="small" /> : t('common.upload', language)}
+      <Flex direction="row" gap="0.5rem" marginBottom="1rem">
+        <Button 
+          variation="primary" 
+          isDisabled={!adsTxtContent.trim() || isLoading} 
+          onClick={handleProcess} 
+          flex="1"
+        >
+          {isLoading ? <Loader size="small" /> : t('common.process', language) || 'Process'}
         </Button>
         <Button
           variation="destructive"
-          isDisabled={!file || isLoading}
+          isDisabled={!adsTxtContent.trim() || isLoading}
           onClick={handleClear}
           flex="1"
         >
-          {t('common.clear', language)}
+          {t('common.clear', language) || 'Clear'}
+        </Button>
+        <Button
+          variation="link"
+          onClick={handlePasteExample}
+          isDisabled={isLoading}
+        >
+          {t('adsTxt.input.example', language) || 'Example'}
         </Button>
       </Flex>
 
@@ -168,7 +148,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
               total: stats.total,
               valid: stats.valid,
               invalid: stats.invalid,
-            })}
+            }) || `Total: ${stats.total}, Valid: ${stats.valid}, Invalid: ${stats.invalid}`}
           </Text>
         </Flex>
       )}

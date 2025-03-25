@@ -55,20 +55,47 @@ export const updateRecordStatus = asyncHandler(async (req: Request, res: Respons
 });
 
 /**
- * Process uploaded Ads.txt file
+ * Process Ads.txt content (from file upload or text input)
  * @route POST /api/adstxt/process
  */
 export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.file) {
-    throw new ApiError(400, 'No file uploaded', 'errors:noFileUploaded');
+  // Check for file upload first
+  if (req.file) {
+    try {
+      const fileBuffer = req.file.buffer;
+      const fileContent = fileBuffer.toString('utf8');
+
+      // Parse the content
+      const parsedRecords = parseAdsTxtContent(fileContent);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          records: parsedRecords,
+          totalRecords: parsedRecords.length,
+          validRecords: parsedRecords.filter((r) => r.is_valid).length,
+          invalidRecords: parsedRecords.filter((r) => !r.is_valid).length,
+        },
+      });
+      return;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid format';
+      throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`, 'errors:parsingError', {
+        message: errorMessage,
+      });
+    }
+  }
+
+  // Check for text content in request body
+  if (!req.body.adsTxtContent) {
+    throw new ApiError(400, 'No content provided', 'errors:noContentProvided');
   }
 
   try {
-    const fileBuffer = req.file.buffer;
-    const fileContent = fileBuffer.toString('utf8');
-
+    const content = req.body.adsTxtContent;
+    
     // Parse the content
-    const parsedRecords = parseAdsTxtContent(fileContent);
+    const parsedRecords = parseAdsTxtContent(content);
 
     res.status(200).json({
       success: true,
@@ -81,7 +108,7 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-    throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`, 'errors:parsingError', {
+    throw new ApiError(400, `Error parsing Ads.txt content: ${errorMessage}`, 'errors:parsingError', {
       message: errorMessage,
     });
   }

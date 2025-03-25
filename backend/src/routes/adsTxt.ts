@@ -19,7 +19,18 @@ const upload = multer({
 
 // Routes
 router.patch('/:id/status', updateRecordStatus);
-router.post('/process', upload.single('adsTxtFile'), processAdsTxtFile);
+// Support both file upload and text content
+router.post('/process', 
+  // Use multer conditionally when there's a file
+  (req, res, next) => {
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+      upload.single('adsTxtFile')(req, res, next);
+    } else {
+      next();
+    }
+  }, 
+  processAdsTxtFile
+);
 router.get('/request/:requestId', getRecordsByRequestId);
 router.get('/generate/:requestId', generateAdsTxtContent);
 
