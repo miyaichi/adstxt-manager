@@ -6,6 +6,9 @@ import SellersJsonCacheModel, {
   SellersJsonCacheStatus,
 } from '../models/SellersJsonCache';
 import { logger } from '../utils/logger';
+import { Readable } from 'stream';
+import { createParser } from 'stream-json/Parser';
+import { streamArray } from 'stream-json/streamers/StreamArray';
 
 /**
  * Special domains with non-standard sellers.json URLs
@@ -14,6 +17,161 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
+
+/**
+ * Fetch sellers.json from a domain and return cached or fresh data
+ * @route GET /api/sellersjson/:domain
+ */
+/**
+ * Get a specific seller from a domain's sellers.json by seller_id
+ * Uses streaming to efficiently process large files
+ * @route GET /api/sellersjson/:domain/seller/:sellerId
+ */
+export const getSellerById = asyncHandler(async (req: Request, res: Response) => {
+  const { domain, sellerId } = req.params;
+
+  if (!domain) {
+    throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
+  }
+
+  if (!sellerId) {
+    throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
+  }
+
+  try {
+    // Determine URL to fetch
+    let url: string;
+    
+    // Check if this is a special domain with a custom URL
+    if (domain in SPECIAL_DOMAINS) {
+      url = SPECIAL_DOMAINS[domain];
+      logger.info(`Using special URL for ${domain}: ${url}`);
+    } else {
+      // Use standard location
+      url = `https://${domain}/sellers.json`;
+    }
+    
+    logger.info(`Streaming sellers.json from ${url} to find seller_id: ${sellerId}`);
+    
+    // Use streaming with Axios
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'stream',
+      timeout: 30000,
+    });
+    
+    const stream = response.data;
+    
+    // Create JSON streaming parser pipeline for sellers array
+    let sellerFound = false;
+    let contactInfo = {};
+    let identifiers = [];
+    let version = '';
+    let inMetadata = true; // Flag to track if we're in metadata section
+    
+    // Initialize a promise that will resolve when we find the seller or finish processing
+    const processingPromise = new Promise((resolve, reject) => {
+      // Create parser pipeline
+      const parser = createParser();
+      let currentPath = [];
+      let currentKey = null;
+      let currentObject = {};
+      
+      // Setup parser event handlers
+      parser.on('startObject', () => {
+        currentObject = {};
+      });
+      
+      parser.on('startArray', () => {
+        if (currentPath.join('.') === 'sellers') {
+          inMetadata = false;
+        }
+      });
+      
+      parser.on('keyValue', ({ key, value }) => {
+        if (inMetadata) {
+          // Process metadata fields
+          if (key === 'contact_email' || key === 'contact_address' || key === 'version') {
+            contactInfo[key] = value;
+            if (key === 'version') version = value;
+          } else if (currentPath.join('.') === 'identifiers') {
+            currentObject[key] = value;
+          }
+        } else if (currentPath.join('.') === 'sellers') {
+          // We're inside a seller object in the sellers array
+          currentObject[key] = value;
+          
+          // Check if this is the seller we're looking for
+          if (key === 'seller_id' && value === sellerId) {
+            sellerFound = true;
+          }
+        }
+        
+        currentKey = key;
+      });
+      
+      parser.on('endObject', () => {
+        if (currentPath.join('.') === 'identifiers') {
+          identifiers.push(currentObject);
+        } else if (sellerFound && currentPath.join('.') === 'sellers') {
+          // We found our seller, we can stop streaming and return the result
+          stream.destroy(); // Stop the stream
+          
+          // Construct the response object
+          const result = {
+            ...contactInfo,
+            version,
+            identifiers,
+            seller: currentObject
+          };
+          
+          resolve(result);
+        }
+        
+        currentObject = {};
+      });
+      
+      parser.on('startKey', () => {
+        currentPath.push(currentKey);
+      });
+      
+      parser.on('endKey', () => {
+        currentPath.pop();
+      });
+      
+      parser.on('end', () => {
+        if (!sellerFound) {
+          resolve({ error: 'Seller not found', sellerId });
+        }
+      });
+      
+      parser.on('error', (err) => {
+        reject(new Error(`Error parsing sellers.json: ${err.message}`));
+      });
+      
+      // Feed the stream into the parser
+      stream.pipe(parser);
+    });
+    
+    // Wait for the processing to complete
+    const result = await processingPromise;
+    
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+    
+  } catch (error: any) {
+    logger.error(`Error fetching seller ${sellerId} from ${domain}:`, error);
+    throw new ApiError(
+      500,
+      `Error fetching seller information: ${error.message}`,
+      'errors:sellersFetchError',
+      { message: error.message }
+    );
+  }
+});
 
 /**
  * Fetch sellers.json from a domain and return cached or fresh data
