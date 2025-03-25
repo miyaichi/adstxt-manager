@@ -3,7 +3,7 @@ const axios = require('axios');
 
 // Special domains with non-standard sellers.json URLs
 const SPECIAL_DOMAINS = {
-  'google.com': 'https://realtimebidding.google.com/sellers.json',
+  'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
@@ -72,8 +72,9 @@ async function fetchSellersJson(domain) {
   try {
     console.log(`Fetching from URL: ${url}`);
     const response = await axios.get(url, {
-      timeout: 5000,
-      maxContentLength: 50 * 1024 * 1024, // 50MB
+      timeout: 30000, // Increase timeout for large files
+      maxContentLength: 200 * 1024 * 1024, // 200MB to handle Google's ~114MB file
+      decompress: true, // Handle gzipped responses
       headers: {
         'User-Agent': 'AdsTxtManager/1.0',
       },
@@ -83,7 +84,15 @@ async function fetchSellersJson(domain) {
     const contentPreview = JSON.stringify(response.data).substring(0, 500);
     console.log(`Content preview: ${contentPreview}...`);
   } catch (error) {
-    console.error(`Error fetching ${url}: ${error.message}`);
+    if (error.code === 'ECONNABORTED') {
+      console.error(`Timeout error fetching ${url}: Request took too long`);
+    } else if (error.response) {
+      console.error(`Error fetching ${url}: Status ${error.response.status}`);
+    } else if (error.request) {
+      console.error(`Error fetching ${url}: No response received`);
+    } else {
+      console.error(`Error fetching ${url}: ${error.message}`);
+    }
     console.log('Failed to fetch sellers.json');
   }
 }

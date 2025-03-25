@@ -11,7 +11,7 @@ import { logger } from '../utils/logger';
  * Special domains with non-standard sellers.json URLs
  */
 const SPECIAL_DOMAINS: Record<string, string> = {
-  'google.com': 'https://realtimebidding.google.com/sellers.json',
+  'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
@@ -68,9 +68,10 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     try {
       logger.info(`Fetching from URL: ${url}`);
       response = await axios.get(url, {
-        timeout: 10000,
+        timeout: 30000, // Increase timeout for large files
         validateStatus: () => true, // Allow any status code
-        maxContentLength: 50 * 1024 * 1024, // 50MB
+        maxContentLength: 200 * 1024 * 1024, // 200MB to handle Google's ~114MB file
+        decompress: true, // Handle gzipped responses
       });
     } catch (error: any) {
       logger.error(`Error fetching from ${url}: ${error.message}`);
