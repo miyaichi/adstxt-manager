@@ -65,18 +65,18 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     
     // Create JSON streaming parser pipeline for sellers array
     let sellerFound = false;
-    let contactInfo = {};
-    let identifiers = [];
+    let contactInfo: Record<string, string> = {};
+    let identifiers: Array<Record<string, string>> = [];
     let version = '';
     let inMetadata = true; // Flag to track if we're in metadata section
     
     // Initialize a promise that will resolve when we find the seller or finish processing
-    const processingPromise = new Promise((resolve, reject) => {
+    const processingPromise = new Promise<any>((resolve, reject) => {
       // Create parser pipeline
       const parser = createParser();
-      let currentPath = [];
-      let currentKey = null;
-      let currentObject = {};
+      let currentPath: string[] = [];
+      let currentKey: string | null = null;
+      let currentObject: Record<string, any> = {};
       
       // Setup parser event handlers
       parser.on('startObject', () => {
@@ -89,7 +89,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         }
       });
       
-      parser.on('keyValue', ({ key, value }) => {
+      parser.on('keyValue', ({ key, value }: { key: string, value: any }) => {
         if (inMetadata) {
           // Process metadata fields
           if (key === 'contact_email' || key === 'contact_address' || key === 'version') {
