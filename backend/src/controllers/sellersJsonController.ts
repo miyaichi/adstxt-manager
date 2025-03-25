@@ -42,12 +42,37 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
 
     // Either no cache or cache expired, fetch fresh data
     logger.info(`Fetching fresh sellers.json for domain: ${domain}`);
-    const sellersJsonUrl = `https://${domain}/sellers.json`;
-
-    const response = await axios.get(sellersJsonUrl, {
-      timeout: 10000,
-      validateStatus: () => true, // Allow any status code
-    });
+    
+    // Try both base domain and www subdomain
+    const urls = [`https://${domain}/sellers.json`, `https://www.${domain}/sellers.json`];
+    let response;
+    let currentUrl = '';
+    let fetchSuccess = false;
+    
+    for (const url of urls) {
+      try {
+        currentUrl = url;
+        logger.info(`Trying URL: ${url}`);
+        response = await axios.get(url, {
+          timeout: 10000,
+          validateStatus: () => true, // Allow any status code
+          maxContentLength: 10 * 1024 * 1024, // 10MB
+        });
+        
+        // If we got a 200 response, we're done
+        if (response.status === 200) {
+          fetchSuccess = true;
+          break;
+        }
+      } catch (error: any) {
+        logger.warn(`Error fetching from ${url}: ${error.message}`);
+        // Continue to next URL
+      }
+    }
+    
+    if (!fetchSuccess && !response) {
+      throw new Error(`Failed to fetch sellers.json from all URLs`);
+    }
 
     // Prepare cache record
     let cacheRecord: {
@@ -108,6 +133,7 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
       success: true,
       data: {
         domain,
+        url: currentUrl,
         content: savedCache.content ? JSON.parse(savedCache.content) : null,
         status: savedCache.status,
         status_code: savedCache.status_code,
