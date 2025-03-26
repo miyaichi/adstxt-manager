@@ -10,12 +10,37 @@ import { Readable } from 'stream';
 import { createParser } from 'stream-json/Parser';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 
+import fs from 'fs';
+import path from 'path';
+
 /**
  * Special domains with non-standard sellers.json URLs
  */
 const SPECIAL_DOMAINS: Record<string, string> = {
   'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
+};
+
+/**
+ * 事前にダウンロードしたsellers.jsonファイルを使用するドメインリスト
+ */
+const PREFETCHED_DOMAINS = [
+  'ad-generation.jp',
+  'google.com',
+  'openx.com',
+  'appnexus.com',
+  'pubmatic.com',
+  'rubiconproject.com',
+  'smartadserver.com',
+  'spotx.tv',
+  'mediamath.com'
+];
+
+/**
+ * 事前にダウンロードしたsellers.jsonファイルのパスを取得
+ */
+const getPrefetchedFilePath = (domain: string): string => {
+  return path.join(process.cwd(), 'data', 'sellers_json', `${domain}.json`);
 };
 
 /**
@@ -37,6 +62,10 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
   if (!sellerId) {
     throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
   }
+  
+  // sellerId は様々な型（文字列や数値）で提供されることがあるため、
+  // 比較のために文字列に変換されたsellerIdを用意（不要な空白も除去）
+  const normalizedSellerId = String(sellerId).trim();
 
   try {
     // Determine URL to fetch
@@ -51,14 +80,86 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       url = `https://${domain}/sellers.json`;
     }
     
-    logger.info(`Streaming sellers.json from ${url} to find seller_id: ${sellerId}`);
+    logger.info(`Streaming sellers.json from ${url} to find seller_id: ${normalizedSellerId}`);
     
-    // Use streaming with Axios
+    // デバッグ情報を追加
+    logger.debug(`Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`);
+    
+    // 取得前にデバッグ情報を記録
+    logger.debug(`Making request to URL: ${url} for seller_id: ${normalizedSellerId}`);
+    
+    // 事前にダウンロードしたファイルがあるか確認
+    if (PREFETCHED_DOMAINS.includes(domain)) {
+      const filePath = getPrefetchedFilePath(domain);
+      
+      logger.info(`Checking for pre-fetched sellers.json file at ${filePath}`);
+      
+      // ファイルが存在するか確認
+      if (fs.existsSync(filePath)) {
+        try {
+          logger.info(`Using pre-fetched sellers.json for ${domain}`);
+          
+          // ファイルを読み込む
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const sellerData = JSON.parse(fileContent);
+          
+          if (sellerData && Array.isArray(sellerData.sellers)) {
+            // seller_idに一致するセラーを探す
+            const targetSeller = sellerData.sellers.find(
+              (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+            );
+            
+            logger.info(`Found ${sellerData.sellers.length} sellers in pre-fetched file for ${domain}`);
+            
+            if (targetSeller) {
+              // セラーが見つかった場合
+              logger.info(`Found seller with ID ${normalizedSellerId} in pre-fetched file for ${domain}`);
+              
+              const result = {
+                contact_email: sellerData.contact_email,
+                version: sellerData.version,
+                identifiers: sellerData.identifiers || [],
+                seller: targetSeller
+              };
+              
+              return res.status(200).json({
+                success: true,
+                data: result
+              });
+            } else {
+              logger.warn(`Seller ID ${normalizedSellerId} not found in pre-fetched file for ${domain}`);
+              
+              // セラーIDが見つからない場合は、エラーではなく「見つからない」という情報を返す
+              return res.status(200).json({
+                success: true,
+                data: {
+                  found: false,
+                  message: `Seller ID ${normalizedSellerId} not found in pre-fetched file for ${domain}`,
+                  sellerId: normalizedSellerId
+                }
+              });
+            }
+          }
+        } catch (error: any) {
+          logger.error(`Error reading pre-fetched sellers.json for ${domain}: ${error.message}`);
+          // エラーが発生した場合は、APIからの取得を試みる
+        }
+      } else {
+        logger.warn(`No pre-fetched sellers.json file found for ${domain} at ${filePath}`);
+      }
+    }
+    
+  
+    // Use streaming with Axios (デフォルトのアプローチまたはフォールバック)
     const response = await axios({
       method: 'get',
       url: url,
       responseType: 'stream',
       timeout: 30000,
+      headers: {
+        'User-Agent': 'AdsTxtManager/1.0',
+        'Accept': 'application/json'
+      }
     });
     
     const stream = response.data;
@@ -73,10 +174,20 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     // Initialize a promise that will resolve when we find the seller or finish processing
     const processingPromise = new Promise<any>((resolve, reject) => {
       // Create parser pipeline
-      const parser = createParser();
+      const parser = createParser({
+        // パースエラーに関する詳細なデバッグ情報を有効化
+        jsonStreaming: true,
+        packValues: true,
+        packKeys: true
+      });
       let currentPath: string[] = [];
       let currentKey: string | null = null;
       let currentObject: Record<string, any> = {};
+      
+      // ストリームデータ受信のデバッグ用
+      stream.on('data', (chunk) => {
+        logger.debug(`Received data chunk from ${url} (${chunk.length} bytes)`);
+      });
       
       // Setup parser event handlers
       parser.on('startObject', () => {
@@ -106,7 +217,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
           currentObject[key] = value;
           
           // Check if this is the seller we're looking for
-          if (key === 'seller_id' && value === sellerId) {
+          // 文字列として比較して、seller_idが数値の場合にも対応
+          if (key === 'seller_id' && String(value).trim() === normalizedSellerId) {
             sellerFound = true;
           }
         }
@@ -151,11 +263,28 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       
       parser.on('end', () => {
         if (!sellerFound) {
-          resolve({ error: 'Seller not found', sellerId });
+          // セラーが見つからない場合は、エラーではなく空のセラー情報を返す
+          resolve({ 
+            error: null, 
+            found: false, 
+            message: 'Seller ID not found in sellers.json',
+            sellerId 
+          });
         }
       });
       
       parser.on('error', (err) => {
+        logger.error(`JSON parsing error for ${url}: ${err.message}`);
+        
+        // Node.jsのストリームはcloneNodeメソッドを持たないので、別の方法でエラーを記録
+        logger.error(`JSON parse error details: ${JSON.stringify({
+          url,
+          sellerId: normalizedSellerId,
+          errorType: err.name,
+          errorMessage: err.message,
+          errorStack: err.stack
+        }, null, 2)}`);
+        
         reject(new Error(`Error parsing sellers.json: ${err.message}`));
       });
       

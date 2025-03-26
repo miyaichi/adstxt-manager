@@ -18,20 +18,20 @@ const domains = [
   'smartadserver.com',
 ];
 
-// 特別なURLを持つドメイン
+// Domain with special URLs
 const SPECIAL_DOMAINS = {
   'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json'
 };
 
-// データディレクトリを作成
+// Create data directory if it doesn't exist
 const dataDir = path.join(__dirname, 'data', 'sellers_json');
 if (!fs.existsSync(dataDir)) {
   console.log(`📁 Creating directory: ${dataDir}`);
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// JSONが有効かどうかを検証
+// Validating JSON data
 function isValidJson(data) {
   try {
     JSON.parse(data);
@@ -41,7 +41,7 @@ function isValidJson(data) {
   }
 }
 
-// HTTPSリクエストを実行する関数
+// Function to fetch data from a URL
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
     const request = https.get(url, {
@@ -52,12 +52,12 @@ function fetchUrl(url) {
       }
     }, (response) => {
       if (response.statusCode === 301 || response.statusCode === 302) {
-        // リダイレクトの場合
+        // If the response is a redirect, follow the redirect
         console.log(`↪️ Following redirect to: ${response.headers.location}`);
         return fetchUrl(response.headers.location).then(resolve).catch(reject);
       }
 
-      // レスポンスデータを収集
+      // Get the response data
       let data = '';
       response.on('data', (chunk) => {
         data += chunk;
@@ -83,14 +83,14 @@ function fetchUrl(url) {
   });
 }
 
-// メイン処理
+// Main function to fetch sellers.json data
 async function main() {
   const successCount = 0;
   const failCount = 0;
 
   console.log('🚀 Starting sellers.json fetch process');
 
-  // 指定されたドメインがあれば、そのドメインだけ処理
+  // If domains are specified, process only those domains
   const targetDomains = process.argv.length > 2
     ? process.argv.slice(2)
     : domains;
@@ -100,24 +100,24 @@ async function main() {
   for (const domain of targetDomains) {
     console.log(`📥 Fetching sellers.json from ${domain}...`);
 
-    // URLを決定
+    // Fix for special domains
     const url = SPECIAL_DOMAINS[domain] || `https://${domain}/sellers.json`;
 
     try {
       const data = await fetchUrl(url);
       const filePath = path.join(dataDir, `${domain}.json`);
 
-      // JSONが有効かどうかを検証
+      // Validating JSON data
       if (isValidJson(data)) {
         fs.writeFileSync(filePath, data, 'utf8');
         console.log(`✅ Successfully downloaded sellers.json for ${domain}`);
 
-        // 簡単な統計情報を表示
+        // Display the number of sellers in the data
         const jsonData = JSON.parse(data);
         if (jsonData.sellers && Array.isArray(jsonData.sellers)) {
           console.log(`   📊 Found ${jsonData.sellers.length} sellers in the data`);
 
-          // 最初の3つのセラーIDをサンプルとして表示
+          // Display the first 3 seller IDs as samples
           const sampleIds = jsonData.sellers.slice(0, 3).map(s => s.seller_id);
           console.log(`   🔍 Sample seller IDs: ${sampleIds.join(', ')}...`);
         }
@@ -134,7 +134,7 @@ async function main() {
   console.log('🏁 fetch-sellers-json process completed');
 }
 
-// スクリプトを実行
+// Execute the main function
 main().catch(error => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
