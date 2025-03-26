@@ -276,7 +276,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       });
     }
     // Removed error from dependency array to avoid potential infinite loop
-  }, [record, fetchSellerInfo, getSellersDomain, isParsedRecord]);
+  }, [record, fetchSellerInfo, getSellersDomain, isParsedRecord, error]);
 
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">
