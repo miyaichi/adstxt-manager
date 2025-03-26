@@ -793,13 +793,22 @@ export const translations = {
 
 // Create a translation helper function
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
-  // 'errors:' プレフィックスがある場合は削除してキーに分解
-  const processedKey = key.startsWith('errors:') ? key.replace('errors:', '') : key;
-  const keys = processedKey.split('.');
+  // Parse the key into path components
+  let path: string[];
+  
+  // 'errors:' プレフィックスがある場合は特別処理
+  if (key.startsWith('errors:')) {
+    const keyWithoutPrefix = key.replace('errors:', '');
+    path = ['errors', ...keyWithoutPrefix.split('.')];
+  } else {
+    path = key.split('.');
+  }
+  
+  // Start from the root translations object
   let value: any = translations;
 
   // Navigate through the nested objects
-  for (const k of keys) {
+  for (const k of path) {
     console.log(`Looking for key part: ${k} in`, value);
     if (value[k] === undefined) {
       console.warn(`Translation key not found: ${key}, failed at part: ${k}`);
