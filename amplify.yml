@@ -1,0 +1,25 @@
+version: 1
+applications:
+  - backend:
+      phases:
+        preBuild:
+          commands:
+            - cd backend
+            - npm ci
+        build:
+          commands:
+            - npm run build
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - cd frontend
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: frontend/build
+        files:
+          - '**/*'
+    appRoot: .
