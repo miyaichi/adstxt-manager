@@ -18,7 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { AdsTxtRecord, CreateRequestData } from '../../models';
 import { requestApi, adsTxtApi } from '../../api';
-import AdsTxtFileUpload from '../adsTxt/AdsTxtFileUpload';
+import AdsTxtTextInput from '../adsTxt/AdsTxtFileUpload';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
@@ -324,7 +324,7 @@ const RequestForm: React.FC = () => {
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>
-              <AdsTxtFileUpload
+              <AdsTxtTextInput
                 onRecordsSelected={handleRecordsSelected}
                 onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)}
               />

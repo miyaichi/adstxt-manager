@@ -15,12 +15,12 @@ import AdsTxtRecordList from './AdsTxtRecordList';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 
-interface AdsTxtFileUploadProps {
+interface AdsTxtTextInputProps {
   onRecordsSelected: (records: AdsTxtRecord[]) => void;
   onHasInvalidRecords?: (hasInvalid: boolean) => void;
 }
 
-const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({
+const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
   onRecordsSelected,
   onHasInvalidRecords,
 }) => {
@@ -238,4 +238,4 @@ appnexus.com, 1234, DIRECT
   );
 };
 
-export default AdsTxtFileUpload;
+export default AdsTxtTextInput;
