@@ -22,7 +22,7 @@
   "author": "Yoshihiko Miyaichi",
   "license": "MIT",
   "dependencies": {
-    "stream-json": "^1.8.0",
+    "aws-amplify": "^6.14.0",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
@@ -36,6 +36,7 @@
     "nodemailer": "^6.9.8",
     "psl": "^1.15.0",
     "sqlite3": "^5.1.7",
+    "stream-json": "^1.8.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

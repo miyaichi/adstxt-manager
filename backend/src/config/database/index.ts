@@ -9,13 +9,18 @@ export interface DatabaseRecord {
   [key: string]: any; // Allow indexing with string
 }
 
+export interface WhereCondition {
+  [key: string]: any;
+}
+
 export interface DatabaseQuery {
-  where?: Record<string, any>;
+  where?: WhereCondition | WhereCondition[];
   order?: {
     field: string;
     direction: 'ASC' | 'DESC';
   };
   limit?: number;
+  offset?: number;
 }
 
 // Define interface for database operations
