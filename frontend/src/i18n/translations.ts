@@ -795,7 +795,7 @@ export const translations = {
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
   // Parse the key into path components
   let path: string[];
-  
+
   // 'errors:' プレフィックスがある場合は特別処理
   if (key.startsWith('errors:')) {
     const keyWithoutPrefix = key.replace('errors:', '');
@@ -803,7 +803,7 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   } else {
     path = key.split('.');
   }
-  
+
   // Start from the root translations object
   let value: any = translations;
 

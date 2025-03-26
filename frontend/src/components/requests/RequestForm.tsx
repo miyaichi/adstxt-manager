@@ -1,28 +1,28 @@
-import React, { useState, useRef } from 'react';
 import {
-  Card,
-  Flex,
-  TextField,
-  Button,
-  Text,
   Alert,
-  Tabs,
-  TabItem,
+  Badge,
+  Button,
+  Card,
   Divider,
+  Flex,
   Heading,
+  Loader,
+  TabItem,
+  Tabs,
+  Text,
+  TextField,
   View,
   useTheme,
-  Badge,
-  Loader,
 } from '@aws-amplify/ui-react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdsTxtRecord, CreateRequestData } from '../../models';
-import { requestApi, adsTxtApi } from '../../api';
-import AdsTxtTextInput from '../adsTxt/AdsTxtFileUpload';
-import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
+import { adsTxtApi, requestApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
+import { AdsTxtRecord, CreateRequestData } from '../../models';
 import { createLogger } from '../../utils/logger';
+import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
+import AdsTxtTextInput from '../adsTxt/AdsTxtTextInput';
 
 const logger = createLogger('RequestForm');
 
