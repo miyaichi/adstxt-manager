@@ -52,6 +52,7 @@ const RequestForm: React.FC = () => {
   const [records, setRecords] = useState<AdsTxtRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInvalidRecords, setHasInvalidRecords] = useState(false);
   const [success, setSuccess] = useState<{
     requestId: string;
     token: string;
@@ -323,7 +324,10 @@ const RequestForm: React.FC = () => {
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>
-              <AdsTxtFileUpload onRecordsSelected={handleRecordsSelected} />
+              <AdsTxtFileUpload 
+                onRecordsSelected={handleRecordsSelected} 
+                onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)} 
+              />
             </TabItem>
 
             <TabItem title={t('requests.form.selectedRecordsTab', language)}>
@@ -346,10 +350,17 @@ const RequestForm: React.FC = () => {
             type="submit"
             variation="primary"
             isLoading={isLoading}
-            isDisabled={records.length === 0}
+            isDisabled={records.length === 0 || hasInvalidRecords}
           >
             {t('requests.form.submitRequest', language)}
           </Button>
+          
+          {hasInvalidRecords && (
+            <Alert variation="warning" marginTop="1rem">
+              {t('requests.form.invalidRecordsWarning', language) || 
+                'Please fix invalid records before submitting the request.'}
+            </Alert>
+          )}
         </Flex>
       </form>
     </Card>

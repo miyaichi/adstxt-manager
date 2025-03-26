@@ -40,11 +40,18 @@ class SellersJsonCacheModel {
    */
   async getByDomain(domain: string): Promise<SellersJsonCache | null> {
     try {
+      // Ensure domain is properly lowercase for consistent lookup
+      const normalizedDomain = domain.toLowerCase();
+      
+      logger.info(`[SellersJsonCache] Looking up domain: ${normalizedDomain}`);
+      
       const results = await db.query(this.tableName, {
-        where: { domain },
+        where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
+      logger.info(`[SellersJsonCache] Query results for ${normalizedDomain}: ${results.length} records found`);
+      
       return results.length > 0 ? (results[0] as SellersJsonCache) : null;
     } catch (error) {
       logger.error('Error fetching sellers.json cache:', error);
@@ -64,13 +71,19 @@ class SellersJsonCacheModel {
     status_code: number | null;
     error_message: string | null;
   }): Promise<SellersJsonCache> {
-    const { domain, content, status, status_code: statusCode, error_message: errorMessage } = data;
+    // Ensure domain is properly lowercase for consistent storage
+    const normalizedDomain = data.domain.toLowerCase();
+    const { content, status, status_code: statusCode, error_message: errorMessage } = data;
+    
+    logger.info(`[SellersJsonCache] Saving cache for domain: ${normalizedDomain}`);
+    
     const now = new Date().toISOString();
-    const existingCache = await this.getByDomain(domain);
+    const existingCache = await this.getByDomain(normalizedDomain);
 
     try {
       if (existingCache) {
         // Update existing entry
+        logger.info(`[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
         const updatedCache = await db.update(this.tableName, existingCache.id, {
           content,
           status,
@@ -80,15 +93,16 @@ class SellersJsonCacheModel {
         });
 
         if (!updatedCache) {
-          throw new Error(`Failed to update sellers.json cache for domain: ${domain}`);
+          throw new Error(`Failed to update sellers.json cache for domain: ${normalizedDomain}`);
         }
 
         return updatedCache as SellersJsonCache;
       } else {
         // Create new entry
+        logger.info(`[SellersJsonCache] Creating new cache entry for domain: ${normalizedDomain}`);
         const newCache: SellersJsonCache = {
           id: uuidv4(),
-          domain,
+          domain: normalizedDomain, // Use the normalized domain
           content,
           status,
           status_code: statusCode,
@@ -100,7 +114,7 @@ class SellersJsonCacheModel {
         return (await db.insert(this.tableName, newCache)) as SellersJsonCache;
       }
     } catch (error) {
-      logger.error('Error saving sellers.json cache:', error);
+      logger.error(`Error saving sellers.json cache for ${normalizedDomain}:`, error);
       throw error;
     }
   }

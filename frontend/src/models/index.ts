@@ -80,6 +80,9 @@ export interface ParsedAdsTxtRecord {
   raw_line: string;
   is_valid: boolean;
   error?: string;
+  has_warning?: boolean;
+  warning?: string;
+  duplicate_domain?: string; // Domain where the duplicate was found
 }
 
 export interface ProcessAdsTxtResponse {

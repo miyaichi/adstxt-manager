@@ -11,7 +11,7 @@ import {
   useTheme,
   View,
 } from '@aws-amplify/ui-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { adsTxtApi, messageApi, requestApi } from '../../api';
 import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
@@ -44,7 +44,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const [messageLoading, setMessageLoading] = useState(false);
   const { tokens } = useTheme();
 
-  const fetchRequestDetails = async () => {
+  const fetchRequestDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,6 +53,18 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
       if (response.success) {
         setRequest(response.data);
+        
+        // If the request has a publisher domain, we should fetch the latest ads.txt
+        // This ensures cross-checks are accurate for duplicate detection
+        if (response.data.request.publisher_domain) {
+          try {
+            console.log(`Pre-fetching ads.txt for publisher domain: ${response.data.request.publisher_domain}`);
+            await adsTxtApi.getAdsTxtFromDomain(response.data.request.publisher_domain, true); // Force refresh
+          } catch (fetchErr) {
+            console.error(`Error pre-fetching ads.txt: ${fetchErr}`);
+            // Non-blocking error, we can continue
+          }
+        }
       } else {
         setError(response.error?.message || t('requests.detail.error.fetchError', language));
       }
@@ -62,9 +74,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId, token, language]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       logger.debug('fetchMessages starting for request:', requestId);
       setMessageLoading(true);
@@ -81,7 +93,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     } finally {
       setMessageLoading(false);
     }
-  };
+  }, [requestId, token]);
 
   const generateAdsTxtContent = async () => {
     try {
@@ -179,7 +191,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   // Fetch request details when the component mounts
   useEffect(() => {
     fetchRequestDetails();
-  }, [requestId, token]);
+  }, [requestId, token, fetchRequestDetails]);
 
   // Fetch messages when the message tab is selected
   useEffect(() => {
@@ -188,7 +200,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       logger.debug('Calling fetchMessages() due to messageTabSelected change');
       fetchMessages();
     }
-  }, [messageTabSelected, requestId, token]);
+  }, [messageTabSelected, requestId, token, fetchMessages]);
 
   if (loading && !request) {
     return (

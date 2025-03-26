@@ -6,9 +6,6 @@ import SellersJsonCacheModel, {
   SellersJsonCacheStatus,
 } from '../models/SellersJsonCache';
 import { logger } from '../utils/logger';
-import { Readable } from 'stream';
-import { createParser } from 'stream-json/Parser';
-import { streamArray } from 'stream-json/streamers/StreamArray';
 
 import fs from 'fs';
 import path from 'path';
@@ -22,7 +19,7 @@ const SPECIAL_DOMAINS: Record<string, string> = {
 };
 
 /**
- * 事前にダウンロードしたsellers.jsonファイルを使用するドメインリスト
+ * List of domains that use pre-downloaded sellers.json files
  */
 const PREFETCHED_DOMAINS = [
   'ad-generation.jp',
@@ -37,19 +34,20 @@ const PREFETCHED_DOMAINS = [
 ];
 
 /**
- * 事前にダウンロードしたsellers.jsonファイルのパスを取得
+ * Get the path to pre-downloaded sellers.json files
  */
 const getPrefetchedFilePath = (domain: string): string => {
   return path.join(process.cwd(), 'data', 'sellers_json', `${domain}.json`);
 };
 
-/**
- * Fetch sellers.json from a domain and return cached or fresh data
- * @route GET /api/sellersjson/:domain
- */
+// Map for caching
+const domainSellerDataCache: Map<string, any> = new Map();
+
+// Cache for seller IDs (caching search results)
+const sellerIdCache: Map<string, any> = new Map();
+
 /**
  * Get a specific seller from a domain's sellers.json by seller_id
- * Uses streaming to efficiently process large files
  * @route GET /api/sellersjson/:domain/seller/:sellerId
  */
 export const getSellerById = asyncHandler(async (req: Request, res: Response) => {
@@ -63,101 +61,123 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
   }
 
-  // sellerId は様々な型（文字列や数値）で提供されることがあるため、
-  // 比較のために文字列に変換されたsellerIdを用意（不要な空白も除去）
+  // Since sellerId can be provided in various types (string or number),
+  // prepare a string-converted sellerId for comparison (also removing unnecessary whitespace)
   const normalizedSellerId = String(sellerId).trim();
 
   try {
+    // First, check the cache
+    const cacheKey = `${domain}:${normalizedSellerId}`;
+    if (sellerIdCache.has(cacheKey)) {
+      logger.info(`Using cached result for seller_id: ${normalizedSellerId} from ${domain}`);
+      return res.status(200).json({
+        success: true,
+        data: sellerIdCache.get(cacheKey),
+        cached: true
+      });
+    }
+
     // Determine URL to fetch
     let url: string;
 
-    // 標準のURL形式を使用（デフォルト）
+    // Use standard URL format (default)
     url = `https://${domain}/sellers.json`;
 
-    // 一部のドメインは特別なURLが必要
+    // Some domains require special URLs
     if (domain in SPECIAL_DOMAINS) {
       url = SPECIAL_DOMAINS[domain];
       logger.info(`Using special URL for ${domain}: ${url}`);
     }
 
-    logger.info(`Streaming sellers.json from ${url} to find seller_id: ${normalizedSellerId}`);
+    logger.info(`Looking for seller_id: ${normalizedSellerId} from ${domain}`);
 
-    // デバッグ情報を追加
+    // Add debug information
     logger.debug(
       `Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`
     );
 
-    // 取得前にデバッグ情報を記録
-    logger.debug(`Making request to URL: ${url} for seller_id: ${normalizedSellerId}`);
-
-    // 事前にダウンロードしたファイルがあるか確認
+    // Check if there's a pre-downloaded file
     if (PREFETCHED_DOMAINS.includes(domain)) {
-      const filePath = getPrefetchedFilePath(domain);
+      let sellerData;
 
-      logger.info(`Checking for pre-fetched sellers.json file at ${filePath}`);
+      // Check in-memory cache
+      if (domainSellerDataCache.has(domain)) {
+        sellerData = domainSellerDataCache.get(domain);
+        logger.info(`Using cached sellers.json data for ${domain}`);
+      } else {
+        const filePath = getPrefetchedFilePath(domain);
+        logger.info(`Checking for pre-fetched sellers.json file at ${filePath}`);
 
-      // ファイルが存在するか確認
-      if (fs.existsSync(filePath)) {
-        try {
-          logger.info(`Using pre-fetched sellers.json for ${domain}`);
+        // Check if file exists
+        if (fs.existsSync(filePath)) {
+          try {
+            logger.info(`Loading pre-fetched sellers.json for ${domain}`);
 
-          // ファイルを読み込む
-          const fileContent = fs.readFileSync(filePath, 'utf8');
-          const sellerData = JSON.parse(fileContent);
+            // Load the file
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            sellerData = JSON.parse(fileContent);
 
-          if (sellerData && Array.isArray(sellerData.sellers)) {
-            // seller_idに一致するセラーを探す
-            const targetSeller = sellerData.sellers.find(
-              (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
-            );
-
-            logger.info(
-              `Found ${sellerData.sellers.length} sellers in pre-fetched file for ${domain}`
-            );
-
-            if (targetSeller) {
-              // セラーが見つかった場合
-              logger.info(
-                `Found seller with ID ${normalizedSellerId} in pre-fetched file for ${domain}`
-              );
-
-              const result = {
-                contact_email: sellerData.contact_email,
-                version: sellerData.version,
-                identifiers: sellerData.identifiers || [],
-                seller: targetSeller,
-              };
-
-              return res.status(200).json({
-                success: true,
-                data: result,
-              });
-            } else {
-              logger.warn(
-                `Seller ID ${normalizedSellerId} not found in pre-fetched file for ${domain}`
-              );
-
-              // セラーIDが見つからない場合は、エラーではなく「見つからない」という情報を返す
-              return res.status(200).json({
-                success: true,
-                data: {
-                  found: false,
-                  message: `Seller ID ${normalizedSellerId} not found in pre-fetched file for ${domain}`,
-                  sellerId: normalizedSellerId,
-                },
-              });
-            }
+            // Save to cache
+            domainSellerDataCache.set(domain, sellerData);
+          } catch (error: any) {
+            logger.error(`Error reading pre-fetched sellers.json for ${domain}: ${error.message}`);
+            // If an error occurs, try fetching from the API
           }
-        } catch (error: any) {
-          logger.error(`Error reading pre-fetched sellers.json for ${domain}: ${error.message}`);
-          // エラーが発生した場合は、APIからの取得を試みる
+        }
+      }
+
+      if (sellerData && Array.isArray(sellerData.sellers)) {
+        // Find the seller matching the seller_id
+        const targetSeller = sellerData.sellers.find(
+          (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+        );
+
+        logger.info(
+          `Searching among ${sellerData.sellers.length} sellers in ${domain} for ID ${normalizedSellerId}`
+        );
+
+        if (targetSeller) {
+          // If seller is found
+          logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
+
+          const result = {
+            contact_email: sellerData.contact_email,
+            version: sellerData.version,
+            identifiers: sellerData.identifiers || [],
+            seller: targetSeller,
+          };
+
+          // Save result to cache
+          sellerIdCache.set(cacheKey, result);
+
+          return res.status(200).json({
+            success: true,
+            data: result,
+          });
+        } else {
+          logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
+
+          // If seller ID is not found, return "not found" information instead of an error
+          const notFoundResult = {
+            found: false,
+            message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
+            sellerId: normalizedSellerId,
+          };
+          
+          // Also cache "not found" results
+          sellerIdCache.set(cacheKey, notFoundResult);
+          
+          return res.status(200).json({
+            success: true,
+            data: notFoundResult,
+          });
         }
       } else {
-        logger.warn(`No pre-fetched sellers.json file found for ${domain} at ${filePath}`);
+        logger.warn(`No sellers data available for ${domain}`);
       }
     }
 
-    // Use streaming with Axios (デフォルトのアプローチまたはフォールバック)
+    // Use streaming with Axios (default approach or fallback)
     const response = await axios({
       method: 'get',
       url: url,
@@ -171,138 +191,83 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
 
     const stream = response.data;
 
-    // Create JSON streaming parser pipeline for sellers array
+    // Variables for processing JSON data
     let sellerFound = false;
     let contactInfo: Record<string, string> = {};
     let identifiers: Array<Record<string, string>> = [];
     let version = '';
-    let inMetadata = true; // Flag to track if we're in metadata section
 
-    // Initialize a promise that will resolve when we find the seller or finish processing
-    const processingPromise = new Promise<any>((resolve, reject) => {
-      // Create parser pipeline
-      const parser = createParser({
-        // パースエラーに関する詳細なデバッグ情報を有効化
-        jsonStreaming: true,
-        packValues: true,
-        packKeys: true,
-      });
-      let currentPath: string[] = [];
-      let currentKey: string | null = null;
-      let currentObject: Record<string, any> = {};
-
-      // ストリームデータ受信のデバッグ用
-      stream.on('data', (chunk) => {
-        logger.debug(`Received data chunk from ${url} (${chunk.length} bytes)`);
-      });
-
-      // Setup parser event handlers
-      parser.on('startObject', () => {
-        currentObject = {};
-      });
-
-      parser.on('startArray', () => {
-        const currentPathStr = currentPath.join('.');
-        if (currentPathStr === 'sellers') {
-          inMetadata = false;
-        }
-      });
-
-      parser.on('keyValue', ({ key, value }: { key: string; value: any }) => {
-        const currentPathStr = currentPath.join('.');
-
-        if (inMetadata) {
-          // Process metadata fields
-          if (key === 'contact_email' || key === 'contact_address' || key === 'version') {
-            contactInfo[key] = value;
-            if (key === 'version') version = value;
-          } else if (currentPathStr === 'identifiers') {
-            currentObject[key] = value;
+    // Simple approach: load the entire JSON into memory and process it
+    const processingPromise = new Promise<any>(async (resolve, reject) => {
+      try {
+        // Simple approach: load the entire JSON into memory and process it
+        let responseData = '';
+        
+        stream.on('data', (chunk) => {
+          responseData += chunk.toString();
+        });
+        
+        stream.on('end', () => {
+          try {
+            // Parse the complete response
+            const sellersJson = JSON.parse(responseData);
+            logger.info(`Successfully parsed sellers.json from ${domain}, found ${sellersJson.sellers?.length || 0} sellers`);
+            
+            // Extract metadata
+            if (sellersJson.contact_email) contactInfo.contact_email = sellersJson.contact_email;
+            if (sellersJson.contact_address) contactInfo.contact_address = sellersJson.contact_address;
+            if (sellersJson.version) version = sellersJson.version;
+            if (Array.isArray(sellersJson.identifiers)) identifiers = sellersJson.identifiers;
+            
+            // Find the target seller
+            const targetSeller = sellersJson.sellers?.find(
+              (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+            );
+            
+            if (targetSeller) {
+              sellerFound = true;
+              logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
+              
+              // Construct the response object
+              const result = {
+                ...contactInfo,
+                version,
+                identifiers,
+                seller: targetSeller,
+              };
+              
+              // Save the result to cache
+              sellerIdCache.set(cacheKey, result);
+              
+              resolve(result);
+            } else {
+              logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
+              const notFoundResult = {
+                error: null,
+                found: false,
+                message: 'Seller ID not found in sellers.json',
+                sellerId: normalizedSellerId,
+              };
+              
+              // Also cache "not found" results
+              sellerIdCache.set(cacheKey, notFoundResult);
+              
+              resolve(notFoundResult);
+            }
+          } catch (err: any) {
+            logger.error(`Error parsing sellers.json from ${domain}: ${err.message}`);
+            reject(new Error(`Error parsing sellers.json: ${err.message}`));
           }
-        } else if (currentPathStr === 'sellers') {
-          // We're inside a seller object in the sellers array
-          currentObject[key] = value;
-
-          // Check if this is the seller we're looking for
-          // 文字列として比較して、seller_idが数値の場合にも対応
-          if (key === 'seller_id' && String(value).trim() === normalizedSellerId) {
-            sellerFound = true;
-          }
-        }
-
-        currentKey = key;
-      });
-
-      parser.on('endObject', () => {
-        const currentPathStr = currentPath.join('.');
-
-        if (currentPathStr === 'identifiers') {
-          identifiers.push(currentObject);
-        } else if (sellerFound && currentPathStr === 'sellers') {
-          // We found our seller, we can stop streaming and return the result
-          stream.destroy(); // Stop the stream
-
-          // Construct the response object
-          const result = {
-            ...contactInfo,
-            version,
-            identifiers,
-            seller: currentObject,
-          };
-
-          resolve(result);
-        }
-
-        currentObject = {};
-      });
-
-      parser.on('startKey', () => {
-        if (currentKey) {
-          currentPath.push(currentKey);
-        }
-      });
-
-      parser.on('endKey', () => {
-        if (currentPath.length > 0) {
-          currentPath.pop();
-        }
-      });
-
-      parser.on('end', () => {
-        if (!sellerFound) {
-          // セラーが見つからない場合は、エラーではなく空のセラー情報を返す
-          resolve({
-            error: null,
-            found: false,
-            message: 'Seller ID not found in sellers.json',
-            sellerId,
-          });
-        }
-      });
-
-      parser.on('error', (err) => {
-        logger.error(`JSON parsing error for ${url}: ${err.message}`);
-
-        // Node.jsのストリームはcloneNodeメソッドを持たないので、別の方法でエラーを記録
-        logger.error(
-          `JSON parse error details: ${JSON.stringify(
-            {
-              url,
-              sellerId: normalizedSellerId,
-              errorType: err.name,
-              errorMessage: err.message,
-              errorStack: err.stack,
-            },
-            null,
-            2
-          )}`
-        );
-
-        reject(new Error(`Error parsing sellers.json: ${err.message}`));
-      });
-
-      // Feed the stream into the parser
-      stream.pipe(parser);
+        });
+        
+        stream.on('error', (err) => {
+          logger.error(`Stream error for ${url}: ${err.message}`);
+          reject(new Error(`Stream error: ${err.message}`));
+        });
+      } catch (error: any) {
+        logger.error(`Error processing sellers.json from ${domain}: ${error.message}`);
+        reject(new Error(`Processing error: ${error.message}`));
+      }
     });
 
     // Wait for the processing to complete
@@ -362,10 +327,10 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     // Determine URL to fetch
     let url: string;
 
-    // 標準のURL形式を使用（デフォルト）
+    // Use standard URL format (default)
     url = `https://${domain}/sellers.json`;
 
-    // 一部のドメインは特別なURLが必要
+    // Some domains require special URLs
     if (domain in SPECIAL_DOMAINS) {
       url = SPECIAL_DOMAINS[domain];
       logger.info(`Using special URL for ${domain}: ${url}`);

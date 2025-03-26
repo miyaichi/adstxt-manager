@@ -14,6 +14,9 @@ export interface ParsedAdsTxtRecord {
   raw_line: string;
   is_valid: boolean;
   error?: string;
+  has_warning?: boolean;
+  warning?: string;
+  duplicate_domain?: string; // Store duplicate domain without overwriting original domain
 }
 
 /**
@@ -32,6 +35,9 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   // Split the line into its components
   // Format: domain, account_id, type, [certification_authority_id]
   const parts = trimmedLine.split(',').map((part) => part.trim());
+  
+  // Uncomment for detailed parsing logs if needed
+  // console.log(`Parsing line: "${trimmedLine}" -> ${JSON.stringify(parts)}`);
 
   // Basic validation - must have at least domain, account ID, and type
   if (parts.length < 3) {
@@ -43,7 +49,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Line must contain at least domain, account ID, and account type',
+      error: 'errors:adsTxtValidation.missingFields',
     };
   }
 
@@ -57,7 +63,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Invalid format. Expected comma-separated values',
+      error: 'errors:adsTxtValidation.invalidFormat',
     };
   }
 
@@ -65,17 +71,20 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   const [domain, accountId, accountType, ...rest] = parts;
   let relationship: 'DIRECT' | 'RESELLER' = 'DIRECT';
   let certAuthorityId: string | undefined;
+  
+  // Uncomment for detailed parsing logs if needed
+  // console.log(`Found record: domain=${domain}, accountId=${accountId}, accountType=${accountType}, rest=${JSON.stringify(rest)}`);
 
   // Check if accountType contains the relationship
   const upperAccountType = accountType.toUpperCase();
   if (upperAccountType === 'DIRECT' || upperAccountType === 'RESELLER') {
     relationship = upperAccountType as 'DIRECT' | 'RESELLER';
   } else if (
-    !upperAccountType.includes('DIRECT') &&
-    !upperAccountType.includes('RESELLER') &&
-    rest.length === 0
+    upperAccountType !== 'DIRECT' &&
+    upperAccountType !== 'RESELLER' &&
+    !['DIRECT', 'RESELLER'].includes(rest[0]?.toUpperCase())
   ) {
-    // Invalid accountType without relationship field
+    // Invalid relationship type - must be exactly DIRECT or RESELLER (case insensitive)
     return {
       domain,
       account_id: accountId,
@@ -84,7 +93,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Account type must be valid and relationship (DIRECT/RESELLER) must be specified',
+      error: 'errors:adsTxtValidation.invalidRelationship',
     };
   }
 
@@ -98,6 +107,20 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         certAuthorityId = rest[1];
       }
     } else {
+      // Check if it's a misspelled relationship type by comparing edit distance
+      if (isSimilarToRelationship(firstRest)) {
+        return {
+          domain,
+          account_id: accountId,
+          account_type: accountType,
+          certification_authority_id: rest.length > 1 ? rest[1] : undefined,
+          relationship,
+          line_number: lineNumber,
+          raw_line: line,
+          is_valid: false,
+          error: 'errors:adsTxtValidation.misspelledRelationship',
+        };
+      }
       certAuthorityId = rest[0];
     }
   }
@@ -120,7 +143,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
+      error: 'errors:adsTxtValidation.invalidRootDomain',
     };
   }
 
@@ -135,7 +158,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
       line_number: lineNumber,
       raw_line: line,
       is_valid: false,
-      error: 'Account ID must not be empty',
+      error: 'errors:adsTxtValidation.emptyAccountId',
     };
   }
 
@@ -188,56 +211,177 @@ export async function crossCheckAdsTxtRecords(
   if (!publisherDomain) {
     return parsedRecords;
   }
+  
+  console.log(`Starting cross-check with publisher domain: ${publisherDomain}`);
+  // Print the parsedRecords for debugging
+  parsedRecords.forEach((record, i) => {
+    if (i < 5) { // Only print the first 5 to avoid log spam
+      console.log(`Input record ${i+1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}`);
+    }
+  });
 
   try {
     // Import needed modules here to avoid circular dependencies
     const { default: AdsTxtCacheModel } = await import('../models/AdsTxtCache');
 
     // Attempt to get cached ads.txt for the publisher domain
+    console.log(`Fetching cached ads.txt data for ${publisherDomain}`);
     const cachedData = await AdsTxtCacheModel.getByDomain(publisherDomain);
+    console.log(`Cached data found: ${!!cachedData}, status: ${cachedData?.status}`);
 
     // If no cached data or not successful, return records as-is
     if (!cachedData || cachedData.status !== 'success' || !cachedData.content) {
+      console.log(`No valid cached ads.txt data found for ${publisherDomain}`);
       return parsedRecords;
     }
+    
+    console.log(`Cached content length: ${cachedData.content.length}`);
 
     // Parse the cached ads.txt content
     const existingRecords = parseAdsTxtContent(cachedData.content);
 
+    // Print a sample of the parsed records from publisher's ads.txt
+    console.log("Sample of records from publisher's ads.txt:");
+    existingRecords.slice(0, 3).forEach((record, i) => {
+      console.log(`  ${i+1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}, valid=${record.is_valid}`);
+    });
+
     // Create lookup map of existing records for faster checking
-    // Key format: domain|account_id|relationship
+    // Key format: domain|account_id|account_type
     const existingRecordMap = new Map<string, ParsedAdsTxtRecord>();
+
+    console.log(`Parsed ${existingRecords.length} records from cached ads.txt`);
+    console.log(`Valid records: ${existingRecords.filter(r => r.is_valid).length}`);
 
     for (const record of existingRecords) {
       if (record.is_valid) {
-        const key = `${record.domain}|${record.account_id}|${record.relationship}`;
+        // Make all comparisons case-insensitive for better matching
+        // Use domain, account_id, and account_type for duplicate detection (not relationship)
+        const domainLower = record.domain.toLowerCase();
+        const key = `${domainLower}|${record.account_id}|${record.account_type}`;
         existingRecordMap.set(key, record);
       }
     }
+    
+    console.log(`Created lookup map with ${existingRecordMap.size} entries`);
 
     // Check each of the input records for duplicates and mark them
-    return parsedRecords.map((record) => {
+    console.log(`Checking ${parsedRecords.length} input records for duplicates against ${existingRecordMap.size} existing records`);
+    
+    // Log a sample of the existing map keys for debugging
+    const mapKeySample = Array.from(existingRecordMap.keys()).slice(0, 10);
+    console.log(`Sample of existing map keys: ${JSON.stringify(mapKeySample)}`);
+    
+    const result = parsedRecords.map((record) => {
       if (!record.is_valid) {
         return record; // Skip invalid records
       }
 
-      const key = `${record.domain}|${record.account_id}|${record.relationship}`;
-      if (existingRecordMap.has(key)) {
-        // It's a duplicate, create a new record with error
-        return {
+      // Make all comparisons case-insensitive for better matching
+      // Use domain, account_id, and account_type for duplicate detection (not relationship)
+      const lowerDomain = record.domain.toLowerCase();
+      const key = `${lowerDomain}|${record.account_id}|${record.account_type}`;
+      
+      // Check for duplicate - exact key match
+      const isDuplicate = existingRecordMap.has(key);
+      
+      // We no longer need this section since we already made the domain lowercase in the key
+      // and we're comparing keys directly. Keep it as a backup just in case, but it won't execute.
+      if (!isDuplicate) {
+        // This is debugging only, it shouldn't trigger in normal operation now
+        console.log(`Unusual: case-sensitive match failed, double-checking with domain=${record.domain}, account_id=${record.account_id}`);
+        
+        // Additional check just to be safe
+        const lowerCaseDomain = record.domain.toLowerCase();
+        
+        // Check if any key in map has the same lower case domain, account_id, and account_type
+        for (const [existingKey, existingRecord] of existingRecordMap.entries()) {
+          const [existingDomain, existingAccountId, existingAccountType] = existingKey.split('|');
+          if (existingDomain.toLowerCase() === lowerCaseDomain && 
+              existingAccountId === record.account_id &&
+              existingAccountType.toLowerCase() === record.account_type.toLowerCase()) {
+            console.log(`Found case-insensitive duplicate through backup check: ${existingDomain} vs ${record.domain}`);
+            return {
+              ...record,
+              is_valid: true,
+              has_warning: true,
+              warning: 'errors:adsTxtValidation.duplicateEntryCaseInsensitive',
+              duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
+            };
+          }
+        }
+      }
+      
+      if (isDuplicate) {
+        console.log(`Found duplicate for: ${key}`);
+        // It's a duplicate, create a warning but keep the record valid
+        const warningRecord = {
           ...record,
-          is_valid: false,
-          error: `Duplicate entry found in publisher's ads.txt (${publisherDomain})`,
+          is_valid: true, // Changed from false to true
+          has_warning: true,
+          warning: 'errors:adsTxtValidation.duplicateEntry',
+          duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
         };
+        console.log(`Created warning record with duplicate_domain=${publisherDomain}, warning=${warningRecord.warning}`);
+        return warningRecord;
       }
 
       return record;
     });
+    
+    console.log(`After cross-check: ${result.length} records, ${result.filter(r => r.has_warning).length} with warnings`);
+    return result;
   } catch (error) {
     // If there's any error during cross-check, log it but return records as-is
     console.error('Error during ads.txt cross-check:', error);
     return parsedRecords;
   }
+}
+
+/**
+ * Check if a string is similar to "DIRECT" or "RESELLER"
+ * Uses Levenshtein distance to detect typing errors
+ * @param str - The string to check
+ * @returns Boolean indicating if the string is likely a misspelled relationship
+ */
+function isSimilarToRelationship(str: string): boolean {
+  // Calculate Levenshtein distance between two strings
+  function levenshteinDistance(a: string, b: string): number {
+    const matrix: number[][] = [];
+    
+    // Initialize matrix
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    // Fill matrix
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    
+    return matrix[b.length][a.length];
+  }
+  
+  // Check if input is similar to DIRECT or RESELLER
+  const distanceToDirect = levenshteinDistance(str, 'DIRECT');
+  const distanceToReseller = levenshteinDistance(str, 'RESELLER');
+  
+  // If distance is less than 3 (allow for about 2 typos), consider it similar
+  return (distanceToDirect <= 2) || (distanceToReseller <= 2);
 }
 
 /**

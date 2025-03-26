@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Button,
@@ -17,9 +17,10 @@ import { t } from '../../i18n/translations';
 
 interface AdsTxtFileUploadProps {
   onRecordsSelected: (records: AdsTxtRecord[]) => void;
+  onHasInvalidRecords?: (hasInvalid: boolean) => void;
 }
 
-const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }) => {
+const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected, onHasInvalidRecords }) => {
   const { language } = useApp();
   const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -36,6 +37,36 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
     setError(null);
   };
 
+  // Get publisher domain from the parent component
+  const [publisherDomain, setPublisherDomain] = useState<string>('');
+  
+  // Update publisher domain when passed from parent
+  useEffect(() => {
+    // Check if it's a RequestForm component context by looking for certain props
+    const requestForm = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+    if (requestForm && requestForm.value) {
+      setPublisherDomain(requestForm.value);
+      console.log('Found publisher domain in form:', requestForm.value);
+    }
+  }, []);
+  
+  // Add a listener for domain input changes
+  useEffect(() => {
+    const handleDomainChange = () => {
+      const domainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+      if (domainInput && domainInput.value !== publisherDomain) {
+        console.log('Publisher domain changed to:', domainInput.value);
+        setPublisherDomain(domainInput.value);
+      }
+    };
+    
+    const domainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+    if (domainInput) {
+      domainInput.addEventListener('input', handleDomainChange);
+      return () => domainInput.removeEventListener('input', handleDomainChange);
+    }
+  }, [publisherDomain]);
+
   const handleProcess = async () => {
     if (!adsTxtContent.trim()) {
       setError(t('common.contentRequired', language));
@@ -46,15 +77,27 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
       setIsLoading(true);
       setError(null);
 
-      const response = await adsTxtApi.processAdsTxtFile(adsTxtContent);
+      // Read current publisher domain value from the parent form if available
+      const publisherDomainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+      const currentDomain = publisherDomainInput ? publisherDomainInput.value : publisherDomain;
+      
+      console.log('Processing ads.txt content with publisher domain:', currentDomain);
+      const response = await adsTxtApi.processAdsTxtFile(adsTxtContent, currentDomain);
 
       if (response.success) {
         setParsedRecords(response.data.records);
+        const hasInvalid = response.data.invalidRecords > 0;
+        
         setStats({
           total: response.data.totalRecords,
           valid: response.data.validRecords,
           invalid: response.data.invalidRecords,
         });
+        
+        // Notify parent component if there are invalid records
+        if (onHasInvalidRecords) {
+          onHasInvalidRecords(hasInvalid);
+        }
 
         // Convert valid parsed records to AdsTxtRecord format for the parent component
         const validRecords = response.data.records
@@ -89,6 +132,11 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected }
     setParsedRecords([]);
     setStats(null);
     setError(null);
+    
+    // Notify parent that there are no invalid records anymore
+    if (onHasInvalidRecords) {
+      onHasInvalidRecords(false);
+    }
   };
 
   const handlePasteExample = () => {
@@ -159,14 +207,21 @@ appnexus.com, 1234, DIRECT
       )}
 
       {parsedRecords.length > 0 && (
-        <AdsTxtRecordList
-          records={parsedRecords.map((record) => ({
-            ...record,
-            id: `temp-${Math.random().toString(36).substr(2, 9)}`,
-            status: record.is_valid ? 'pending' : 'rejected',
-          }))}
-          showValidation={true}
-        />
+        <>
+          {stats && stats.invalid > 0 && (
+            <Alert variation="warning" marginBottom="1rem">
+              {t('adsTxt.fileUpload.invalidRecordsWarning', language, { invalid: stats.invalid })}
+            </Alert>
+          )}
+          <AdsTxtRecordList
+            records={parsedRecords.map((record) => ({
+              ...record,
+              id: `temp-${Math.random().toString(36).substr(2, 9)}`,
+              status: record.is_valid ? 'pending' : 'rejected',
+            }))}
+            showValidation={true}
+          />
+        </>
       )}
     </Card>
   );

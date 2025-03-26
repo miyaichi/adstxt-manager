@@ -183,12 +183,18 @@ export const adsTxtApi = {
 
   // Process Ads.txt file or text content
   async processAdsTxtFile(
-    fileOrContent: File | string
+    fileOrContent: File | string,
+    publisherDomain?: string
   ): Promise<ApiResponse<ProcessAdsTxtResponse>> {
     // If it's a file, use FormData
     if (fileOrContent instanceof File) {
       const formData = new FormData();
       formData.append('adsTxtFile', fileOrContent);
+      
+      // Add publisher domain if provided
+      if (publisherDomain) {
+        formData.append('publisherDomain', publisherDomain);
+      }
 
       const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>(
         '/adsTxt/process',
@@ -203,9 +209,16 @@ export const adsTxtApi = {
     }
     // If it's text content, send as JSON
     else {
-      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adsTxt/process', {
+      const data: any = {
         adsTxtContent: fileOrContent,
-      });
+      };
+      
+      // Add publisher domain if provided
+      if (publisherDomain) {
+        data.publisherDomain = publisherDomain;
+      }
+      
+      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adsTxt/process', data);
       return response.data;
     }
   },
@@ -230,10 +243,11 @@ export const adsTxtApi = {
   },
 
   // Fetch ads.txt from a domain
-  async getAdsTxtFromDomain(domain: string): Promise<ApiResponse<AdsTxtCacheResponse>> {
-    const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(
-      `/adsTxtCache/domain/${encodeURIComponent(domain)}`
-    );
+  async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<ApiResponse<AdsTxtCacheResponse>> {
+    console.log(`Fetching ads.txt from domain: ${domain}${force ? ' (force refresh)' : ''}`);
+    const url = `/adsTxtCache/domain/${encodeURIComponent(domain)}${force ? '?force=true' : ''}`;
+    const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(url);
+    console.log('Response received:', response.data);
     return response.data;
   },
 };
@@ -255,9 +269,12 @@ export const sellersJsonApi = {
   },
 };
 
-export default {
+// Export API as a named constant
+const apiClient = {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
   sellersJson: sellersJsonApi,
 };
+
+export default apiClient;

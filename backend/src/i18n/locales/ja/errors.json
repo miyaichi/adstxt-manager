@@ -21,5 +21,15 @@
   "parsingError": "Ads.txtファイルの解析エラー: {{message}}",
   "domainRequired": "ドメインパラメータが必要です",
   "sellersFetchError": "sellers.jsonの取得エラー: {{message}}",
-  "adsTxtFetchError": "ads.txtの取得エラー: {{message}}"
+  "adsTxtFetchError": "ads.txtの取得エラー: {{message}}",
+  "adsTxtValidation": {
+    "invalidFormat": "無効な形式です。カンマ区切りの値が必要です",
+    "missingFields": "ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です",
+    "invalidRelationship": "関係タイプはDIRECTまたはRESELLERのいずれかである必要があります",
+    "misspelledRelationship": "「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です",
+    "invalidRootDomain": "ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）",
+    "emptyAccountId": "アカウントIDは空であってはなりません",
+    "duplicateEntry": "パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました",
+    "duplicateEntryCaseInsensitive": "パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました"
+  }
 }

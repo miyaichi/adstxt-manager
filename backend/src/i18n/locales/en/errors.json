@@ -21,5 +21,15 @@
   "parsingError": "Error parsing Ads.txt file: {{message}}",
   "domainRequired": "Domain parameter is required",
   "sellersFetchError": "Error fetching sellers.json: {{message}}",
-  "adsTxtFetchError": "Error fetching ads.txt: {{message}}"
+  "adsTxtFetchError": "Error fetching ads.txt: {{message}}",
+  "adsTxtValidation": {
+    "invalidFormat": "Invalid format. Expected comma-separated values",
+    "missingFields": "Line must contain at least domain, account ID, and account type",
+    "invalidRelationship": "Relationship type must be either DIRECT or RESELLER",
+    "misspelledRelationship": "\"{{value}}\" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER",
+    "invalidRootDomain": "Domain must be a valid root domain (e.g., example.com, not sub.example.com)",
+    "emptyAccountId": "Account ID must not be empty",
+    "duplicateEntry": "Duplicate entry found in publisher's ads.txt ({{domain}})",
+    "duplicateEntryCaseInsensitive": "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})"
+  }
 }

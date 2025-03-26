@@ -1,4 +1,40 @@
 export const translations = {
+  errors: {
+    adsTxtValidation: {
+      invalidFormat: {
+        en: 'Invalid format. Expected comma-separated values',
+        ja: '無効な形式です。カンマ区切りの値が必要です'
+      },
+      missingFields: {
+        en: 'Line must contain at least domain, account ID, and account type',
+        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です'
+      },
+      invalidRelationship: {
+        en: 'Relationship type must be either DIRECT or RESELLER',
+        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります'
+      },
+      misspelledRelationship: {
+        en: '"{{value}}" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER',
+        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です'
+      },
+      invalidRootDomain: {
+        en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
+        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）'
+      },
+      emptyAccountId: {
+        en: 'Account ID must not be empty',
+        ja: 'アカウントIDは空であってはなりません'
+      },
+      duplicateEntry: {
+        en: 'Duplicate entry found in publisher\'s ads.txt ({{domain}})',
+        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました'
+      },
+      duplicateEntryCaseInsensitive: {
+        en: 'Duplicate entry found in publisher\'s ads.txt with different case formatting ({{domain}})',
+        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました'
+      }
+    }
+  },
   common: {
     home: {
       en: 'Home',
@@ -115,6 +151,10 @@ export const translations = {
     invalid: {
       en: 'Invalid',
       ja: '無効',
+    },
+    warning: {
+      en: 'Warning',
+      ja: '警告',
     },
     send: {
       en: 'Send',
@@ -324,6 +364,10 @@ export const translations = {
       stats: {
         en: 'Records: {{total}} | Valid: {{valid}} | Invalid: {{invalid}}',
         ja: 'レコード数: {{total}} | 有効: {{valid}} | 無効: {{invalid}}',
+      },
+      invalidRecordsWarning: {
+        en: '{{invalid}} record(s) contain errors. Please review the errors below.',
+        ja: '{{invalid}}件のレコードにエラーがあります。以下のエラーを確認してください。',
       },
       foundOnDomain: {
         en: 'Found ads.txt on this domain',
@@ -571,6 +615,10 @@ export const translations = {
         en: 'Please select at least one Ads.txt record',
         ja: '少なくとも1つのAds.txtレコードを選択してください',
       },
+      invalidRecordsWarning: {
+        en: 'Please fix invalid records before submitting the request',
+        ja: 'リクエストを送信する前に無効なレコードを修正してください',
+      },
       processingError: {
         en: 'An error occurred while processing your request',
         ja: 'リクエスト処理中にエラーが発生しました',
@@ -745,13 +793,16 @@ export const translations = {
 
 // Create a translation helper function
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
-  const keys = key.split('.');
+  // 'errors:' プレフィックスがある場合は削除してキーに分解
+  const processedKey = key.startsWith('errors:') ? key.replace('errors:', '') : key;
+  const keys = processedKey.split('.');
   let value: any = translations;
 
   // Navigate through the nested objects
   for (const k of keys) {
+    console.log(`Looking for key part: ${k} in`, value);
     if (value[k] === undefined) {
-      console.warn(`Translation key not found: ${key}`);
+      console.warn(`Translation key not found: ${key}, failed at part: ${k}`);
       return key;
     }
     value = value[k];
@@ -763,12 +814,18 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
     console.warn(`Translation not found for key: ${key} in language: ${language}`);
     return key;
   }
+  
+  // Debug logging
+  console.log(`Translating ${key} to ${translation} for language ${language} with params:`, params);
 
   // Replace parameters if they exist
   if (params) {
-    return Object.entries(params).reduce((str, [paramKey, paramValue]) => {
-      return str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
+    const result = Object.entries(params).reduce((str, [paramKey, paramValue]) => {
+      const replaced = str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
+      console.log(`Parameter replacement: ${paramKey}=${paramValue}, before: "${str}", after: "${replaced}"`);
+      return replaced;
     }, translation);
+    return result;
   }
 
   return translation;

@@ -3,7 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { v4: uuidv4 } = require('uuid');
+const sqlite3 = require('sqlite3').verbose();
+const dotenv = require('dotenv');
 const { execSync } = require('child_process');
+
+// Load environment variables
+dotenv.config();
 
 // サポートするドメインリスト
 const domains = [
@@ -29,6 +35,89 @@ const dataDir = path.join(__dirname, 'data', 'sellers_json');
 if (!fs.existsSync(dataDir)) {
   console.log(`📁 Creating directory: ${dataDir}`);
   fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Initialize database connection
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'db/database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error(`❌ Error connecting to database: ${err.message}`);
+    process.exit(1);
+  }
+  console.log(`📊 Connected to SQLite database at ${dbPath}`);
+});
+
+// Ensure the sellers_json_cache table exists
+function ensureTableExists() {
+  return new Promise((resolve, reject) => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS sellers_json_cache (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL UNIQUE,
+        content TEXT,
+        status TEXT NOT NULL,
+        status_code INTEGER,
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Save data to database
+function saveToDatabase(domain, data, url, statusCode = 200) {
+  return new Promise((resolve, reject) => {
+    const now = new Date().toISOString();
+    const id = uuidv4();
+    
+    // Check if the domain already exists in the database
+    db.get('SELECT id FROM sellers_json_cache WHERE domain = ?', [domain.toLowerCase()], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      // If domain exists, update the record
+      if (row) {
+        db.run(
+          `UPDATE sellers_json_cache 
+           SET content = ?, status = ?, status_code = ?, updated_at = ?
+           WHERE id = ?`,
+          [data, 'success', statusCode, now, row.id],
+          (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              console.log(`📝 Updated database entry for ${domain}`);
+              resolve();
+            }
+          }
+        );
+      } else {
+        // If domain doesn't exist, insert a new record
+        db.run(
+          `INSERT INTO sellers_json_cache 
+           (id, domain, content, status, status_code, error_message, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, domain.toLowerCase(), data, 'success', statusCode, null, now, now],
+          (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              console.log(`📝 Inserted new database entry for ${domain}`);
+              resolve();
+            }
+          }
+        );
+      }
+    });
+  });
 }
 
 // Validating JSON data
@@ -65,7 +154,7 @@ function fetchUrl(url) {
 
       response.on('end', () => {
         if (response.statusCode === 200) {
-          resolve(data);
+          resolve({ data, statusCode: response.statusCode });
         } else {
           reject(new Error(`HTTP Error: ${response.statusCode}`));
         }
@@ -85,10 +174,18 @@ function fetchUrl(url) {
 
 // Main function to fetch sellers.json data
 async function main() {
-  const successCount = 0;
-  const failCount = 0;
+  let successCount = 0;
+  let failCount = 0;
 
   console.log('🚀 Starting sellers.json fetch process');
+
+  // Ensure the database table exists
+  try {
+    await ensureTableExists();
+  } catch (err) {
+    console.error(`❌ Error ensuring table exists: ${err.message}`);
+    process.exit(1);
+  }
 
   // If domains are specified, process only those domains
   const targetDomains = process.argv.length > 2
@@ -104,13 +201,23 @@ async function main() {
     const url = SPECIAL_DOMAINS[domain] || `https://${domain}/sellers.json`;
 
     try {
-      const data = await fetchUrl(url);
+      const { data, statusCode } = await fetchUrl(url);
       const filePath = path.join(dataDir, `${domain}.json`);
 
       // Validating JSON data
       if (isValidJson(data)) {
+        // Write to file
         fs.writeFileSync(filePath, data, 'utf8');
         console.log(`✅ Successfully downloaded sellers.json for ${domain}`);
+
+        // Save to database
+        try {
+          await saveToDatabase(domain, data, url, statusCode);
+          console.log(`💾 Saved to database: ${domain}`);
+          successCount++;
+        } catch (dbError) {
+          console.error(`❌ Error saving to database for ${domain}: ${dbError.message}`);
+        }
 
         // Display the number of sellers in the data
         const jsonData = JSON.parse(data);
@@ -131,11 +238,22 @@ async function main() {
     }
   }
 
-  console.log('🏁 fetch-sellers-json process completed');
+  console.log(`🏁 Fetch process completed: ${successCount} successful, ${failCount} failed`);
+  
+  // Close the database connection
+  db.close((err) => {
+    if (err) {
+      console.error(`❌ Error closing database: ${err.message}`);
+    } else {
+      console.log('📊 Database connection closed');
+    }
+  });
 }
 
 // Execute the main function
 main().catch(error => {
-  console.error('❌ Fatal error:', error);
+  console.error(`❌ Fatal error: ${error.message}`);
+  // Close the database connection if there is an error
+  db.close();
   process.exit(1);
 });

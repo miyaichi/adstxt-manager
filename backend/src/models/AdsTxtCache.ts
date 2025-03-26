@@ -38,12 +38,19 @@ class AdsTxtCacheModel {
    */
   async getByDomain(domain: string): Promise<AdsTxtCache | null> {
     try {
+      // Ensure domain is properly lowercase for consistent lookup
+      const normalizedDomain = domain.toLowerCase();
+      
+      logger.info(`[AdsTxtCache] Looking up domain: ${normalizedDomain}`);
+      
       // Using custom SQL with the database adapter
       const results = await db.query(this.tableName, {
-        where: { domain },
+        where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
+      logger.info(`[AdsTxtCache] Query results for ${normalizedDomain}: ${results.length} records found`);
+      
       return results.length > 0 ? (results[0] as AdsTxtCache) : null;
     } catch (error) {
       logger.error('Error fetching ads.txt cache:', error);
@@ -74,10 +81,16 @@ class AdsTxtCacheModel {
   async saveCache(data: AdsTxtCacheDTO): Promise<AdsTxtCache> {
     try {
       const now = new Date().toISOString();
-      const existingCache = await this.getByDomain(data.domain);
+      
+      // Ensure domain is properly lowercase for consistent storage
+      const normalizedDomain = data.domain.toLowerCase();
+      logger.info(`[AdsTxtCache] Saving cache for domain: ${normalizedDomain}`);
+      
+      const existingCache = await this.getByDomain(normalizedDomain);
 
       if (existingCache) {
         // Update existing entry
+        logger.info(`[AdsTxtCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
         const updatedCache = await db.update(this.tableName, existingCache.id, {
           content: data.content,
           url: data.url,
@@ -88,17 +101,18 @@ class AdsTxtCacheModel {
         });
 
         if (!updatedCache) {
-          throw new Error(`Failed to update ads.txt cache for domain: ${data.domain}`);
+          throw new Error(`Failed to update ads.txt cache for domain: ${normalizedDomain}`);
         }
 
         return updatedCache as AdsTxtCache;
       } else {
         // Create a new entry with UUID
         const { v4: uuidv4 } = require('uuid');
+        logger.info(`[AdsTxtCache] Creating new cache entry for domain: ${normalizedDomain}`);
 
         const newEntry: AdsTxtCache = {
           id: uuidv4(),
-          domain: data.domain,
+          domain: normalizedDomain, // Use normalized domain
           content: data.content,
           url: data.url,
           status: data.status,

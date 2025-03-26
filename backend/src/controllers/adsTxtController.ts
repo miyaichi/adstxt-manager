@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel from '../models/AdsTxtRecord';
 import RequestModel from '../models/Request';
-import { parseAdsTxtContent } from '../utils/validation';
+import { parseAdsTxtContent, crossCheckAdsTxtRecords } from '../utils/validation';
 
 /**
  * Update the status of an Ads.txt record
@@ -66,7 +66,13 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
       const fileContent = fileBuffer.toString('utf8');
 
       // Parse the content
-      const parsedRecords = parseAdsTxtContent(fileContent);
+      let parsedRecords = parseAdsTxtContent(fileContent);
+      
+      // If publisher domain is provided, perform duplicate check (as warnings)
+      const publisherDomain = req.body.publisherDomain;
+      if (publisherDomain) {
+        parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+      }
 
       res.status(200).json({
         success: true,
@@ -98,9 +104,64 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
 
   try {
     const content = req.body.adsTxtContent;
+    const publisherDomain = req.body.publisherDomain;
 
     // Parse the content
-    const parsedRecords = parseAdsTxtContent(content);
+    let parsedRecords = parseAdsTxtContent(content);
+    
+    // If publisher domain is provided, perform duplicate check (as warnings)
+    if (publisherDomain) {
+      // Force fetching fresh ads.txt data for the domain to ensure we have the latest
+      try {
+        console.log(`Force-fetching fresh ads.txt for domain: ${publisherDomain}`);
+        const { default: AdsTxtCacheModel } = await import('../models/AdsTxtCache');
+        
+        // Force ads.txt fetch by calling the domain validation endpoint directly with force parameter
+        const axios = (await import('axios')).default;
+        const port = process.env.PORT || 4001;
+        const cacheResponse = await axios.get(`http://localhost:${port}/api/adsTxtCache/domain/${encodeURIComponent(publisherDomain)}?force=true`);
+        
+        console.log(`Ads.txt cache response status: ${cacheResponse.status}`);
+        console.log(`Ads.txt cache response data:`, JSON.stringify(cacheResponse.data).substring(0, 300) + '...');
+        
+        console.log(`Performing duplicate check for domain: ${publisherDomain}`);
+        
+        // Log entry counts before cross-check
+        const cachedData = await AdsTxtCacheModel.getByDomain(publisherDomain);
+        if (cachedData && cachedData.content) {
+          console.log(`Raw ads.txt content length: ${cachedData.content.length}`);
+          const lines = cachedData.content.split('\n');
+          console.log(`Total lines in ads.txt: ${lines.length}`);
+          
+          // Count interesting lines (non-comment, non-empty)
+          const interestingLines = lines.filter(line => {
+            const trimmed = line.trim();
+            return trimmed.length > 0 && !trimmed.startsWith('#');
+          });
+          console.log(`Interesting (non-comment, non-empty) lines: ${interestingLines.length}`);
+          
+          // Print the first few entries containing ad-generation.jp
+          const adGenLines = interestingLines.filter(line => line.toLowerCase().includes('ad-generation.jp'));
+          console.log(`Lines containing ad-generation.jp: ${adGenLines.length}`);
+          if (adGenLines.length > 0) {
+            console.log("Sample ad-generation.jp lines:");
+            adGenLines.slice(0, 5).forEach((line, i) => console.log(`  ${i+1}: ${line}`));
+          }
+        }
+        
+        parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+        console.log(`Processed ${parsedRecords.length} records after cross-check`);
+        console.log(`Found ${parsedRecords.filter(r => r.has_warning).length} duplicates`);
+      } catch (err) {
+        console.error(`Failed to perform cross-check: ${err}`);
+        // Continue with cross-check even if force fetch fails
+        try {
+          parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+        } catch (crossCheckErr) {
+          console.error(`Cross-check also failed: ${crossCheckErr}`);
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,
