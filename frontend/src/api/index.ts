@@ -190,7 +190,7 @@ export const adsTxtApi = {
     if (fileOrContent instanceof File) {
       const formData = new FormData();
       formData.append('adsTxtFile', fileOrContent);
-      
+
       // Add publisher domain if provided
       if (publisherDomain) {
         formData.append('publisherDomain', publisherDomain);
@@ -212,12 +212,12 @@ export const adsTxtApi = {
       const data: any = {
         adsTxtContent: fileOrContent,
       };
-      
+
       // Add publisher domain if provided
       if (publisherDomain) {
         data.publisherDomain = publisherDomain;
       }
-      
+
       const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adsTxt/process', data);
       return response.data;
     }
@@ -243,7 +243,10 @@ export const adsTxtApi = {
   },
 
   // Fetch ads.txt from a domain
-  async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<ApiResponse<AdsTxtCacheResponse>> {
+  async getAdsTxtFromDomain(
+    domain: string,
+    force: boolean = false
+  ): Promise<ApiResponse<AdsTxtCacheResponse>> {
     console.log(`Fetching ads.txt from domain: ${domain}${force ? ' (force refresh)' : ''}`);
     const url = `/adsTxtCache/domain/${encodeURIComponent(domain)}${force ? '?force=true' : ''}`;
     const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(url);

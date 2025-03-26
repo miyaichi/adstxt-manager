@@ -42,16 +42,18 @@ class SellersJsonCacheModel {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
-      
+
       logger.info(`[SellersJsonCache] Looking up domain: ${normalizedDomain}`);
-      
+
       const results = await db.query(this.tableName, {
         where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      logger.info(`[SellersJsonCache] Query results for ${normalizedDomain}: ${results.length} records found`);
-      
+      logger.info(
+        `[SellersJsonCache] Query results for ${normalizedDomain}: ${results.length} records found`
+      );
+
       return results.length > 0 ? (results[0] as SellersJsonCache) : null;
     } catch (error) {
       logger.error('Error fetching sellers.json cache:', error);
@@ -74,16 +76,18 @@ class SellersJsonCacheModel {
     // Ensure domain is properly lowercase for consistent storage
     const normalizedDomain = data.domain.toLowerCase();
     const { content, status, status_code: statusCode, error_message: errorMessage } = data;
-    
+
     logger.info(`[SellersJsonCache] Saving cache for domain: ${normalizedDomain}`);
-    
+
     const now = new Date().toISOString();
     const existingCache = await this.getByDomain(normalizedDomain);
 
     try {
       if (existingCache) {
         // Update existing entry
-        logger.info(`[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
+        logger.info(
+          `[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
+        );
         const updatedCache = await db.update(this.tableName, existingCache.id, {
           content,
           status,

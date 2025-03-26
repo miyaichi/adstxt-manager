@@ -73,7 +73,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       return res.status(200).json({
         success: true,
         data: sellerIdCache.get(cacheKey),
-        cached: true
+        cached: true,
       });
     }
 
@@ -163,10 +163,10 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
             message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
             sellerId: normalizedSellerId,
           };
-          
+
           // Also cache "not found" results
           sellerIdCache.set(cacheKey, notFoundResult);
-          
+
           return res.status(200).json({
             success: true,
             data: notFoundResult,
@@ -202,32 +202,35 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       try {
         // Simple approach: load the entire JSON into memory and process it
         let responseData = '';
-        
+
         stream.on('data', (chunk) => {
           responseData += chunk.toString();
         });
-        
+
         stream.on('end', () => {
           try {
             // Parse the complete response
             const sellersJson = JSON.parse(responseData);
-            logger.info(`Successfully parsed sellers.json from ${domain}, found ${sellersJson.sellers?.length || 0} sellers`);
-            
+            logger.info(
+              `Successfully parsed sellers.json from ${domain}, found ${sellersJson.sellers?.length || 0} sellers`
+            );
+
             // Extract metadata
             if (sellersJson.contact_email) contactInfo.contact_email = sellersJson.contact_email;
-            if (sellersJson.contact_address) contactInfo.contact_address = sellersJson.contact_address;
+            if (sellersJson.contact_address)
+              contactInfo.contact_address = sellersJson.contact_address;
             if (sellersJson.version) version = sellersJson.version;
             if (Array.isArray(sellersJson.identifiers)) identifiers = sellersJson.identifiers;
-            
+
             // Find the target seller
             const targetSeller = sellersJson.sellers?.find(
               (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
             );
-            
+
             if (targetSeller) {
               sellerFound = true;
               logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
-              
+
               // Construct the response object
               const result = {
                 ...contactInfo,
@@ -235,10 +238,10 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                 identifiers,
                 seller: targetSeller,
               };
-              
+
               // Save the result to cache
               sellerIdCache.set(cacheKey, result);
-              
+
               resolve(result);
             } else {
               logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
@@ -248,10 +251,10 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                 message: 'Seller ID not found in sellers.json',
                 sellerId: normalizedSellerId,
               };
-              
+
               // Also cache "not found" results
               sellerIdCache.set(cacheKey, notFoundResult);
-              
+
               resolve(notFoundResult);
             }
           } catch (err: any) {
@@ -259,7 +262,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
             reject(new Error(`Error parsing sellers.json: ${err.message}`));
           }
         });
-        
+
         stream.on('error', (err) => {
           logger.error(`Stream error for ${url}: ${err.message}`);
           reject(new Error(`Stream error: ${err.message}`));

@@ -20,7 +20,10 @@ interface AdsTxtFileUploadProps {
   onHasInvalidRecords?: (hasInvalid: boolean) => void;
 }
 
-const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected, onHasInvalidRecords }) => {
+const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({
+  onRecordsSelected,
+  onHasInvalidRecords,
+}) => {
   const { language } = useApp();
   const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -39,28 +42,34 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected, 
 
   // Get publisher domain from the parent component
   const [publisherDomain, setPublisherDomain] = useState<string>('');
-  
+
   // Update publisher domain when passed from parent
   useEffect(() => {
     // Check if it's a RequestForm component context by looking for certain props
-    const requestForm = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+    const requestForm = document.querySelector(
+      'form [name="publisher_domain"]'
+    ) as HTMLInputElement;
     if (requestForm && requestForm.value) {
       setPublisherDomain(requestForm.value);
       console.log('Found publisher domain in form:', requestForm.value);
     }
   }, []);
-  
+
   // Add a listener for domain input changes
   useEffect(() => {
     const handleDomainChange = () => {
-      const domainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+      const domainInput = document.querySelector(
+        'form [name="publisher_domain"]'
+      ) as HTMLInputElement;
       if (domainInput && domainInput.value !== publisherDomain) {
         console.log('Publisher domain changed to:', domainInput.value);
         setPublisherDomain(domainInput.value);
       }
     };
-    
-    const domainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+
+    const domainInput = document.querySelector(
+      'form [name="publisher_domain"]'
+    ) as HTMLInputElement;
     if (domainInput) {
       domainInput.addEventListener('input', handleDomainChange);
       return () => domainInput.removeEventListener('input', handleDomainChange);
@@ -78,22 +87,24 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected, 
       setError(null);
 
       // Read current publisher domain value from the parent form if available
-      const publisherDomainInput = document.querySelector('form [name="publisher_domain"]') as HTMLInputElement;
+      const publisherDomainInput = document.querySelector(
+        'form [name="publisher_domain"]'
+      ) as HTMLInputElement;
       const currentDomain = publisherDomainInput ? publisherDomainInput.value : publisherDomain;
-      
+
       console.log('Processing ads.txt content with publisher domain:', currentDomain);
       const response = await adsTxtApi.processAdsTxtFile(adsTxtContent, currentDomain);
 
       if (response.success) {
         setParsedRecords(response.data.records);
         const hasInvalid = response.data.invalidRecords > 0;
-        
+
         setStats({
           total: response.data.totalRecords,
           valid: response.data.validRecords,
           invalid: response.data.invalidRecords,
         });
-        
+
         // Notify parent component if there are invalid records
         if (onHasInvalidRecords) {
           onHasInvalidRecords(hasInvalid);
@@ -132,7 +143,7 @@ const AdsTxtFileUpload: React.FC<AdsTxtFileUploadProps> = ({ onRecordsSelected, 
     setParsedRecords([]);
     setStats(null);
     setError(null);
-    
+
     // Notify parent that there are no invalid records anymore
     if (onHasInvalidRecords) {
       onHasInvalidRecords(false);

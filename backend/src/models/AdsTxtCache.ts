@@ -40,17 +40,19 @@ class AdsTxtCacheModel {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
-      
+
       logger.info(`[AdsTxtCache] Looking up domain: ${normalizedDomain}`);
-      
+
       // Using custom SQL with the database adapter
       const results = await db.query(this.tableName, {
         where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      logger.info(`[AdsTxtCache] Query results for ${normalizedDomain}: ${results.length} records found`);
-      
+      logger.info(
+        `[AdsTxtCache] Query results for ${normalizedDomain}: ${results.length} records found`
+      );
+
       return results.length > 0 ? (results[0] as AdsTxtCache) : null;
     } catch (error) {
       logger.error('Error fetching ads.txt cache:', error);
@@ -81,16 +83,18 @@ class AdsTxtCacheModel {
   async saveCache(data: AdsTxtCacheDTO): Promise<AdsTxtCache> {
     try {
       const now = new Date().toISOString();
-      
+
       // Ensure domain is properly lowercase for consistent storage
       const normalizedDomain = data.domain.toLowerCase();
       logger.info(`[AdsTxtCache] Saving cache for domain: ${normalizedDomain}`);
-      
+
       const existingCache = await this.getByDomain(normalizedDomain);
 
       if (existingCache) {
         // Update existing entry
-        logger.info(`[AdsTxtCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
+        logger.info(
+          `[AdsTxtCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
+        );
         const updatedCache = await db.update(this.tableName, existingCache.id, {
           content: data.content,
           url: data.url,

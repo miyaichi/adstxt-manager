@@ -59,7 +59,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
 
   // Check for force refresh parameter
   const forceRefresh = req.query.force === 'true';
-  
+
   // If we have a cache and it's not expired and not forced to refresh, return it
   if (cachedAdsTxt && !AdsTxtCacheModel.isCacheExpired(cachedAdsTxt.updated_at) && !forceRefresh) {
     logger.info(`[AdsTxtManager] Serving cached ads.txt for domain: ${domain}`);
@@ -76,7 +76,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       },
     });
   }
-  
+
   // Log if we're forcing a refresh
   if (forceRefresh) {
     logger.info(`[AdsTxtManager] Force refreshing ads.txt for domain: ${domain}`);

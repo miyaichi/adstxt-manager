@@ -324,9 +324,9 @@ const RequestForm: React.FC = () => {
 
           <Tabs>
             <TabItem title={t('requests.form.fileUploadTab', language)}>
-              <AdsTxtFileUpload 
-                onRecordsSelected={handleRecordsSelected} 
-                onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)} 
+              <AdsTxtFileUpload
+                onRecordsSelected={handleRecordsSelected}
+                onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)}
               />
             </TabItem>
 
@@ -354,10 +354,10 @@ const RequestForm: React.FC = () => {
           >
             {t('requests.form.submitRequest', language)}
           </Button>
-          
+
           {hasInvalidRecords && (
             <Alert variation="warning" marginTop="1rem">
-              {t('requests.form.invalidRecordsWarning', language) || 
+              {t('requests.form.invalidRecordsWarning', language) ||
                 'Please fix invalid records before submitting the request.'}
             </Alert>
           )}

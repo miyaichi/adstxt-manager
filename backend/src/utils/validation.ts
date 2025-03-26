@@ -35,7 +35,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   // Split the line into its components
   // Format: domain, account_id, type, [certification_authority_id]
   const parts = trimmedLine.split(',').map((part) => part.trim());
-  
+
   // Uncomment for detailed parsing logs if needed
   // console.log(`Parsing line: "${trimmedLine}" -> ${JSON.stringify(parts)}`);
 
@@ -71,7 +71,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   const [domain, accountId, accountType, ...rest] = parts;
   let relationship: 'DIRECT' | 'RESELLER' = 'DIRECT';
   let certAuthorityId: string | undefined;
-  
+
   // Uncomment for detailed parsing logs if needed
   // console.log(`Found record: domain=${domain}, accountId=${accountId}, accountType=${accountType}, rest=${JSON.stringify(rest)}`);
 
@@ -211,12 +211,15 @@ export async function crossCheckAdsTxtRecords(
   if (!publisherDomain) {
     return parsedRecords;
   }
-  
+
   console.log(`Starting cross-check with publisher domain: ${publisherDomain}`);
   // Print the parsedRecords for debugging
   parsedRecords.forEach((record, i) => {
-    if (i < 5) { // Only print the first 5 to avoid log spam
-      console.log(`Input record ${i+1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}`);
+    if (i < 5) {
+      // Only print the first 5 to avoid log spam
+      console.log(
+        `Input record ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}`
+      );
     }
   });
 
@@ -234,7 +237,7 @@ export async function crossCheckAdsTxtRecords(
       console.log(`No valid cached ads.txt data found for ${publisherDomain}`);
       return parsedRecords;
     }
-    
+
     console.log(`Cached content length: ${cachedData.content.length}`);
 
     // Parse the cached ads.txt content
@@ -243,7 +246,9 @@ export async function crossCheckAdsTxtRecords(
     // Print a sample of the parsed records from publisher's ads.txt
     console.log("Sample of records from publisher's ads.txt:");
     existingRecords.slice(0, 3).forEach((record, i) => {
-      console.log(`  ${i+1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}, valid=${record.is_valid}`);
+      console.log(
+        `  ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}, valid=${record.is_valid}`
+      );
     });
 
     // Create lookup map of existing records for faster checking
@@ -251,7 +256,7 @@ export async function crossCheckAdsTxtRecords(
     const existingRecordMap = new Map<string, ParsedAdsTxtRecord>();
 
     console.log(`Parsed ${existingRecords.length} records from cached ads.txt`);
-    console.log(`Valid records: ${existingRecords.filter(r => r.is_valid).length}`);
+    console.log(`Valid records: ${existingRecords.filter((r) => r.is_valid).length}`);
 
     for (const record of existingRecords) {
       if (record.is_valid) {
@@ -262,16 +267,18 @@ export async function crossCheckAdsTxtRecords(
         existingRecordMap.set(key, record);
       }
     }
-    
+
     console.log(`Created lookup map with ${existingRecordMap.size} entries`);
 
     // Check each of the input records for duplicates and mark them
-    console.log(`Checking ${parsedRecords.length} input records for duplicates against ${existingRecordMap.size} existing records`);
-    
+    console.log(
+      `Checking ${parsedRecords.length} input records for duplicates against ${existingRecordMap.size} existing records`
+    );
+
     // Log a sample of the existing map keys for debugging
     const mapKeySample = Array.from(existingRecordMap.keys()).slice(0, 10);
     console.log(`Sample of existing map keys: ${JSON.stringify(mapKeySample)}`);
-    
+
     const result = parsedRecords.map((record) => {
       if (!record.is_valid) {
         return record; // Skip invalid records
@@ -281,26 +288,32 @@ export async function crossCheckAdsTxtRecords(
       // Use domain, account_id, and account_type for duplicate detection (not relationship)
       const lowerDomain = record.domain.toLowerCase();
       const key = `${lowerDomain}|${record.account_id}|${record.account_type}`;
-      
+
       // Check for duplicate - exact key match
       const isDuplicate = existingRecordMap.has(key);
-      
+
       // We no longer need this section since we already made the domain lowercase in the key
       // and we're comparing keys directly. Keep it as a backup just in case, but it won't execute.
       if (!isDuplicate) {
         // This is debugging only, it shouldn't trigger in normal operation now
-        console.log(`Unusual: case-sensitive match failed, double-checking with domain=${record.domain}, account_id=${record.account_id}`);
-        
+        console.log(
+          `Unusual: case-sensitive match failed, double-checking with domain=${record.domain}, account_id=${record.account_id}`
+        );
+
         // Additional check just to be safe
         const lowerCaseDomain = record.domain.toLowerCase();
-        
+
         // Check if any key in map has the same lower case domain, account_id, and account_type
         for (const [existingKey, existingRecord] of existingRecordMap.entries()) {
           const [existingDomain, existingAccountId, existingAccountType] = existingKey.split('|');
-          if (existingDomain.toLowerCase() === lowerCaseDomain && 
-              existingAccountId === record.account_id &&
-              existingAccountType.toLowerCase() === record.account_type.toLowerCase()) {
-            console.log(`Found case-insensitive duplicate through backup check: ${existingDomain} vs ${record.domain}`);
+          if (
+            existingDomain.toLowerCase() === lowerCaseDomain &&
+            existingAccountId === record.account_id &&
+            existingAccountType.toLowerCase() === record.account_type.toLowerCase()
+          ) {
+            console.log(
+              `Found case-insensitive duplicate through backup check: ${existingDomain} vs ${record.domain}`
+            );
             return {
               ...record,
               is_valid: true,
@@ -311,7 +324,7 @@ export async function crossCheckAdsTxtRecords(
           }
         }
       }
-      
+
       if (isDuplicate) {
         console.log(`Found duplicate for: ${key}`);
         // It's a duplicate, create a warning but keep the record valid
@@ -322,14 +335,18 @@ export async function crossCheckAdsTxtRecords(
           warning: 'errors:adsTxtValidation.duplicateEntry',
           duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
         };
-        console.log(`Created warning record with duplicate_domain=${publisherDomain}, warning=${warningRecord.warning}`);
+        console.log(
+          `Created warning record with duplicate_domain=${publisherDomain}, warning=${warningRecord.warning}`
+        );
         return warningRecord;
       }
 
       return record;
     });
-    
-    console.log(`After cross-check: ${result.length} records, ${result.filter(r => r.has_warning).length} with warnings`);
+
+    console.log(
+      `After cross-check: ${result.length} records, ${result.filter((r) => r.has_warning).length} with warnings`
+    );
     return result;
   } catch (error) {
     // If there's any error during cross-check, log it but return records as-is
@@ -348,16 +365,16 @@ function isSimilarToRelationship(str: string): boolean {
   // Calculate Levenshtein distance between two strings
   function levenshteinDistance(a: string, b: string): number {
     const matrix: number[][] = [];
-    
+
     // Initialize matrix
     for (let i = 0; i <= b.length; i++) {
       matrix[i] = [i];
     }
-    
+
     for (let j = 0; j <= a.length; j++) {
       matrix[0][j] = j;
     }
-    
+
     // Fill matrix
     for (let i = 1; i <= b.length; i++) {
       for (let j = 1; j <= a.length; j++) {
@@ -366,22 +383,22 @@ function isSimilarToRelationship(str: string): boolean {
         } else {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
           );
         }
       }
     }
-    
+
     return matrix[b.length][a.length];
   }
-  
+
   // Check if input is similar to DIRECT or RESELLER
   const distanceToDirect = levenshteinDistance(str, 'DIRECT');
   const distanceToReseller = levenshteinDistance(str, 'RESELLER');
-  
+
   // If distance is less than 3 (allow for about 2 typos), consider it similar
-  return (distanceToDirect <= 2) || (distanceToReseller <= 2);
+  return distanceToDirect <= 2 || distanceToReseller <= 2;
 }
 
 /**

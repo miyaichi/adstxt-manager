@@ -53,12 +53,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
       if (response.success) {
         setRequest(response.data);
-        
+
         // If the request has a publisher domain, we should fetch the latest ads.txt
         // This ensures cross-checks are accurate for duplicate detection
         if (response.data.request.publisher_domain) {
           try {
-            console.log(`Pre-fetching ads.txt for publisher domain: ${response.data.request.publisher_domain}`);
+            console.log(
+              `Pre-fetching ads.txt for publisher domain: ${response.data.request.publisher_domain}`
+            );
             await adsTxtApi.getAdsTxtFromDomain(response.data.request.publisher_domain, true); // Force refresh
           } catch (fetchErr) {
             console.error(`Error pre-fetching ads.txt: ${fetchErr}`);

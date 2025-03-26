@@ -3,37 +3,37 @@ export const translations = {
     adsTxtValidation: {
       invalidFormat: {
         en: 'Invalid format. Expected comma-separated values',
-        ja: '無効な形式です。カンマ区切りの値が必要です'
+        ja: '無効な形式です。カンマ区切りの値が必要です',
       },
       missingFields: {
         en: 'Line must contain at least domain, account ID, and account type',
-        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です'
+        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です',
       },
       invalidRelationship: {
         en: 'Relationship type must be either DIRECT or RESELLER',
-        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります'
+        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります',
       },
       misspelledRelationship: {
         en: '"{{value}}" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER',
-        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です'
+        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です',
       },
       invalidRootDomain: {
         en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
-        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）'
+        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
       },
       emptyAccountId: {
         en: 'Account ID must not be empty',
-        ja: 'アカウントIDは空であってはなりません'
+        ja: 'アカウントIDは空であってはなりません',
       },
       duplicateEntry: {
-        en: 'Duplicate entry found in publisher\'s ads.txt ({{domain}})',
-        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました'
+        en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
+        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
       },
       duplicateEntryCaseInsensitive: {
-        en: 'Duplicate entry found in publisher\'s ads.txt with different case formatting ({{domain}})',
-        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました'
-      }
-    }
+        en: "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
+        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました',
+      },
+    },
   },
   common: {
     home: {
@@ -814,7 +814,7 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
     console.warn(`Translation not found for key: ${key} in language: ${language}`);
     return key;
   }
-  
+
   // Debug logging
   console.log(`Translating ${key} to ${translation} for language ${language} with params:`, params);
 
@@ -822,7 +822,9 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   if (params) {
     const result = Object.entries(params).reduce((str, [paramKey, paramValue]) => {
       const replaced = str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
-      console.log(`Parameter replacement: ${paramKey}=${paramValue}, before: "${str}", after: "${replaced}"`);
+      console.log(
+        `Parameter replacement: ${paramKey}=${paramValue}, before: "${str}", after: "${replaced}"`
+      );
       return replaced;
     }, translation);
     return result;
