@@ -355,6 +355,54 @@ export const translations = {
         en: 'Certification Authority ID',
         ja: '認証局ID',
       },
+      sellerInfo: {
+        en: 'Seller Information',
+        ja: 'セラー情報',
+      },
+      sellerName: {
+        en: 'Name',
+        ja: '名前',
+      },
+      sellerDomain: {
+        en: 'Domain',
+        ja: 'ドメイン',
+      },
+      sellerType: {
+        en: 'Type',
+        ja: 'タイプ',
+      },
+      confidential: {
+        en: 'Confidential',
+        ja: '機密',
+      },
+      notConfidential: {
+        en: 'Not Confidential',
+        ja: '非機密',
+      },
+      contactEmail: {
+        en: 'Contact Email',
+        ja: '連絡先メール',
+      },
+      showSellerInfo: {
+        en: 'Show seller.json information',
+        ja: 'seller.json情報を表示',
+      },
+      hideSellerInfo: {
+        en: 'Hide seller.json information',
+        ja: 'seller.json情報を隠す',
+      },
+      fetchingSellerInfo: {
+        en: 'Fetching seller information...',
+        ja: 'セラー情報を取得中...',
+      },
+      noSellerInfo: {
+        en: 'No seller information found',
+        ja: 'セラー情報が見つかりません',
+      },
+      errorFetchingSellerInfo: {
+        en: 'Error fetching seller information',
+        ja: 'セラー情報の取得中にエラーが発生しました',
+      },
     },
     recordList: {
       title: {

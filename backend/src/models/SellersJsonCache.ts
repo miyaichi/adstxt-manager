@@ -45,7 +45,7 @@ class SellersJsonCacheModel {
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      return results.length > 0 ? results[0] as SellersJsonCache : null;
+      return results.length > 0 ? (results[0] as SellersJsonCache) : null;
     } catch (error) {
       logger.error('Error fetching sellers.json cache:', error);
       throw error;
@@ -97,7 +97,7 @@ class SellersJsonCacheModel {
           updated_at: now,
         };
 
-        return await db.insert(this.tableName, newCache) as SellersJsonCache;
+        return (await db.insert(this.tableName, newCache)) as SellersJsonCache;
       }
     } catch (error) {
       logger.error('Error saving sellers.json cache:', error);

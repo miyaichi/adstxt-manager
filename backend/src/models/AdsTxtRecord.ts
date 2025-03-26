@@ -139,10 +139,10 @@ class AdsTxtRecordModel {
   ): Promise<AdsTxtRecord | null> {
     const now = new Date().toISOString();
 
-    return await db.update(this.tableName, id, {
+    return (await db.update(this.tableName, id, {
       status,
       updated_at: now,
-    }) as AdsTxtRecord | null;
+    })) as AdsTxtRecord | null;
   }
 
   /**
@@ -165,10 +165,10 @@ class AdsTxtRecordModel {
   async updateDomain(id: string, domain: string): Promise<AdsTxtRecord | null> {
     const now = new Date().toISOString();
 
-    return await db.update(this.tableName, id, {
+    return (await db.update(this.tableName, id, {
       domain,
       updated_at: now,
-    }) as AdsTxtRecord | null;
+    })) as AdsTxtRecord | null;
   }
 }
 

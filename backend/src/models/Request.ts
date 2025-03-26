@@ -97,10 +97,10 @@ class RequestModel {
   ): Promise<Request | null> {
     const now = new Date().toISOString();
 
-    return await db.update(this.tableName, id, {
+    return (await db.update(this.tableName, id, {
       status,
       updated_at: now,
-    }) as Request | null;
+    })) as Request | null;
   }
 
   /**
@@ -117,11 +117,11 @@ class RequestModel {
   ): Promise<Request | null> {
     const now = new Date().toISOString();
 
-    return await db.update(this.tableName, id, {
+    return (await db.update(this.tableName, id, {
       publisher_name: publisherName,
       publisher_domain: publisherDomain,
       updated_at: now,
-    }) as Request | null;
+    })) as Request | null;
   }
 
   /**

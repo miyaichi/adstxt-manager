@@ -20,7 +20,8 @@ const upload = multer({
 // Routes
 router.patch('/:id/status', updateRecordStatus);
 // Support both file upload and text content
-router.post('/process', 
+router.post(
+  '/process',
   // Use multer conditionally when there's a file
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart/form-data')) {
@@ -28,7 +29,7 @@ router.post('/process',
     } else {
       next();
     }
-  }, 
+  },
   processAdsTxtFile
 );
 router.get('/request/:requestId', getRecordsByRequestId);

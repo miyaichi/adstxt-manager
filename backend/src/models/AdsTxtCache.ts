@@ -44,7 +44,7 @@ class AdsTxtCacheModel {
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      return results.length > 0 ? results[0] as AdsTxtCache : null;
+      return results.length > 0 ? (results[0] as AdsTxtCache) : null;
     } catch (error) {
       logger.error('Error fetching ads.txt cache:', error);
       throw error;
@@ -108,7 +108,7 @@ class AdsTxtCacheModel {
           updated_at: now,
         };
 
-        return await db.insert(this.tableName, newEntry) as AdsTxtCache;
+        return (await db.insert(this.tableName, newEntry)) as AdsTxtCache;
       }
     } catch (error) {
       logger.error('Error saving ads.txt cache:', error);

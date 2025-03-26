@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Card, Button, Text, Flex, Loader, Alert, Heading, TextAreaField } from '@aws-amplify/ui-react';
+import {
+  Card,
+  Button,
+  Text,
+  Flex,
+  Loader,
+  Alert,
+  Heading,
+  TextAreaField,
+} from '@aws-amplify/ui-react';
 import { adsTxtApi } from '../../api';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 import AdsTxtRecordList from './AdsTxtRecordList';
@@ -110,10 +119,10 @@ appnexus.com, 1234, DIRECT
       />
 
       <Flex direction="row" gap="0.5rem" marginBottom="1rem">
-        <Button 
-          variation="primary" 
-          isDisabled={!adsTxtContent.trim() || isLoading} 
-          onClick={handleProcess} 
+        <Button
+          variation="primary"
+          isDisabled={!adsTxtContent.trim() || isLoading}
+          onClick={handleProcess}
           flex="1"
         >
           {isLoading ? <Loader size="small" /> : t('common.process', language) || 'Process'}
@@ -126,11 +135,7 @@ appnexus.com, 1234, DIRECT
         >
           {t('common.clear', language) || 'Clear'}
         </Button>
-        <Button
-          variation="link"
-          onClick={handlePasteExample}
-          isDisabled={isLoading}
-        >
+        <Button variation="link" onClick={handlePasteExample} isDisabled={isLoading}>
           {t('adsTxt.input.example', language) || 'Example'}
         </Button>
       </Flex>

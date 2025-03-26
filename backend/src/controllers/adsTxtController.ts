@@ -80,9 +80,14 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
       return;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-      throw new ApiError(400, `Error parsing Ads.txt file: ${errorMessage}`, 'errors:parsingError', {
-        message: errorMessage,
-      });
+      throw new ApiError(
+        400,
+        `Error parsing Ads.txt file: ${errorMessage}`,
+        'errors:parsingError',
+        {
+          message: errorMessage,
+        }
+      );
     }
   }
 
@@ -93,7 +98,7 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
 
   try {
     const content = req.body.adsTxtContent;
-    
+
     // Parse the content
     const parsedRecords = parseAdsTxtContent(content);
 
@@ -108,9 +113,14 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-    throw new ApiError(400, `Error parsing Ads.txt content: ${errorMessage}`, 'errors:parsingError', {
-      message: errorMessage,
-    });
+    throw new ApiError(
+      400,
+      `Error parsing Ads.txt content: ${errorMessage}`,
+      'errors:parsingError',
+      {
+        message: errorMessage,
+      }
+    );
   }
 });
 

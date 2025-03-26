@@ -182,7 +182,9 @@ export const adsTxtApi = {
   },
 
   // Process Ads.txt file or text content
-  async processAdsTxtFile(fileOrContent: File | string): Promise<ApiResponse<ProcessAdsTxtResponse>> {
+  async processAdsTxtFile(
+    fileOrContent: File | string
+  ): Promise<ApiResponse<ProcessAdsTxtResponse>> {
     // If it's a file, use FormData
     if (fileOrContent instanceof File) {
       const formData = new FormData();
@@ -198,15 +200,12 @@ export const adsTxtApi = {
         }
       );
       return response.data;
-    } 
+    }
     // If it's text content, send as JSON
     else {
-      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>(
-        '/adsTxt/process',
-        {
-          adsTxtContent: fileOrContent
-        }
-      );
+      const response = await api.post<ApiResponse<ProcessAdsTxtResponse>>('/adsTxt/process', {
+        adsTxtContent: fileOrContent,
+      });
       return response.data;
     }
   },
@@ -239,8 +238,26 @@ export const adsTxtApi = {
   },
 };
 
+// Sellers.json API calls
+export const sellersJsonApi = {
+  // Get sellers.json for a domain
+  async getSellersJson(domain: string): Promise<ApiResponse<any>> {
+    const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`);
+    return response.data;
+  },
+
+  // Get specific seller by seller_id from a domain's sellers.json
+  async getSellerById(domain: string, sellerId: string): Promise<ApiResponse<any>> {
+    const response = await api.get<ApiResponse<any>>(
+      `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}`
+    );
+    return response.data;
+  },
+};
+
 export default {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
+  sellersJson: sellersJsonApi,
 };
