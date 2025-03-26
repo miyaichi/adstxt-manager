@@ -11,7 +11,8 @@
     "test": "jest",
     "migrate": "ts-node src/db/migrations/run.ts",
     "migrate:sellers": "ts-node src/db/migrations/run_sellers_json.ts",
-    "seed": "ts-node src/db/seeds/run.ts"
+    "seed": "ts-node src/db/seeds/run.ts",
+    "fetch-sellers-json": "node fetch-sellers-json.js"
   },
   "keywords": [
     "ads.txt",
