@@ -89,41 +89,66 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 3. GitHubなどのリポジトリサービスと連携
 
-4. ビルド設定：
+4. ビルド設定は、プロジェクトルートの`amplify.yml`を使用します：
    ```yaml
    version: 1
-   frontend:
-     phases:
-       preBuild:
-         commands:
-           - cd frontend
-           - npm install
-       build:
-         commands:
-           - npm run build
-     artifacts:
-       baseDirectory: frontend/build
-       files:
-         - '**/*'
-   backend:
-     phases:
-       preBuild:
-         commands:
-           - cd backend
-           - npm install
-       build:
-         commands:
-           - npm run build
-     artifacts:
-       baseDirectory: backend
-       files:
-         - '**/*'
+   applications:
+     - frontend:
+         phases:
+           preBuild:
+             commands:
+               - npm ci
+           build:
+             commands:
+               - npm run build:frontend
+         artifacts:
+           baseDirectory: frontend/build
+           files:
+             - '**/*'
+         appRoot: .
+         customHeaders:
+           - pattern: '**/*'
+             headers:
+               - key: 'Cache-Control'
+                 value: 'max-age=0, no-cache, no-store, must-revalidate'
+       backend:
+         phases:
+           preBuild:
+             commands:
+               - npm ci
+           build:
+             commands:
+               - npm run build:backend
+         artifacts:
+           baseDirectory: backend/dist
+           files:
+             - '**/*'
+           discard:
+             - node_modules/**/*
    ```
 
-5. 環境変数の設定：
-   - `APP_URL`: デプロイ後のURL
-   - `SMTP_HOST`: SMTPサーバーホスト
-   - その他必要な環境変数
+5. 環境変数の設定（Amplifyコンソールで設定）：
+   - `NODE_ENV`: `production`
+   - `PORT`: `3000`
+   - `APP_URL`: デプロイ後のURL（例：`https://main.d3t7iwo3dj5mfj.amplifyapp.com`）
+   - `TOKEN_SECRET`: 安全なランダム文字列
+   - `SMTP_HOST`: SMTPサーバーホスト（AWS SES等）
+   - `SMTP_PORT`: SMTPポート（通常は587）
+   - `SMTP_USER`: SMTPユーザー名
+   - `SMTP_PASS`: SMTPパスワード
+   - `SMTP_FROM`: 送信元メールアドレス
+   - `SMTP_FROM_NAME`: 送信者名
+
+6. リダイレクトとリライトの設定（Amplifyコンソールで設定）：
+   - SPAのためのリライト：
+     ソース: `</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>`
+     ターゲット: `/index.html`
+     タイプ: `200 (Rewrite)`
+   
+   - APIプロキシ（フロントエンドとバックエンドの接続）：
+     ソース: `/api/<*>`
+     ターゲット: `/`
+     タイプ: `200 (Rewrite)`
 
 ## データベース構造
 
