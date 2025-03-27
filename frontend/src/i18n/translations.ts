@@ -356,7 +356,7 @@ export const translations = {
         ja: '例を表示',
       },
     },
-    fileUpload: {
+    textInput: {
       title: {
         en: 'Ads.txt File Upload',
         ja: 'Ads.txtファイルアップロード',

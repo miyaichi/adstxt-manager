@@ -208,7 +208,7 @@ appnexus.com, 1234, DIRECT
       {stats && (
         <Flex direction="column" marginBottom="1rem">
           <Text>
-            {t('adsTxt.fileUpload.stats', language, {
+            {t('adsTxt.textInput.stats', language, {
               total: stats.total,
               valid: stats.valid,
               invalid: stats.invalid,
@@ -221,7 +221,7 @@ appnexus.com, 1234, DIRECT
         <>
           {stats && stats.invalid > 0 && (
             <Alert variation="warning" marginBottom="1rem">
-              {t('adsTxt.fileUpload.invalidRecordsWarning', language, { invalid: stats.invalid })}
+              {t('adsTxt.textInput.invalidRecordsWarning', language, { invalid: stats.invalid })}
             </Alert>
           )}
           <AdsTxtRecordList
