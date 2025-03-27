@@ -336,21 +336,21 @@ export interface SellersJsonSellerRecord {
  * Validation results for cross-checking ads.txt with sellers.json
  */
 export interface CrossCheckValidationResult {
-  // Case 1: Does the advertising system have a sellers.json file?
+  // Case 11: Does the advertising system have a sellers.json file?
   hasSellerJson: boolean;
-  // Case 2: Is the publisher account ID listed as a seller_id in the sellers.json file?
+  // Case 12: Is the publisher account ID listed as a seller_id in the sellers.json file?
   accountIdInSellersJson: boolean;
-  // Case 3: Does the sellers.json entry for this seller_id have matching domain?
+  // Case 13: Does the sellers.json entry for this seller_id have matching domain?
   domainMatchesSellerJsonEntry: boolean | null; // null if domain is confidential or missing
-  // Case 4: For DIRECT entries, is the seller_type PUBLISHER?
+  // Case 14: For DIRECT entries, is the seller_type PUBLISHER?
   directEntryHasPublisherType: boolean | null; // null if not a DIRECT entry
-  // Case 5: Is the seller_id unique in the sellers.json file?
+  // Case 15: Is the seller_id unique in the sellers.json file?
   sellerIdIsUnique: boolean;
-  // Case 6: For RESELLER entries, is the publisher account ID listed as a seller_id?
+  // Case 17: For RESELLER entries, is the publisher account ID listed as a seller_id?
   resellerAccountIdInSellersJson: boolean | null; // null if not a RESELLER entry
-  // Case 7: For RESELLER entries, is the seller_type INTERMEDIARY?
+  // Case 19: For RESELLER entries, is the seller_type INTERMEDIARY?
   resellerEntryHasIntermediaryType: boolean | null; // null if not a RESELLER entry
-  // Case 8: For RESELLER entries, is the seller_id unique?
+  // Case 20: For RESELLER entries, is the seller_id unique?
   resellerSellerIdIsUnique: boolean | null; // null if not a RESELLER entry
 
   // Raw seller data for reference
@@ -696,7 +696,7 @@ async function validateSingleRecord(
   const matchingSeller = findMatchingSeller(sellersJsonData.sellers, normalizedAccountId);
   validationResult.sellerData = matchingSeller || null;
 
-  // Case 2/6: Check if account_id is in sellers.json
+  // Case 12/17: Check if account_id is in sellers.json
   validationResult.accountIdInSellersJson = !!matchingSeller;
 
   // Run relationship-specific validations
@@ -841,7 +841,7 @@ function validateDirectRelationship(
   validationResult.resellerSellerIdIsUnique = null;
 
   if (matchingSeller) {
-    // Case 3: For DIRECT entries, check if domains match
+    // Case 13: For DIRECT entries, check if domains match
     if (matchingSeller.is_confidential === 1 || !matchingSeller.domain) {
       validationResult.domainMatchesSellerJsonEntry = null; // Confidential or no domain
     } else {
@@ -851,12 +851,12 @@ function validateDirectRelationship(
       validationResult.domainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
     }
 
-    // Case 4: For DIRECT entries, check if seller_type is PUBLISHER
+    // Case 14: For DIRECT entries, check if seller_type is PUBLISHER
     const sellerType = matchingSeller.seller_type?.toUpperCase() || '';
     validationResult.directEntryHasPublisherType =
       sellerType === 'PUBLISHER' || sellerType === 'BOTH';
 
-    // Case 5: Check if seller_id is unique in the file
+    // Case 15: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
       validationResult.sellerIdIsUnique = sellerIdCounts.get(normalizedAccountId)! === 1;
     } else {
@@ -880,16 +880,16 @@ function validateResellerRelationship(
   validationResult.directEntryHasPublisherType = null;
   validationResult.domainMatchesSellerJsonEntry = null;
 
-  // Case 6: For RESELLER entries, check if account_id is in sellers.json
+  // Case 17: For RESELLER entries, check if account_id is in sellers.json
   validationResult.resellerAccountIdInSellersJson = !!matchingSeller;
 
   if (matchingSeller) {
-    // Case 7: For RESELLER entries, check if seller_type is INTERMEDIARY
+    // Case 19: For RESELLER entries, check if seller_type is INTERMEDIARY
     const sellerType = matchingSeller.seller_type?.toUpperCase() || '';
     validationResult.resellerEntryHasIntermediaryType =
       sellerType === 'INTERMEDIARY' || sellerType === 'BOTH';
 
-    // Case 8: Check if seller_id is unique in the file
+    // Case 20: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
       validationResult.resellerSellerIdIsUnique = sellerIdCounts.get(normalizedAccountId)! === 1;
     } else {
@@ -911,13 +911,13 @@ function generateWarnings(
 ): Array<{ key: string; params?: Record<string, any> }> {
   const warnings: Array<{ key: string; params?: Record<string, any> }> = [];
 
-  // Case 1: Missing sellers.json
+  // Case 11: Missing sellers.json
   if (!validationResult.hasSellerJson) {
     warnings.push(createWarning(ERROR_KEYS.NO_SELLERS_JSON, { domain: record.domain }));
     return warnings; // Return early if no sellers.json
   }
 
-  // Case 2/6: Account ID not found
+  // Case 12/17 Account ID not found
   if (!validationResult.accountIdInSellersJson) {
     if (record.relationship === 'DIRECT') {
       warnings.push(
@@ -938,7 +938,7 @@ function generateWarnings(
     return warnings;
   }
 
-  // Case 3: Domain mismatch for DIRECT
+  // Case 13: Domain mismatch for DIRECT
   if (record.relationship === 'DIRECT' && validationResult.domainMatchesSellerJsonEntry === false) {
     warnings.push(
       createWarning(ERROR_KEYS.DOMAIN_MISMATCH, {
@@ -949,7 +949,7 @@ function generateWarnings(
     );
   }
 
-  // Case 4: DIRECT entry not marked as PUBLISHER
+  // Case 14: DIRECT entry not marked as PUBLISHER
   if (record.relationship === 'DIRECT' && validationResult.directEntryHasPublisherType === false) {
     warnings.push(
       createWarning(ERROR_KEYS.DIRECT_NOT_PUBLISHER, {
@@ -977,7 +977,7 @@ function generateWarnings(
     );
   }
 
-  // Case 7: RESELLER entry not marked as INTERMEDIARY
+  // Case 19: RESELLER entry not marked as INTERMEDIARY
   if (
     record.relationship === 'RESELLER' &&
     validationResult.accountIdInSellersJson &&

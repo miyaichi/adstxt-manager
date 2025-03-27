@@ -10,7 +10,7 @@
  */
 
 // Import the module after building the project
-import { parseAdsTxtContent, crossCheckAdsTxtRecords } from './validation';
+import { crossCheckAdsTxtRecords, parseAdsTxtContent } from './validation';
 
 // Format validation results for cleaner output
 function formatValidationResult(record: any) {
@@ -52,7 +52,7 @@ async function runTests() {
   const publisherDomain = 'asahi.com';
 
   // -----------------------------------------------
-  // Case 1: Does the advertising system have a sellers.json file?
+  // Case 11: Does the advertising system have a sellers.json file?
   // -----------------------------------------------
   console.log('\n=== Case 1: Testing for existence of sellers.json ===');
 
@@ -73,9 +73,9 @@ async function runTests() {
   console.log(formatValidationResult(case1Result2[0]));
 
   // -----------------------------------------------
-  // Case 2: For DIRECT entries - Does the sellers.json have the publisher account ID?
+  // Case 12: For DIRECT entries - Does the sellers.json have the publisher account ID?
   // -----------------------------------------------
-  console.log('\n=== Case 2: Testing DIRECT entry publisher account ID in sellers.json ===');
+  console.log('\n=== Case 12: Testing DIRECT entry publisher account ID in sellers.json ===');
 
   // Test with a DIRECT entry that should be in sellers.json
   const case2TestData1 = `openx.com, 541058490, DIRECT`;
@@ -94,9 +94,9 @@ async function runTests() {
   console.log(formatValidationResult(case2Result2[0]));
 
   // -----------------------------------------------
-  // Case 3: For DIRECT entries - Does the sellers.json entry domain match?
+  // Case 13: For DIRECT entries - Does the sellers.json entry domain match?
   // -----------------------------------------------
-  console.log('\n=== Case 3: Testing DIRECT entry domain match in sellers.json ===');
+  console.log('\n=== Case 13: Testing DIRECT entry domain match in sellers.json ===');
 
   // Test with a DIRECT entry that has mismatched domain
   const case3TestData = `openx.com, 541058490, DIRECT`; // seller_id 541058490 has domain corp.fluct.jp
@@ -107,9 +107,9 @@ async function runTests() {
   console.log(formatValidationResult(case3Result[0]));
 
   // -----------------------------------------------
-  // Case 4: For DIRECT entries - Is seller_type PUBLISHER?
+  // Case 14: For DIRECT entries - Is seller_type PUBLISHER?
   // -----------------------------------------------
-  console.log('\n=== Case 4: Testing DIRECT entry with correct seller_type ===');
+  console.log('\n=== Case 14: Testing DIRECT entry with correct seller_type ===');
 
   // Test with DIRECT entry where seller_type is INTERMEDIARY (should be PUBLISHER)
   const case4TestData = `openx.com, 541058490, DIRECT`; // seller_id 541058490 has type INTERMEDIARY
@@ -120,9 +120,9 @@ async function runTests() {
   console.log(formatValidationResult(case4Result[0]));
 
   // -----------------------------------------------
-  // Case 5: For DIRECT entries - Is the seller_id unique?
+  // Case 15: For DIRECT entries - Is the seller_id unique?
   // -----------------------------------------------
-  console.log('\n=== Case 5: Testing DIRECT entry seller_id uniqueness ===');
+  console.log('\n=== Case 15: Testing DIRECT entry seller_id uniqueness ===');
 
   // Test with DIRECT entry where seller_id should be unique
   const case5TestData1 = `openx.com, 541058490, DIRECT`; // Known to be unique
@@ -136,9 +136,9 @@ async function runTests() {
   // that appears multiple times in a sellers.json file
 
   // -----------------------------------------------
-  // Case 6: For RESELLER entries - Does the sellers.json have the publisher account ID?
+  // Case 17: For RESELLER entries - Does the sellers.json have the publisher account ID?
   // -----------------------------------------------
-  console.log('\n=== Case 6: Testing RESELLER entry publisher account ID in sellers.json ===');
+  console.log('\n=== Case 17: Testing RESELLER entry publisher account ID in sellers.json ===');
 
   // Test with a RESELLER entry that should be in sellers.json
   const case6TestData1 = `openx.com, 541058490, RESELLER`;
@@ -157,9 +157,9 @@ async function runTests() {
   console.log(formatValidationResult(case6Result2[0]));
 
   // -----------------------------------------------
-  // Case 7: For RESELLER entries - Is seller_type INTERMEDIARY?
+  // Case 19: For RESELLER entries - Is seller_type INTERMEDIARY?
   // -----------------------------------------------
-  console.log('\n=== Case 7: Testing RESELLER entry with correct seller_type ===');
+  console.log('\n=== Case 19: Testing RESELLER entry with correct seller_type ===');
 
   // Test with RESELLER entry where seller_type is INTERMEDIARY (correct)
   const case7TestData1 = `openx.com, 541058490, RESELLER`; // seller_id 541058490 has type INTERMEDIARY
@@ -178,9 +178,9 @@ async function runTests() {
   console.log(formatValidationResult(case7Result2[0]));
 
   // -----------------------------------------------
-  // Case 8: For RESELLER entries - Is the seller_id unique?
+  // Case 20: For RESELLER entries - Is the seller_id unique?
   // -----------------------------------------------
-  console.log('\n=== Case 8: Testing RESELLER entry seller_id uniqueness ===');
+  console.log('\n=== Case 20: Testing RESELLER entry seller_id uniqueness ===');
 
   // Test with RESELLER entry where seller_id should be unique
   const case8TestData1 = `openx.com, 541058490, RESELLER`; // Known to be unique
