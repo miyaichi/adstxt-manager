@@ -7,7 +7,8 @@ This is the backend server for the Ads.txt Manager application, handling request
 - **Node.js**: JavaScript runtime
 - **Express**: Web framework
 - **TypeScript**: Type-safe JavaScript
-- **SQLite**: Embedded database
+- **SQLite**: Embedded database (開発環境)
+- **AWS Amplify DataStore/DynamoDB**: クラウドデータベース (本番環境)
 - **Nodemailer**: Email sending
 - **MailHog**: Email testing service
 - **Public Suffix List**: Domain validation
@@ -59,7 +60,7 @@ chmod +x setup.sh
 
 ### Development Mode
 
-This will start the server with hot-reloading:
+This will start the server with hot-reloading using SQLite:
 
 ```
 npm run dev
@@ -67,9 +68,37 @@ npm run dev
 
 ### Production Mode
 
+For local production mode using SQLite:
+
 ```
 npm run build
 npm start
+```
+
+### AWS Amplify (DynamoDB)
+
+本番環境ではAWS AmplifyとDynamoDBを使用します。Amplify CLIを使用してデータモデルをデプロイする必要があります。
+
+```bash
+# Amplify CLIのインストール（初回のみ）
+npm install -g @aws-amplify/cli
+
+# プロジェクトのルートディレクトリ（adstxt-manager）に移動
+cd ..
+
+# Amplifyプロジェクトの初期化
+amplify init
+
+# APIの追加
+amplify add api
+```
+
+API設定時に、GraphQL APIを選択し、スキーマとしてプロジェクトルートの `/amplify-schema.graphql` ファイルを使用してください。
+
+設定が完了したら、以下のコマンドでバックエンドをデプロイします。
+
+```bash
+amplify push
 ```
 
 ## Using Docker Compose
