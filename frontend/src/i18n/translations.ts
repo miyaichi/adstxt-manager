@@ -33,6 +33,9 @@ export const translations = {
         en: "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
         ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました',
       },
+      // Note: Additional validation messages for sellers.json are defined in the backend
+      // These will be translated on the frontend using the same key structure,
+      // but we avoid duplication by keeping them in one place.
     },
   },
   common: {
@@ -791,6 +794,56 @@ export const translations = {
   },
 };
 
+// バックエンド定義の翻訳メッセージ（必要なものだけを含める）
+// これらはbackend/src/i18n/locales/*/errors.jsonと同じキーを持つ
+type TranslationItem = {
+  en: string;
+  ja: string;
+  [key: string]: string; // 言語キーのインデックスシグネチャ
+};
+type AdsTxtValidationType = {
+  [key: string]: TranslationItem;
+};
+
+const backendTranslations: {
+  adsTxtValidation: AdsTxtValidationType;
+} = {
+  adsTxtValidation: {
+    noSellersJson: {
+      en: 'No sellers.json file found for the advertising system domain {{domain}}',
+      ja: '広告システムドメイン {{domain}} のsellers.jsonファイルが見つかりません',
+    },
+    directAccountIdNotInSellersJson: {
+      en: 'DIRECT: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}',
+      ja: 'DIRECT: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません',
+    },
+    resellerAccountIdNotInSellersJson: {
+      en: 'RESELLER: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}',
+      ja: 'RESELLER: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません',
+    },
+    domainMismatch: {
+      en: "DIRECT: The sellers.json entry domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
+      ja: 'DIRECT: sellers.jsonエントリのドメイン ({{seller_domain}}) がパブリッシャードメイン ({{publisher_domain}}) と一致しません',
+    },
+    directNotPublisher: {
+      en: 'DIRECT: Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
+      ja: 'DIRECT: セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません (現在のタイプ: {{seller_type}})',
+    },
+    sellerIdNotUnique: {
+      en: 'Seller ID {{account_id}} is used multiple times in the sellers.json file for {{domain}}',
+      ja: 'セラーID {{account_id}} は {{domain}} のsellers.jsonファイル内で複数回使用されています',
+    },
+    resellerNotIntermediary: {
+      en: 'RESELLER: Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
+      ja: 'RESELLER: セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません (現在のタイプ: {{seller_type}})',
+    },
+    sellersJsonValidationError: {
+      en: 'Error validating against sellers.json for {{domain}}: {{message}}',
+      ja: '{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}',
+    },
+  },
+};
+
 // Create a translation helper function
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
   // Parse the key into path components
@@ -799,6 +852,35 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   // 'errors:' プレフィックスがある場合は特別処理
   if (key.startsWith('errors:')) {
     const keyWithoutPrefix = key.replace('errors:', '');
+
+    // sellers.jsonに関連するエラーメッセージの場合は、バックエンド翻訳を使用
+    if (
+      keyWithoutPrefix.startsWith('adsTxtValidation.') &&
+      (keyWithoutPrefix.includes('SellersJson') ||
+        keyWithoutPrefix.includes('Intermediary') ||
+        keyWithoutPrefix.includes('Publisher') ||
+        keyWithoutPrefix.includes('sellerIdNotUnique'))
+    ) {
+      const adsTxtKey = keyWithoutPrefix.replace('adsTxtValidation.', '');
+
+      // バックエンド翻訳から取得
+      const validationTranslations = backendTranslations.adsTxtValidation;
+      if (adsTxtKey in validationTranslations) {
+        const translationItem = validationTranslations[adsTxtKey];
+        // 指定された言語の翻訳があれば使用、なければ英語にフォールバック
+        const translation =
+          language in translationItem ? translationItem[language] : translationItem.en;
+
+        if (translation && params) {
+          // パラメータを置換
+          return Object.entries(params).reduce((str, [paramKey, paramValue]) => {
+            return str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
+          }, translation);
+        }
+        return translation;
+      }
+    }
+
     path = ['errors', ...keyWithoutPrefix.split('.')];
   } else {
     path = key.split('.');

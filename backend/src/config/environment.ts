@@ -21,7 +21,10 @@ export const isLocalEnvironment = (): boolean => {
  * Determines if the application is running in the AWS cloud environment
  */
 export const isCloudEnvironment = (): boolean => {
-  return process.env.NODE_ENV === 'production' && (!!process.env.AWS_REGION || !!process.env.AWS_EXECUTION_ENV);
+  return (
+    process.env.NODE_ENV === 'production' &&
+    (!!process.env.AWS_REGION || !!process.env.AWS_EXECUTION_ENV)
+  );
 };
 
 /**

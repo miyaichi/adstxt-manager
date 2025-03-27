@@ -30,6 +30,14 @@
     "invalidRootDomain": "ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）",
     "emptyAccountId": "アカウントIDは空であってはなりません",
     "duplicateEntry": "パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました",
-    "duplicateEntryCaseInsensitive": "パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました"
+    "duplicateEntryCaseInsensitive": "パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました",
+    "noSellersJson": "広告システムドメイン {{domain}} のsellers.jsonファイルが見つかりません",
+    "directAccountIdNotInSellersJson": "DIRECT: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません",
+    "resellerAccountIdNotInSellersJson": "RESELLER: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません",
+    "domainMismatch": "DIRECT: sellers.jsonエントリのドメイン ({{seller_domain}}) がパブリッシャードメイン ({{publisher_domain}}) と一致しません",
+    "directNotPublisher": "DIRECT: セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません (現在のタイプ: {{seller_type}})",
+    "sellerIdNotUnique": "セラーID {{account_id}} は {{domain}} のsellers.jsonファイル内で複数回使用されています",
+    "resellerNotIntermediary": "RESELLER: セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません (現在のタイプ: {{seller_type}})",
+    "sellersJsonValidationError": "{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}"
   }
 }

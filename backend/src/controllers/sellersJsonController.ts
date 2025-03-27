@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
 import axios from 'axios';
+import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import SellersJsonCacheModel, {
-  SellersJsonContent,
   SellersJsonCacheStatus,
+  SellersJsonContent,
 } from '../models/SellersJsonCache';
 import { logger } from '../utils/logger';
 
@@ -23,14 +23,14 @@ const SPECIAL_DOMAINS: Record<string, string> = {
  */
 const PREFETCHED_DOMAINS = [
   'ad-generation.jp',
-  'google.com',
-  'openx.com',
   'appnexus.com',
+  'google.com',
+  'indexexchange.com',
+  'impact-ad.jp',
+  'openx.com',
   'pubmatic.com',
   'rubiconproject.com',
   'smartadserver.com',
-  'spotx.tv',
-  'mediamath.com',
 ];
 
 /**

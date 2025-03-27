@@ -3,6 +3,8 @@ import {
   parseAdsTxtContent,
   parseAdsTxtLine,
   crossCheckAdsTxtRecords,
+  ParsedAdsTxtRecord,
+  ERROR_KEYS,
 } from '../validation';
 
 describe('Validation Utilities', () => {
@@ -59,20 +61,25 @@ describe('Validation Utilities', () => {
       });
     });
 
-    it('should identify invalid Ads.txt lines', () => {
-      // Arrange
-      const invalidLines = [
-        'google.com', // Missing fields
-        'domain, ID', // Missing account type
-        'domain .com, ID, DIRECT', // Invalid domain with space
-        'sub.example.com, 12345, DIRECT', // Subdomain instead of root domain
-        'www.google.com, 12345, DIRECT', // Subdomain instead of root domain
+    it('should identify invalid Ads.txt lines with proper error keys', () => {
+      // Arrange and expected results
+      const testCases = [
+        { line: 'google.com', expectedError: ERROR_KEYS.MISSING_FIELDS },
+        { line: 'domain, ID', expectedError: ERROR_KEYS.MISSING_FIELDS },
+        { line: 'domain .com, ID, DIRECT', expectedError: ERROR_KEYS.INVALID_ROOT_DOMAIN },
+        { line: 'sub.example.com, 12345, DIRECT', expectedError: ERROR_KEYS.INVALID_ROOT_DOMAIN },
+        { line: 'example.com, , DIRECT', expectedError: ERROR_KEYS.EMPTY_ACCOUNT_ID },
+        { line: 'example.com, 12345, WRONG', expectedError: ERROR_KEYS.INVALID_RELATIONSHIP },
+        // Misspelled relationship detection is now handled in a different way
+        // Using explicit "DIRECT" or "RESELLER" similarity check
+        { line: 'example.com, 12345, DIRECR', expectedError: ERROR_KEYS.INVALID_RELATIONSHIP },
       ];
 
       // Act & Assert
-      invalidLines.forEach((line, index) => {
-        const parsed = parseAdsTxtLine(line, index + 1);
+      testCases.forEach((testCase, index) => {
+        const parsed = parseAdsTxtLine(testCase.line, index + 1);
         expect(parsed?.is_valid).toBe(false);
+        expect(parsed?.error).toBe(testCase.expectedError);
       });
     });
 
@@ -104,6 +111,38 @@ describe('Validation Utilities', () => {
       expect(parsed?.line_number).toBe(1);
       expect(parsed?.raw_line).toBe(line);
       expect(parsed?.is_valid).toBe(true);
+    });
+
+    it('should handle different relationship format variants', () => {
+      // Arrange
+      const testCases = [
+        // Format: domain, id, non-relationship, relationship
+        { line: 'example.com, 12345, xyz, DIRECT', expectedRelationship: 'DIRECT' },
+        // Format: domain, id, non-relationship, relationship, cert
+        {
+          line: 'example.com, 12345, xyz, RESELLER, abc123',
+          expectedRelationship: 'RESELLER',
+          expectedCert: 'abc123',
+        },
+        // Format: domain, id, relationship
+        { line: 'example.com, 12345, DIRECT', expectedRelationship: 'DIRECT' },
+        // Format: domain, id, relationship, cert
+        {
+          line: 'example.com, 12345, RESELLER, def456',
+          expectedRelationship: 'RESELLER',
+          expectedCert: 'def456',
+        },
+      ];
+
+      // Act & Assert
+      testCases.forEach((testCase, index) => {
+        const parsed = parseAdsTxtLine(testCase.line, index + 1);
+        expect(parsed?.is_valid).toBe(true);
+        expect(parsed?.relationship).toBe(testCase.expectedRelationship);
+        if (testCase.expectedCert) {
+          expect(parsed?.certification_authority_id).toBe(testCase.expectedCert);
+        }
+      });
     });
   });
 
@@ -148,15 +187,42 @@ another.com, 67890, RESELLER`;
   });
 
   describe('Ads.txt Cross-Check', () => {
+    // Mock imports for testing
+    jest.mock('../../models/AdsTxtCache', () => {
+      return { __esModule: true, default: require('../../__tests__/mocks/adsTxtCache').default };
+    });
+
+    jest.mock('../../models/SellersJsonCache', () => {
+      return {
+        __esModule: true,
+        default: require('../../__tests__/mocks/sellersJsonCache').default,
+      };
+    });
+
+    // Import mocks after declaring jest.mock
+    const AdsTxtCacheMock = require('../../__tests__/mocks/adsTxtCache').default;
+    const SellersJsonCacheMock = require('../../__tests__/mocks/sellersJsonCache').default;
+
+    // Reset mocks between tests
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.spyOn(console, 'log').mockImplementation(); // Suppress console.log in tests
+      jest.spyOn(console, 'error').mockImplementation(); // Suppress console.error in tests
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
     // Testing the basic functionality without mocking the database
     it('should handle undefined publisher domain', async () => {
       // Arrange
-      const records = [
+      const records: ParsedAdsTxtRecord[] = [
         {
           domain: 'google.com',
           account_id: '12345',
           account_type: 'DIRECT',
-          relationship: 'DIRECT' as 'DIRECT',
+          relationship: 'DIRECT',
           line_number: 1,
           raw_line: 'google.com, 12345, DIRECT',
           is_valid: true,
@@ -171,8 +237,791 @@ another.com, 67890, RESELLER`;
       expect(result.length).toBe(1);
     });
 
-    // Note: For complete testing of the crossCheckAdsTxtRecords function,
-    // integration tests with a test database would be more appropriate
-    // due to the database interactions and dynamic module imports.
+    // This test needs to be implemented with proper test doubles
+    // The challenge is to mock the imports properly and test checkForDuplicates in isolation
+    it.skip('should detect duplicate ads.txt entries', async () => {
+      // TODO: Implement this test with proper test doubles
+      // Specifically:
+      // 1. Mock AdsTxtCacheModel to return a specific ads.txt content
+      // 2. Create an input record that duplicates an entry in the cached content
+      // 3. Verify the duplicate warning is correctly applied
+    });
+
+    // This test needs to be implemented with proper test doubles
+    // The challenge is to mock the imports properly and test case-insensitivity
+    it.skip('should detect case-insensitive duplicate ads.txt entries', async () => {
+      // TODO: Implement this test with proper test doubles
+      // Specifically:
+      // 1. Mock AdsTxtCacheModel to return ads.txt content with lowercase domains
+      // 2. Create an input record with the same domain but different case
+      // 3. Verify the case-insensitive duplicate warning is correctly applied
+    });
+
+    it('should validate DIRECT entries against sellers.json', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Publisher',
+              domain: 'publisher.com',
+              seller_type: 'PUBLISHER',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBeFalsy(); // No warnings for valid entry
+      expect(result[0].validation_results).toBeDefined();
+      if (result[0].validation_results) {
+        expect(result[0].validation_results.hasSellerJson).toBe(true);
+        expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
+        expect(result[0].validation_results.directEntryHasPublisherType).toBe(true);
+        expect(result[0].validation_results.sellerIdIsUnique).toBe(true);
+      }
+
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should validate RESELLER entries against sellers.json', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'RESELLER',
+          relationship: 'RESELLER',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, RESELLER',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Reseller',
+              domain: 'reseller.com',
+              seller_type: 'INTERMEDIARY',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBeFalsy(); // No warnings for valid entry
+      expect(result[0].validation_results).toBeDefined();
+      if (result[0].validation_results) {
+        expect(result[0].validation_results.hasSellerJson).toBe(true);
+        expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
+        expect(result[0].validation_results.resellerEntryHasIntermediaryType).toBe(true);
+        expect(result[0].validation_results.resellerSellerIdIsUnique).toBe(true);
+      }
+
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should detect missing sellers.json', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache - missing or error
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'error',
+        content: null,
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.NO_SELLERS_JSON);
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should handle invalid sellers.json format', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache - invalid format (no sellers array)
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({ name: 'Invalid Format' }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.NO_SELLERS_JSON);
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should detect account_id not found in sellers.json for DIRECT entries', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '123456789', // Different from what's in sellers.json
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 123456789, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490', // Different ID than in record
+              name: 'Test Publisher',
+              domain: 'publisher.com',
+              seller_type: 'PUBLISHER',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '123456789',
+      });
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should detect account_id not found in sellers.json for RESELLER entries', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '123456789', // Different from what's in sellers.json
+          account_type: 'RESELLER',
+          relationship: 'RESELLER',
+          line_number: 1,
+          raw_line: 'openx.com, 123456789, RESELLER',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490', // Different ID than in record
+              name: 'Test Reseller',
+              domain: 'reseller.com',
+              seller_type: 'INTERMEDIARY',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '123456789',
+      });
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+    });
+
+    it('should detect DIRECT entry with incorrect seller_type', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Publisher',
+              domain: 'publisher.com',
+              seller_type: 'INTERMEDIARY', // Wrong type for DIRECT
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.DIRECT_NOT_PUBLISHER);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '541058490',
+        seller_type: 'INTERMEDIARY',
+      });
+    });
+
+    it('should detect RESELLER entry with incorrect seller_type', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'RESELLER',
+          relationship: 'RESELLER',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, RESELLER',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Publisher',
+              domain: 'publisher.com',
+              seller_type: 'PUBLISHER', // Wrong type for RESELLER
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.RESELLER_NOT_INTERMEDIARY);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '541058490',
+        seller_type: 'PUBLISHER',
+      });
+    });
+
+    it('should detect domain mismatch in DIRECT entries', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Publisher',
+              domain: 'different-domain.com', // Different from publisherDomain
+              seller_type: 'PUBLISHER',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.DOMAIN_MISMATCH);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        publisher_domain: 'publisher.com',
+        seller_domain: 'different-domain.com',
+      });
+    });
+
+    it('should detect non-unique seller_id in sellers.json (DIRECT)', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache with duplicate seller_ids
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490', // Duplicate ID
+              name: 'Test Publisher 1',
+              domain: 'publisher.com',
+              seller_type: 'PUBLISHER',
+            },
+            {
+              seller_id: '541058490', // Duplicate ID
+              name: 'Test Publisher 2',
+              domain: 'another-domain.com',
+              seller_type: 'PUBLISHER',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.SELLER_ID_NOT_UNIQUE);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '541058490',
+      });
+    });
+
+    it('should detect non-unique seller_id in sellers.json (RESELLER)', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'RESELLER',
+          relationship: 'RESELLER',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, RESELLER',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache with duplicate seller_ids
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490', // Duplicate ID
+              name: 'Test Reseller 1',
+              domain: 'reseller1.com',
+              seller_type: 'INTERMEDIARY',
+            },
+            {
+              seller_id: '541058490', // Duplicate ID
+              name: 'Test Reseller 2',
+              domain: 'reseller2.com',
+              seller_type: 'INTERMEDIARY',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.SELLER_ID_NOT_UNIQUE);
+      expect(result[0].warning_params).toEqual({
+        domain: 'openx.com',
+        account_id: '541058490',
+      });
+    });
+
+    it('should ensure uniqueness is properly scoped to each domain', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+        {
+          domain: 'google.com',
+          account_id: '541058490', // Same ID as openx entry
+          account_type: 'RESELLER',
+          relationship: 'RESELLER',
+          line_number: 2,
+          raw_line: 'google.com, 541058490, RESELLER',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache for openx.com
+      SellersJsonCacheMock.getByDomain.mockImplementation((domain) => {
+        if (domain === 'openx.com') {
+          return Promise.resolve({
+            status: 'success',
+            content: JSON.stringify({
+              sellers: [
+                {
+                  seller_id: '541058490',
+                  name: 'Test Publisher',
+                  domain: 'publisher.com',
+                  seller_type: 'PUBLISHER',
+                },
+              ],
+            }),
+          });
+        } else if (domain === 'google.com') {
+          return Promise.resolve({
+            status: 'success',
+            content: JSON.stringify({
+              sellers: [
+                {
+                  seller_id: '541058490',
+                  name: 'Test Reseller',
+                  domain: 'reseller.com',
+                  seller_type: 'INTERMEDIARY',
+                },
+              ],
+            }),
+          });
+        }
+        return Promise.resolve({ status: 'error', content: null });
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      // Both records should be valid with no warnings (seller_id is unique within each domain)
+      expect(result[0].has_warning).toBeFalsy();
+      expect(result[1].has_warning).toBeFalsy();
+
+      // Check that validation results are correct
+      if (result[0].validation_results && result[1].validation_results) {
+        expect(result[0].validation_results.sellerIdIsUnique).toBe(true);
+        expect(result[1].validation_results.resellerSellerIdIsUnique).toBe(true);
+      }
+
+      // Check that SellersJsonCache was called for both domains
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
+      expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('google.com');
+    });
+
+    it('should handle multiple validation issues in a single record', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache with multiple issues:
+      // 1. Domain mismatch
+      // 2. Wrong seller_type
+      // 3. Non-unique seller_id
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: JSON.stringify({
+          sellers: [
+            {
+              seller_id: '541058490',
+              name: 'Test Publisher 1',
+              domain: 'different-domain.com', // Domain mismatch
+              seller_type: 'INTERMEDIARY', // Wrong type for DIRECT
+            },
+            {
+              seller_id: '541058490', // Duplicate ID
+              name: 'Test Publisher 2',
+              domain: 'another-domain.com',
+              seller_type: 'PUBLISHER',
+            },
+          ],
+        }),
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation((content) => {
+        return JSON.parse(content);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+
+      // Check that all warnings were captured
+      expect(result[0].all_warnings).toBeDefined();
+      expect(result[0].all_warnings?.length).toBeGreaterThanOrEqual(3);
+
+      // Check that specific issues exist in warnings
+      const warningKeys = result[0].all_warnings?.map((w) => w.key) || [];
+      expect(warningKeys).toContain(ERROR_KEYS.DOMAIN_MISMATCH);
+      expect(warningKeys).toContain(ERROR_KEYS.DIRECT_NOT_PUBLISHER);
+      expect(warningKeys).toContain(ERROR_KEYS.SELLER_ID_NOT_UNIQUE);
+
+      // Primary warning should be one of the detected issues
+      expect(warningKeys).toContain(result[0].warning);
+    });
+
+    it('should handle errors during validation', async () => {
+      // Arrange
+      const publisherDomain = 'publisher.com';
+      const records: ParsedAdsTxtRecord[] = [
+        {
+          domain: 'openx.com',
+          account_id: '541058490',
+          account_type: 'DIRECT',
+          relationship: 'DIRECT',
+          line_number: 1,
+          raw_line: 'openx.com, 541058490, DIRECT',
+          is_valid: true,
+        },
+      ];
+
+      // Setup mock AdsTxtCache - no duplicates
+      AdsTxtCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'otherdomain.com, 67890, DIRECT',
+      });
+
+      // Setup mock SellersJsonCache to throw an error
+      const errorMessage = 'Test validation error';
+      SellersJsonCacheMock.getByDomain.mockResolvedValue({
+        status: 'success',
+        content: 'Invalid JSON',
+      });
+
+      SellersJsonCacheMock.parseContent.mockImplementation(() => {
+        throw new Error(errorMessage);
+      });
+
+      // Act
+      const result = await crossCheckAdsTxtRecords(publisherDomain, records);
+
+      // Assert
+      expect(result[0].has_warning).toBe(true);
+      expect(result[0].warning).toBe(ERROR_KEYS.SELLERS_JSON_VALIDATION_ERROR);
+      expect(result[0].warning_params?.message).toBe(errorMessage);
+      expect(result[0].validation_error).toBe(errorMessage);
+    });
   });
 });

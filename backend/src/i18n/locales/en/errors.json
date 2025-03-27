@@ -30,6 +30,14 @@
     "invalidRootDomain": "Domain must be a valid root domain (e.g., example.com, not sub.example.com)",
     "emptyAccountId": "Account ID must not be empty",
     "duplicateEntry": "Duplicate entry found in publisher's ads.txt ({{domain}})",
-    "duplicateEntryCaseInsensitive": "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})"
+    "duplicateEntryCaseInsensitive": "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
+    "noSellersJson": "No sellers.json file found for the advertising system domain {{domain}}",
+    "directAccountIdNotInSellersJson": "DIRECT: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}",
+    "resellerAccountIdNotInSellersJson": "RESELLER: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}",
+    "domainMismatch": "DIRECT: The sellers.json entry domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
+    "directNotPublisher": "DIRECT: Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})",
+    "sellerIdNotUnique": "Seller ID {{account_id}} is used multiple times in the sellers.json file for {{domain}}",
+    "resellerNotIntermediary": "RESELLER: Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})",
+    "sellersJsonValidationError": "Error validating against sellers.json for {{domain}}: {{message}}"
   }
 }

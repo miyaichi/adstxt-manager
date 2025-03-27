@@ -82,7 +82,11 @@ export interface ParsedAdsTxtRecord {
   error?: string;
   has_warning?: boolean;
   warning?: string;
-  duplicate_domain?: string; // Domain where the duplicate was found
+  warning_params?: Record<string, any>; // Parameters for warning message
+  duplicate_domain?: string; // Domain where the duplicate was found (for backward compatibility)
+  all_warnings?: Array<{ key: string; params?: Record<string, any> }>; // Multiple warnings with params
+  validation_results?: any; // Detailed validation results from sellers.json check
+  validation_error?: string; // Error during sellers.json validation
 }
 
 export interface ProcessAdsTxtResponse {

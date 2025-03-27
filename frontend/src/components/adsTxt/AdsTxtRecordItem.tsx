@@ -293,10 +293,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             {record.account_id}
           </Text>
           <Text>
-            <strong>{t('adsTxt.recordItem.accountType', language)}: </strong>
-            {record.account_type}
-          </Text>
-          <Text>
             <strong>{t('adsTxt.recordItem.relationship', language)}: </strong>
             {record.relationship}
           </Text>
@@ -357,22 +353,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                           const warningMessage = (record as ParsedAdsTxtRecord).warning;
                           if (!warningMessage) return '';
 
-                          // Handle specific warning messages
-                          if (warningMessage === 'errors:adsTxtValidation.duplicateEntry') {
-                            const domain = (record as ParsedAdsTxtRecord).duplicate_domain || '';
-                            return t('errors:adsTxtValidation.duplicateEntry', language, {
-                              domain,
-                            });
-                          } else if (
-                            warningMessage ===
-                            'errors:adsTxtValidation.duplicateEntryCaseInsensitive'
-                          ) {
-                            const domain = (record as ParsedAdsTxtRecord).duplicate_domain || '';
-                            return t(
-                              'errors:adsTxtValidation.duplicateEntryCaseInsensitive',
-                              language,
-                              { domain }
-                            );
+                          // Process all warning messages that start with errors:
+                          if (warningMessage.startsWith('errors:')) {
+                            // Extract parameters from warning_params if available
+                            const params = (record as ParsedAdsTxtRecord).warning_params || {};
+                            return t(warningMessage, language, params);
                           } else {
                             return warningMessage;
                           }
