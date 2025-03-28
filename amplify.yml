@@ -1,4 +1,11 @@
 version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - '# Amplify Gen 2 Backend is Already Deployed'
+        - '# The backend resources are defined in amplify/ directory'
+        - '# and deployed to AWS using Amplify CLI'
 applications:
   - frontend:
       phases:
@@ -6,6 +13,8 @@ applications:
           commands:
             - nvm use 20
             - npm install
+            - cp amplify_outputs.json frontend/src/
+            - export REACT_APP_USE_AMPLIFY_API=true
         build:
           commands:
             - npm run build:frontend

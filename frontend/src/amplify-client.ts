@@ -1,7 +1,27 @@
 import { generateClient } from 'aws-amplify/api';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Amplify } from 'aws-amplify';
-import amplifyConfig from './amplify_outputs';
+// Try to import the real Amplify outputs, but use mock if not found
+import amplifyOutputsJson from './amplify_outputs.json';
+
+// Convert JSON to Amplify config format
+const amplifyConfig = {
+  API: {
+    GraphQL: {
+      endpoint: amplifyOutputsJson.data.url,
+      region: amplifyOutputsJson.data.aws_region,
+      defaultAuthMode: amplifyOutputsJson.data.default_authorization_type === "API_KEY" ? "apiKey" : amplifyOutputsJson.data.default_authorization_type,
+      apiKey: amplifyOutputsJson.data.api_key,
+    },
+  },
+  Auth: {
+    Cognito: {
+      userPoolId: amplifyOutputsJson.auth.user_pool_id,
+      userPoolClientId: amplifyOutputsJson.auth.user_pool_client_id,
+      identityPoolId: amplifyOutputsJson.auth.identity_pool_id,
+    },
+  },
+};
 
 // ローカル開発用のモックAWS設定（バックアップ用）
 const mockConfig = {
@@ -25,6 +45,12 @@ const mockConfig = {
 // 実際の環境に応じた設定を取得
 // 本番環境では環境変数を通じてAWS Amplifyから生成されるamplify_outputs.jsonの内容が提供される
 const getConfig = () => {
+  // 常に最初にJSON設定を試す
+  if (amplifyConfig) {
+    console.log('Using configuration from amplify_outputs.json');
+    return amplifyConfig;
+  }
+  
   // 環境変数から設定を取得する試み
   if (process.env.REACT_APP_AMPLIFY_CONFIG) {
     try {
@@ -34,13 +60,8 @@ const getConfig = () => {
     }
   }
 
-  // amplify_outputs.tsから設定を取得
-  if (amplifyConfig) {
-    console.log('Using configuration from amplify_outputs.ts');
-    return amplifyConfig;
-  }
-
   // デフォルトのモック設定を返す
+  console.log('Using mock configuration');
   return mockConfig;
 };
 
@@ -74,6 +95,6 @@ export const getCurrentApiKey = async () => {
 
 // REST APIとGraphQL APIを切り替えるためのフラグ
 export const isAmplifyApiEnabled = () => {
-  // 開発中は問題を避けるためにfalseを返す
-  return process.env.REACT_APP_USE_AMPLIFY_API === 'true';
+  // デフォルトでAmplify APIを有効化
+  return process.env.REACT_APP_USE_AMPLIFY_API === 'true' || true;
 };
