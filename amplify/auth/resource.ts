@@ -1,8 +1,9 @@
 import { defineAuth } from '@aws-amplify/backend';
 
-// シンプルな認証設定
+// APIキーのみを使用する最小限の認証設定
 export const auth = defineAuth({
   loginWith: {
-    email: true,
+    email: false,
+    username: false,
   }
 });
