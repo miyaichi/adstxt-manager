@@ -1,5 +1,5 @@
+import { Badge, Card, Divider, Flex, Heading, Loader, Text, View } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react';
-import { Heading, Flex, View, Text, Card, Badge, Divider, Loader } from '@aws-amplify/ui-react';
 import apiClient from '../api';
 import { createLogger } from '../utils/logger';
 
@@ -70,13 +70,13 @@ const StatusPage: React.FC = () => {
         const backendStatus = await apiClient.status.getStatus();
         console.log('Backend status fetch successful:', backendStatus);
         
-        // バックエンドレスポンスの構造を詳細に表示
+        // Details of the backend response structure
         console.log('Backend response type:', typeof backendStatus);
         if (backendStatus) {
           console.log('Backend response keys:', Object.keys(backendStatus));
         }
         
-        // バックエンドステータスが有効なオブジェクトか確認
+        // Check if backend status is a valid object
         const validBackendStatus = 
           backendStatus && 
           typeof backendStatus === 'object' && 
@@ -86,7 +86,7 @@ const StatusPage: React.FC = () => {
           console.error('Invalid backend status format:', backendStatus);
         }
         
-        // バックエンドレスポンスを直接使用
+        // Use the backend response directly
         setStatusData({
           frontend: {
             status: 'OK',
