@@ -33,10 +33,13 @@ export const requestApi = {
         logger.info('Records or file should be processed separately with Amplify');
       }
 
+      // Use type assertion to handle GraphQL result
+      const graphqlResult = result as { data: { createRequest: any } };
+      
       return {
         success: true,
         data: {
-          request: result.data.createRequest,
+          request: graphqlResult.data.createRequest,
         },
       };
     } catch (error) {
@@ -56,8 +59,11 @@ export const requestApi = {
         variables: { id },
       });
 
+      // Use type assertion to handle GraphQL result
+      const graphqlResult = result as { data: { getRequest: any } };
+      
       // Verify token
-      if (result.data.getRequest.token !== token) {
+      if (graphqlResult.data.getRequest.token !== token) {
         return {
           success: false,
           error: 'Invalid token',
@@ -66,7 +72,7 @@ export const requestApi = {
 
       return {
         success: true,
-        data: result.data.getRequest,
+        data: graphqlResult.data.getRequest,
       };
     } catch (error) {
       logger.error('Error getting request with Amplify:', error);
@@ -86,7 +92,10 @@ export const requestApi = {
         variables: { id },
       });
 
-      if (getResult.data.getRequest.token !== token) {
+      // Use type assertion to handle GraphQL result
+      const getGraphqlResult = getResult as { data: { getRequest: any } };
+      
+      if (getGraphqlResult.data.getRequest.token !== token) {
         return {
           success: false,
           error: 'Invalid token',
@@ -107,7 +116,7 @@ export const requestApi = {
 
       return {
         success: true,
-        data: result.data.updateRequest,
+        data: (result as { data: { updateRequest: any } }).data.updateRequest,
       };
     } catch (error) {
       logger.error('Error updating request status with Amplify:', error);
@@ -142,7 +151,7 @@ export const requestApi = {
 
       return {
         success: true,
-        data: result.data.listRequests.items,
+        data: (result as { data: { listRequests: { items: any[] } } }).data.listRequests.items,
       };
     } catch (error) {
       logger.error('Error getting requests by email with Amplify:', error);
@@ -173,7 +182,7 @@ export const messageApi = {
 
       return {
         success: true,
-        data: result.data.createMessage,
+        data: (result as { data: { createMessage: any } }).data.createMessage,
       };
     } catch (error) {
       logger.error('Error creating message with Amplify:', error);
@@ -193,7 +202,10 @@ export const messageApi = {
         variables: { id: requestId },
       });
 
-      if (requestResult.data.getRequest.token !== token) {
+      // Use type assertion to handle GraphQL result
+      const requestGraphqlResult = requestResult as { data: { getRequest: any } };
+      
+      if (requestGraphqlResult.data.getRequest.token !== token) {
         return {
           success: false,
           error: 'Invalid token',
@@ -212,7 +224,7 @@ export const messageApi = {
 
       return {
         success: true,
-        data: result.data.listMessages.items,
+        data: (result as { data: { listMessages: { items: any[] } } }).data.listMessages.items,
       };
     } catch (error) {
       logger.error('Error getting messages with Amplify:', error);
@@ -249,7 +261,7 @@ export const adsTxtApi = {
 
       return {
         success: true,
-        data: result.data.updateAdsTxtRecord,
+        data: (result as { data: { updateAdsTxtRecord: any } }).data.updateAdsTxtRecord,
       };
     } catch (error) {
       logger.error('Error updating record status with Amplify:', error);
