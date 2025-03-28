@@ -10,30 +10,26 @@ const schema = a.schema({
       publisher_domain: a.string(),
       status: a.string().required(),
       token: a.string().required(),
-      messages: a.hasMany('Message'),
-      adsTxtRecords: a.hasMany('AdsTxtRecord'),
     })
     .authorization((allow) => [allow.owner()]),
 
   Message: a
     .model({
-      request_id: a.string().required(),
       content: a.string().required(),
       sender_email: a.string().required(),
-      request: a.belongsTo('Request'),
+      requestId: a.string().required(),
     })
     .authorization((allow) => [allow.owner()]),
 
   AdsTxtRecord: a
     .model({
-      request_id: a.string().required(),
       domain: a.string().required(),
       account_id: a.string().required(),
       account_type: a.string().required(),
       relationship: a.string().required(),
       certification_authority_id: a.string(),
       status: a.string().required(),
-      request: a.belongsTo('Request'),
+      requestId: a.string().required(),
     })
     .authorization((allow) => [allow.owner()]),
 
@@ -45,7 +41,7 @@ const schema = a.schema({
       error_message: a.string(),
       last_updated: a.datetime().required(),
     })
-    .authorization((allow) => [allow.owner(), allow.public().to(['read'])]),
+    .authorization((allow) => [allow.owner(), allow.authenticated().to(['read'])]),
 
   SellersJsonCache: a
     .model({
@@ -55,7 +51,7 @@ const schema = a.schema({
       error_message: a.string(),
       last_updated: a.datetime().required(),
     })
-    .authorization((allow) => [allow.owner(), allow.public().to(['read'])]),
+    .authorization((allow) => [allow.owner(), allow.authenticated().to(['read'])]),
 });
 
 export const data = defineData({
