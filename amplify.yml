@@ -1,19 +1,15 @@
 version: 1
+appRoot: .
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "Current directory: $(pwd)"
-        - echo "Parent directory:"
-        - ls -la ..
-        - echo "Current directory contents:"
+        - pwd
         - ls -la
-        - find . -maxdepth 2 -type d -name "frontend" -print
-        - if [ -d "frontend" ]; then cd frontend && npm ci; else echo "Frontend directory not found"; fi
+        - cd frontend && npm ci
     build:
       commands:
-        - echo "Current directory: $(pwd)"
-        - if [ -d "frontend" ]; then cd frontend && npm run build; else echo "Frontend directory not found - attempting direct build"; npm run build; fi
+        - cd frontend && npm run build
   artifacts:
     baseDirectory: frontend/build
     files:
