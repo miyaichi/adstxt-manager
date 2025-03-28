@@ -16,7 +16,7 @@ const schema = a.schema({
       messages: a.hasMany('Message'),
       adsTxtRecords: a.hasMany('AdsTxtRecord')
     })
-    .authorization((allow) => [allow.apiKey()]),
+    .authorization((allow) => [allow.public()]),
 
   Message: a
     .model({
@@ -28,7 +28,7 @@ const schema = a.schema({
       // リレーションシップの定義
       request: a.belongsTo('Request')
     })
-    .authorization((allow) => [allow.apiKey()]),
+    .authorization((allow) => [allow.public()]),
 
   AdsTxtRecord: a
     .model({
@@ -44,7 +44,7 @@ const schema = a.schema({
       // リレーションシップの定義
       request: a.belongsTo('Request')
     })
-    .authorization((allow) => [allow.apiKey()]),
+    .authorization((allow) => [allow.public()]),
 
   AdsTxtCache: a
     .model({
@@ -56,7 +56,7 @@ const schema = a.schema({
       created_at: a.datetime().required(),
       updated_at: a.datetime(),
     })
-    .authorization((allow) => [allow.apiKey()]),
+    .authorization((allow) => [allow.public()]),
 
   SellersJsonCache: a
     .model({
@@ -68,7 +68,7 @@ const schema = a.schema({
       created_at: a.datetime().required(),
       updated_at: a.datetime(),
     })
-    .authorization((allow) => [allow.apiKey()]),
+    .authorization((allow) => [allow.public()]),
 });
 
 export const data = defineData({
