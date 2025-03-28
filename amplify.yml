@@ -21,6 +21,8 @@ backend:
       commands:
         - cd backend
         - npm ci
+        - chmod +x ./clean-amplify.sh
+        - ./clean-amplify.sh
     build:
       commands:
         - npm run build
