@@ -12,7 +12,7 @@ import {
   RequestWithRecords,
 } from '../models';
 import { createLogger } from '../utils/logger';
-import { useAmplifyApi } from '../amplify-client';
+import { isAmplifyApiEnabled } from '../amplify-client';
 import amplifyApi from './amplify-api';
 
 // Ensure FormData and File are available in the global scope
@@ -310,7 +310,7 @@ const restApiClient = {
 
 // Use Amplify API if configured or fallback to REST API
 const getApiClient = () => {
-  if (useAmplifyApi()) {
+  if (isAmplifyApiEnabled()) {
     console.log('Using Amplify API client');
     return {
       ...amplifyApi,

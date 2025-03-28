@@ -10,16 +10,16 @@ const mockConfig = {
       endpoint: process.env.REACT_APP_API_URL || '/api',
       region: 'us-east-1',
       defaultAuthMode: 'apiKey',
-      apiKey: 'da2-fakeApiId123456'
-    }
+      apiKey: 'da2-fakeApiId123456',
+    },
   },
   Auth: {
     Cognito: {
       userPoolId: 'mock-user-pool-id',
       userPoolClientId: 'mock-user-pool-client-id',
-      identityPoolId: 'mock-identity-pool-id'
-    }
-  }
+      identityPoolId: 'mock-identity-pool-id',
+    },
+  },
 };
 
 // 実際の環境に応じた設定を取得
@@ -33,13 +33,13 @@ const getConfig = () => {
       console.error('Failed to parse AMPLIFY_CONFIG env var:', e);
     }
   }
-  
+
   // amplify_outputs.tsから設定を取得
   if (amplifyConfig) {
     console.log('Using configuration from amplify_outputs.ts');
     return amplifyConfig;
   }
-  
+
   // デフォルトのモック設定を返す
   return mockConfig;
 };
@@ -49,12 +49,12 @@ export const configureAmplify = () => {
   // Amplify Sandboxを使用するためにtrueに設定
   const useAmplifyApi = process.env.REACT_APP_USE_AMPLIFY_API === 'true' || true;
   const config = getConfig();
-  
+
   console.log('Amplify configuration:', {
     useAmplifyApi,
-    apiEndpoint: useAmplifyApi ? config.API?.GraphQL?.endpoint : '/api'
+    apiEndpoint: useAmplifyApi ? config.API?.GraphQL?.endpoint : '/api',
   });
-  
+
   Amplify.configure(config);
 };
 
@@ -73,7 +73,7 @@ export const getCurrentApiKey = async () => {
 };
 
 // REST APIとGraphQL APIを切り替えるためのフラグ
-export const useAmplifyApi = () => {
+export const isAmplifyApiEnabled = () => {
   // 開発中は問題を避けるためにfalseを返す
   return process.env.REACT_APP_USE_AMPLIFY_API === 'true';
 };
