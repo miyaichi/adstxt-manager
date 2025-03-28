@@ -18,14 +18,14 @@ export const requestApi = {
         requester_name: data.requester_name,
         publisher_name: data.publisher_name || null,
         publisher_domain: data.publisher_domain || null,
-        status: 'PENDING',  // Default status
+        status: 'PENDING', // Default status
         token: Math.random().toString(36).substring(2, 15),
         created_at: new Date().toISOString(),
       };
 
       const result = await client.graphql({
         query: mutations.createRequest,
-        variables: { input }
+        variables: { input },
       });
 
       // Process records if they exist (this would need to be handled as a separate step)
@@ -36,14 +36,14 @@ export const requestApi = {
       return {
         success: true,
         data: {
-          request: result.data.createRequest
-        }
+          request: result.data.createRequest,
+        },
       };
     } catch (error) {
       logger.error('Error creating request with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to create request'
+        error: 'Failed to create request',
       };
     }
   },
@@ -53,26 +53,26 @@ export const requestApi = {
     try {
       const result = await client.graphql({
         query: queries.getRequest,
-        variables: { id }
+        variables: { id },
       });
-      
+
       // Verify token
       if (result.data.getRequest.token !== token) {
         return {
           success: false,
-          error: 'Invalid token'
+          error: 'Invalid token',
         };
       }
 
       return {
         success: true,
-        data: result.data.getRequest
+        data: result.data.getRequest,
       };
     } catch (error) {
       logger.error('Error getting request with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to get request'
+        error: 'Failed to get request',
       };
     }
   },
@@ -83,13 +83,13 @@ export const requestApi = {
       // First get the request to verify token
       const getResult = await client.graphql({
         query: queries.getRequest,
-        variables: { id }
+        variables: { id },
       });
-      
+
       if (getResult.data.getRequest.token !== token) {
         return {
           success: false,
-          error: 'Invalid token'
+          error: 'Invalid token',
         };
       }
 
@@ -97,33 +97,33 @@ export const requestApi = {
       const input: API.UpdateRequestInput = {
         id,
         status,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const result = await client.graphql({
         query: mutations.updateRequest,
-        variables: { input }
+        variables: { input },
       });
 
       return {
         success: true,
-        data: result.data.updateRequest
+        data: result.data.updateRequest,
       };
     } catch (error) {
       logger.error('Error updating request status with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to update request status'
+        error: 'Failed to update request status',
       };
     }
   },
-  
+
   // Get requests by email
   async getRequestsByEmail(email: string, role?: 'publisher' | 'requester'): Promise<any> {
     try {
       // Determine filter based on role
       let filter: API.ModelRequestFilterInput = {};
-      
+
       if (role === 'publisher') {
         filter = { publisher_email: { eq: email } };
       } else if (role === 'requester') {
@@ -131,27 +131,24 @@ export const requestApi = {
       } else {
         // If no role specified, look in both fields
         filter = {
-          or: [
-            { publisher_email: { eq: email } },
-            { requester_email: { eq: email } }
-          ]
+          or: [{ publisher_email: { eq: email } }, { requester_email: { eq: email } }],
         };
       }
 
       const result = await client.graphql({
-        query: queries.listRequests,
-        variables: { filter }
+        query: queries.listRequestsByEmail,
+        variables: { email: email, ...(role ? { role } : {}) },
       });
 
       return {
         success: true,
-        data: result.data.listRequests.items
+        data: result.data.listRequests.items,
       };
     } catch (error) {
       logger.error('Error getting requests by email with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to get requests by email'
+        error: 'Failed to get requests by email',
       };
     }
   },
@@ -171,18 +168,18 @@ export const messageApi = {
 
       const result = await client.graphql({
         query: mutations.createMessage,
-        variables: { input }
+        variables: { input },
       });
 
       return {
         success: true,
-        data: result.data.createMessage
+        data: result.data.createMessage,
       };
     } catch (error) {
       logger.error('Error creating message with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to create message'
+        error: 'Failed to create message',
       };
     }
   },
@@ -193,35 +190,35 @@ export const messageApi = {
       // First verify token by getting the request
       const requestResult = await client.graphql({
         query: queries.getRequest,
-        variables: { id: requestId }
+        variables: { id: requestId },
       });
 
       if (requestResult.data.getRequest.token !== token) {
         return {
           success: false,
-          error: 'Invalid token'
+          error: 'Invalid token',
         };
       }
 
       // Then get messages for this request
       const filter: API.ModelMessageFilterInput = {
-        request_id: { eq: requestId }
+        request_id: { eq: requestId },
       };
-      
+
       const result = await client.graphql({
         query: queries.listMessages,
-        variables: { filter }
+        variables: { filter },
       });
 
       return {
         success: true,
-        data: result.data.listMessages.items
+        data: result.data.listMessages.items,
       };
     } catch (error) {
       logger.error('Error getting messages with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to get messages'
+        error: 'Failed to get messages',
       };
     }
   },
@@ -229,45 +226,45 @@ export const messageApi = {
 
 // Ads.txt API calls
 export const adsTxtApi = {
-  // Note: These are simplified implementations as they would need 
+  // Note: These are simplified implementations as they would need
   // additional work to fully implement with Amplify
-  
+
   // Update record status
   async updateRecordStatus(id: string, status: string, token: string): Promise<any> {
     try {
       // First verify token
       // This would require finding which request this record belongs to
-      
+
       // Then update the record
       const input: API.UpdateAdsTxtRecordInput = {
         id,
         status,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const result = await client.graphql({
         query: mutations.updateAdsTxtRecord,
-        variables: { input }
+        variables: { input },
       });
 
       return {
         success: true,
-        data: result.data.updateAdsTxtRecord
+        data: result.data.updateAdsTxtRecord,
       };
     } catch (error) {
       logger.error('Error updating record status with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to update record status'
+        error: 'Failed to update record status',
       };
     }
   },
-  
+
   // Generate Ads.txt content
   // This would need a custom implementation with Amplify
   async generateAdsTxtContent(requestId: string, token: string): Promise<string> {
     // This might need to be implemented as a custom resolver or Lambda function
-    return "# This would be generated Ads.txt content in a real implementation";
+    return '# This would be generated Ads.txt content in a real implementation';
   },
 };
 

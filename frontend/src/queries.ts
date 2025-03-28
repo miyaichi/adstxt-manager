@@ -44,12 +44,7 @@ export const getRequest = /* GraphQL */ `
 export const listRequestsByEmail = /* GraphQL */ `
   query ListRequests($email: String!, $role: String) {
     listRequests(
-      filter: {
-        or: [
-          { publisher_email: { eq: $email } }
-          { requester_email: { eq: $email } }
-        ]
-      }
+      filter: { or: [{ publisher_email: { eq: $email } }, { requester_email: { eq: $email } }] }
     ) {
       items {
         id
@@ -67,6 +62,26 @@ export const listRequestsByEmail = /* GraphQL */ `
   }
 `;
 
+export const listRequests = /* GraphQL */ `
+  query ListRequests($filter: ModelRequestFilterInput, $limit: Int, $nextToken: String) {
+    listRequests(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        publisher_email
+        requester_email
+        requester_name
+        publisher_name
+        publisher_domain
+        status
+        token
+        created_at
+        updated_at
+      }
+      nextToken
+    }
+  }
+`;
+
 export const listMessagesByRequestId = /* GraphQL */ `
   query ListMessages($requestId: String!) {
     listMessages(filter: { request_id: { eq: $requestId } }) {
@@ -78,6 +93,22 @@ export const listMessagesByRequestId = /* GraphQL */ `
         created_at
         updated_at
       }
+    }
+  }
+`;
+
+export const listMessages = /* GraphQL */ `
+  query ListMessages($filter: ModelMessageFilterInput, $limit: Int, $nextToken: String) {
+    listMessages(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        content
+        sender_email
+        request_id
+        created_at
+        updated_at
+      }
+      nextToken
     }
   }
 `;
