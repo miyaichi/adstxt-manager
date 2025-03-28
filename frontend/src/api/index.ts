@@ -12,6 +12,10 @@ import {
   RequestWithRecords,
 } from '../models';
 import { createLogger } from '../utils/logger';
+import { client, useAmplifyApi } from '../amplify-client';
+import * as queries from '../queries';
+import * as mutations from '../mutations';
+import * as API from '../API';
 
 // Ensure FormData and File are available in the global scope
 declare global {
