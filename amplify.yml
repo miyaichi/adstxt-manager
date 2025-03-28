@@ -4,32 +4,15 @@ applications:
       phases:
         preBuild:
           commands:
-            - cd frontend && npm ci
+            - npm ci
         build:
           commands:
-            - cd frontend && npm run build
+            - npm run build:frontend
       artifacts:
         baseDirectory: frontend/build
         files:
           - '**/*'
       cache:
         paths:
-          - frontend/node_modules/**/*
-      appRoot: .
-  - backend:
-      phases:
-        preBuild:
-          commands:
-            - cd backend && npm ci
-            - cd backend && chmod +x ./clean-amplify.sh && ./clean-amplify.sh
-        build:
-          commands:
-            - cd backend && npm run build
-      artifacts:
-        baseDirectory: backend/dist
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - backend/node_modules/**/*
+          - node_modules/**/*
       appRoot: .
