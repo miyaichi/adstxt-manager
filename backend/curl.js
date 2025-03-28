@@ -2,7 +2,7 @@
 /**
  * Enhanced curl alternative for adstxt-manager
  * Usage: node curl.js <url> [-X METHOD] [-d DATA] [-v] [--save]
- * Example: node curl.js http://localhost:4001/api/adsTxtCache/domain/asahi.com --save
+ * Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save
  */
 
 const http = require('http');
@@ -18,9 +18,9 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Allowed hosts - security restriction
 const ALLOWED_HOSTS = [
-  'localhost:4001',  // backend API
+  'localhost:4000',  // backend API
   'localhost:3000',  // frontend dev server
-  '127.0.0.1:4001',  // backend API alternative
+  '127.0.0.1:4000',  // backend API alternative
   '127.0.0.1:3000'   // frontend dev server alternative
 ];
 
@@ -60,7 +60,7 @@ for (let i = 0; i < args.length; i++) {
 
 if (!urlArg) {
   console.log('Usage: node curl.js <url> [-X METHOD] [-d DATA] [-v] [--save]');
-  console.log('Example: node curl.js http://localhost:4001/api/adsTxtCache/domain/asahi.com --save');
+  console.log('Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save');
   process.exit(1);
 }
 
@@ -130,13 +130,13 @@ function saveToDatabase(domain, content, url, status, statusCode, errorMessage) 
     const now = new Date().toISOString();
     const id = uuidv4();
     const normalizedDomain = domain.toLowerCase();
-    
+
     // Check if domain exists
     db.get('SELECT id FROM ads_txt_cache WHERE domain = ?', [normalizedDomain], (err, row) => {
       if (err) {
         return reject(err);
       }
-      
+
       if (row) {
         // Update existing entry
         db.run(
@@ -144,7 +144,7 @@ function saveToDatabase(domain, content, url, status, statusCode, errorMessage) 
            content = ?, url = ?, status = ?, status_code = ?, error_message = ?, updated_at = ?
            WHERE id = ?`,
           [content, url, status, statusCode, errorMessage, now, row.id],
-          function(err) {
+          function (err) {
             if (err) {
               reject(err);
             } else {
@@ -160,7 +160,7 @@ function saveToDatabase(domain, content, url, status, statusCode, errorMessage) 
            (id, domain, content, url, status, status_code, error_message, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [id, normalizedDomain, content, url, status, statusCode, errorMessage, now, now],
-          function(err) {
+          function (err) {
             if (err) {
               reject(err);
             } else {
@@ -194,17 +194,17 @@ if (verbose) {
 // Make request
 const req = httpModule.request(options, (res) => {
   let body = '';
-  
+
   if (verbose) {
     console.log(`< Status: ${res.statusCode} ${res.statusMessage}`);
     console.log('< Headers:', res.headers);
     console.log('---');
   }
-  
+
   res.on('data', (chunk) => {
     body += chunk;
   });
-  
+
   res.on('end', async () => {
     // Try to parse as JSON
     let jsonData = null;
@@ -215,12 +215,12 @@ const req = httpModule.request(options, (res) => {
       // Not JSON or invalid JSON
       console.log(body);
     }
-    
+
     // For ads.txt cache API, try to save to database
     if (saveToDb && domainFromUrl && jsonData) {
       if (jsonData.success && jsonData.data) {
         const { content, url, status, status_code, error_message } = jsonData.data;
-        
+
         try {
           await saveToDatabase(domainFromUrl, content, url, status, status_code, error_message);
           console.log(`✅ Successfully saved ads.txt data for ${domainFromUrl} to database`);
@@ -228,7 +228,7 @@ const req = httpModule.request(options, (res) => {
           console.error(`❌ Error saving to database: ${dbError.message}`);
         }
       }
-      
+
       // Close the database connection
       if (db) {
         db.close((err) => {

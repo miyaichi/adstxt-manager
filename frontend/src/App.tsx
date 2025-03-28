@@ -11,6 +11,7 @@ import NewRequestPage from './pages/NewRequestPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RequestDetailPage from './pages/RequestDetailPage';
 import RequestListPage from './pages/RequestListPage';
+import StatusPage from './pages/StatusPage';
 
 // Import theme
 import { theme } from './styles/theme';
@@ -25,6 +26,7 @@ function App() {
             <Route path="/new-request" element={<NewRequestPage />} />
             <Route path="/request/:id" element={<RequestDetailPage />} />
             <Route path="/requests" element={<RequestListPage />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>

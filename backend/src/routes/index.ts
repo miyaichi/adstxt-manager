@@ -7,15 +7,6 @@ import adsTxtCacheRoutes from './adsTxtCache';
 
 const router = express.Router();
 
-// API status check route
-router.get('/status', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'API is running',
-    time: new Date().toISOString(),
-  });
-});
-
 // Mount sub-routers
 router.use('/requests', requestRoutes);
 router.use('/messages', messageRoutes);

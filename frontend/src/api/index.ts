@@ -38,6 +38,8 @@ const getLanguage = (): string => {
 };
 
 // Configure axios
+// Use relative path - let the React proxy handle the redirection in development
+// In development mode, the proxy in package.json will redirect /api to http://localhost:4000/api
 const api = axios.create({
   baseURL: '/api',
   headers: {
@@ -272,12 +274,35 @@ export const sellersJsonApi = {
   },
 };
 
+// Status API calls
+export const statusApi = {
+  // Get system status
+  async getStatus(): Promise<any> {
+    try {
+      console.log('Fetching status from API endpoint...');
+      
+      // Use the configured API client
+      const response = await api.get('/status');
+      console.log('Status response raw:', response);
+      console.log('Status response data:', response.data);
+      
+      // バックエンドからの直接レスポンスを返す
+      // APIResponseラッパーなしで直接データを返す
+      return response.data;
+    } catch (error) {
+      console.error('Status endpoint failed:', error);
+      throw error;
+    }
+  }
+};
+
 // Export API as a named constant
 const apiClient = {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
   sellersJson: sellersJsonApi,
+  status: statusApi,
 };
 
 export default apiClient;
