@@ -36,11 +36,7 @@ export const updateRequest = /* GraphQL */ `
 
 export const updateRequestStatus = /* GraphQL */ `
   mutation UpdateRequestStatus($id: ID!, $status: String!, $updated_at: AWSDateTime!) {
-    updateRequest(input: {
-      id: $id,
-      status: $status,
-      updated_at: $updated_at
-    }) {
+    updateRequest(input: { id: $id, status: $status, updated_at: $updated_at }) {
       id
       status
       updated_at
@@ -50,17 +46,19 @@ export const updateRequestStatus = /* GraphQL */ `
 
 export const updatePublisherInfo = /* GraphQL */ `
   mutation UpdatePublisherInfo(
-    $id: ID!, 
-    $publisher_name: String!, 
-    $publisher_domain: String!, 
+    $id: ID!
+    $publisher_name: String!
+    $publisher_domain: String!
     $updated_at: AWSDateTime!
   ) {
-    updateRequest(input: {
-      id: $id,
-      publisher_name: $publisher_name,
-      publisher_domain: $publisher_domain,
-      updated_at: $updated_at
-    }) {
+    updateRequest(
+      input: {
+        id: $id
+        publisher_name: $publisher_name
+        publisher_domain: $publisher_domain
+        updated_at: $updated_at
+      }
+    ) {
       id
       publisher_name
       publisher_domain
@@ -101,13 +99,26 @@ export const createAdsTxtRecord = /* GraphQL */ `
 
 export const updateAdsTxtRecordStatus = /* GraphQL */ `
   mutation UpdateAdsTxtRecordStatus($id: ID!, $status: String!, $updated_at: AWSDateTime!) {
-    updateAdsTxtRecord(input: {
-      id: $id,
-      status: $status,
-      updated_at: $updated_at
-    }) {
+    updateAdsTxtRecord(input: { id: $id, status: $status, updated_at: $updated_at }) {
       id
       status
+      updated_at
+    }
+  }
+`;
+
+export const updateAdsTxtRecord = /* GraphQL */ `
+  mutation UpdateAdsTxtRecord($input: UpdateAdsTxtRecordInput!) {
+    updateAdsTxtRecord(input: $input) {
+      id
+      domain
+      account_id
+      account_type
+      relationship
+      certification_authority_id
+      status
+      request_id
+      created_at
       updated_at
     }
   }
