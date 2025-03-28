@@ -3,13 +3,17 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "Current directory: $(pwd)"
+        - echo "Parent directory:"
+        - ls -la ..
+        - echo "Current directory contents:"
         - ls -la
-        - cd frontend
-        - npm ci
+        - find . -maxdepth 2 -type d -name "frontend" -print
+        - if [ -d "frontend" ]; then cd frontend && npm ci; else echo "Frontend directory not found"; fi
     build:
       commands:
-        - cd frontend
-        - npm run build
+        - echo "Current directory: $(pwd)"
+        - if [ -d "frontend" ]; then cd frontend && npm run build; else echo "Frontend directory not found - attempting direct build"; npm run build; fi
   artifacts:
     baseDirectory: frontend/build
     files:
