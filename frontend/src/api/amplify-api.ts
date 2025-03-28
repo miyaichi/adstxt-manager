@@ -278,6 +278,61 @@ export const adsTxtApi = {
     // This might need to be implemented as a custom resolver or Lambda function
     return '# This would be generated Ads.txt content in a real implementation';
   },
+  
+  // Process Ads.txt file or text content
+  async processAdsTxtFile(fileOrContent: File | string, publisherDomain?: string): Promise<any> {
+    try {
+      // This would need a custom implementation with Amplify
+      // For now, return a simplified mock response structure
+      return {
+        success: true,
+        data: {
+          records: [],
+          invalidRecords: 0,
+          warnings: [],
+          errors: []
+        }
+      };
+    } catch (error) {
+      logger.error('Error processing ads.txt with Amplify:', error);
+      return {
+        success: false,
+        error: 'Failed to process ads.txt file or content'
+      };
+    }
+  },
+  
+  // Get ads.txt from a domain
+  async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<any> {
+    try {
+      // Use the adsTxtCacheByDomain query
+      const result = await client.graphql({
+        query: queries.getAdsTxtCacheByDomain,
+        variables: { domain },
+      });
+      
+      const graphqlResult = result as { data: { adsTxtCacheByDomain: { items: any[] } } };
+      const items = graphqlResult.data.adsTxtCacheByDomain.items;
+      
+      if (items && items.length > 0) {
+        return {
+          success: true,
+          data: items[0]
+        };
+      } else {
+        return {
+          success: false,
+          error: 'No ads.txt cache found for domain'
+        };
+      }
+    } catch (error) {
+      logger.error('Error fetching ads.txt from domain with Amplify:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch ads.txt from domain'
+      };
+    }
+  },
 };
 
 // Export the API interfaces
