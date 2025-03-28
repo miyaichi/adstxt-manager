@@ -22,7 +22,11 @@
     "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --transformIgnorePatterns \"node_modules/(?!axios|@aws-amplify)/\"",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx src/",
+    "verify": "npm run typecheck && npm run lint",
+    "prebuild": "npm run typecheck"
   },
   "eslintConfig": {
     "extends": [

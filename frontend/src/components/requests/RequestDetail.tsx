@@ -61,7 +61,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             console.log(
               `Pre-fetching ads.txt for publisher domain: ${response.data.request.publisher_domain}`
             );
-            await apiClient.adsTxt.getAdsTxtFromDomain(response.data.request.publisher_domain, true); // Force refresh
+            await apiClient.adsTxt.getAdsTxtFromDomain(
+              response.data.request.publisher_domain,
+              true
+            ); // Force refresh
           } catch (fetchErr) {
             console.error(`Error pre-fetching ads.txt: ${fetchErr}`);
             // Non-blocking error, we can continue

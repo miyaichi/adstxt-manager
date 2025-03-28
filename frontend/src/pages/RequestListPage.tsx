@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Flex,
   Heading,
   Card,
-  Button,
   Text,
   Alert,
   Loader,
@@ -13,7 +12,7 @@ import {
   Divider,
   TextField,
 } from '@aws-amplify/ui-react';
-import apiClient from '../api';
+import apiClient from '../api'; // Default import
 import { Request } from '../models';
 import RequestItem from '../components/requests/RequestItem';
 import ErrorMessage from '../components/common/ErrorMessage';

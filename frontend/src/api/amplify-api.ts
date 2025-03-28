@@ -2,7 +2,7 @@
 import { client } from '../amplify-client';
 import * as queries from '../queries';
 import * as mutations from '../mutations';
-import * as API from '../API';
+import * as API from '../GraphqlTypes';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('AmplifyAPI');
@@ -35,7 +35,7 @@ export const requestApi = {
 
       // Use type assertion to handle GraphQL result
       const graphqlResult = result as { data: { createRequest: any } };
-      
+
       return {
         success: true,
         data: {
@@ -61,7 +61,7 @@ export const requestApi = {
 
       // Use type assertion to handle GraphQL result
       const graphqlResult = result as { data: { getRequest: any } };
-      
+
       // Verify token
       if (graphqlResult.data.getRequest.token !== token) {
         return {
@@ -94,7 +94,7 @@ export const requestApi = {
 
       // Use type assertion to handle GraphQL result
       const getGraphqlResult = getResult as { data: { getRequest: any } };
-      
+
       if (getGraphqlResult.data.getRequest.token !== token) {
         return {
           success: false,
@@ -144,9 +144,10 @@ export const requestApi = {
         };
       }
 
+      // Use listRequests and filter client-side based on email/role
       const result = await client.graphql({
-        query: queries.listRequestsByEmail,
-        variables: { email: email, ...(role ? { role } : {}) },
+        query: queries.listRequests,
+        variables: { filter },
       });
 
       return {
@@ -204,7 +205,7 @@ export const messageApi = {
 
       // Use type assertion to handle GraphQL result
       const requestGraphqlResult = requestResult as { data: { getRequest: any } };
-      
+
       if (requestGraphqlResult.data.getRequest.token !== token) {
         return {
           success: false,
@@ -242,7 +243,7 @@ export const adsTxtApi = {
   // additional work to fully implement with Amplify
 
   // Update record status
-  async updateRecordStatus(id: string, status: string, token: string): Promise<any> {
+  async updateRecordStatus(id: string, status: string, _token: string): Promise<any> {
     try {
       // First verify token
       // This would require finding which request this record belongs to
@@ -272,15 +273,32 @@ export const adsTxtApi = {
     }
   },
 
+  // Get records by request ID
+  async getRecordsByRequestId(_requestId: string, _token: string): Promise<any> {
+    try {
+      // This would need a custom implementation with Amplify
+      return {
+        success: true,
+        data: [],
+      };
+    } catch (error) {
+      logger.error('Error getting records by request ID with Amplify:', error);
+      return {
+        success: false,
+        error: 'Failed to get records by request ID',
+      };
+    }
+  },
+
   // Generate Ads.txt content
   // This would need a custom implementation with Amplify
-  async generateAdsTxtContent(requestId: string, token: string): Promise<string> {
+  async generateAdsTxtContent(_requestId: string, _token: string): Promise<string> {
     // This might need to be implemented as a custom resolver or Lambda function
     return '# This would be generated Ads.txt content in a real implementation';
   },
-  
+
   // Process Ads.txt file or text content
-  async processAdsTxtFile(fileOrContent: File | string, publisherDomain?: string): Promise<any> {
+  async processAdsTxtFile(_fileOrContent: File | string, _publisherDomain?: string): Promise<any> {
     try {
       // This would need a custom implementation with Amplify
       // For now, return a simplified mock response structure
@@ -290,50 +308,52 @@ export const adsTxtApi = {
           records: [],
           invalidRecords: 0,
           warnings: [],
-          errors: []
-        }
+          errors: [],
+        },
       };
     } catch (error) {
       logger.error('Error processing ads.txt with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to process ads.txt file or content'
+        error: 'Failed to process ads.txt file or content',
       };
     }
   },
-  
+
   // Get ads.txt from a domain
-  async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<any> {
+  async getAdsTxtFromDomain(domain: string, _force: boolean = false): Promise<any> {
     try {
       // Use the adsTxtCacheByDomain query
       const result = await client.graphql({
         query: queries.getAdsTxtCacheByDomain,
         variables: { domain },
       });
-      
+
       const graphqlResult = result as { data: { adsTxtCacheByDomain: { items: any[] } } };
       const items = graphqlResult.data.adsTxtCacheByDomain.items;
-      
+
       if (items && items.length > 0) {
         return {
           success: true,
-          data: items[0]
+          data: items[0],
         };
       } else {
         return {
           success: false,
-          error: 'No ads.txt cache found for domain'
+          error: 'No ads.txt cache found for domain',
         };
       }
     } catch (error) {
       logger.error('Error fetching ads.txt from domain with Amplify:', error);
       return {
         success: false,
-        error: 'Failed to fetch ads.txt from domain'
+        error: 'Failed to fetch ads.txt from domain',
       };
     }
   },
 };
+
+// No longer needed, moved into the adsTxtApi object
 
 // Export the API interfaces
 export default {

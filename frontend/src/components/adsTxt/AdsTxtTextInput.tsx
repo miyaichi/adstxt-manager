@@ -74,6 +74,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
       domainInput.addEventListener('input', handleDomainChange);
       return () => domainInput.removeEventListener('input', handleDomainChange);
     }
+    return undefined; // Add return for all code paths
   }, [publisherDomain]);
 
   const handleProcess = async () => {
@@ -120,7 +121,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
           certification_authority_id?: string;
           relationship: string;
         }
-        
+
         const validRecords = response.data.records
           .filter((record: ParsedRecord) => record.is_valid)
           .map((record: ParsedRecord) => ({

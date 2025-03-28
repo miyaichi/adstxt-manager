@@ -46,16 +46,16 @@ export type ModelStringInput = {
 };
 
 export enum ModelAttributeTypes {
-  binary = "binary",
-  binarySet = "binarySet",
-  bool = "bool",
-  list = "list",
-  map = "map",
-  number = "number",
-  numberSet = "numberSet",
-  string = "string",
-  stringSet = "stringSet",
-  _null = "_null",
+  binary = 'binary',
+  binarySet = 'binarySet',
+  bool = 'bool',
+  list = 'list',
+  map = 'map',
+  number = 'number',
+  numberSet = 'numberSet',
+  string = 'string',
+  stringSet = 'stringSet',
+  _null = '_null',
 }
 
 export type ModelSizeInput = {
@@ -69,7 +69,7 @@ export type ModelSizeInput = {
 };
 
 export type Request = {
-  __typename: "Request";
+  __typename: 'Request';
   id: string;
   publisher_email: string;
   requester_email: string;
@@ -87,13 +87,13 @@ export type Request = {
 };
 
 export type ModelMessageConnection = {
-  __typename: "ModelMessageConnection";
+  __typename: 'ModelMessageConnection';
   items: Array<Message | null>;
   nextToken?: string | null;
 };
 
 export type Message = {
-  __typename: "Message";
+  __typename: 'Message';
   id: string;
   content: string;
   sender_email: string;
@@ -106,13 +106,13 @@ export type Message = {
 };
 
 export type ModelAdsTxtRecordConnection = {
-  __typename: "ModelAdsTxtRecordConnection";
+  __typename: 'ModelAdsTxtRecordConnection';
   items: Array<AdsTxtRecord | null>;
   nextToken?: string | null;
 };
 
 export type AdsTxtRecord = {
-  __typename: "AdsTxtRecord";
+  __typename: 'AdsTxtRecord';
   id: string;
   domain: string;
   account_id: string;
@@ -245,7 +245,7 @@ export type ModelAdsTxtCacheConditionInput = {
 };
 
 export type AdsTxtCache = {
-  __typename: "AdsTxtCache";
+  __typename: 'AdsTxtCache';
   id: string;
   domain: string;
   content: string;
@@ -297,7 +297,7 @@ export type ModelSellersJsonCacheConditionInput = {
 };
 
 export type SellersJsonCache = {
-  __typename: "SellersJsonCache";
+  __typename: 'SellersJsonCache';
   id: string;
   domain: string;
   content: string;
@@ -358,7 +358,7 @@ export type ModelIDInput = {
 };
 
 export type ModelRequestConnection = {
-  __typename: "ModelRequestConnection";
+  __typename: 'ModelRequestConnection';
   items: Array<Request | null>;
   nextToken?: string | null;
 };
@@ -406,7 +406,7 @@ export type ModelAdsTxtCacheFilterInput = {
 };
 
 export type ModelAdsTxtCacheConnection = {
-  __typename: "ModelAdsTxtCacheConnection";
+  __typename: 'ModelAdsTxtCacheConnection';
   items: Array<AdsTxtCache | null>;
   nextToken?: string | null;
 };
@@ -426,7 +426,7 @@ export type ModelSellersJsonCacheFilterInput = {
 };
 
 export type ModelSellersJsonCacheConnection = {
-  __typename: "ModelSellersJsonCacheConnection";
+  __typename: 'ModelSellersJsonCacheConnection';
   items: Array<SellersJsonCache | null>;
   nextToken?: string | null;
 };
@@ -442,8 +442,8 @@ export type ModelStringKeyConditionInput = {
 };
 
 export enum ModelSortDirection {
-  ASC = "ASC",
-  DESC = "DESC",
+  ASC = 'ASC',
+  DESC = 'DESC',
 }
 
 export type QueryAdsTxtCacheByDomainQueryVariables = {
@@ -456,9 +456,9 @@ export type QueryAdsTxtCacheByDomainQueryVariables = {
 
 export type QueryAdsTxtCacheByDomainQuery = {
   adsTxtCacheByDomain?: {
-    __typename: "ModelAdsTxtCacheConnection";
+    __typename: 'ModelAdsTxtCacheConnection';
     items: Array<{
-      __typename: "AdsTxtCache";
+      __typename: 'AdsTxtCache';
       id: string;
       domain: string;
       content: string;
@@ -484,9 +484,9 @@ export type QuerySellersJsonCacheByDomainQueryVariables = {
 
 export type QuerySellersJsonCacheByDomainQuery = {
   sellersJsonCacheByDomain?: {
-    __typename: "ModelSellersJsonCacheConnection";
+    __typename: 'ModelSellersJsonCacheConnection';
     items: Array<{
-      __typename: "SellersJsonCache";
+      __typename: 'SellersJsonCache';
       id: string;
       domain: string;
       content: string;
@@ -504,10 +504,7 @@ export type QuerySellersJsonCacheByDomainQuery = {
 
 // GraphQLクエリとミューテーションの文字列定義
 export const createRequest = /* GraphQL */ `
-  mutation CreateRequest(
-    $input: CreateRequestInput!
-    $condition: ModelRequestConditionInput
-  ) {
+  mutation CreateRequest($input: CreateRequestInput!, $condition: ModelRequestConditionInput) {
     createRequest(input: $input, condition: $condition) {
       id
       publisher_email
@@ -526,10 +523,7 @@ export const createRequest = /* GraphQL */ `
 `;
 
 export const updateRequest = /* GraphQL */ `
-  mutation UpdateRequest(
-    $input: UpdateRequestInput!
-    $condition: ModelRequestConditionInput
-  ) {
+  mutation UpdateRequest($input: UpdateRequestInput!, $condition: ModelRequestConditionInput) {
     updateRequest(input: $input, condition: $condition) {
       id
       publisher_email
@@ -548,10 +542,7 @@ export const updateRequest = /* GraphQL */ `
 `;
 
 export const createMessage = /* GraphQL */ `
-  mutation CreateMessage(
-    $input: CreateMessageInput!
-    $condition: ModelMessageConditionInput
-  ) {
+  mutation CreateMessage($input: CreateMessageInput!, $condition: ModelMessageConditionInput) {
     createMessage(input: $input, condition: $condition) {
       id
       content
@@ -739,11 +730,7 @@ export const getRequest = /* GraphQL */ `
 `;
 
 export const listRequests = /* GraphQL */ `
-  query ListRequests(
-    $filter: ModelRequestFilterInput
-    $limit: Int
-    $nextToken: String
-  ) {
+  query ListRequests($filter: ModelRequestFilterInput, $limit: Int, $nextToken: String) {
     listRequests(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         id
@@ -794,11 +781,7 @@ export const getMessage = /* GraphQL */ `
 `;
 
 export const listMessages = /* GraphQL */ `
-  query ListMessages(
-    $filter: ModelMessageFilterInput
-    $limit: Int
-    $nextToken: String
-  ) {
+  query ListMessages($filter: ModelMessageFilterInput, $limit: Int, $nextToken: String) {
     listMessages(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         id
