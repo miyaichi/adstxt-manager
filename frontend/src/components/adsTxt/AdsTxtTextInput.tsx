@@ -9,7 +9,7 @@ import {
   Heading,
   TextAreaField,
 } from '@aws-amplify/ui-react';
-import { adsTxtApi } from '../../api';
+import apiClient from '../../api';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 import AdsTxtRecordList from './AdsTxtRecordList';
 import { useApp } from '../../context/AppContext';
@@ -93,7 +93,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
       const currentDomain = publisherDomainInput ? publisherDomainInput.value : publisherDomain;
 
       console.log('Processing ads.txt content with publisher domain:', currentDomain);
-      const response = await adsTxtApi.processAdsTxtFile(adsTxtContent, currentDomain);
+      const response = await apiClient.adsTxt.processAdsTxtFile(adsTxtContent, currentDomain);
 
       if (response.success) {
         setParsedRecords(response.data.records);

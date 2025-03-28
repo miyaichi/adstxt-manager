@@ -12,7 +12,7 @@ import {
   View,
 } from '@aws-amplify/ui-react';
 import React, { useEffect, useState, useCallback } from 'react';
-import { adsTxtApi, messageApi, requestApi } from '../../api';
+import apiClient from '../../api';
 import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
@@ -49,7 +49,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       setLoading(true);
       setError(null);
 
-      const response = await requestApi.getRequest(requestId, token);
+      const response = await apiClient.request.getRequest(requestId, token);
 
       if (response.success) {
         setRequest(response.data);
@@ -61,7 +61,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             console.log(
               `Pre-fetching ads.txt for publisher domain: ${response.data.request.publisher_domain}`
             );
-            await adsTxtApi.getAdsTxtFromDomain(response.data.request.publisher_domain, true); // Force refresh
+            await apiClient.adsTxt.getAdsTxtFromDomain(response.data.request.publisher_domain, true); // Force refresh
           } catch (fetchErr) {
             console.error(`Error pre-fetching ads.txt: ${fetchErr}`);
             // Non-blocking error, we can continue
@@ -83,7 +83,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       logger.debug('fetchMessages starting for request:', requestId);
       setMessageLoading(true);
 
-      const response = await messageApi.getMessagesByRequestId(requestId, token);
+      const response = await apiClient.message.getMessagesByRequestId(requestId, token);
       if (response.success) {
         logger.debug('Messages fetched successfully:', response.data);
         setMessages(response.data);
@@ -99,7 +99,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
   const generateAdsTxtContent = async () => {
     try {
-      const content = await adsTxtApi.generateAdsTxtContent(requestId, token);
+      const content = await apiClient.adsTxt.generateAdsTxtContent(requestId, token);
       setAdsTxtContent(content);
       setShowAdsTxtContent(true);
     } catch (err) {
@@ -113,7 +113,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     try {
       setLoading(true);
 
-      const response = await requestApi.updateRequestStatus(requestId, newStatus, token);
+      const response = await apiClient.request.updateRequestStatus(requestId, newStatus, token);
 
       if (response.success) {
         // Update the local state with the new status
@@ -146,7 +146,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     try {
       setLoading(true);
 
-      const response = await adsTxtApi.updateRecordStatus(recordId, status, token);
+      const response = await apiClient.adsTxt.updateRecordStatus(recordId, status, token);
 
       if (response.success) {
         // Update the local state with the new record status

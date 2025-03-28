@@ -13,7 +13,7 @@ import {
   Divider,
   TextField,
 } from '@aws-amplify/ui-react';
-import { requestApi } from '../api';
+import apiClient from '../api';
 import { Request } from '../models';
 import RequestItem from '../components/requests/RequestItem';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -39,7 +39,7 @@ const RequestListPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await requestApi.getRequestsByEmail(email, role || undefined);
+        const response = await apiClient.request.getRequestsByEmail(email, role || undefined);
 
         if (response.success) {
           setRequests(response.data);

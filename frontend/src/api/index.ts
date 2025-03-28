@@ -282,12 +282,12 @@ export const statusApi = {
   async getStatus(): Promise<any> {
     try {
       console.log('Fetching status from API endpoint...');
-      
+
       // Use the configured API client
       const response = await api.get('/status');
       console.log('Status response raw:', response);
       console.log('Status response data:', response.data);
-      
+
       // バックエンドからの直接レスポンスを返す
       // APIResponseラッパーなしで直接データを返す
       return response.data;
@@ -295,7 +295,7 @@ export const statusApi = {
       console.error('Status endpoint failed:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Export different API clients based on the configuration
@@ -316,7 +316,7 @@ const getApiClient = () => {
       ...amplifyApi,
       // Add additional APIs that only exist in REST version
       sellersJson: sellersJsonApi,
-      status: statusApi
+      status: statusApi,
     };
   } else {
     console.log('Using REST API client');
@@ -327,6 +327,5 @@ const getApiClient = () => {
 // Export the API client
 const apiClient = getApiClient();
 
-// Export both default and named exports
+// Export only the default client to avoid duplicate exports
 export default apiClient;
-export { requestApi, messageApi, adsTxtApi, sellersJsonApi, statusApi };

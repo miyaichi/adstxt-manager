@@ -1,6 +1,6 @@
 import { Alert, Divider, Flex, Heading, Loader, Text } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react';
-import { messageApi } from '../../api';
+import apiClient from '../../api';
 import { Message } from '../../models';
 import { createLogger } from '../../utils/logger';
 import MessageItem from './MessageItem';
@@ -50,7 +50,7 @@ const MessageList: React.FC<MessageListProps> = ({
         logger.debug('RequestID=', JSON.stringify(requestId));
         logger.debug('Token=', JSON.stringify(token));
 
-        const response = await messageApi.getMessagesByRequestId(requestId, token);
+        const response = await apiClient.message.getMessagesByRequestId(requestId, token);
 
         if (response.success) {
           logger.debug('Messages fetched successfully:', response.data);
