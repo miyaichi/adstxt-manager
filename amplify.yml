@@ -1,34 +1,12 @@
-version: 1
-applications:
-  - frontend:
-      phases:
-        preBuild:
-          commands:
-            - npm ci
-        build:
-          commands:
-            - npm run build:frontend
-      artifacts:
-        baseDirectory: frontend/build
-        files:
-          - '**/*'
-      appRoot: .
-      customHeaders:
-        - pattern: '**/*'
-          headers:
-            - key: 'Cache-Control'
-              value: 'max-age=0, no-cache, no-store, must-revalidate'
+amplify:
+  - name: adstxt-manager
     backend:
-      phases:
-        preBuild:
-          commands:
-            - npm ci
-        build:
-          commands:
-            - npm run build:backend
-      artifacts:
-        baseDirectory: backend/dist
-        files:
-          - '**/*'
-        discard:
-          - node_modules/**/*
+      type: sandbox
+      config:
+        config: "{\"type\":\"global\"}"
+    frontend:
+      config:
+        sourceDir: frontend
+        framework: react
+        BuildCommand: npm run build
+        StartCommand: npm run start

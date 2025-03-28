@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
 
 // Import components
 import Layout from './components/common/Layout';
@@ -16,7 +17,15 @@ import StatusPage from './pages/StatusPage';
 // Import theme
 import { theme } from './styles/theme';
 
+// Import Amplify configuration
+import { configureAmplify } from './ampxConfig';
+
 function App() {
+  // アプリケーション初期化時にAmplifyを設定
+  useEffect(() => {
+    configureAmplify();
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <Router>

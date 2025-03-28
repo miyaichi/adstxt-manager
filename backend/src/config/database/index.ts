@@ -1,6 +1,5 @@
 import { getEnvironment } from '../environment';
 import { SqliteDatabase } from './sqlite';
-import { AmplifyDatabase } from './amplify';
 
 export interface DatabaseRecord {
   id: string;
@@ -37,12 +36,11 @@ export interface IDatabaseAdapter {
  * A lightweight adapter for database operations
  */
 class DatabaseAdapter implements IDatabaseAdapter {
-  private implementation: SqliteDatabase | AmplifyDatabase;
+  private implementation: SqliteDatabase;
 
   constructor() {
-    const environment = getEnvironment();
-    this.implementation =
-      environment === 'local' ? SqliteDatabase.getInstance() : AmplifyDatabase.getInstance();
+    // In Gen2, we'll use SQLite by default until we implement a new database adapter
+    this.implementation = SqliteDatabase.getInstance();
   }
 
   /**

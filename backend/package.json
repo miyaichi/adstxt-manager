@@ -12,9 +12,7 @@
     "migrate": "ts-node src/db/migrations/run.ts",
     "migrate:sellers": "ts-node src/db/migrations/run_sellers_json.ts",
     "seed": "ts-node src/db/seeds/run.ts",
-    "fetch-sellers-json": "node fetch-sellers-json.js",
-    "test:amplify": "ts-node src/scripts/test-amplify.ts",
-    "test:amplify-mock": "ts-node src/scripts/test-amplify-mock.ts"
+    "fetch-sellers-json": "node fetch-sellers-json.js"
   },
   "keywords": [
     "ads.txt",
@@ -24,7 +22,6 @@
   "author": "Yoshihiko Miyaichi",
   "license": "MIT",
   "dependencies": {
-    "aws-amplify": "^6.14.0",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
