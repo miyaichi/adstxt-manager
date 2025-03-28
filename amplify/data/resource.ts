@@ -1,82 +1,75 @@
-import { a, defineData } from '@aws-amplify/backend';
+import { defineData } from '@aws-amplify/backend';
 
-const schema = a.schema({
-  Request: a
-    .model({
-      publisher_email: a.string().required(),
-      requester_email: a.string().required(),
-      requester_name: a.string().required(),
-      publisher_name: a.string(),
-      publisher_domain: a.string(),
-      status: a.string().required(),
-      token: a.string().required(),
-      created_at: a.datetime().required(),
-      updated_at: a.datetime(),
-      // リレーションシップの定義
-      messages: a.hasMany('Message'),
-      adsTxtRecords: a.hasMany('AdsTxtRecord')
-    })
-    .authorization((allow) => [allow.public()]),
+// Define GraphQL schema as a string
+const schemaSDL = `
+  type Request @model @auth(rules: [{allow: public}]) {
+    id: ID!
+    publisher_email: String!
+    requester_email: String!
+    requester_name: String!
+    publisher_name: String
+    publisher_domain: String
+    status: String!
+    token: String!
+    created_at: AWSDateTime!
+    updated_at: AWSDateTime
+    messages: [Message] @hasMany
+    adsTxtRecords: [AdsTxtRecord] @hasMany
+  }
 
-  Message: a
-    .model({
-      content: a.string().required(),
-      sender_email: a.string().required(),
-      request_id: a.string().required(),
-      created_at: a.datetime().required(),
-      updated_at: a.datetime(),
-      // リレーションシップの定義
-      request: a.belongsTo('Request')
-    })
-    .authorization((allow) => [allow.public()]),
+  type Message @model @auth(rules: [{allow: public}]) {
+    id: ID!
+    content: String!
+    sender_email: String!
+    request_id: String!
+    created_at: AWSDateTime!
+    updated_at: AWSDateTime
+    request: Request @belongsTo
+  }
 
-  AdsTxtRecord: a
-    .model({
-      domain: a.string().required(),
-      account_id: a.string().required(),
-      account_type: a.string().required(),
-      relationship: a.string().required(),
-      certification_authority_id: a.string(),
-      status: a.string().required(),
-      request_id: a.string().required(),
-      created_at: a.datetime().required(),
-      updated_at: a.datetime(),
-      // リレーションシップの定義
-      request: a.belongsTo('Request')
-    })
-    .authorization((allow) => [allow.public()]),
+  type AdsTxtRecord @model @auth(rules: [{allow: public}]) {
+    id: ID!
+    domain: String!
+    account_id: String!
+    account_type: String!
+    relationship: String!
+    certification_authority_id: String
+    status: String!
+    request_id: String!
+    created_at: AWSDateTime!
+    updated_at: AWSDateTime
+    request: Request @belongsTo
+  }
 
-  AdsTxtCache: a
-    .model({
-      domain: a.string().required().indexed(), // インデックス付き検索用
-      content: a.string().required(),
-      status: a.string().required(),
-      error_message: a.string(),
-      last_updated: a.datetime().required(),
-      created_at: a.datetime().required(),
-      updated_at: a.datetime(),
-    })
-    .authorization((allow) => [allow.public()]),
+  type AdsTxtCache @model @auth(rules: [{allow: public}]) {
+    id: ID!
+    domain: String!
+    content: String!
+    status: String!
+    error_message: String
+    last_updated: AWSDateTime!
+    created_at: AWSDateTime!
+    updated_at: AWSDateTime
+  }
 
-  SellersJsonCache: a
-    .model({
-      domain: a.string().required().indexed(), // インデックス付き検索用
-      content: a.string().required(),
-      status: a.string().required(),
-      error_message: a.string(),
-      last_updated: a.datetime().required(),
-      created_at: a.datetime().required(),
-      updated_at: a.datetime(),
-    })
-    .authorization((allow) => [allow.public()]),
-});
+  type SellersJsonCache @model @auth(rules: [{allow: public}]) {
+    id: ID!
+    domain: String!
+    content: String!
+    status: String!
+    error_message: String
+    last_updated: AWSDateTime!
+    created_at: AWSDateTime!
+    updated_at: AWSDateTime
+  }
+`;
 
 export const data = defineData({
-  schema,
+  schema: schemaSDL,
   authorizationModes: {
     defaultAuthorizationMode: 'apiKey',
     apiKeyAuthorizationMode: {
-      expiresInDays: 365, // APIキーの有効期限を1年に設定
+      expiresInDays: 365,
     },
   },
 });
