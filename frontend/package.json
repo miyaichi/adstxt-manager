@@ -2,6 +2,9 @@
   "name": "adstxt-manager-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@aws-amplify/ui-react": "^5.3.3",
     "@testing-library/jest-dom": "^5.17.0",

@@ -1,6 +1,9 @@
 {
   "name": "adstxt-manager",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build:backend": "cd backend && npm ci && npm run build",
     "build:frontend": "cd frontend && npm ci && npm run build",
