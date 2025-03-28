@@ -12,10 +12,8 @@ import {
   RequestWithRecords,
 } from '../models';
 import { createLogger } from '../utils/logger';
-import { client, useAmplifyApi } from '../amplify-client';
-import * as queries from '../queries';
-import * as mutations from '../mutations';
-import * as API from '../API';
+import { useAmplifyApi } from '../amplify-client';
+import amplifyApi from './amplify-api';
 
 // Ensure FormData and File are available in the global scope
 declare global {
@@ -300,8 +298,9 @@ export const statusApi = {
   }
 };
 
-// Export API as a named constant
-const apiClient = {
+// Export different API clients based on the configuration
+// The REST API client
+const restApiClient = {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
@@ -309,4 +308,25 @@ const apiClient = {
   status: statusApi,
 };
 
+// Use Amplify API if configured or fallback to REST API
+const getApiClient = () => {
+  if (useAmplifyApi()) {
+    console.log('Using Amplify API client');
+    return {
+      ...amplifyApi,
+      // Add additional APIs that only exist in REST version
+      sellersJson: sellersJsonApi,
+      status: statusApi
+    };
+  } else {
+    console.log('Using REST API client');
+    return restApiClient;
+  }
+};
+
+// Export the API client
+const apiClient = getApiClient();
+
+// Export both default and named exports
 export default apiClient;
+export { requestApi, messageApi, adsTxtApi, sellersJsonApi, statusApi };

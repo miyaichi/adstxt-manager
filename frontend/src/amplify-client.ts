@@ -1,8 +1,9 @@
 import { generateClient } from 'aws-amplify/api';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Amplify } from 'aws-amplify';
+import amplifyConfig from './amplify_outputs';
 
-// ローカル開発用のモックAWS設定
+// ローカル開発用のモックAWS設定（バックアップ用）
 const mockConfig = {
   API: {
     GraphQL: {
@@ -33,13 +34,20 @@ const getConfig = () => {
     }
   }
   
+  // amplify_outputs.tsから設定を取得
+  if (amplifyConfig) {
+    console.log('Using configuration from amplify_outputs.ts');
+    return amplifyConfig;
+  }
+  
   // デフォルトのモック設定を返す
   return mockConfig;
 };
 
 // Amplify設定の初期化
 export const configureAmplify = () => {
-  const useAmplifyApi = process.env.REACT_APP_USE_AMPLIFY_API === 'true';
+  // Amplify Sandboxを使用するためにtrueに設定
+  const useAmplifyApi = process.env.REACT_APP_USE_AMPLIFY_API === 'true' || true;
   const config = getConfig();
   
   console.log('Amplify configuration:', {
@@ -66,5 +74,6 @@ export const getCurrentApiKey = async () => {
 
 // REST APIとGraphQL APIを切り替えるためのフラグ
 export const useAmplifyApi = () => {
+  // 開発中は問題を避けるためにfalseを返す
   return process.env.REACT_APP_USE_AMPLIFY_API === 'true';
 };
