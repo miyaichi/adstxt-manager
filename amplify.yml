@@ -1,11 +1,17 @@
 version: 1
+# Disable backend environment association
+env:
+  variables:
+    AMPLIFY_SKIP_BACKEND_ASSOCIATION: true
+    AMPLIFY_SKIP_ENVIRONMENT_VALIDATION: true
+    
 backend:
   phases:
     build:
       commands:
-        - '# Amplify Gen 2 Backend is Already Deployed'
-        - '# The backend resources are defined in amplify/ directory'
-        - '# and deployed to AWS using Amplify CLI'
+        - echo "Using existing Amplify Gen 2 Backend with AppID: $AMPLIFY_BACKEND_APPID"
+        - echo "Backend resources already deployed with region: $AMPLIFY_BACKEND_REGION"
+        - echo "Not using branch-based environments in Gen2"
 applications:
   - frontend:
       phases:
@@ -15,6 +21,8 @@ applications:
             - npm install
             - cp amplify_outputs.json frontend/src/
             - export REACT_APP_USE_AMPLIFY_API=true
+            - echo "Using Amplify backend with app ID $AMPLIFY_BACKEND_APPID in region $AMPLIFY_BACKEND_REGION"
+            - echo "Using configuration from REACT_APP_AMPLIFY_CONFIG environment variable"
         build:
           commands:
             - npm run build:frontend
