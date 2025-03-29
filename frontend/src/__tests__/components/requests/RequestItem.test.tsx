@@ -1,5 +1,5 @@
-// React is used implicitly by JSX
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Request } from '../../../models';
 
 // Manually import the component to force resolution
@@ -60,7 +60,7 @@ const mockRequest: Request = {
   requester_name: 'Test Requester',
   publisher_name: 'Test Publisher',
   publisher_domain: 'example.com',
-  status: 'pending' as 'pending' | 'approved' | 'rejected' | 'updated',
+  status: 'pending',
   token: 'test-token',
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
@@ -95,10 +95,7 @@ describe('RequestItem component', () => {
   });
 
   test('renders approved status correctly', () => {
-    const approvedRequest = {
-      ...mockRequest,
-      status: 'approved' as 'pending' | 'approved' | 'rejected' | 'updated',
-    };
+    const approvedRequest = { ...mockRequest, status: 'approved' };
     render(<RequestItem request={approvedRequest} />);
 
     const approvedBadge = screen.getByTestId('badge-success');
@@ -107,10 +104,7 @@ describe('RequestItem component', () => {
   });
 
   test('renders rejected status correctly', () => {
-    const rejectedRequest = {
-      ...mockRequest,
-      status: 'rejected' as 'pending' | 'approved' | 'rejected' | 'updated',
-    };
+    const rejectedRequest = { ...mockRequest, status: 'rejected' };
     render(<RequestItem request={rejectedRequest} />);
 
     const rejectedBadge = screen.getByTestId('badge-error');

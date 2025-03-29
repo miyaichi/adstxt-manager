@@ -62,7 +62,4 @@ amplify-gradle-config.json
 amplifytools.xcconfig
 .secret-*
 **.sample
-# Amplify Gen2 specific
-.amplify/
-amplify-structure-backup/
 #amplify-do-not-edit-end

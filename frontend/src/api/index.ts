@@ -12,8 +12,6 @@ import {
   RequestWithRecords,
 } from '../models';
 import { createLogger } from '../utils/logger';
-import { isAmplifyApiEnabled } from '../amplify-client';
-import amplifyApi from './amplify-api';
 
 // Ensure FormData and File are available in the global scope
 declare global {
@@ -282,12 +280,12 @@ export const statusApi = {
   async getStatus(): Promise<any> {
     try {
       console.log('Fetching status from API endpoint...');
-
+      
       // Use the configured API client
       const response = await api.get('/status');
       console.log('Status response raw:', response);
       console.log('Status response data:', response.data);
-
+      
       // バックエンドからの直接レスポンスを返す
       // APIResponseラッパーなしで直接データを返す
       return response.data;
@@ -295,12 +293,11 @@ export const statusApi = {
       console.error('Status endpoint failed:', error);
       throw error;
     }
-  },
+  }
 };
 
-// Export different API clients based on the configuration
-// The REST API client
-const restApiClient = {
+// Export API as a named constant
+const apiClient = {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
@@ -308,24 +305,4 @@ const restApiClient = {
   status: statusApi,
 };
 
-// Use Amplify API if configured or fallback to REST API
-const getApiClient = () => {
-  if (isAmplifyApiEnabled()) {
-    console.log('Using Amplify API client');
-    return {
-      ...amplifyApi,
-      // Add additional APIs that only exist in REST version
-      sellersJson: sellersJsonApi,
-      status: statusApi,
-    };
-  } else {
-    console.log('Using REST API client');
-    return restApiClient;
-  }
-};
-
-// Export the API client
-const apiClient = getApiClient();
-
-// Export only the default client to avoid duplicate exports
 export default apiClient;

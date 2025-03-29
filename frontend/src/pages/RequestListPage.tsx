@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Flex,
   Heading,
   Card,
+  Button,
   Text,
   Alert,
   Loader,
@@ -12,7 +13,7 @@ import {
   Divider,
   TextField,
 } from '@aws-amplify/ui-react';
-import apiClient from '../api'; // Default import
+import { requestApi } from '../api';
 import { Request } from '../models';
 import RequestItem from '../components/requests/RequestItem';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -38,7 +39,7 @@ const RequestListPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await apiClient.request.getRequestsByEmail(email, role || undefined);
+        const response = await requestApi.getRequestsByEmail(email, role || undefined);
 
         if (response.success) {
           setRequests(response.data);

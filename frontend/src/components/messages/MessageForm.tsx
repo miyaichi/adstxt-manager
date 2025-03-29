@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Flex, TextField, Button, Alert, Heading } from '@aws-amplify/ui-react';
-import apiClient from '../../api';
+import { messageApi } from '../../api';
 import { Message } from '../../models';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
@@ -32,7 +32,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
       setError(null);
       setSuccess(false);
 
-      const response = await apiClient.message.createMessage({
+      const response = await messageApi.createMessage({
         request_id: requestId,
         sender_email: senderEmail,
         content,

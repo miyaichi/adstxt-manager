@@ -1,4 +1,4 @@
-// React is used implicitly by JSX
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AdsTxtRecordItem from '../../../components/adsTxt/AdsTxtRecordItem';
 import { AdsTxtRecord } from '../../../models';

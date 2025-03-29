@@ -1,4 +1,4 @@
-// React is used implicitly by JSX
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ErrorMessage from '../../../components/common/ErrorMessage';
 

@@ -11,7 +11,9 @@ interface RequestItemProps {
 
 const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const { language } = useApp();
-  // We don't need to format the updated date, just using created date
+  const formattedDate = new Date(request.updated_at).toLocaleString(
+    language === 'ja' ? 'ja-JP' : 'en-US'
+  );
   const createdDate = new Date(request.created_at).toLocaleString(
     language === 'ja' ? 'ja-JP' : 'en-US'
   );
