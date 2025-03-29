@@ -328,10 +328,10 @@ export const adsTxtApi = {
    * or a REST backend to fetch the actual content.
    * 
    * @param domain - The domain to fetch ads.txt from
-   * @param force - Whether to force refresh the cache
+   * @param _force - Whether to force refresh the cache (unused in mock implementation)
    * @returns A simulated successful response with mock ads.txt content
    */
-  async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<any> {
+  async getAdsTxtFromDomain(domain: string, _force: boolean = false): Promise<any> {
     try {
       // サンプルのAds.txtコンテンツを生成
       const sampleContent = `# Ads.txt content for ${domain}
