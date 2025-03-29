@@ -4,7 +4,6 @@ import * as queries from '../queries';
 import * as mutations from '../mutations';
 import * as API from '../GraphqlTypes';
 import { createLogger } from '../utils/logger';
-import { Amplify } from 'aws-amplify';
 
 const logger = createLogger('AmplifyAPI');
 
