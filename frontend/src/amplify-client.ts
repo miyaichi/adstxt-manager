@@ -102,10 +102,16 @@ export const client = () => {
       _isConfigured = true;
     }
     
+    // APIキーを直接使用
+    const apiKey = amplifyOutputsJson.data.api_key;
+    
     // APIキーを使った認証を明示的に指定
     _client = generateClient({
-      authMode: 'apiKey'
+      authMode: 'apiKey',
+      apiKey: apiKey
     });
+    
+    console.log(`Using API Key: ${apiKey?.substring(0, 5)}...`);
     
     console.log('GraphQL client initialized with apiKey auth mode');
   }

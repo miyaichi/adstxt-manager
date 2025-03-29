@@ -4,6 +4,7 @@ import * as queries from '../queries';
 import * as mutations from '../mutations';
 import * as API from '../GraphqlTypes';
 import { createLogger } from '../utils/logger';
+import amplifyOutputsJson from '../amplify_outputs.json';
 
 const logger = createLogger('AmplifyAPI');
 
@@ -330,10 +331,19 @@ export const adsTxtApi = {
       configureAmplify();
       
       try {
-        // Use the adsTxtCacheByDomain query
+        // アプリケーションの設定
+        configureAmplify();
+        
+        // APIキーを直接指定
+        const apiKey = amplifyOutputsJson?.data?.api_key;
+        console.log(`Using API Key for query: ${apiKey?.substring(0, 5)}...`);
+        
+        // Use the adsTxtCacheByDomain query with explicit API Key
         const result = await client().graphql({
           query: queries.getAdsTxtCacheByDomain,
           variables: { domain },
+          authMode: 'apiKey',
+          authToken: apiKey
         });
   
         const graphqlResult = result as { data: { adsTxtCacheByDomain: { items: any[] } } };
