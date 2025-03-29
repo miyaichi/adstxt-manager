@@ -10,7 +10,7 @@ const amplifyConfig = {
     GraphQL: {
       endpoint: amplifyOutputsJson.data.url,
       region: amplifyOutputsJson.data.aws_region,
-      defaultAuthMode: amplifyOutputsJson.data.default_authorization_type === "API_KEY" ? "apiKey" : amplifyOutputsJson.data.default_authorization_type,
+      defaultAuthMode: "apiKey", // 強制的にapiKeyを使用
       apiKey: amplifyOutputsJson.data.api_key,
     },
   },
@@ -54,7 +54,17 @@ const getConfig = () => {
   // 環境変数から設定を取得する試み
   if (process.env.REACT_APP_AMPLIFY_CONFIG) {
     try {
-      return JSON.parse(process.env.REACT_APP_AMPLIFY_CONFIG);
+      const envConfig = JSON.parse(process.env.REACT_APP_AMPLIFY_CONFIG);
+      
+      // API Key認証を強制的に有効にする
+      if (envConfig.API && envConfig.API.GraphQL) {
+        envConfig.API.GraphQL.defaultAuthMode = "apiKey";
+      }
+      
+      console.log('Configured from env vars with API Key:', 
+                 envConfig.API?.GraphQL?.apiKey?.substring(0, 5) + '...');
+      
+      return envConfig;
     } catch (e) {
       console.error('Failed to parse AMPLIFY_CONFIG env var:', e);
     }
@@ -91,7 +101,13 @@ export const client = () => {
       configureAmplify();
       _isConfigured = true;
     }
-    _client = generateClient();
+    
+    // APIキーを使った認証を明示的に指定
+    _client = generateClient({
+      authMode: 'apiKey'
+    });
+    
+    console.log('GraphQL client initialized with apiKey auth mode');
   }
   return _client;
 };
