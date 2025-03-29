@@ -275,19 +275,13 @@ export const adsTxtApi = {
 
   // Get records by request ID
   async getRecordsByRequestId(_requestId: string, _token: string): Promise<any> {
-    try {
-      // This would need a custom implementation with Amplify
-      return {
-        success: true,
-        data: [],
-      };
-    } catch (error) {
-      logger.error('Error getting records by request ID with Amplify:', error);
-      return {
-        success: false,
-        error: 'Failed to get records by request ID',
-      };
-    }
+    // This would need a custom implementation with Amplify
+    return {
+      success: true,
+      data: [],
+    };
+    // eslint-disable-next-line no-unreachable
+    logger.error('This code is unreachable');
   },
 
   // Generate Ads.txt content
@@ -299,25 +293,19 @@ export const adsTxtApi = {
 
   // Process Ads.txt file or text content
   async processAdsTxtFile(_fileOrContent: File | string, _publisherDomain?: string): Promise<any> {
-    try {
-      // This would need a custom implementation with Amplify
-      // For now, return a simplified mock response structure
-      return {
-        success: true,
-        data: {
-          records: [],
-          invalidRecords: 0,
-          warnings: [],
-          errors: [],
-        },
-      };
-    } catch (error) {
-      logger.error('Error processing ads.txt with Amplify:', error);
-      return {
-        success: false,
-        error: 'Failed to process ads.txt file or content',
-      };
-    }
+    // This would need a custom implementation with Amplify
+    // For now, return a simplified mock response structure
+    return {
+      success: true,
+      data: {
+        records: [],
+        invalidRecords: 0,
+        warnings: [],
+        errors: [],
+      },
+    };
+    // eslint-disable-next-line no-unreachable
+    logger.error('This code is unreachable');
   },
 
   /**
@@ -419,10 +407,12 @@ export const statusApi = {
   },
 };
 
-// Export the API interfaces
-export default {
+// Define and export the API interfaces
+const apiClient = {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
   status: statusApi,
 };
+
+export default apiClient;
