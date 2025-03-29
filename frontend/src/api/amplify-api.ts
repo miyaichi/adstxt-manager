@@ -1,5 +1,5 @@
 // Amplify Gen2 API Wrapper
-import { client, configureAmplify } from '../amplify-client';
+import { client } from '../amplify-client';
 import * as queries from '../queries';
 import * as mutations from '../mutations';
 import * as API from '../GraphqlTypes';
