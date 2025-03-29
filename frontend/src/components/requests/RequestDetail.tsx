@@ -380,39 +380,97 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 />
 
                 {approvedRecords.length > 0 && (
-                  <Button onClick={generateAdsTxtContent} marginTop="1rem">
-                    {t('requests.detail.actions.download', language)}
-                  </Button>
-                )}
+                  <Card variation="outlined" padding="1rem" marginTop="1rem">
+                    <Heading level={4}>
+                      {t('requests.detail.approvedContent', language) || 'Approved Ads.txt Content'}
+                    </Heading>
+                    <Text marginBottom="1rem">
+                      {t('requests.detail.approvedContentDescription', language) ||
+                        'The following entries have been approved and are ready to be added to your ads.txt file.'}
+                    </Text>
 
-                {showAdsTxtContent && (
-                  <Card
-                    variation="outlined"
-                    padding="1rem"
-                    marginTop="1rem"
-                    backgroundColor={tokens.colors.background.secondary}
-                  >
-                    <Flex justifyContent="space-between" alignItems="center" marginBottom="0.5rem">
-                      <Heading level={4}>Ads.txt Content</Heading>
+                    <Flex gap="1rem" marginBottom="1rem">
                       <Button
-                        size="small"
-                        onClick={() => {
-                          navigator.clipboard.writeText(adsTxtContent);
-                        }}
+                        onClick={generateAdsTxtContent}
+                        variation="primary"
+                        flex="1"
+                        isDisabled={showAdsTxtContent}
                       >
-                        Copy
+                        {t('requests.detail.actions.showContent', language) || 'Show Content'}
                       </Button>
+
+                      {showAdsTxtContent && (
+                        <>
+                          <Button
+                            onClick={() => {
+                              if (adsTxtContent) {
+                                navigator.clipboard.writeText(adsTxtContent);
+                                // Show success toast or feedback here if needed
+                                alert(
+                                  t('requests.detail.copySuccess', language) ||
+                                    'Copied to clipboard!'
+                                );
+                              }
+                            }}
+                            variation="menu"
+                            flex="1"
+                          >
+                            {t('requests.detail.actions.copyToClipboard', language) ||
+                              'Copy to Clipboard'}
+                          </Button>
+
+                          <Button
+                            onClick={() => {
+                              // Create a download link
+                              const blob = new Blob([adsTxtContent], { type: 'text/plain' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'ads.txt';
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }}
+                            variation="menu"
+                            flex="1"
+                          >
+                            {t('requests.detail.actions.download', language) || 'Download'}
+                          </Button>
+                        </>
+                      )}
                     </Flex>
-                    <pre
-                      style={{
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: 'monospace',
-                        overflow: 'auto',
-                        maxHeight: '300px',
-                      }}
-                    >
-                      {adsTxtContent}
-                    </pre>
+
+                    {showAdsTxtContent && (
+                      <Card
+                        variation="outlined"
+                        padding="1rem"
+                        backgroundColor={tokens.colors.background.secondary}
+                      >
+                        <pre
+                          style={{
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'monospace',
+                            overflow: 'auto',
+                            maxHeight: '400px',
+                            padding: '0.5rem',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                          }}
+                        >
+                          {adsTxtContent}
+                        </pre>
+                        <Text
+                          fontSize="small"
+                          marginTop="0.5rem"
+                          color={tokens.colors.font.tertiary}
+                        >
+                          {t('requests.detail.contentHelp', language) ||
+                            'This content includes approved entries with metadata comments. You can add these lines to your existing ads.txt file.'}
+                        </Text>
+                      </Card>
+                    )}
                   </Card>
                 )}
               </>

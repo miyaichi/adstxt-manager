@@ -708,6 +708,22 @@ export const translations = {
           ja: 'Ads.txtレコード',
         },
       },
+      approvedContent: {
+        en: 'Approved Ads.txt Content',
+        ja: '承認済みAds.txtコンテンツ',
+      },
+      approvedContentDescription: {
+        en: 'The following entries have been approved and are ready to be added to your ads.txt file.',
+        ja: '以下のエントリが承認され、ads.txtファイルに追加する準備ができています。',
+      },
+      contentHelp: {
+        en: 'This content includes approved entries with metadata comments. Missing certification authority IDs are automatically added from sellers.json where available. You can add these lines to your existing ads.txt file.',
+        ja: 'このコンテンツには、メタデータコメント付きの承認済みエントリが含まれています。不足している認証局IDは可能な場合にsellers.jsonから自動的に追加されます。これらの行を既存のads.txtファイルに追加できます。',
+      },
+      copySuccess: {
+        en: 'Content copied to clipboard!',
+        ja: 'コンテンツがクリップボードにコピーされました！',
+      },
       actions: {
         title: {
           en: 'Actions',
@@ -724,6 +740,14 @@ export const translations = {
         download: {
           en: 'Download Ads.txt',
           ja: 'Ads.txtをダウンロード',
+        },
+        showContent: {
+          en: 'Show Content',
+          ja: 'コンテンツを表示',
+        },
+        copyToClipboard: {
+          en: 'Copy to Clipboard',
+          ja: 'クリップボードにコピー',
         },
         approveConfirm: {
           en: 'Are you sure you want to approve this request?',
