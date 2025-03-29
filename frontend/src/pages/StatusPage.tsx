@@ -18,6 +18,7 @@ interface StatusData {
     environment: Record<string, string>;
     time: string;
     error?: string;
+    message?: string; // Add support for message property for Amplify mode
   } | null;
 }
 
@@ -253,6 +254,12 @@ const StatusPage: React.FC = () => {
               {statusData.backend.error && (
                 <Text color="red" marginBottom="medium">
                   Error: {statusData.backend.error}
+                </Text>
+              )}
+              
+              {statusData.backend.message && (
+                <Text color="green" marginBottom="medium">
+                  {statusData.backend.message}
                 </Text>
               )}
 
