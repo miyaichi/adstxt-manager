@@ -5,6 +5,8 @@ import * as mutations from '../mutations';
 import * as API from '../GraphqlTypes';
 import { createLogger } from '../utils/logger';
 import amplifyOutputsJson from '../amplify_outputs.json';
+import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
 
 const logger = createLogger('AmplifyAPI');
 
@@ -331,19 +333,37 @@ export const adsTxtApi = {
       configureAmplify();
       
       try {
-        // アプリケーションの設定
-        configureAmplify();
-        
-        // APIキーを直接指定
+        // APIキーをヘッダーに含める方法で再設定
         const apiKey = amplifyOutputsJson?.data?.api_key;
         console.log(`Using API Key for query: ${apiKey?.substring(0, 5)}...`);
         
-        // Use the adsTxtCacheByDomain query with explicit API Key
-        const result = await client().graphql({
-          query: queries.getAdsTxtCacheByDomain,
-          variables: { domain },
+        // Amplify v6形式で再設定
+        const endpointConfig = {
+          endpoint: amplifyOutputsJson.data.url,
+          region: amplifyOutputsJson.data.aws_region,
+          defaultAuthMode: "apiKey",
+          apiKey: apiKey,
+        };
+        
+        console.log('Manually configuring with endpoint:', endpointConfig.endpoint);
+        
+        // 最新のAmplify構成を適用
+        Amplify.configure({
+          API: {
+            GraphQL: endpointConfig
+          }
+        });
+        
+        // Amplify.configure()を確実に適用するため、ここでクライアントを再初期化
+        const graphqlClient = generateClient({
           authMode: 'apiKey',
-          authToken: apiKey
+          apiKey: apiKey
+        });
+        
+        // 新しいクライアントでクエリを実行
+        const result = await graphqlClient.graphql({
+          query: queries.getAdsTxtCacheByDomain,
+          variables: { domain }
         });
   
         const graphqlResult = result as { data: { adsTxtCacheByDomain: { items: any[] } } };

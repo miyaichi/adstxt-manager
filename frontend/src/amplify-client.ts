@@ -75,7 +75,7 @@ const getConfig = () => {
   return mockConfig;
 };
 
-// Amplify設定の初期化
+// Amplify設定の初期化 - v6用に最適化
 export const configureAmplify = () => {
   // Amplify Sandboxを使用するためにtrueに設定
   const useAmplifyApi = process.env.REACT_APP_USE_AMPLIFY_API === 'true' || true;
@@ -86,7 +86,37 @@ export const configureAmplify = () => {
     apiEndpoint: useAmplifyApi ? config.API?.GraphQL?.endpoint : '/api',
   });
 
-  Amplify.configure(config);
+  // Amplify v6の形式に合わせて設定
+  const apiConfig = {
+    region: amplifyOutputsJson.data.aws_region,
+    graphql_endpoint: amplifyOutputsJson.data.url,
+    graphql_headers: async () => {
+      return {
+        'x-api-key': amplifyOutputsJson.data.api_key
+      };
+    }
+  };
+  
+  try {
+    console.log('Configuring Amplify with API endpoint:', apiConfig.graphql_endpoint);
+    console.log('Using API key:', amplifyOutputsJson.data.api_key.substring(0, 5) + '...');
+    
+    // V6形式で設定
+    Amplify.configure({
+      ...config,
+      API: {
+        ...config.API,
+        GraphQL: {
+          endpoint: amplifyOutputsJson.data.url,
+          region: amplifyOutputsJson.data.aws_region,
+          defaultAuthMode: "apiKey",
+          apiKey: amplifyOutputsJson.data.api_key,
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error configuring Amplify:', error);
+  }
 };
 
 // GraphQLクライアントの生成 - 遅延初期化するためにfunctionにする
