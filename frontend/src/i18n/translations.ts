@@ -853,14 +853,8 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   if (key.startsWith('errors:')) {
     const keyWithoutPrefix = key.replace('errors:', '');
 
-    // sellers.jsonに関連するエラーメッセージの場合は、バックエンド翻訳を使用
-    if (
-      keyWithoutPrefix.startsWith('adsTxtValidation.') &&
-      (keyWithoutPrefix.includes('SellersJson') ||
-        keyWithoutPrefix.includes('Intermediary') ||
-        keyWithoutPrefix.includes('Publisher') ||
-        keyWithoutPrefix.includes('sellerIdNotUnique'))
-    ) {
+    // adsTxtValidation関連のエラーメッセージの場合は、バックエンド翻訳を使用
+    if (keyWithoutPrefix.startsWith('adsTxtValidation.')) {
       const adsTxtKey = keyWithoutPrefix.replace('adsTxtValidation.', '');
 
       // バックエンド翻訳から取得
