@@ -326,11 +326,9 @@ export const adsTxtApi = {
     try {
       console.log(`Attempting to fetch ads.txt from domain: ${domain}${force ? ' (force refresh)' : ''}`);
       
-      // Try to ensure Amplify is configured properly before the API call
-      if (!Amplify.getConfig()) {
-        console.log('Configuring Amplify before API call');
-        configureAmplify();
-      }
+      // Always ensure Amplify is configured before API call
+      console.log('Ensuring Amplify is configured before API call');
+      configureAmplify();
       
       try {
         // Use the adsTxtCacheByDomain query

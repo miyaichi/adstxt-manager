@@ -81,12 +81,15 @@ export const configureAmplify = () => {
 
 // GraphQLクライアントの生成 - 遅延初期化するためにfunctionにする
 let _client: ReturnType<typeof generateClient> | null = null;
+let _isConfigured = false;
+
 export const client = () => {
   if (!_client) {
     // クライアントが初期化されていない場合は初期化する
-    if (!Amplify.getConfig()) {
+    if (!_isConfigured) {
       console.log('Amplify config not found, initializing...');
       configureAmplify();
+      _isConfigured = true;
     }
     _client = generateClient();
   }
