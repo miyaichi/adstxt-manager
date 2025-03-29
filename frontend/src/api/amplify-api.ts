@@ -320,23 +320,36 @@ export const adsTxtApi = {
     }
   },
 
-  // Get ads.txt from a domain - Amplifyを使わずに直接成功を返すシンプルな実装
+  /**
+   * Get ads.txt from a domain
+   * 
+   * NOTE: This is a temporary implementation that returns mock data.
+   * In a production environment, this should connect to the GraphQL API
+   * or a REST backend to fetch the actual content.
+   * 
+   * @param domain - The domain to fetch ads.txt from
+   * @param force - Whether to force refresh the cache
+   * @returns A simulated successful response with mock ads.txt content
+   */
   async getAdsTxtFromDomain(domain: string, force: boolean = false): Promise<any> {
     try {
-      console.log(`Attempting to fetch ads.txt from domain: ${domain}${force ? ' (force refresh)' : ''}`);
+      // サンプルのAds.txtコンテンツを生成
+      const sampleContent = `# Ads.txt content for ${domain}
+# The following entries are sample data for development
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+pubmatic.com, 158070, RESELLER, 5d62403b186f2ace
+openx.com, 540274407, RESELLER, 6a698e2ec38604c6
+appnexus.com, 3153, RESELLER, f5ab79cb980f11d1
+`;
       
-      // フロントエンド開発で利用する直接のモックデータを返す
-      // このアプローチは、Amplify GraphQLが安定するまでの暫定措置
-      console.log('Using direct success response for domain validation');
-      
-      // すべてのドメインで成功を返す
+      // 成功レスポンスを返す
       return {
         success: true,
         data: {
           id: `mock-${domain}`,
           domain: domain,
-          content: `# Ads.txt content for ${domain}\ngoogle.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\npubmatic.com, 158070, RESELLER, 5d62403b186f2ace\n`,
-          status: 'success', // lowercase 'success' to match what the RequestForm is checking
+          content: sampleContent,
+          status: 'success',
           last_updated: new Date().toISOString(),
           created_at: new Date().toISOString(),
         }
@@ -344,7 +357,7 @@ export const adsTxtApi = {
     } catch (error) {
       logger.error('Error in getAdsTxtFromDomain:', error);
       
-      // エラー時にも成功レスポンスを返す（開発環境用）
+      // エラー時にもフォールバックの成功レスポンスを返す
       return {
         success: true,
         data: {
@@ -362,14 +375,21 @@ export const adsTxtApi = {
 
 // No longer needed, moved into the adsTxtApi object
 
-// Status API for Amplify - provides mock implementation since there's no direct REST endpoint
+/**
+ * Status API for AWS Amplify
+ * 
+ * Provides system status information when running in Amplify mode
+ * This is a mock implementation since there's no direct REST endpoint in Amplify Gen2
+ */
 export const statusApi = {
-  // Get system status for Amplify
+  /**
+   * Get system status 
+   * 
+   * @returns Status information including environment details
+   */
   async getStatus(): Promise<any> {
     try {
-      console.log('Using Amplify mock status endpoint');
-      
-      // Get Amplify configuration info from environment
+      // 環境変数から設定情報を収集
       const amplifyEnv: Record<string, string> = {};
       Object.keys(process.env).forEach(key => {
         if (key.includes('REACT_APP_') || key.includes('AMPLIFY_')) {
@@ -377,7 +397,7 @@ export const statusApi = {
         }
       });
       
-      // Create a mock status response that shows Amplify is connected
+      // Amplify GraphQLモード用のステータスレスポンス
       return {
         status: 'OK',
         database: {
