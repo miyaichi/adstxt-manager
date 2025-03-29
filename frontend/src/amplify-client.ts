@@ -79,8 +79,19 @@ export const configureAmplify = () => {
   Amplify.configure(config);
 };
 
-// GraphQLクライアントの生成
-export const client = generateClient();
+// GraphQLクライアントの生成 - 遅延初期化するためにfunctionにする
+let _client: ReturnType<typeof generateClient> | null = null;
+export const client = () => {
+  if (!_client) {
+    // クライアントが初期化されていない場合は初期化する
+    if (!Amplify.getConfig()) {
+      console.log('Amplify config not found, initializing...');
+      configureAmplify();
+    }
+    _client = generateClient();
+  }
+  return _client;
+};
 
 // 現在のAPIキーの取得
 export const getCurrentApiKey = async () => {
