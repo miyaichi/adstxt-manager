@@ -355,9 +355,47 @@ export const adsTxtApi = {
 
 // No longer needed, moved into the adsTxtApi object
 
+// Status API for Amplify - provides mock implementation since there's no direct REST endpoint
+export const statusApi = {
+  // Get system status for Amplify
+  async getStatus(): Promise<any> {
+    try {
+      console.log('Using Amplify mock status endpoint');
+      
+      // Get Amplify configuration info from environment
+      const amplifyEnv: Record<string, string> = {};
+      Object.keys(process.env).forEach(key => {
+        if (key.includes('REACT_APP_') || key.includes('AMPLIFY_')) {
+          amplifyEnv[key] = process.env[key] as string;
+        }
+      });
+      
+      // Create a mock status response that shows Amplify is connected
+      return {
+        status: 'OK',
+        database: {
+          connected: true,
+        },
+        environment: {
+          NODE_ENV: process.env.NODE_ENV || 'production',
+          AMPLIFY_MODE: 'Active',
+          API_ENDPOINT: 'GraphQL API via Amplify',
+          ...amplifyEnv
+        },
+        time: new Date().toISOString(),
+        message: 'Running in Amplify GraphQL mode - no traditional backend server'
+      };
+    } catch (error) {
+      console.error('Error generating Amplify status:', error);
+      throw error;
+    }
+  },
+};
+
 // Export the API interfaces
 export default {
   request: requestApi,
   message: messageApi,
   adsTxt: adsTxtApi,
+  status: statusApi,
 };

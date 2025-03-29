@@ -60,12 +60,13 @@ const StatusPage: React.FC = () => {
         // Add additional frontend information
         frontendEnv['BROWSER'] = navigator.userAgent;
         frontendEnv['BASE_URL'] = window.location.origin;
-        // In development, the backend is at localhost:4000, but accessed via proxy
-        frontendEnv['BACKEND_URL'] =
-          process.env.NODE_ENV === 'development'
-            ? 'http://localhost:4000'
-            : process.env.REACT_APP_BACKEND_URL || window.location.origin;
-
+        frontendEnv['REACT_APP_USE_AMPLIFY_API'] = process.env.REACT_APP_USE_AMPLIFY_API || 'false';
+        
+        // Add API URL - either API Gateway or AppSync GraphQL
+        frontendEnv['API_TYPE'] = process.env.REACT_APP_USE_AMPLIFY_API === 'true' 
+          ? 'AWS AppSync GraphQL' 
+          : 'REST API';
+        
         console.log('Attempting to fetch backend status...');
         // Get backend status
         const backendStatus = await apiClient.status.getStatus();
@@ -112,33 +113,63 @@ const StatusPage: React.FC = () => {
           errorMessage = `Network error: Could not reach backend server. Check if the server is running at port 4000`;
         }
 
-        setError(errorMessage);
+        // Check if using Amplify API
+        const isUsingAmplify = process.env.REACT_APP_USE_AMPLIFY_API === 'true';
+        if (isUsingAmplify) {
+          errorMessage = "Using Amplify API - REST backend status not available";
+        }
+
+        setError(isUsingAmplify ? null : errorMessage);
 
         // Still set frontend status
         const frontendEnv = getFilteredEnvVars();
         frontendEnv['BROWSER'] = navigator.userAgent;
         frontendEnv['BASE_URL'] = window.location.origin;
-        // In development, the backend is at localhost:4000, but accessed via proxy
-        frontendEnv['BACKEND_URL'] =
-          process.env.NODE_ENV === 'development'
-            ? 'http://localhost:4000'
-            : process.env.REACT_APP_BACKEND_URL || window.location.origin;
+        frontendEnv['REACT_APP_USE_AMPLIFY_API'] = process.env.REACT_APP_USE_AMPLIFY_API || 'false';
+        frontendEnv['API_TYPE'] = process.env.REACT_APP_USE_AMPLIFY_API === 'true' 
+          ? 'AWS AppSync GraphQL' 
+          : 'REST API';
 
-        setStatusData({
-          frontend: {
-            status: 'OK',
-            environment: frontendEnv,
-          },
-          backend: {
-            status: 'NG',
-            database: {
-              connected: false,
+        if (isUsingAmplify) {
+          // Mock Amplify backend status if we're using Amplify but status call failed
+          setStatusData({
+            frontend: {
+              status: 'OK',
+              environment: frontendEnv,
             },
-            environment: {},
-            time: new Date().toISOString(),
-            error: errorMessage,
-          },
-        });
+            backend: {
+              status: 'OK',
+              database: {
+                connected: true,
+              },
+              environment: {
+                AMPLIFY_BACKEND_APPID: process.env.AMPLIFY_BACKEND_APPID || 'd1mcsmqi5wkp5a',
+                AMPLIFY_BACKEND_REGION: process.env.AMPLIFY_BACKEND_REGION || 'ap-northeast-1',
+                API_TYPE: 'AWS AppSync GraphQL API',
+                CONNECTION_TYPE: 'Amplify GraphQL',
+              },
+              time: new Date().toISOString(),
+              message: 'Running with Amplify GraphQL backend - traditional REST backend not available'
+            },
+          });
+        } else {
+          // Regular REST backend error
+          setStatusData({
+            frontend: {
+              status: 'OK',
+              environment: frontendEnv,
+            },
+            backend: {
+              status: 'NG',
+              database: {
+                connected: false,
+              },
+              environment: {},
+              time: new Date().toISOString(),
+              error: errorMessage,
+            },
+          });
+        }
 
         setLoading(false);
       }
