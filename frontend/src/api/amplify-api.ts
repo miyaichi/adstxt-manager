@@ -364,7 +364,7 @@ export const adsTxtApi = {
             id: `mock-${domain}`,
             domain: domain,
             content: `# Mock ads.txt content for ${domain}\ngoogle.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0\n`,
-            status: 'SUCCESS',
+            status: 'success', // lowercase 'success' to match what the RequestForm is checking
             last_updated: new Date().toISOString(),
             created_at: new Date().toISOString(),
           }
