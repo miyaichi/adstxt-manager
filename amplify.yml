@@ -1,12 +1,41 @@
-amplify:
-  - name: adstxt-manager
-    backend:
-      type: sandbox
-      config:
-        config: "{\"type\":\"global\"}"
-    frontend:
-      config:
-        sourceDir: frontend
-        framework: react
-        BuildCommand: npm run build
-        StartCommand: npm run start
+version: 1
+# Disable backend environment association
+env:
+  variables:
+    AMPLIFY_SKIP_BACKEND_ASSOCIATION: true
+    AMPLIFY_SKIP_ENVIRONMENT_VALIDATION: true
+    
+backend:
+  phases:
+    build:
+      commands:
+        - echo "Using existing Amplify Gen 2 Backend with AppID: $AMPLIFY_BACKEND_APPID"
+        - echo "Backend resources already deployed with region: $AMPLIFY_BACKEND_REGION"
+        - echo "Not using branch-based environments in Gen2"
+applications:
+  - frontend:
+      phases:
+        preBuild:
+          commands:
+            - nvm use 20
+            - npm install
+            - cp amplify_outputs.json frontend/src/
+            - export REACT_APP_USE_AMPLIFY_API=true
+            - echo "Using Amplify backend with app ID $AMPLIFY_BACKEND_APPID in region $AMPLIFY_BACKEND_REGION"
+            - echo "Using configuration from REACT_APP_AMPLIFY_CONFIG environment variable"
+        build:
+          commands:
+            - npm run build:frontend
+      artifacts:
+        baseDirectory: frontend/build
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+      appRoot: .
+      customHeaders:
+        - pattern: '**/*'
+          headers:
+            - key: 'X-NodeJS-Version'
+              value: '20.x'

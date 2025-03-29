@@ -1,26 +1,32 @@
-import React from 'react';
+// React is used implicitly by JSX
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import RequestDetail from '../../../components/requests/RequestDetail';
-import { requestApi, adsTxtApi } from '../../../api';
-import { RequestWithRecords, AdsTxtRecord, Message } from '../../../models';
+import apiClient from '../../../api';
+import { RequestWithRecords } from '../../../models';
 
 // Mock the API modules
 jest.mock('../../../api', () => ({
-  requestApi: {
-    getRequest: jest.fn(),
-    updateRequestStatus: jest.fn(),
-    updatePublisherInfo: jest.fn(),
-  },
-  adsTxtApi: {
-    getRecordsByRequestId: jest.fn(),
-    updateRecordStatus: jest.fn(),
-    generateAdsTxtContent: jest.fn(),
-  },
-  messageApi: {
-    getMessagesByRequestId: jest.fn(),
-    createMessage: jest.fn(),
+  default: {
+    request: {
+      getRequest: jest.fn(),
+      updateRequestStatus: jest.fn(),
+      updatePublisherInfo: jest.fn(),
+    },
+    adsTxt: {
+      getRecordsByRequestId: jest.fn(),
+      updateRecordStatus: jest.fn(),
+      generateAdsTxtContent: jest.fn(),
+    },
+    message: {
+      getMessagesByRequestId: jest.fn(),
+      createMessage: jest.fn(),
+    },
   },
 }));
+
+// Extract the mocked API client methods for easier test access
+const requestApi = apiClient.request;
+const adsTxtApi = apiClient.adsTxt;
 
 // Mock the AWS Amplify UI components
 jest.mock('@aws-amplify/ui-react', () => {
@@ -179,7 +185,7 @@ jest.mock('../../../components/adsTxt/AdsTxtRecordList', () => {
 });
 
 jest.mock('../../../components/messages/MessageList', () => {
-  const mockMessageList = jest.fn(({ messages, requestId, token }) => (
+  const mockMessageList = jest.fn(({ messages, requestId }) => (
     <div data-testid="message-list">
       <span data-testid="message-count">Message count: {messages?.length || 0}</span>
       <span>Request ID: {requestId}</span>
@@ -190,7 +196,7 @@ jest.mock('../../../components/messages/MessageList', () => {
 });
 
 jest.mock('../../../components/messages/MessageForm', () => {
-  const mockMessageForm = jest.fn(({ requestId, token, onMessageSent }) => (
+  const mockMessageForm = jest.fn(({ requestId, onMessageSent }) => (
     <div data-testid="message-form">
       <button
         data-testid="send-message-button"

@@ -1,0 +1,7 @@
+{
+  "region": "ap-northeast-1",
+  "stackName": "adstxt-manager",
+  "sandbox": {
+    "autoSave": true
+  }
+}

@@ -8,7 +8,7 @@ import { t } from '../../i18n/translations';
 interface AdsTxtRecordListProps {
   records: (AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string }))[];
   showValidation?: boolean;
-  onStatusChange?: (id: string, status: 'pending' | 'approved' | 'rejected') => void;
+  onStatusChange?: ((id: string, status: 'pending' | 'approved' | 'rejected') => void) | undefined;
   isEditable?: boolean;
   title?: string;
 }

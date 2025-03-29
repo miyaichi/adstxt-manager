@@ -11,7 +11,7 @@ import {
   Alert,
   Divider,
 } from '@aws-amplify/ui-react';
-import { requestApi } from '../api';
+import apiClient from '../api';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
 
@@ -35,7 +35,7 @@ const HomePage: React.FC = () => {
       setError(null);
 
       // Fetch requests for this email
-      const response = await requestApi.getRequestsByEmail(email);
+      const response = await apiClient.request.getRequestsByEmail(email);
 
       if (response.success && response.data.length > 0) {
         // If requests exist, navigate to the request list

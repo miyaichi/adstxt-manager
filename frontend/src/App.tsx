@@ -18,12 +18,14 @@ import StatusPage from './pages/StatusPage';
 import { theme } from './styles/theme';
 
 // Import Amplify configuration
-import { configureAmplify } from './ampxConfig';
+import { configureAmplify } from './amplify-client';
 
 function App() {
   // アプリケーション初期化時にAmplifyを設定
   useEffect(() => {
+    // Amplify設定を初期化
     configureAmplify();
+    console.log('Amplify initialized');
   }, []);
 
   return (

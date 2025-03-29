@@ -1,6 +1,5 @@
-import React from 'react';
+// React is used implicitly by JSX
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import Header from '../../../components/common/Header';
 
 // Mock the AWS Amplify UI components

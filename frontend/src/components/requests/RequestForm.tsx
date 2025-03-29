@@ -16,7 +16,7 @@ import {
 } from '@aws-amplify/ui-react';
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adsTxtApi, requestApi } from '../../api';
+import apiClient from '../../api';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 import { AdsTxtRecord, CreateRequestData } from '../../models';
@@ -87,7 +87,7 @@ const RequestForm: React.FC = () => {
     // Start validation
     setIsDomainValidating(true);
     try {
-      const response = await adsTxtApi.getAdsTxtFromDomain(domain);
+      const response = await apiClient.adsTxt.getAdsTxtFromDomain(domain);
       logger.debug('Domain validation response:', response);
 
       if (response.success) {
@@ -177,7 +177,7 @@ const RequestForm: React.FC = () => {
         records: records,
       };
 
-      const response = await requestApi.createRequest(requestData);
+      const response = await apiClient.request.createRequest(requestData);
 
       if (response.success) {
         setSuccess({

@@ -1,6 +1,9 @@
 {
   "name": "adstxt-manager",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build:backend": "cd backend && npm ci && npm run build",
     "build:frontend": "cd frontend && npm ci && npm run build",
@@ -8,7 +11,8 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {
-    "@aws-amplify/backend-cli": "^1.5.0"
+    "@aws-amplify/backend": "^1.15.0",
+    "@aws-amplify/backend-cli": "^1.6.0"
   },
   "dependencies": {
     "aws-amplify": "^6.14.1"

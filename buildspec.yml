@@ -1,0 +1,23 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install -g npm@latest
+      - echo "Node version $(node -v)"
+      - echo "NPM version $(npm -v)"
+  pre_build:
+    commands:
+      - npm install
+  build:
+    commands:
+      - npm run build:frontend
+artifacts:
+  base-directory: 'frontend/build'
+  files:
+    - '**/*'
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - 'frontend/node_modules/**/*'

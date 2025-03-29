@@ -14,7 +14,7 @@ describe('useAsync hook', () => {
     const successData = { id: 1, name: 'Test' };
     const asyncFn = jest.fn().mockResolvedValue(successData);
 
-    const { result, waitForNextUpdate } = renderHook(() => useAsync(asyncFn, false));
+    const { result } = renderHook(() => useAsync(asyncFn, false));
 
     // Initial state
     expect(result.current.loading).toBe(false);
