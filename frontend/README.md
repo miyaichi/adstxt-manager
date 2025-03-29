@@ -45,11 +45,13 @@ chmod +x setup.sh
 ### Manual Installation
 
 1. Install dependencies:
+
    ```
    npm install
    ```
 
 2. Start the development server:
+
    ```
    npm start
    ```
@@ -73,6 +75,7 @@ npm run test:coverage
 ## Building for Production
 
 1. Build the production version:
+
    ```
    npm run build
    ```
@@ -98,6 +101,7 @@ This frontend is configured to work with the Ads.txt Manager backend. Make sure 
 ## Browser Support
 
 This application supports modern browsers including:
+
 - Chrome (latest)
 - Firefox (latest)
 - Safari (latest)

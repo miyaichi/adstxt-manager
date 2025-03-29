@@ -20,7 +20,7 @@ const corsOptions = {
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Allow only the frontend origin
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 // Middleware
@@ -33,15 +33,15 @@ app.use(i18nextMiddleware.handle(i18next));
 const getFilteredEnvVars = () => {
   const filtered: Record<string, string> = {};
   const secretKeywords = ['key', 'secret', 'password', 'token', 'auth', 'credential'];
-  
-  Object.keys(process.env).forEach(key => {
+
+  Object.keys(process.env).forEach((key) => {
     // Skip variables that likely contain secrets
     const lowerKey = key.toLowerCase();
-    if (!secretKeywords.some(secretWord => lowerKey.includes(secretWord))) {
+    if (!secretKeywords.some((secretWord) => lowerKey.includes(secretWord))) {
       filtered[key] = process.env[key] as string;
     }
   });
-  
+
   return filtered;
 };
 
@@ -67,14 +67,14 @@ const statusHandler = async (req: express.Request, res: express.Response) => {
     } catch (error) {
       console.error('Database connection check failed:', error);
     }
-    
+
     res.status(200).json({
       status: dbConnected ? 'OK' : 'NG',
       time: new Date().toISOString(),
       database: {
-        connected: dbConnected
+        connected: dbConnected,
       },
-      environment: getFilteredEnvVars()
+      environment: getFilteredEnvVars(),
     });
   } catch (error) {
     console.error('Status endpoint error:', error);
@@ -82,7 +82,7 @@ const statusHandler = async (req: express.Request, res: express.Response) => {
       status: 'NG',
       time: new Date().toISOString(),
       error: 'Internal server error',
-      environment: {}
+      environment: {},
     });
   }
 };

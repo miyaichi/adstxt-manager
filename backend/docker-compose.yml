@@ -1,11 +1,11 @@
-version: "3.8"
+version: '3.8'
 
 services:
   mailhog:
     image: mailhog/mailhog
     ports:
-      - "1025:1025" # SMTP server
-      - "8025:8025" # Web UI
+      - '1025:1025' # SMTP server
+      - '8025:8025' # Web UI
     networks:
       - app-network
 
@@ -14,7 +14,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4000:4000"
+      - '4000:4000'
     environment:
       - NODE_ENV=development
       - PORT=4000

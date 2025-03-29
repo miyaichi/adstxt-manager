@@ -1,14 +1,14 @@
-import { DatabaseRecord, DatabaseQuery, WhereCondition } from './index';
+import { DatabaseRecord, DatabaseQuery, WhereCondition, IDatabaseAdapter } from './index';
 import { createLogger } from '../../utils/logger';
 
-const logger = createLogger('AmplifyDatabaseMock');
+const logger = createLogger('MockDatabase');
 
 /**
- * Mock implementation of AmplifyDatabase for testing in Node.js environment
- * This implementation uses in-memory storage to simulate DataStore
+ * Mock implementation of database for testing
+ * This implementation uses in-memory storage to simulate a database
  */
-export class AmplifyDatabaseMock {
-  private static instance: AmplifyDatabaseMock;
+export class MockDatabase implements IDatabaseAdapter {
+  private static instance: MockDatabase;
 
   // In-memory storage by table
   private storage: Record<string, Record<string, any>> = {
@@ -20,24 +20,24 @@ export class AmplifyDatabaseMock {
   };
 
   private constructor() {
-    logger.info('AmplifyDatabaseMock instance created');
+    logger.info('MockDatabase instance created');
   }
 
   /**
    * Get the singleton instance of the database
    */
-  public static getInstance(): AmplifyDatabaseMock {
-    if (!AmplifyDatabaseMock.instance) {
-      AmplifyDatabaseMock.instance = new AmplifyDatabaseMock();
+  public static getInstance(): MockDatabase {
+    if (!MockDatabase.instance) {
+      MockDatabase.instance = new MockDatabase();
     }
-    return AmplifyDatabaseMock.instance;
+    return MockDatabase.instance;
   }
 
   /**
    * Initialize the database
    */
   public async initialize(): Promise<void> {
-    logger.info('Initializing AmplifyDatabaseMock');
+    logger.info('Initializing MockDatabase');
     // Nothing to do for in-memory mock
     return Promise.resolve();
   }
@@ -304,16 +304,16 @@ export class AmplifyDatabaseMock {
    */
   public async clear(): Promise<void> {
     try {
-      logger.warn('Clearing AmplifyDatabaseMock');
+      logger.warn('Clearing MockDatabase');
 
       // Reset all tables
       for (const table of Object.keys(this.storage)) {
         this.storage[table] = {};
       }
 
-      logger.info('AmplifyDatabaseMock cleared successfully');
+      logger.info('MockDatabase cleared successfully');
     } catch (error) {
-      logger.error('Error clearing AmplifyDatabaseMock:', error);
+      logger.error('Error clearing MockDatabase:', error);
       throw error;
     }
   }

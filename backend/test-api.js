@@ -13,10 +13,10 @@ const fs = require('fs');
 
 // Allowed hosts - only allow connections to frontend/backend
 const ALLOWED_HOSTS = [
-  'localhost:4000',  // backend API
-  'localhost:3000',  // frontend dev server
-  '127.0.0.1:4000',  // backend API alternative
-  '127.0.0.1:3000'   // frontend dev server alternative
+  'localhost:4000', // backend API
+  'localhost:3000', // frontend dev server
+  '127.0.0.1:4000', // backend API alternative
+  '127.0.0.1:3000', // frontend dev server alternative
 ];
 
 // Define usage information
@@ -32,8 +32,12 @@ function showUsage() {
   console.log('  -v, --verbose  Make the operation more talkative');
   console.log('');
   console.log('Examples:');
-  console.log('  node test-api.js GET http://localhost:4000/api/sellersjson/openx.com/seller/537121234');
-  console.log('  node test-api.js POST http://localhost:4000/api/messages -d \'{"content":"test", "request_id":"123"}\'');
+  console.log(
+    '  node test-api.js GET http://localhost:4000/api/sellersjson/openx.com/seller/537121234'
+  );
+  console.log(
+    '  node test-api.js POST http://localhost:4000/api/messages -d \'{"content":"test", "request_id":"123"}\''
+  );
   process.exit(1);
 }
 
@@ -46,7 +50,7 @@ function parseArgs() {
     data: null,
     headers: {},
     outputFile: null,
-    verbose: false
+    verbose: false,
   };
 
   if (args.length < 2) {
@@ -108,7 +112,7 @@ async function makeRequest(options) {
     hostname: parsedUrl.hostname,
     port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
     path: parsedUrl.path,
-    headers: options.headers
+    headers: options.headers,
   };
 
   if (options.verbose) {
@@ -141,14 +145,14 @@ async function makeRequest(options) {
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
-            body: parsedResponse
+            body: parsedResponse,
           });
         } catch (e) {
           // Not JSON or invalid JSON
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
-            body: responseBody
+            body: responseBody,
           });
         }
       });

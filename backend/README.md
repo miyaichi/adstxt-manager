@@ -7,8 +7,7 @@ This is the backend server for the Ads.txt Manager application, handling request
 - **Node.js**: JavaScript runtime
 - **Express**: Web framework
 - **TypeScript**: Type-safe JavaScript
-- **SQLite**: Embedded database (開発環境)
-- **AWS Amplify DataStore/DynamoDB**: クラウドデータベース (本番環境)
+- **SQLite**: Default database
 - **Nodemailer**: Email sending
 - **MailHog**: Email testing service
 - **Public Suffix List**: Domain validation
@@ -30,11 +29,13 @@ chmod +x setup.sh
 ### Manual Setup
 
 1. Install dependencies:
+
    ```
    npm install
    ```
 
 2. Create a `.env` file from the example:
+
    ```
    cp .env.example .env
    ```
@@ -42,11 +43,13 @@ chmod +x setup.sh
 3. Update the `.env` file with your configuration.
 
 4. Build the TypeScript code:
+
    ```
    npm run build
    ```
 
 5. Initialize the database:
+
    ```
    npm run migrate
    ```
@@ -68,38 +71,26 @@ npm run dev
 
 ### Production Mode
 
-For local production mode using SQLite:
+For production mode:
 
 ```
 npm run build
 npm start
 ```
 
-### AWS Amplify (DynamoDB)
+### Database Configuration
 
-本番環境ではAWS AmplifyとDynamoDBを使用します。Amplify CLIを使用してデータモデルをデプロイする必要があります。
+The application uses a database abstraction layer with the following features:
 
-```bash
-# Amplify CLIのインストール（初回のみ）
-npm install -g @aws-amplify/cli
+- **SQLite**: Default database for all environments
+- **Mock Database**: In-memory database for testing
 
-# プロジェクトのルートディレクトリ（adstxt-manager）に移動
-cd ..
+The database provider is automatically selected based on the environment:
 
-# Amplifyプロジェクトの初期化
-amplify init
+- `NODE_ENV=development` or `NODE_ENV=production`: Uses SQLite
+- `NODE_ENV=test`: Uses the Mock Database
 
-# APIの追加
-amplify add api
-```
-
-API設定時に、GraphQL APIを選択し、スキーマとしてプロジェクトルートの `/amplify-schema.graphql` ファイルを使用してください。
-
-設定が完了したら、以下のコマンドでバックエンドをデプロイします。
-
-```bash
-amplify push
-```
+This design allows for easy extension with additional database providers in the future.
 
 ## Using Docker Compose
 
@@ -110,6 +101,7 @@ docker-compose up -d
 ```
 
 This will start:
+
 - The backend server on port 4000
 - MailHog SMTP server on port 1025
 - MailHog web interface on port 8025
@@ -161,3 +153,23 @@ For coverage report:
 ```
 npm run test:coverage
 ```
+
+## Database Architecture
+
+The application uses a flexible database abstraction:
+
+1. **Interface-Based Design**:
+
+   - All database operations are defined in the `IDatabaseAdapter` interface
+   - Database implementations can be swapped without changing application code
+
+2. **Available Providers**:
+
+   - `SqliteDatabase`: Persistent file-based storage
+   - `MockDatabase`: In-memory storage for testing
+
+3. **Adding New Providers**:
+   - Implement the `IDatabaseAdapter` interface
+   - Update the factory in `src/config/database/index.ts` to use your implementation
+
+This architecture supports easy migration to other database systems in the future without significant code changes.

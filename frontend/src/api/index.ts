@@ -280,12 +280,12 @@ export const statusApi = {
   async getStatus(): Promise<any> {
     try {
       console.log('Fetching status from API endpoint...');
-      
+
       // Use the configured API client
       const response = await api.get('/status');
       console.log('Status response raw:', response);
       console.log('Status response data:', response.data);
-      
+
       // バックエンドからの直接レスポンスを返す
       // APIResponseラッパーなしで直接データを返す
       return response.data;
@@ -293,7 +293,7 @@ export const statusApi = {
       console.error('Status endpoint failed:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Export API as a named constant

@@ -7,37 +7,12 @@ import SellersJsonCacheModel, {
 } from '../models/SellersJsonCache';
 import { logger } from '../utils/logger';
 
-import fs from 'fs';
-import path from 'path';
-
 /**
  * Special domains with non-standard sellers.json URLs
  */
 const SPECIAL_DOMAINS: Record<string, string> = {
   'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
-};
-
-/**
- * List of domains that use pre-downloaded sellers.json files
- */
-const PREFETCHED_DOMAINS = [
-  'ad-generation.jp',
-  'appnexus.com',
-  'google.com',
-  'indexexchange.com',
-  'impact-ad.jp',
-  'openx.com',
-  'pubmatic.com',
-  'rubiconproject.com',
-  'smartadserver.com',
-];
-
-/**
- * Get the path to pre-downloaded sellers.json files
- */
-const getPrefetchedFilePath = (domain: string): string => {
-  return path.join(process.cwd(), 'data', 'sellers_json', `${domain}.json`);
 };
 
 // Map for caching
@@ -96,86 +71,127 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       `Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`
     );
 
-    // Check if there's a pre-downloaded file
-    if (PREFETCHED_DOMAINS.includes(domain)) {
-      let sellerData;
+    let sellerData;
 
-      // Check in-memory cache
-      if (domainSellerDataCache.has(domain)) {
-        sellerData = domainSellerDataCache.get(domain);
-        logger.info(`Using cached sellers.json data for ${domain}`);
+    // Check in-memory cache for fast access
+    if (domainSellerDataCache.has(domain)) {
+      sellerData = domainSellerDataCache.get(domain);
+      logger.info(`Using in-memory cached sellers.json data for ${domain}`);
+    }
+
+    // Check if the cached data is valid
+    if (sellerData && Array.isArray(sellerData.sellers)) {
+      // Find the seller matching the seller_id
+      const targetSeller = sellerData.sellers.find(
+        (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+      );
+
+      logger.info(
+        `Searching among ${sellerData.sellers.length} sellers in ${domain} for ID ${normalizedSellerId}`
+      );
+
+      if (targetSeller) {
+        // If seller is found
+        logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
+
+        const result = {
+          contact_email: sellerData.contact_email,
+          version: sellerData.version,
+          identifiers: sellerData.identifiers || [],
+          seller: targetSeller,
+        };
+
+        // Save result to cache
+        sellerIdCache.set(cacheKey, result);
+
+        return res.status(200).json({
+          success: true,
+          data: result,
+        });
       } else {
-        const filePath = getPrefetchedFilePath(domain);
-        logger.info(`Checking for pre-fetched sellers.json file at ${filePath}`);
+        logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
 
-        // Check if file exists
-        if (fs.existsSync(filePath)) {
-          try {
-            logger.info(`Loading pre-fetched sellers.json for ${domain}`);
+        // If seller ID is not found, return "not found" information instead of an error
+        const notFoundResult = {
+          found: false,
+          message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
+          sellerId: normalizedSellerId,
+        };
 
-            // Load the file
-            const fileContent = fs.readFileSync(filePath, 'utf8');
-            sellerData = JSON.parse(fileContent);
+        // Also cache "not found" results
+        sellerIdCache.set(cacheKey, notFoundResult);
 
-            // Save to cache
-            domainSellerDataCache.set(domain, sellerData);
-          } catch (error: any) {
-            logger.error(`Error reading pre-fetched sellers.json for ${domain}: ${error.message}`);
-            // If an error occurs, try fetching from the API
-          }
-        }
-      }
-
-      if (sellerData && Array.isArray(sellerData.sellers)) {
-        // Find the seller matching the seller_id
-        const targetSeller = sellerData.sellers.find(
-          (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
-        );
-
-        logger.info(
-          `Searching among ${sellerData.sellers.length} sellers in ${domain} for ID ${normalizedSellerId}`
-        );
-
-        if (targetSeller) {
-          // If seller is found
-          logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
-
-          const result = {
-            contact_email: sellerData.contact_email,
-            version: sellerData.version,
-            identifiers: sellerData.identifiers || [],
-            seller: targetSeller,
-          };
-
-          // Save result to cache
-          sellerIdCache.set(cacheKey, result);
-
-          return res.status(200).json({
-            success: true,
-            data: result,
-          });
-        } else {
-          logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
-
-          // If seller ID is not found, return "not found" information instead of an error
-          const notFoundResult = {
-            found: false,
-            message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
-            sellerId: normalizedSellerId,
-          };
-
-          // Also cache "not found" results
-          sellerIdCache.set(cacheKey, notFoundResult);
-
-          return res.status(200).json({
-            success: true,
-            data: notFoundResult,
-          });
-        }
-      } else {
-        logger.warn(`No sellers data available for ${domain}`);
+        return res.status(200).json({
+          success: true,
+          data: notFoundResult,
+        });
       }
     }
+
+    // If in-memory cache doesn't have the data, check the database
+    logger.info(`Checking database cache for ${domain}`);
+    const cachedData = await SellersJsonCacheModel.getByDomain(domain);
+
+    if (cachedData && cachedData.status === 'success' && cachedData.content) {
+      try {
+        const parsedData = SellersJsonCacheModel.parseContent(cachedData.content);
+
+        if (parsedData && Array.isArray(parsedData.sellers)) {
+          // Store in-memory for faster access
+          domainSellerDataCache.set(domain, parsedData);
+
+          // Find the seller matching the seller_id
+          const targetSeller = parsedData.sellers.find(
+            (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+          );
+
+          logger.info(
+            `Searching among ${parsedData.sellers.length} sellers in ${domain} from DB cache for ID ${normalizedSellerId}`
+          );
+
+          if (targetSeller) {
+            logger.info(`Found seller with ID ${normalizedSellerId} in ${domain} from DB cache`);
+
+            const result = {
+              contact_email: parsedData.contact_email,
+              version: parsedData.version,
+              identifiers: parsedData.identifiers || [],
+              seller: targetSeller,
+              from_db_cache: true,
+            };
+
+            // Save result to cache
+            sellerIdCache.set(cacheKey, result);
+
+            return res.status(200).json({
+              success: true,
+              data: result,
+            });
+          } else {
+            logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain} in DB cache`);
+
+            const notFoundResult = {
+              found: false,
+              message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
+              sellerId: normalizedSellerId,
+              from_db_cache: true,
+            };
+
+            sellerIdCache.set(cacheKey, notFoundResult);
+
+            return res.status(200).json({
+              success: true,
+              data: notFoundResult,
+            });
+          }
+        }
+      } catch (error: any) {
+        logger.error(`Error parsing cached sellers.json from DB for ${domain}: ${error.message}`);
+        // If there's an error parsing the cached data, fall back to fetching from the API
+      }
+    }
+
+    logger.info(`No sellers data available in cache for ${domain}, will fetch from API`);
 
     // Use streaming with Axios (default approach or fallback)
     const response = await axios({

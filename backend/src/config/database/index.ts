@@ -1,5 +1,12 @@
 import { getEnvironment } from '../environment';
 import { SqliteDatabase } from './sqlite';
+import { MockDatabase } from './mock-database';
+
+// Database provider names
+export enum DatabaseProvider {
+  SQLITE = 'sqlite',
+  MOCK = 'mock',
+}
 
 export interface DatabaseRecord {
   id: string;
@@ -30,17 +37,29 @@ export interface IDatabaseAdapter {
   getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null>;
   query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]>;
   execute<T>(sql: string, params?: any[]): Promise<T | T[] | null>;
+  // Optional method for clearing data (useful for testing)
+  clear?(): Promise<void>;
 }
 
 /**
  * A lightweight adapter for database operations
  */
 class DatabaseAdapter implements IDatabaseAdapter {
-  private implementation: SqliteDatabase;
+  private implementation: IDatabaseAdapter;
 
   constructor() {
-    // In Gen2, we'll use SQLite by default until we implement a new database adapter
-    this.implementation = SqliteDatabase.getInstance();
+    // Determine which database implementation to use
+    const env = getEnvironment();
+
+    // Use mock database for testing
+    if (env.NODE_ENV === 'test') {
+      this.implementation = MockDatabase.getInstance();
+    } else {
+      // Default to SQLite
+      this.implementation = SqliteDatabase.getInstance();
+    }
+
+    console.log(`Using database provider: ${this.implementation.constructor.name}`);
   }
 
   /**
@@ -87,6 +106,16 @@ class DatabaseAdapter implements IDatabaseAdapter {
    */
   async execute<T>(sql: string, params?: any[]): Promise<T | T[] | null> {
     return await this.implementation.execute(sql, params);
+  }
+
+  /**
+   * Clear the database (if supported by the implementation)
+   */
+  async clear(): Promise<void> {
+    if (this.implementation.clear) {
+      return await this.implementation.clear();
+    }
+    console.warn('Clear operation not supported by current database implementation');
   }
 }
 

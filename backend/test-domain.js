@@ -19,14 +19,14 @@ function extractRootDomain(domain) {
 
 async function fetchAdsTxt(domain) {
   console.log(`Testing fetch ads.txt for domain: ${domain}`);
-  
+
   // Extract root domain
   const rootDomain = extractRootDomain(domain);
   console.log(`Root domain: ${rootDomain}`);
-  
+
   // Try common URLs for ads.txt
   const urls = [`https://${rootDomain}/ads.txt`, `https://www.${rootDomain}/ads.txt`];
-  
+
   for (const url of urls) {
     try {
       console.log(`Trying URL: ${url}`);
@@ -37,7 +37,7 @@ async function fetchAdsTxt(domain) {
           'User-Agent': 'AdsTxtManager/1.0',
         },
       });
-      
+
       console.log(`Success! Status code: ${response.status}`);
       const contentPreview = response.data.toString().substring(0, 500);
       console.log(`Content preview: ${contentPreview}...`);
@@ -46,20 +46,20 @@ async function fetchAdsTxt(domain) {
       console.error(`Error fetching ${url}: ${error.message}`);
     }
   }
-  
+
   console.log('Failed to fetch ads.txt from all URLs');
 }
 
 async function fetchSellersJson(domain) {
   console.log(`Testing fetch sellers.json for domain: ${domain}`);
-  
+
   // Extract root domain
   const rootDomain = extractRootDomain(domain);
   console.log(`Root domain: ${rootDomain}`);
-  
+
   // Determine URL to fetch
   let url;
-  
+
   // Check if this is a special domain with a custom URL
   if (rootDomain in SPECIAL_DOMAINS) {
     url = SPECIAL_DOMAINS[rootDomain];
@@ -68,7 +68,7 @@ async function fetchSellersJson(domain) {
     // Use standard location
     url = `https://${rootDomain}/sellers.json`;
   }
-  
+
   try {
     console.log(`Fetching from URL: ${url}`);
     const response = await axios.get(url, {
@@ -79,7 +79,7 @@ async function fetchSellersJson(domain) {
         'User-Agent': 'AdsTxtManager/1.0',
       },
     });
-    
+
     console.log(`Success! Status code: ${response.status}`);
     const contentPreview = JSON.stringify(response.data).substring(0, 500);
     console.log(`Content preview: ${contentPreview}...`);
@@ -101,10 +101,9 @@ async function fetchSellersJson(domain) {
 async function runTests() {
   // Test standard domain
   await fetchSellersJson('openx.com');
-  
+
   // Test special domain
   await fetchSellersJson('google.com');
 }
 
 runTests();
-

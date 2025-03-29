@@ -35,8 +35,23 @@ export const isAmplifyEnvironment = (): boolean => {
 };
 
 /**
+ * Gets the current environment configuration
+ */
+export interface Environment {
+  NODE_ENV: string;
+  IS_LOCAL: boolean;
+  IS_CLOUD: boolean;
+}
+
+/**
  * Gets the current environment
  */
-export const getEnvironment = (): 'local' | 'cloud' => {
-  return isLocalEnvironment() ? 'local' : 'cloud';
+export const getEnvironment = (): Environment => {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+
+  return {
+    NODE_ENV: nodeEnv,
+    IS_LOCAL: isLocalEnvironment(),
+    IS_CLOUD: isCloudEnvironment(),
+  };
 };

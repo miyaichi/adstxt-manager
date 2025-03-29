@@ -18,10 +18,10 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Allowed hosts - security restriction
 const ALLOWED_HOSTS = [
-  'localhost:4000',  // backend API
-  'localhost:3000',  // frontend dev server
-  '127.0.0.1:4000',  // backend API alternative
-  '127.0.0.1:3000'   // frontend dev server alternative
+  'localhost:4000', // backend API
+  'localhost:3000', // frontend dev server
+  '127.0.0.1:4000', // backend API alternative
+  '127.0.0.1:3000', // frontend dev server alternative
 ];
 
 // Parse arguments
@@ -33,7 +33,7 @@ let verbose = false;
 let saveToDb = false;
 let headers = {
   'User-Agent': 'AdsTxtManager/1.0',
-  'Accept': 'application/json'
+  Accept: 'application/json',
 };
 
 // Simple arg parsing
@@ -60,7 +60,9 @@ for (let i = 0; i < args.length; i++) {
 
 if (!urlArg) {
   console.log('Usage: node curl.js <url> [-X METHOD] [-d DATA] [-v] [--save]');
-  console.log('Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save');
+  console.log(
+    'Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save'
+  );
   process.exit(1);
 }
 
@@ -102,7 +104,8 @@ if (saveToDb && parsedUrl.path.includes('/adsTxtCache/domain/')) {
   });
 
   // Create the ads_txt_cache table if it doesn't exist
-  db.run(`
+  db.run(
+    `
     CREATE TABLE IF NOT EXISTS ads_txt_cache (
       id TEXT PRIMARY KEY,
       domain TEXT NOT NULL,
@@ -115,13 +118,15 @@ if (saveToDb && parsedUrl.path.includes('/adsTxtCache/domain/')) {
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_ads_txt_cache_domain ON ads_txt_cache (domain);
-  `, (err) => {
-    if (err) {
-      console.error(`Error creating table: ${err.message}`);
-      if (db) db.close();
-      process.exit(1);
+  `,
+    (err) => {
+      if (err) {
+        console.error(`Error creating table: ${err.message}`);
+        if (db) db.close();
+        process.exit(1);
+      }
     }
-  });
+  );
 }
 
 // Function to save data to database
@@ -181,7 +186,7 @@ const options = {
   hostname: parsedUrl.hostname,
   port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
   path: parsedUrl.path,
-  headers: headers
+  headers: headers,
 };
 
 if (verbose) {
