@@ -38,7 +38,7 @@ const loadFromLocalStorage = (key: string): any | null => {
 interface AdsTxtRecordItemProps {
   record: AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string });
   showValidation?: boolean;
-  onStatusChange?: ((id: string, status: 'pending' | 'approved' | 'rejected') => void) | undefined;
+  onStatusChange?: (id: string, status: 'pending' | 'approved' | 'rejected') => void;
   isEditable?: boolean;
 }
 
