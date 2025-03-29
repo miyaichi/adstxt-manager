@@ -173,3 +173,45 @@ The application uses a flexible database abstraction:
    - Update the factory in `src/config/database/index.ts` to use your implementation
 
 This architecture supports easy migration to other database systems in the future without significant code changes.
+
+## Sellers.json Data Management
+
+The application includes a utility script to fetch and cache sellers.json data from advertising domains. This data is used for validation and verification of ads.txt entries.
+
+### Using the fetch-sellers-json.js Script
+
+This script fetches sellers.json data for specified domains, saves it to the database, and also creates local copies in the `data/sellers_json/` directory.
+
+#### Basic Usage
+
+```bash
+# Fetch data for the default domains
+node fetch-sellers-json.js
+
+# Fetch data for specific domains
+node fetch-sellers-json.js google.com rubiconproject.com
+```
+
+#### Advanced Options
+
+```bash
+# Update all domains currently cached in the database
+node fetch-sellers-json.js --update-cached
+
+# Force update even if cache is fresh (less than 24 hours old)
+node fetch-sellers-json.js --force
+
+# Combine options
+node fetch-sellers-json.js google.com openx.com --update-cached --force
+```
+
+#### Setting Up as a Cron Job
+
+For production environments, it's recommended to set up a cron job to keep the sellers.json data fresh:
+
+```bash
+# Example crontab entry to run daily at 3 AM
+0 3 * * * cd /path/to/app/backend && node fetch-sellers-json.js --update-cached
+```
+
+This helps ensure that validation against sellers.json data is using relatively recent information.
