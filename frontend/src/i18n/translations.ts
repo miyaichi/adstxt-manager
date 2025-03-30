@@ -56,8 +56,8 @@ export const translations = {
       ja: 'メールアドレス',
     },
     process: {
-      en: 'Process',
-      ja: '処理',
+      en: 'Upload',
+      ja: 'アップロード',
     },
     contentRequired: {
       en: 'Please enter some content',
@@ -110,18 +110,6 @@ export const translations = {
     clear: {
       en: 'Clear',
       ja: 'クリア',
-    },
-    selectFile: {
-      en: 'Selected file:',
-      ja: '選択ファイル:',
-    },
-    dropFileHere: {
-      en: 'Click or drag and drop files here',
-      ja: 'ファイルをクリックまたはドラッグ＆ドロップしてください',
-    },
-    fileRequired: {
-      en: 'Please select a file',
-      ja: 'ファイルを選択してください',
     },
     parseError: {
       en: 'An error occurred while parsing the file',
@@ -195,8 +183,8 @@ export const translations = {
         ja: 'リクエストを作成',
       },
       description: {
-        en: "As an advertising service or agency, request an update to a publisher's Ads.txt file. Simply upload a CSV file or manually enter records to apply.",
-        ja: '広告サービスや代理店として、パブリッシャーにAds.txtファイルの更新をリクエストします。CSVファイルをアップロードするか、レコードを手動で入力するだけで簡単に申請できます。',
+        en: "As an advertising service or agency, request an update to a publisher's Ads.txt file. Simply manually enter records to apply.",
+        ja: '広告サービスや代理店として、パブリッシャーにAds.txtファイルの更新をリクエストします。レコードを手動で入力するだけで簡単に申請できます。',
       },
       button: {
         en: 'Create New Request',
