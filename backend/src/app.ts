@@ -1,13 +1,13 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import { initializeDatabase } from './config/database';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { isLocalEnvironment, isCloudEnvironment, isAmplifyEnvironment } from './config/environment';
-import apiRoutes from './routes';
-import db from './config/database/index';
 import i18nextMiddleware from 'i18next-http-middleware';
+import { initializeDatabase } from './config/database';
+import db from './config/database/index';
+import { isAmplifyEnvironment, isCloudEnvironment } from './config/environment';
 import i18next from './i18n';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import apiRoutes from './routes';
 
 // Load environment variables
 dotenv.config();
@@ -44,8 +44,6 @@ const getFilteredEnvVars = () => {
 
   return filtered;
 };
-
-// 環境検出関数はすでにファイル先頭でインポート済み
 
 // Status endpoint directly in app (both at API route and root route for flexibility)
 const statusHandler = async (req: express.Request, res: express.Response) => {

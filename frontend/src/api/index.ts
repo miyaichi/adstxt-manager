@@ -286,8 +286,7 @@ export const statusApi = {
       console.log('Status response raw:', response);
       console.log('Status response data:', response.data);
 
-      // バックエンドからの直接レスポンスを返す
-      // APIResponseラッパーなしで直接データを返す
+      // Return a direct response from the backend
       return response.data;
     } catch (error) {
       console.error('Status endpoint failed:', error);

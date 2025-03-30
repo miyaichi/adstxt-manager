@@ -591,8 +591,8 @@ export const translations = {
         ja: '選択レコード',
       },
       noRecordsSelected: {
-        en: 'No records selected. Please upload a file to select records.',
-        ja: 'レコードが選択されていません。ファイルアップロードしてレコードを選択してください。',
+        en: 'No records selected. Please upload a contents to select records.',
+        ja: 'レコードが選択されていません。コンテンツをロードしてレコードを選択してください。',
       },
       submitRequest: {
         en: 'Submit Request',

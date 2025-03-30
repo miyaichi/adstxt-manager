@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-// seller_idの重複チェックをテストする関数
+// Function to test for duplicates in seller_id
 function testSellerIdUniqueness(domainName: string) {
   const dataPath = path.join(__dirname, '../../data/sellers_json', `${domainName}.json`);
 

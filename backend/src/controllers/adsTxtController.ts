@@ -256,7 +256,6 @@ export const generateAdsTxtContent = asyncHandler(async (req: Request, res: Resp
   content += `# Generated on: ${currentDate.toISOString()}\n`;
   content += `# Requester: ${requesterName}\n`;
   content += `# Approved on: ${formattedDate}\n`;
-  // リクエスターのメールアドレスとRequest IDは個人情報保護のため含めない
 
   // Add description about the file
   content += '# The following entries have been approved for inclusion in your ads.txt file\n';

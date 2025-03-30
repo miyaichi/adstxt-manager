@@ -1,23 +1,23 @@
-import { parseAdsTxtLine, crossCheckAdsTxtRecords } from './validation';
+import { crossCheckAdsTxtRecords, parseAdsTxtLine } from './validation';
 
-// テスト関数
+// Test function to validate a fixed record
 async function testFixedValidation() {
-  // テスト用のレコードを作成
+  // Create a test record
   const record1 = parseAdsTxtLine('openx.com,540838151,RESELLER,6a698e2ec38604c6', 1);
 
   console.log('Testing with publisher domain: nikkei.com');
   console.log('Testing record:', record1);
 
   if (record1) {
-    // 検証を実行
+    // Perform validation
     const validatedRecords = await crossCheckAdsTxtRecords('nikkei.com', [record1]);
 
-    // 結果の表示
+    // Display the validation results
     console.log('\n=== Validation Results ===');
     console.log(`Has warning: ${validatedRecords[0].has_warning}`);
     console.log(`Warning: ${validatedRecords[0].warning}`);
 
-    // 詳細な検証結果を表示
+    // Display detailed validation results
     if (validatedRecords[0].validation_results) {
       console.log('\nDetailed validation results:');
       console.log(`- hasSellerJson: ${validatedRecords[0].validation_results.hasSellerJson}`);
@@ -35,7 +35,7 @@ async function testFixedValidation() {
       );
     }
 
-    // 警告リストがあれば表示
+    // Display warning list if available
     if (validatedRecords[0].all_warnings) {
       console.log('\nAll warnings:');
       validatedRecords[0].all_warnings.forEach((warning, index) => {
@@ -48,5 +48,5 @@ async function testFixedValidation() {
   }
 }
 
-// テスト実行
+// Execute the test
 testFixedValidation().catch(console.error);
