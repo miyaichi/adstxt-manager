@@ -30,12 +30,7 @@ const SPECIAL_DOMAINS = {
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
-// Create data directory if it doesn't exist
-const dataDir = path.join(__dirname, 'data', 'sellers_json');
-if (!fs.existsSync(dataDir)) {
-  console.log(`📁 Creating directory: ${dataDir}`);
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+// Sellers.json data will be stored in the database only
 
 // Initialize database connection
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'db/database.sqlite');
@@ -292,12 +287,9 @@ async function main() {
 
     try {
       const { data, statusCode } = await fetchUrl(url);
-      const filePath = path.join(dataDir, `${domain}.json`);
 
       // Validating JSON data
       if (isValidJson(data)) {
-        // Write to file
-        fs.writeFileSync(filePath, data, 'utf8');
         console.log(`✅ Successfully downloaded sellers.json for ${domain}`);
 
         // Save to database

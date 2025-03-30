@@ -27,7 +27,6 @@ export const isCloudEnvironment = (): boolean => {
   );
 };
 
-
 /**
  * Gets the current environment configuration
  */
