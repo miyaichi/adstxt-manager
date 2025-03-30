@@ -14,7 +14,7 @@ This is the frontend for the Ads.txt Manager application, providing a user inter
 ## Features
 
 - Create new Ads.txt update requests
-- Upload and validate Ads.txt files for processing
+- Upload and validate Ads.txt records for processing
 - View and manage existing requests
 - Real-time messaging between publishers and requesters
 - Approve or reject Ads.txt records individually
@@ -97,15 +97,6 @@ npm run test:coverage
 ## Backend Connection
 
 This frontend is configured to work with the Ads.txt Manager backend. Make sure the backend server is running on port 4000 (or update the proxy in `package.json` if using a different port).
-
-## Browser Support
-
-This application supports modern browsers including:
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
 
 ## License
 
