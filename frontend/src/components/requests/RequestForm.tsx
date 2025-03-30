@@ -323,7 +323,7 @@ const RequestForm: React.FC = () => {
           <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
 
           <Tabs>
-            <TabItem title={t('requests.form.fileUploadTab', language)}>
+            <TabItem title={t('requests.form.uploadTab', language)}>
               <AdsTxtTextInput
                 onRecordsSelected={handleRecordsSelected}
                 onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)}

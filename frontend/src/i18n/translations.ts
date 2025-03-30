@@ -578,9 +578,9 @@ export const translations = {
         en: 'Ads.txt Records',
         ja: 'Ads.txtレコード',
       },
-      fileUploadTab: {
-        en: 'File Upload',
-        ja: 'ファイルアップロード',
+      uploadTab: {
+        en: 'Upload',
+        ja: 'アップロード',
       },
       selectedRecordsTab: {
         en: 'Selected Records',
@@ -794,8 +794,8 @@ export const translations = {
   },
   footer: {
     copyright: {
-      en: '© {{year}} Ads.txt Manager',
-      ja: '© {{year}} Ads.txt マネージャー',
+      en: '(c) {{year}} Ads.txt Manager',
+      ja: '(c) {{year}} Ads.txt マネージャー',
     },
   },
   errorMessage: {
@@ -806,12 +806,11 @@ export const translations = {
   },
 };
 
-// バックエンド定義の翻訳メッセージ（必要なものだけを含める）
-// これらはbackend/src/i18n/locales/*/errors.jsonと同じキーを持つ
+// These have the same keys as backend/src/i18n/locales/*/errors.json
 type TranslationItem = {
   en: string;
   ja: string;
-  [key: string]: string; // 言語キーのインデックスシグネチャ
+  [key: string]: string; // Language key index signature
 };
 type AdsTxtValidationType = {
   [key: string]: TranslationItem;
@@ -861,24 +860,24 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   // Parse the key into path components
   let path: string[];
 
-  // 'errors:' プレフィックスがある場合は特別処理
+  // 'errors:' If the prefix is present, handle it separately
   if (key.startsWith('errors:')) {
     const keyWithoutPrefix = key.replace('errors:', '');
 
-    // adsTxtValidation関連のエラーメッセージの場合は、バックエンド翻訳を使用
+    // For adsTxtValidation-related error messages, use backend translations
     if (keyWithoutPrefix.startsWith('adsTxtValidation.')) {
       const adsTxtKey = keyWithoutPrefix.replace('adsTxtValidation.', '');
 
-      // バックエンド翻訳から取得
+      // Get the translation from backend translations
       const validationTranslations = backendTranslations.adsTxtValidation;
       if (adsTxtKey in validationTranslations) {
         const translationItem = validationTranslations[adsTxtKey];
-        // 指定された言語の翻訳があれば使用、なければ英語にフォールバック
+        // If the translation item is an object, use the language key
         const translation =
           language in translationItem ? translationItem[language] : translationItem.en;
 
         if (translation && params) {
-          // パラメータを置換
+          // Replace parameters in the translation string
           return Object.entries(params).reduce((str, [paramKey, paramValue]) => {
             return str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
           }, translation);
