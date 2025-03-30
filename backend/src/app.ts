@@ -4,7 +4,7 @@ import express from 'express';
 import i18nextMiddleware from 'i18next-http-middleware';
 import { initializeDatabase } from './config/database';
 import db from './config/database/index';
-import { isAmplifyEnvironment, isCloudEnvironment } from './config/environment';
+import { isCloudEnvironment } from './config/environment';
 import i18next from './i18n';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import apiRoutes from './routes';
@@ -51,8 +51,8 @@ const statusHandler = async (req: express.Request, res: express.Response) => {
     // Check database connection - use different approaches based on environment
     let dbConnected = false;
     try {
-      if (isCloudEnvironment() || isAmplifyEnvironment()) {
-        // For cloud/Amplify environments, use a compatible check method
+      if (isCloudEnvironment()) {
+        // For cloud environments, use a compatible check method
         // that doesn't rely on raw SQL queries
         const result = await db.query('requests', { limit: 1 });
         // Connection is successful even if no records are returned

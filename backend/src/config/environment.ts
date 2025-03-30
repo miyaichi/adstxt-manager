@@ -27,12 +27,6 @@ export const isCloudEnvironment = (): boolean => {
   );
 };
 
-/**
- * Determines if the application is running in the AWS Amplify environment
- */
-export const isAmplifyEnvironment = (): boolean => {
-  return !!process.env.AWS_EXECUTION_ENV && process.env.AWS_EXECUTION_ENV.includes('AWS_Amplify');
-};
 
 /**
  * Gets the current environment configuration
