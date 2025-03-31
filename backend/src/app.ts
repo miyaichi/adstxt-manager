@@ -15,13 +15,22 @@ dotenv.config();
 // Initialize the Express application
 const app = express();
 
-// Configure CORS explicitly for development
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Allow only the frontend origin
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-  optionsSuccessStatus: 204,
-};
+// Configure CORS based on environment
+const corsOptions = process.env.NODE_ENV === 'production'
+  ? { 
+      // In production, only allow same-origin requests or specified domains
+      origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+      optionsSuccessStatus: 204,
+    }
+  : {
+      // In development, allow localhost origins
+      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], 
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+      optionsSuccessStatus: 204,
+    };
 
 // Middleware
 app.use(cors(corsOptions));
@@ -99,6 +108,24 @@ app.get('/health', (req, res) => {
 
 // One more status route at the top level, before 404 handler
 app.get('/status', statusHandler);
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const publicPath = process.env.STATIC_FILES_PATH || __dirname + '/../public';
+  console.log(`Serving static files from: ${publicPath}`);
+  
+  // Serve static files from the public directory
+  app.use(express.static(publicPath));
+  
+  // For any other request, send the index.html file
+  app.get('*', (req, res, next) => {
+    // Skip API and status routes
+    if (req.path.startsWith('/api/') || req.path === '/status' || req.path === '/health') {
+      return next();
+    }
+    res.sendFile(publicPath + '/index.html');
+  });
+}
 
 // Error handling middleware
 app.use(notFoundHandler);

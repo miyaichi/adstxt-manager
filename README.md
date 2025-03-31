@@ -33,6 +33,9 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 - **フロントエンド**: React, Amplify UI, TypeScript
 - **バックエンド**: Node.js, Express, TypeScript
 - **データベース**: SQLite, PostgreSQL
+- **メール送信**: SMTP (開発), Amazon SES (本番環境)
+- **インフラ**: AWS Elastic Beanstalk, Amazon RDS, Amazon SES
+- **自動化**: cron（sellers.json自動更新）
 - **開発ツール**: Claude Code (vibe coding)
 
 ## セットアップ手順
@@ -83,7 +86,76 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 ## デプロイ
 
 アプリケーションは任意のホスティングサービスにデプロイできます。
-詳細は準備中です。
+
+### AWS Elastic Beanstalkへのデプロイ
+
+このプロジェクトはAWS Elastic Beanstalkを使用して簡単にデプロイすることができます。
+
+#### 前提条件
+
+- AWSアカウント
+- AWS CLI
+- EB CLI
+- Node.js 18以上
+- 検証済みのSESメールアドレス
+
+#### デプロイ手順
+
+1. プロジェクトのクローン:
+
+```bash
+git clone https://github.com/miyaichi/adstxt-manager.git
+cd adstxt-manager
+```
+
+2. Elastic Beanstalkアプリケーションの初期化:
+
+```bash
+eb init
+```
+
+プロンプトで以下を選択:
+- リージョンを選択
+- アプリケーション名を入力
+- Node.jsプラットフォームを選択
+- SSH接続の設定
+
+3. Elastic Beanstalk環境の作成:
+
+```bash
+eb create production-environment \
+  --database \
+  --database.engine postgres \
+  --database.instance db.t3.micro \
+  --database.size 20 \
+  --database.username dbadmin \
+  --database.password <安全なパスワード> \
+  --elb-type application \
+  --instance_type t3.micro \
+  --service-role aws-elasticbeanstalk-service-role
+```
+
+4. 環境変数の設定:
+
+```bash
+eb setenv \
+  EMAIL_ADDRESS=your-verified-email@example.com \
+  APPLICATION_URL=your-eb-domain.elasticbeanstalk.com
+```
+
+5. デプロイ:
+
+```bash
+eb deploy
+```
+
+#### カスタマイズ
+
+`.ebextensions`ディレクトリの設定ファイルを編集して以下をカスタマイズできます:
+
+- **データベース設定**: `02_rds.config`ファイルでRDSインスタンスの設定を変更
+- **SES設定**: `03_ses.config`ファイルでSESの設定を変更
+- **環境変数**: `01_env.config`ファイルで環境変数を変更
 
 ## データベース構造
 
@@ -92,6 +164,27 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 - **requests**: リクエスト情報、メールアドレス、生成されたトークン、パブリッシャー情報
 - **messages**: リクエストに関するメッセージ
 - **ads_txt_records**: 現在のAds.txtの内容
+- **ads_txt_cache**: 外部Ads.txtファイルのキャッシュ
+- **sellers_json_cache**: sellers.jsonファイルのキャッシュ
+
+### データベース設定
+
+このアプリケーションは以下のデータベースをサポートしています:
+
+- SQLite (開発/テスト用): DB_PROVIDER=sqlite
+- PostgreSQL (本番環境推奨): DB_PROVIDER=postgres
+
+#### PostgreSQL設定例
+
+```
+DB_PROVIDER=postgres
+PGHOST=your-db-host.rds.amazonaws.com
+PGPORT=5432
+PGDATABASE=adstxt_manager
+PGUSER=dbadmin
+PGPASSWORD=your_password
+PG_MAX_POOL_SIZE=10
+```
 
 ## 使用例
 
