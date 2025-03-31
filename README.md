@@ -32,7 +32,7 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 - **フロントエンド**: React, Amplify UI, TypeScript
 - **バックエンド**: Node.js, Express, TypeScript
-- **データベース**: SQLite
+- **データベース**: SQLite, PostgreSQL
 - **開発ツール**: Claude Code (vibe coding)
 
 ## セットアップ手順
