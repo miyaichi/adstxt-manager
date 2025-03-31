@@ -5,6 +5,7 @@ import { DatabaseRecord, DatabaseQuery, IDatabaseAdapter } from './index';
 // Import migration scripts
 import { runAdsTxtCacheMigration } from '../../db/migrations/run_ads_txt_cache';
 import { runSellersJsonMigration } from '../../db/migrations/run_sellers_json';
+import { runAlterAdsTxtCacheMigration } from '../../db/migrations/run_alter_ads_txt_cache';
 
 dotenv.config();
 
@@ -104,6 +105,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
         // Run the ads.txt cache migration
         await runAdsTxtCacheMigration();
+        
+        // Run the ads.txt cache alteration migration
+        await runAlterAdsTxtCacheMigration();
       } catch (error) {
         console.error('Error running migrations:', error);
         throw error;
