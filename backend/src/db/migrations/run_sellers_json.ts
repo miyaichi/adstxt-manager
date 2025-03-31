@@ -5,15 +5,19 @@ import path from 'path';
 export const runSellersJsonMigration = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
-      // Read SQL file - use relative path that works both in src and dist
-      let sqlPath = path.join(__dirname, 'sellers_json_cache.sql');
+      // Check if we're using PostgreSQL
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
 
-      // If file doesn't exist (in dist), try src path
+      // Always use the SQLite schema file for now - we'll handle PostgreSQL separately
+      let sqlPath = path.join(__dirname, 'sellers_json_cache.sql');
       if (!fs.existsSync(sqlPath)) {
         sqlPath = path.join(__dirname, '../../../src/db/migrations/sellers_json_cache.sql');
       }
 
       const sql = fs.readFileSync(sqlPath, 'utf8');
+      console.log(
+        `Running sellers_json migration for ${dbProvider} (using SQLite-compatible schema)`
+      );
 
       // Run migration
       db.exec(sql, (err) => {
@@ -22,6 +26,14 @@ export const runSellersJsonMigration = (): Promise<void> => {
           reject(err);
         } else {
           console.log('Sellers JSON migration completed successfully');
+
+          // If using PostgreSQL, we'll update the schema in a separate process
+          if (dbProvider === 'postgres') {
+            console.log(
+              'Note: For PostgreSQL, run the manual-reset.js script to update to JSONB schema'
+            );
+          }
+
           resolve();
         }
       });

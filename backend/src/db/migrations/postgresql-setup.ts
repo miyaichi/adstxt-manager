@@ -1,7 +1,7 @@
 /**
- * PostgreSQL データベース設定用スクリプト
+ * PostgreSQL Database Setup Script
  *
- * SQLiteからPostgreSQLへのデータ移行を支援するツール
+ * A tool to assist with data migration from SQLite to PostgreSQL
  */
 
 import { Pool } from 'pg';
@@ -10,10 +10,11 @@ import { open } from 'sqlite';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
-// PostgreSQL接続設定
+// PostgreSQL connection settings
 const pgPool = new Pool({
   host: process.env.PGHOST || 'localhost',
   port: parseInt(process.env.PGPORT || '5432'),
@@ -22,11 +23,11 @@ const pgPool = new Pool({
   password: process.env.PGPASSWORD || '',
 });
 
-// SQLiteデータベースのパス
+// Path to SQLite database
 const sqlitePath = process.env.DB_PATH || path.join(__dirname, '../../../db/database.sqlite');
 
 /**
- * テーブル構造を作成する
+ * Create table structures
  */
 async function createTables() {
   const client = await pgPool.connect();
@@ -34,7 +35,7 @@ async function createTables() {
   try {
     await client.query('BEGIN');
 
-    // リクエストテーブル
+    // Requests table
     await client.query(`
       CREATE TABLE IF NOT EXISTS requests (
         id TEXT PRIMARY KEY,
@@ -50,7 +51,7 @@ async function createTables() {
       )
     `);
 
-    // メッセージテーブル
+    // Messages table
     await client.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
@@ -62,7 +63,7 @@ async function createTables() {
       )
     `);
 
-    // Ads.txtレコードテーブル
+    // Ads.txt records table
     await client.query(`
       CREATE TABLE IF NOT EXISTS ads_txt_records (
         id TEXT PRIMARY KEY,
@@ -79,7 +80,7 @@ async function createTables() {
       )
     `);
 
-    // Ads.txtキャッシュテーブル
+    // Ads.txt cache table
     await client.query(`
       CREATE TABLE IF NOT EXISTS ads_txt_cache (
         id TEXT PRIMARY KEY,
@@ -92,28 +93,31 @@ async function createTables() {
       )
     `);
 
-    // Sellers.jsonキャッシュテーブル
+    // Sellers.json cache table - using JSONB format
     await client.query(`
       CREATE TABLE IF NOT EXISTS sellers_json_cache (
         id TEXT PRIMARY KEY,
-        domain TEXT NOT NULL,
-        seller_id TEXT NOT NULL,
-        seller_type TEXT,
-        name TEXT,
-        domain_match INTEGER DEFAULT 0,
-        is_confidential INTEGER DEFAULT 0,
-        last_fetched TEXT,
+        domain TEXT NOT NULL UNIQUE,
+        content JSONB,
+        status TEXT NOT NULL CHECK (status IN ('success', 'error', 'not_found', 'invalid_format')),
+        status_code INTEGER,
+        error_message TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        UNIQUE(domain, seller_id)
+        updated_at TEXT NOT NULL
       )
     `);
 
+    // Add JSONB indexes
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_sellers_json_cache_domain ON sellers_json_cache (domain);
+      CREATE INDEX IF NOT EXISTS idx_sellers_json_cache_content ON sellers_json_cache USING gin (content jsonb_path_ops);
+    `);
+
     await client.query('COMMIT');
-    console.log('PostgreSQLテーブルが正常に作成されました');
+    console.log('PostgreSQL tables created successfully');
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('PostgreSQLテーブル作成エラー:', error);
+    console.error('Error creating PostgreSQL tables:', error);
     throw error;
   } finally {
     client.release();
@@ -121,14 +125,14 @@ async function createTables() {
 }
 
 /**
- * SQLiteからPostgreSQLにデータを移行する
+ * Migrate data from SQLite to PostgreSQL
  */
 async function migrateData() {
-  console.log('SQLiteからPostgreSQLへのデータ移行を開始します...');
+  console.log('Starting data migration from SQLite to PostgreSQL...');
 
-  // SQLiteデータベースを開く
+  // Open SQLite database
   if (!fs.existsSync(sqlitePath)) {
-    console.error(`SQLiteデータベースが見つかりません: ${sqlitePath}`);
+    console.error(`SQLite database not found: ${sqlitePath}`);
     return;
   }
 
@@ -137,14 +141,14 @@ async function migrateData() {
     driver: sqlite3.Database,
   });
 
-  // PostgreSQL接続を取得
+  // Get PostgreSQL connection
   const client = await pgPool.connect();
 
   try {
-    // テーブルごとにトランザクションを分割して実行することで、一部のエラーがあっても他のテーブルのデータ移行を続行できるようにする
-    console.log('データ移行を開始します - 各テーブルは個別のトランザクションで処理されます');
+    // Split transactions by table to continue migration even if some tables fail
+    console.log('Starting data migration - each table processed in its own transaction');
 
-    // リクエストデータの移行
+    // Migrate request data
     try {
       await client.query('BEGIN');
       const requests = await db.all('SELECT * FROM requests');
@@ -169,18 +173,18 @@ async function migrateData() {
             );
             migratedCount++;
           } catch (err) {
-            console.error(`リクエストの移行エラー (id: ${request.id}):`, err);
+            console.error(`Error migrating request (id: ${request.id}):`, err);
           }
         }
-        console.log(`${migratedCount}/${requests.length}件のリクエストを移行しました`);
+        console.log(`Migrated ${migratedCount}/${requests.length} requests`);
       }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('リクエストテーブルの移行中にエラーが発生しました:', err);
+      console.error('Error during requests table migration:', err);
     }
 
-    // メッセージデータの移行
+    // Migrate message data
     try {
       await client.query('BEGIN');
       const messages = await db.all('SELECT * FROM messages');
@@ -200,18 +204,18 @@ async function migrateData() {
             );
             migratedCount++;
           } catch (err) {
-            console.error(`メッセージの移行エラー (id: ${message.id}):`, err);
+            console.error(`Error migrating message (id: ${message.id}):`, err);
           }
         }
-        console.log(`${migratedCount}/${messages.length}件のメッセージを移行しました`);
+        console.log(`Migrated ${migratedCount}/${messages.length} messages`);
       }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('メッセージテーブルの移行中にエラーが発生しました:', err);
+      console.error('Error during messages table migration:', err);
     }
 
-    // Ads.txtレコードデータの移行
+    // Migrate ads_txt_records data
     try {
       await client.query('BEGIN');
       const adsTxtRecords = await db.all('SELECT * FROM ads_txt_records');
@@ -236,18 +240,18 @@ async function migrateData() {
             );
             migratedCount++;
           } catch (err) {
-            console.error(`Ads.txtレコードの移行エラー (id: ${record.id}):`, err);
+            console.error(`Error migrating ads_txt record (id: ${record.id}):`, err);
           }
         }
-        console.log(`${migratedCount}/${adsTxtRecords.length}件のAds.txtレコードを移行しました`);
+        console.log(`Migrated ${migratedCount}/${adsTxtRecords.length} ads.txt records`);
       }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Ads.txtレコードテーブルの移行中にエラーが発生しました:', err);
+      console.error('Error during ads_txt_records table migration:', err);
     }
 
-    // Ads.txtキャッシュデータの移行
+    // Migrate ads_txt_cache data
     try {
       await client.query('BEGIN');
       const adsTxtCache = await db.all('SELECT * FROM ads_txt_cache');
@@ -255,16 +259,16 @@ async function migrateData() {
         let migratedCount = 0;
         for (const cache of adsTxtCache) {
           try {
-            // statusの値が文字列の場合は整数に変換
+            // Convert status to integer if it's a string
             let statusValue = cache.status;
             if (typeof statusValue === 'string') {
-              // 文字列の場合は適切な整数値に変換
+              // Convert string status to appropriate integer
               if (statusValue === 'success') {
                 statusValue = 1;
               } else if (statusValue === 'error') {
                 statusValue = 0;
               } else {
-                // 数値に変換を試みる
+                // Try to parse as integer
                 statusValue = parseInt(statusValue) || 0;
               }
             }
@@ -283,98 +287,153 @@ async function migrateData() {
             );
             migratedCount++;
           } catch (err) {
-            console.error(`Ads.txtキャッシュの移行エラー (id: ${cache.id}):`, err);
+            console.error(`Error migrating ads_txt cache (id: ${cache.id}):`, err);
           }
         }
-        console.log(`${migratedCount}/${adsTxtCache.length}件のAds.txtキャッシュを移行しました`);
+        console.log(`Migrated ${migratedCount}/${adsTxtCache.length} ads.txt cache entries`);
       }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Ads.txtキャッシュテーブルの移行中にエラーが発生しました:', err);
+      console.error('Error during ads_txt_cache table migration:', err);
     }
 
-    // Sellers.jsonキャッシュデータの移行
+    // Migrate sellers_json_cache data - SQLite text format to PostgreSQL JSONB format
     try {
       await client.query('BEGIN');
+
+      // Get data from SQLite
       const sellersJsonCache = await db.all('SELECT * FROM sellers_json_cache');
       if (sellersJsonCache.length > 0) {
-        let migratedCount = 0;
+        console.log(`Processing ${sellersJsonCache.length} sellers_json_cache records`);
 
+        // Aggregate data by domain
+        const domainMap = new Map();
         for (const cache of sellersJsonCache) {
-          // seller_idがnullの場合はスキップ
-          if (!cache.seller_id) {
-            console.log(
-              `警告: seller_idがnullのレコードをスキップします (id: ${cache.id}, domain: ${cache.domain})`
-            );
+          // If content exists, use it directly as JSON
+          if (cache.content) {
+            try {
+              // Parse existing JSON content
+              const contentObj = JSON.parse(cache.content);
+
+              if (!domainMap.has(cache.domain)) {
+                // Associate existing JSON content with domain
+                domainMap.set(cache.domain, {
+                  id: cache.id,
+                  content: contentObj,
+                  status: cache.status || 'success',
+                  status_code: cache.status_code || 200,
+                  error_message: cache.error_message,
+                  created_at: cache.created_at,
+                  updated_at: cache.updated_at,
+                });
+              }
+            } catch (parseErr) {
+              console.error(`JSON parse error for ${cache.domain}:`, parseErr);
+            }
             continue;
           }
 
-          // domain_matchとis_confidentialが文字列の場合は整数に変換
-          let domainMatch =
-            typeof cache.domain_match === 'string'
-              ? cache.domain_match === 'true' || cache.domain_match === '1'
-                ? 1
-                : 0
-              : cache.domain_match
-                ? 1
-                : 0;
+          // Skip if no seller_id
+          if (!cache.seller_id) {
+            continue;
+          }
 
-          let isConfidential =
-            typeof cache.is_confidential === 'string'
-              ? cache.is_confidential === 'true' || cache.is_confidential === '1'
-                ? 1
-                : 0
-              : cache.is_confidential
-                ? 1
-                : 0;
+          // Create domain entry if it doesn't exist
+          if (!domainMap.has(cache.domain)) {
+            domainMap.set(cache.domain, {
+              id: uuidv4(),
+              content: { sellers: [] },
+              status: 'success',
+              status_code: 200,
+              error_message: null,
+              created_at: cache.created_at || new Date().toISOString(),
+              updated_at: cache.updated_at || new Date().toISOString(),
+            });
+          }
 
+          // Get current entry
+          const entry = domainMap.get(cache.domain);
+
+          // Create and add seller object
+          const seller = {
+            seller_id: cache.seller_id,
+            name: cache.name,
+            seller_type: cache.seller_type,
+            domain_match:
+              cache.domain_match === 1 ||
+              cache.domain_match === true ||
+              cache.domain_match === 'true',
+            is_confidential:
+              cache.is_confidential === 1 ||
+              cache.is_confidential === true ||
+              cache.is_confidential === 'true',
+          };
+
+          entry.content.sellers.push(seller);
+        }
+
+        // Insert domain data into PostgreSQL
+        let migratedCount = 0;
+        for (const [domain, data] of domainMap.entries()) {
           try {
             await client.query(
-              'INSERT INTO sellers_json_cache (id, domain, seller_id, seller_type, name, domain_match, is_confidential, last_fetched, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING',
+              `INSERT INTO sellers_json_cache 
+               (id, domain, content, status, status_code, error_message, created_at, updated_at)
+               VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8)
+               ON CONFLICT (domain) DO UPDATE SET
+                 content = $3::jsonb,
+                 status = $4,
+                 status_code = $5,
+                 error_message = $6,
+                 updated_at = $8`,
               [
-                cache.id,
-                cache.domain,
-                cache.seller_id || 'unknown',
-                cache.seller_type,
-                cache.name,
-                domainMatch,
-                isConfidential,
-                cache.last_fetched,
-                cache.created_at,
-                cache.updated_at,
+                data.id,
+                domain,
+                data.content,
+                data.status,
+                data.status_code,
+                data.error_message,
+                data.created_at,
+                data.updated_at,
               ]
             );
             migratedCount++;
+
+            if (data.content.sellers) {
+              console.log(`${domain}: Migrated ${data.content.sellers.length} seller entries`);
+            }
           } catch (err) {
-            console.error(`Sellers.jsonキャッシュの移行エラー (id: ${cache.id}):`, err);
+            console.error(`Error migrating data for ${domain}:`, err);
           }
         }
-        console.log(
-          `${migratedCount}/${sellersJsonCache.length}件のSellers.jsonキャッシュを移行しました`
-        );
+
+        console.log(`Migrated data for ${migratedCount} domains`);
+      } else {
+        console.log('No sellers_json_cache data to migrate');
       }
+
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Sellers.jsonキャッシュテーブルの移行中にエラーが発生しました:', err);
+      console.error('Error during sellers_json_cache table migration:', err);
     }
 
-    console.log('データ移行が正常に完了しました');
+    console.log('Data migration completed successfully');
   } catch (error) {
-    console.error('データ移行エラー:', error);
+    console.error('Data migration error:', error);
 
-    // より詳細なデバッグ情報を提供
+    // Provide more detailed debug info
     if (error instanceof Error) {
-      console.error('エラータイプ:', error.constructor.name);
-      console.error('エラーメッセージ:', error.message);
-      console.error('スタックトレース:', error.stack);
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Stack trace:', error.stack);
 
-      // PostgreSQLエラーの追加情報を表示
+      // Show additional info for PostgreSQL errors
       const pgError = error as any;
       if (pgError.code) {
-        console.error('PostgreSQLエラーコード:', pgError.code);
-        console.error('PostgreSQLエラー詳細:', {
+        console.error('PostgreSQL error code:', pgError.code);
+        console.error('PostgreSQL error details:', {
           severity: pgError.severity,
           detail: pgError.detail,
           hint: pgError.hint,
@@ -398,14 +457,14 @@ async function migrateData() {
 }
 
 /**
- * メイン実行関数
+ * Main execution function
  */
 async function main() {
   try {
-    // テーブルの作成
+    // Create tables
     await createTables();
 
-    // データ移行の確認
+    // Check for data migration
     const answer = process.argv.includes('--migrate')
       ? 'y'
       : process.argv.includes('--no-migrate')
@@ -420,12 +479,12 @@ async function main() {
 
       await new Promise<void>((resolve) => {
         readline.question(
-          'SQLiteからPostgreSQLにデータを移行しますか？ (y/n): ',
+          'Migrate data from SQLite to PostgreSQL? (y/n): ',
           async (ans: string) => {
             if (ans.toLowerCase() === 'y') {
               await migrateData();
             } else {
-              console.log('データ移行はスキップされました');
+              console.log('Data migration skipped');
             }
             readline.close();
             resolve();
@@ -435,20 +494,20 @@ async function main() {
     } else if (answer === 'y') {
       await migrateData();
     } else {
-      console.log('データ移行はスキップされました');
+      console.log('Data migration skipped');
     }
 
-    console.log('PostgreSQL設定が完了しました');
+    console.log('PostgreSQL setup completed');
   } catch (error) {
-    console.error('PostgreSQL設定エラー:', error);
+    console.error('PostgreSQL setup error:', error);
     process.exit(1);
   } finally {
-    // プールを終了
+    // End pool
     await pgPool.end();
   }
 }
 
-// スクリプトの実行
+// Run script
 if (require.main === module) {
   main();
 }

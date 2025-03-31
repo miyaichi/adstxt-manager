@@ -132,9 +132,9 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     logger.info(`Checking database cache for ${domain}`);
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
 
-    if (cachedData && cachedData.status === 'success' && cachedData.content) {
+    if (cachedData && cachedData.status === 'success') {
       try {
-        const parsedData = SellersJsonCacheModel.parseContent(cachedData.content);
+        const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
 
         if (parsedData && Array.isArray(parsedData.sellers)) {
           // Store in-memory for faster access
@@ -326,11 +326,14 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     if (cachedData && !SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)) {
       logger.info(`Serving cached sellers.json for domain: ${domain}`);
 
+      // Get the parsed content directly without redundant parsing
+      const parsedContent = SellersJsonCacheModel.getParsedContent(cachedData);
+
       return res.status(200).json({
         success: true,
         data: {
           domain,
-          content: cachedData.content ? JSON.parse(cachedData.content) : null,
+          content: parsedContent,
           status: cachedData.status,
           status_code: cachedData.status_code,
           error_message: cachedData.error_message,
@@ -424,13 +427,16 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     // Save to cache
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
 
+    // Get the parsed content
+    const parsedContent = SellersJsonCacheModel.getParsedContent(savedCache);
+
     // Return response
     return res.status(200).json({
       success: true,
       data: {
         domain,
         url: url,
-        content: savedCache.content ? JSON.parse(savedCache.content) : null,
+        content: parsedContent,
         status: savedCache.status,
         status_code: savedCache.status_code,
         error_message: savedCache.error_message,

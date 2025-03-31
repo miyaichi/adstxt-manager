@@ -16,21 +16,22 @@ dotenv.config();
 const app = express();
 
 // Configure CORS based on environment
-const corsOptions = process.env.NODE_ENV === 'production'
-  ? { 
-      // In production, only allow same-origin requests or specified domains
-      origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
-      optionsSuccessStatus: 204,
-    }
-  : {
-      // In development, allow localhost origins
-      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], 
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
-      optionsSuccessStatus: 204,
-    };
+const corsOptions =
+  process.env.NODE_ENV === 'production'
+    ? {
+        // In production, only allow same-origin requests or specified domains
+        origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        credentials: true,
+        optionsSuccessStatus: 204,
+      }
+    : {
+        // In development, allow localhost origins
+        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        credentials: true,
+        optionsSuccessStatus: 204,
+      };
 
 // Middleware
 app.use(cors(corsOptions));
@@ -113,10 +114,10 @@ app.get('/status', statusHandler);
 if (process.env.NODE_ENV === 'production') {
   const publicPath = process.env.STATIC_FILES_PATH || __dirname + '/../public';
   console.log(`Serving static files from: ${publicPath}`);
-  
+
   // Serve static files from the public directory
   app.use(express.static(publicPath));
-  
+
   // For any other request, send the index.html file
   app.get('*', (req, res, next) => {
     // Skip API and status routes

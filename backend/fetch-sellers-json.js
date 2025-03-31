@@ -103,108 +103,140 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
   const lowercaseDomain = domain.toLowerCase();
 
   if (DB_PROVIDER === 'postgres') {
-    // PostgreSQL implementation - Process the JSON data and insert each seller
+    // PostgreSQL implementation with JSONB - Store the entire JSON object
     try {
       // Parse the sellers.json data
       const sellersJsonData = JSON.parse(data);
       
-      if (!sellersJsonData.sellers || !Array.isArray(sellersJsonData.sellers)) {
-        console.error(`⚠️ No valid sellers array found in ${domain} sellers.json`);
+      if (!sellersJsonData || typeof sellersJsonData !== 'object') {
+        console.error(`⚠️ Invalid JSON data for ${domain}`);
         return Promise.resolve();
+      }
+      
+      // Make sure we have a sellers array (even if empty)
+      if (!sellersJsonData.sellers) {
+        sellersJsonData.sellers = [];
+      } else if (!Array.isArray(sellersJsonData.sellers)) {
+        console.error(`⚠️ 'sellers' property is not an array in ${domain} sellers.json`);
+        sellersJsonData.sellers = [];
       }
       
       const client = await pgPool.connect();
       try {
-        await client.query('BEGIN');
+        // Check if record already exists
+        const checkResult = await client.query(
+          'SELECT id FROM sellers_json_cache WHERE domain = $1',
+          [lowercaseDomain]
+        );
         
-        let insertedCount = 0;
-        const batchSize = 500; // Process in batches to avoid memory issues
-        
-        // Process sellers in batches
-        for (let i = 0; i < sellersJsonData.sellers.length; i += batchSize) {
-          const batch = sellersJsonData.sellers.slice(i, i + batchSize);
+        if (checkResult.rows.length > 0) {
+          // Update existing record
+          // PostgreSQLのデータ型はシステムバージョンによって異なる場合があるため、
+          // まずデータ型をチェックしてから適切な方法で更新
+          const columnCheck = await client.query(`
+            SELECT data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'sellers_json_cache' AND column_name = 'content';
+          `);
           
-          for (const seller of batch) {
-            // Skip invalid entries
-            if (!seller.seller_id) {
-              continue;
-            }
-            
-            // Convert boolean flags to integers if needed
-            const domainMatch = typeof seller.domain_match === 'boolean' ? 
-              (seller.domain_match ? 1 : 0) : 
-              (seller.domain_match === 'true' ? 1 : 0);
-            
-            const isConfidential = typeof seller.is_confidential === 'boolean' ? 
-              (seller.is_confidential ? 1 : 0) : 
-              (seller.is_confidential === 'true' ? 1 : 0);
-            
-            const sellerId = String(seller.seller_id);
-            
-            try {
-              // Check if entry already exists
-              const checkResult = await client.query(
-                'SELECT id FROM sellers_json_cache WHERE domain = $1 AND seller_id = $2',
-                [lowercaseDomain, sellerId]
-              );
-              
-              if (checkResult.rows.length > 0) {
-                // Update existing record
-                await client.query(
-                  `UPDATE sellers_json_cache 
-                  SET seller_type = $1, name = $2, domain_match = $3, 
-                  is_confidential = $4, last_fetched = $5, updated_at = $6
-                  WHERE id = $7`,
-                  [
-                    seller.seller_type || null, 
-                    seller.name || null,
-                    domainMatch,
-                    isConfidential,
-                    now,
-                    now,
-                    checkResult.rows[0].id
-                  ]
-                );
-              } else {
-                // Insert new record
-                const newId = uuidv4();
-                await client.query(
-                  `INSERT INTO sellers_json_cache 
-                  (id, domain, seller_id, seller_type, name, domain_match, 
-                  is_confidential, last_fetched, created_at, updated_at)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                  [
-                    newId,
-                    lowercaseDomain,
-                    sellerId,
-                    seller.seller_type || null,
-                    seller.name || null,
-                    domainMatch,
-                    isConfidential,
-                    now,
-                    now,
-                    now
-                  ]
-                );
-              }
-              
-              insertedCount++;
-            } catch (insertErr) {
-              console.error(`⚠️ Error processing seller ${sellerId} for ${domain}: ${insertErr.message}`);
-            }
+          // データ型に応じてクエリを調整
+          if (columnCheck.rows.length > 0 && columnCheck.rows[0].data_type === 'jsonb') {
+            // JSONBタイプの場合は直接オブジェクトを渡す
+            await client.query(
+              `UPDATE sellers_json_cache 
+              SET content = $1::jsonb, 
+                  status = $2, 
+                  status_code = $3, 
+                  updated_at = $4 
+              WHERE id = $5`,
+              [
+                sellersJsonData, // 直接JSONBデータとして渡す
+                'success',
+                statusCode,
+                now,
+                checkResult.rows[0].id
+              ]
+            );
+          } else {
+            // TEXTタイプの場合は文字列に変換して渡す
+            await client.query(
+              `UPDATE sellers_json_cache 
+              SET content = $1, 
+                  status = $2, 
+                  status_code = $3, 
+                  updated_at = $4 
+              WHERE id = $5`,
+              [
+                JSON.stringify(sellersJsonData),
+                'success',
+                statusCode,
+                now,
+                checkResult.rows[0].id
+              ]
+            );
           }
           
-          // Log progress for large files
-          if (sellersJsonData.sellers.length > batchSize) {
-            console.log(`📊 Processed ${Math.min((i + batchSize), sellersJsonData.sellers.length)} of ${sellersJsonData.sellers.length} sellers for ${domain}`);
+          console.log(`📝 Updated sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
+        } else {
+          // Insert new record
+          const newId = uuidv4();
+          
+          // データ型をチェックして適切な方法でデータを挿入
+          const columnCheck = await client.query(`
+            SELECT data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'sellers_json_cache' AND column_name = 'content';
+          `);
+          
+          if (columnCheck.rows.length > 0 && columnCheck.rows[0].data_type === 'jsonb') {
+            // JSONBタイプの場合
+            await client.query(
+              `INSERT INTO sellers_json_cache 
+              (id, domain, content, status, status_code, error_message, created_at, updated_at)
+              VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8)`,
+              [
+                newId,
+                lowercaseDomain,
+                sellersJsonData, // 直接JSONBデータとして渡す
+                'success',
+                statusCode,
+                null,
+                now,
+                now
+              ]
+            );
+          } else {
+            // TEXTタイプの場合
+            await client.query(
+              `INSERT INTO sellers_json_cache 
+              (id, domain, content, status, status_code, error_message, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              [
+                newId,
+                lowercaseDomain,
+                JSON.stringify(sellersJsonData),
+                'success',
+                statusCode,
+                null,
+                now,
+                now
+              ]
+            );
           }
+          
+          console.log(`📝 Stored new sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
         }
         
-        await client.query('COMMIT');
-        console.log(`📝 Processed ${insertedCount} sellers for ${domain} in PostgreSQL`);
+        // Show sample seller IDs for verification
+        if (sellersJsonData.sellers.length > 0) {
+          const sampleCount = Math.min(3, sellersJsonData.sellers.length);
+          const sampleIds = sellersJsonData.sellers.slice(0, sampleCount).map(s => s.seller_id);
+          console.log(`📊 Sample seller IDs: ${sampleIds.join(', ')}...`);
+        }
+        
         return Promise.resolve();
       } catch (err) {
-        await client.query('ROLLBACK');
+        console.error(`❌ Database error for ${domain}: ${err.message}`);
         return Promise.reject(err);
       } finally {
         client.release();
@@ -323,9 +355,9 @@ function fetchUrl(url) {
 // Get the list of cached domains from the database
 async function getCachedDomains() {
   if (DB_PROVIDER === 'postgres') {
-    // PostgreSQL implementation
+    // PostgreSQL implementation - use JSONB table
     try {
-      const result = await pgPool.query('SELECT DISTINCT domain FROM sellers_json_cache');
+      const result = await pgPool.query('SELECT domain FROM sellers_json_cache');
       return result.rows.map((row) => row.domain);
     } catch (err) {
       return Promise.reject(err);
@@ -407,9 +439,9 @@ async function main() {
         let cachedEntry;
         
         if (DB_PROVIDER === 'postgres') {
-          // PostgreSQL implementation
+          // PostgreSQL implementation using JSONB table
           const result = await pgPool.query(
-            'SELECT updated_at FROM sellers_json_cache WHERE domain = $1 ORDER BY updated_at DESC LIMIT 1',
+            'SELECT updated_at FROM sellers_json_cache WHERE domain = $1',
             [domain.toLowerCase()]
           );
           

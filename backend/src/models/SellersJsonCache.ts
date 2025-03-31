@@ -6,7 +6,7 @@ import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 export interface SellersJsonCache extends DatabaseRecord {
   id: string;
   domain: string;
-  content: string | null;
+  content: string | object | null;
   status: 'success' | 'not_found' | 'invalid_format' | 'error';
   status_code: number | null;
   error_message: string | null;
@@ -33,6 +33,11 @@ export interface SellersJsonContent {
 class SellersJsonCacheModel {
   private readonly tableName = 'sellers_json_cache';
 
+  // Get the appropriate table name
+  private getTableName(): string {
+    return this.tableName;
+  }
+
   /**
    * Get a sellers.json cache entry by domain
    * @param domain The domain to retrieve
@@ -45,7 +50,7 @@ class SellersJsonCacheModel {
 
       logger.info(`[SellersJsonCache] Looking up domain: ${normalizedDomain}`);
 
-      const results = await db.query(this.tableName, {
+      const results = await db.query(this.getTableName(), {
         where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
@@ -82,6 +87,11 @@ class SellersJsonCacheModel {
     const now = new Date().toISOString();
     const existingCache = await this.getByDomain(normalizedDomain);
 
+    // Check if we're using PostgreSQL
+    const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+
+    // Both PostgreSQL and SQLite implementations now use the same approach
+    // with the only difference being that PostgreSQL stores JSON as JSONB
     try {
       if (existingCache) {
         // Update existing entry
@@ -139,21 +149,40 @@ class SellersJsonCacheModel {
   }
 
   /**
-   * Parse a sellers.json string into a structured object
-   * @param jsonString The sellers.json content as a string
+   * Parse a sellers.json string or object into a structured object
+   * @param jsonData The sellers.json content as a string or object
    * @returns The parsed content or null if parsing fails
    */
-  parseContent(jsonString: string | null): SellersJsonContent | null {
-    if (!jsonString) {
+  parseContent(jsonData: string | object | null): SellersJsonContent | null {
+    if (!jsonData) {
       return null;
     }
 
     try {
-      return JSON.parse(jsonString);
+      // If jsonData is already an object, return it directly
+      if (typeof jsonData === 'object') {
+        return jsonData as SellersJsonContent;
+      }
+
+      // If jsonData is a string, try to parse it
+      return JSON.parse(jsonData as string);
     } catch (error) {
       logger.error('Error parsing sellers.json content:', error);
       return null;
     }
+  }
+
+  /**
+   * Gets the content in a parsed form regardless of database type
+   * @param cache The cache entry from the database
+   * @returns The parsed content or null
+   */
+  getParsedContent(cache: SellersJsonCache | null): SellersJsonContent | null {
+    if (!cache || !cache.content) {
+      return null;
+    }
+
+    return this.parseContent(cache.content);
   }
 }
 

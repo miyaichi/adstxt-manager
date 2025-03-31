@@ -64,6 +64,14 @@ if [ "$db_choice" = "2" ]; then
   echo "Initializing PostgreSQL tables..."
   npm run migrate:pg
   
+  # Check for JSONB format tables
+  echo "Would you like to use the improved JSONB format for sellers.json? (recommended) (y/n)"
+  read use_jsonb
+  if [ "$use_jsonb" = "y" ] || [ "$use_jsonb" = "Y" ]; then
+    echo "Updating sellers_json_cache table to use JSONB..."
+    node update-postgres-schema.js
+  fi
+  
   # Ask about data migration if SQLite DB exists
   if [ -f "db/database.sqlite" ]; then
     echo "Found existing SQLite database. Would you like to migrate data to PostgreSQL? (y/n)"

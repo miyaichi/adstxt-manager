@@ -14,7 +14,7 @@ if (!fs.existsSync(sqlFilePath)) {
 export const runAlterAdsTxtCacheMigration = async (): Promise<void> => {
   try {
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
-    await db.execute(sql);
+    await db.exec(sql);
     logger.info('AdsTxt cache alteration migration executed successfully');
   } catch (error) {
     logger.error('Error executing AdsTxt cache alteration migration:', error);
