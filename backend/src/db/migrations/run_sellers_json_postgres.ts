@@ -24,11 +24,11 @@ export const runSellersJsonPostgresMigration = async (): Promise<void> => {
 
     // Run the migration script to create the new table
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
-    await db.exec(sql);
+    await db.execute(sql);
     logger.info('Sellers.json JSONB table created successfully');
 
     // Call the function to migrate data from the old format to the new format
-    await db.exec('SELECT migrate_sellers_json_data()');
+    await db.execute('SELECT migrate_sellers_json_data()');
     logger.info('Data migration completed successfully');
   } catch (error) {
     logger.error('Error executing sellers.json PostgreSQL migration:', error);

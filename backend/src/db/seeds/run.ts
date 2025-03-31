@@ -15,23 +15,21 @@ async function seedDatabase() {
     // Read the SQL file
     const sql = fs.readFileSync(seedPath, 'utf8');
 
-    // Run the seeds in a transaction for atomicity
-    await new Promise<void>((resolve, reject) => {
-      db.exec('BEGIN TRANSACTION', (err) => {
-        if (err) reject(err);
-
-        db.exec(sql, (err) => {
-          if (err) {
-            db.exec('ROLLBACK', () => reject(err));
-          } else {
-            db.exec('COMMIT', (err) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          }
-        });
-      });
-    });
+    // Run the seeds in a transaction
+    try {
+      // Start transaction
+      await db.execute('BEGIN TRANSACTION');
+      
+      // Execute seed SQL
+      await db.execute(sql);
+      
+      // Commit transaction
+      await db.execute('COMMIT');
+    } catch (error) {
+      // Rollback on error
+      await db.execute('ROLLBACK');
+      throw error;
+    }
 
     console.log('Seeds completed successfully');
   } catch (error) {

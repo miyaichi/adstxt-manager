@@ -12,23 +12,21 @@ async function runAlterMigrations() {
     // Read the SQL file
     const sql = fs.readFileSync(migrationPath, 'utf8');
 
-    // Run the migrations in a transaction for atomicity
-    await new Promise<void>((resolve, reject) => {
-      db.exec('BEGIN TRANSACTION', (err) => {
-        if (err) reject(err);
-
-        db.exec(sql, (err) => {
-          if (err) {
-            db.exec('ROLLBACK', () => reject(err));
-          } else {
-            db.exec('COMMIT', (err) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          }
-        });
-      });
-    });
+    // Run the migrations in a transaction
+    try {
+      // Start transaction
+      await db.execute('BEGIN TRANSACTION');
+      
+      // Execute migration SQL
+      await db.execute(sql);
+      
+      // Commit transaction
+      await db.execute('COMMIT');
+    } catch (error) {
+      // Rollback on error
+      await db.execute('ROLLBACK');
+      throw error;
+    }
 
     console.log('Schema alterations completed successfully');
   } catch (error) {
