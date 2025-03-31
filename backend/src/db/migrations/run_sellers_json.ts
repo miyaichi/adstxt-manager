@@ -1,6 +1,6 @@
-import db from '../../config/database';
 import fs from 'fs';
 import path from 'path';
+import db from '../../config/database/index';
 
 export const runSellersJsonMigration = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -20,23 +20,16 @@ export const runSellersJsonMigration = (): Promise<void> => {
       );
 
       // Run migration
-      db.exec(sql, (err) => {
-        if (err) {
-          console.error('Sellers JSON migration failed:', err);
-          reject(err);
-        } else {
+      db.execute(sql)
+        .then(() => {
           console.log('Sellers JSON migration completed successfully');
 
-          // If using PostgreSQL, we'll update the schema in a separate process
-          if (dbProvider === 'postgres') {
-            console.log(
-              'Note: For PostgreSQL, run the manual-reset.js script to update to JSONB schema'
-            );
-          }
-
           resolve();
-        }
-      });
+        })
+        .catch((err) => {
+          console.error('Sellers JSON migration failed:', err);
+          reject(err);
+        });
     } catch (error) {
       console.error('Error in sellers JSON migration:', error);
       reject(error);

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import db from '../../config/database';
+import db from '../../config/database/index';
 import { logger } from '../../utils/logger';
 
 // Try to locate the SQL file
@@ -14,7 +14,7 @@ if (!fs.existsSync(sqlFilePath)) {
 export const runAdsTxtCacheMigration = async (): Promise<void> => {
   try {
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
-    await db.exec(sql);
+    await db.execute(sql);
     logger.info('AdsTxt cache migration executed successfully');
   } catch (error) {
     logger.error('Error executing AdsTxt cache migration:', error);
