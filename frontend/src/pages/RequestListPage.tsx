@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
 import {
+  Alert,
+  Badge,
+  Breadcrumbs,
+  Card,
+  Divider,
   Flex,
   Heading,
-  Card,
-  Button,
-  Text,
-  Alert,
   Loader,
-  Breadcrumbs,
-  Badge,
-  Divider,
+  Text,
   TextField,
 } from '@aws-amplify/ui-react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { requestApi } from '../api';
-import { Request } from '../models';
-import RequestItem from '../components/requests/RequestItem';
 import ErrorMessage from '../components/common/ErrorMessage';
+import RequestItem from '../components/requests/RequestItem';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
+import { Request } from '../models';
 
 const RequestListPage: React.FC = () => {
   const [searchParams] = useSearchParams();

@@ -1,8 +1,8 @@
+import { Breadcrumbs, Flex } from '@aws-amplify/ui-react';
 import React from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { Flex, Breadcrumbs, Alert } from '@aws-amplify/ui-react';
-import RequestDetail from '../components/requests/RequestDetail';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ErrorMessage from '../components/common/ErrorMessage';
+import RequestDetail from '../components/requests/RequestDetail';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
 
