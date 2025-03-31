@@ -9,6 +9,19 @@ services:
     networks:
       - app-network
 
+  postgres:
+    image: postgres:14
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=adstxt_manager
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   backend:
     build:
       context: .
@@ -19,6 +32,12 @@ services:
       - NODE_ENV=development
       - PORT=4000
       - APP_URL=http://localhost:3000
+      - DB_PROVIDER=${DB_PROVIDER:-sqlite}
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGDATABASE=adstxt_manager
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
       - SMTP_HOST=mailhog
       - SMTP_PORT=1025
       - SMTP_FROM=adstxt-manager@example.com
@@ -27,10 +46,15 @@ services:
       - ./src:/app/src
       - ./dist:/app/dist
       - ./.env:/app/.env
+      - ./db:/app/db
     depends_on:
       - mailhog
+      - postgres
     networks:
       - app-network
+
+volumes:
+  postgres_data:
 
 networks:
   app-network:

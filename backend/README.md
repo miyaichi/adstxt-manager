@@ -82,15 +82,58 @@ npm start
 
 The application uses a database abstraction layer with the following features:
 
-- **SQLite**: Default database for all environments
+- **SQLite**: Default database for development and production
+- **PostgreSQL**: Optional database for production environments requiring more scalability
 - **Mock Database**: In-memory database for testing
 
 The database provider is automatically selected based on the environment:
 
-- `NODE_ENV=development` or `NODE_ENV=production`: Uses SQLite
+- `NODE_ENV=development` or `NODE_ENV=production`: 
+  - Uses SQLite by default
+  - Uses PostgreSQL if `DB_PROVIDER=postgres` is set in the environment
 - `NODE_ENV=test`: Uses the Mock Database
 
-This design allows for easy extension with additional database providers in the future.
+#### PostgreSQL Configuration
+
+To use PostgreSQL instead of SQLite:
+
+1. Create a PostgreSQL database:
+   ```bash
+   # PostgreSQLにログイン
+   psql -U postgres
+
+   # データベースを作成
+   CREATE DATABASE adstxt_manager;
+   ```
+
+2. Configure the environment variables in your `.env` file:
+   ```
+   DB_PROVIDER=postgres
+   PGHOST=localhost
+   PGPORT=5432
+   PGDATABASE=adstxt_manager
+   PGUSER=postgres
+   PGPASSWORD=yourpassword
+   PG_MAX_POOL_SIZE=10
+   ```
+
+3. Initialize the PostgreSQL database structure:
+   ```bash
+   npm run migrate:pg
+   ```
+
+4. Optionally migrate existing data from SQLite to PostgreSQL:
+   ```bash
+   # Interactive mode (will ask for confirmation)
+   npm run migrate:pg
+   
+   # Force migration without confirmation
+   npm run migrate:pg:force
+   ```
+
+5. Start the application - it will automatically use PostgreSQL.
+
+This design allows for flexible switching between database providers without code changes.
 
 ## Using Docker Compose
 
@@ -165,14 +208,15 @@ The application uses a flexible database abstraction:
 
 2. **Available Providers**:
 
-   - `SqliteDatabase`: Persistent file-based storage
+   - `SqliteDatabase`: Persistent file-based storage for simpler deployments
+   - `PostgresDatabase`: PostgreSQL integration for increased scalability
    - `MockDatabase`: In-memory storage for testing
 
 3. **Adding New Providers**:
    - Implement the `IDatabaseAdapter` interface
    - Update the factory in `src/config/database/index.ts` to use your implementation
 
-This architecture supports easy migration to other database systems in the future without significant code changes.
+This architecture supports easy migration between different database systems without significant code changes. You can switch database providers by simply changing the `DB_PROVIDER` environment variable.
 
 ## Sellers.json Data Management
 

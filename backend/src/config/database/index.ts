@@ -1,10 +1,12 @@
 import { getEnvironment } from '../environment';
 import { SqliteDatabase } from './sqlite';
+import { PostgresDatabase } from './postgres';
 import { MockDatabase } from './mock-database';
 
 // Database provider names
 export enum DatabaseProvider {
   SQLITE = 'sqlite',
+  POSTGRES = 'postgres',
   MOCK = 'mock',
 }
 
@@ -50,10 +52,14 @@ class DatabaseAdapter implements IDatabaseAdapter {
   constructor() {
     // Determine which database implementation to use
     const env = getEnvironment();
+    const dbProvider = process.env.DB_PROVIDER || DatabaseProvider.SQLITE;
 
     // Use mock database for testing
     if (env.NODE_ENV === 'test') {
       this.implementation = MockDatabase.getInstance();
+    } else if (dbProvider === DatabaseProvider.POSTGRES) {
+      // Use PostgreSQL if specified
+      this.implementation = PostgresDatabase.getInstance();
     } else {
       // Default to SQLite
       this.implementation = SqliteDatabase.getInstance();

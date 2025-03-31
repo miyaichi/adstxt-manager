@@ -11,6 +11,8 @@
     "test": "jest",
     "migrate": "ts-node src/db/migrations/run.ts",
     "migrate:sellers": "ts-node src/db/migrations/run_sellers_json.ts",
+    "migrate:pg": "ts-node src/db/migrations/postgresql-setup.ts",
+    "migrate:pg:force": "ts-node src/db/migrations/postgresql-setup.ts --migrate",
     "seed": "ts-node src/db/seeds/run.ts",
     "fetch-sellers-json": "node fetch-sellers-json.js"
   },
@@ -33,7 +35,9 @@
     "i18next-http-middleware": "^3.7.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.8",
+    "pg": "^8.11.3",
     "psl": "^1.15.0",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "stream-json": "^1.8.0",
     "uuid": "^9.0.1"
@@ -45,6 +49,7 @@
     "@types/multer": "^1.4.11",
     "@types/node": "^20.11.5",
     "@types/nodemailer": "^6.4.14",
+    "@types/pg": "^8.11.11",
     "@types/sqlite3": "^3.1.11",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^9.0.7",
