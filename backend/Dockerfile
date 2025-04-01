@@ -1,37 +1,23 @@
-version: '3.8'
+FROM node:18-alpine
 
-services:
-mailhog:
-image: mailhog/mailhog
-ports:
-- "1025:1025"  # SMTP server
-- "8025:8025"  # Web UI
-networks:
-- app-network
+WORKDIR /app
 
-backend:
-build:
-context: .
-dockerfile: Dockerfile
-ports:
-- "4000:4000"
-environment:
-- NODE_ENV=development
-- PORT=4000
-- APP_URL=http://localhost:3000
-- SMTP_HOST=mailhog
-- SMTP_PORT=1025
-- SMTP_FROM=adstxt-manager@example.com
-- SMTP_FROM_NAME=Ads.txt Manager
-volumes:
-- ./src:/app/src
-- ./dist:/app/dist
-- ./.env:/app/.env
-depends_on:
-- mailhog
-networks:
-- app-network
+COPY package*.json ./
 
-networks:
-app-network:
-driver: bridge
+# Install necessary libraries for Alpine
+RUN apk add --no-cache --virtual .build-deps \
+    python3 \
+    make \
+    g++ \
+    && npm install \
+    && apk del .build-deps
+
+# 開発環境ではvolumesでマウントするため不要
+# 本番環境用にはコメントを外す
+# COPY . .
+# RUN npm run build
+
+EXPOSE 4000
+
+# CMD will be overridden by docker-compose.yml
+CMD ["npm", "start"]
