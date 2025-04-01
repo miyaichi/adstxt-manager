@@ -49,7 +49,7 @@ if (DB_PROVIDER === 'postgres') {
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || '',
   });
-  
+
   console.log(`📊 Connected to PostgreSQL database at ${process.env.PGHOST || 'localhost'}`);
 } else {
   // SQLite connection (default)
@@ -91,7 +91,7 @@ async function ensureTableExists() {
       );
     });
   }
-  
+
   // For PostgreSQL, we skip this step as the table is already created with the proper migration
   return Promise.resolve();
 }
@@ -107,12 +107,12 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
     try {
       // Parse the sellers.json data
       const sellersJsonData = JSON.parse(data);
-      
+
       if (!sellersJsonData || typeof sellersJsonData !== 'object') {
         console.error(`⚠️ Invalid JSON data for ${domain}`);
         return Promise.resolve();
       }
-      
+
       // Make sure we have a sellers array (even if empty)
       if (!sellersJsonData.sellers) {
         sellersJsonData.sellers = [];
@@ -120,7 +120,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
         console.error(`⚠️ 'sellers' property is not an array in ${domain} sellers.json`);
         sellersJsonData.sellers = [];
       }
-      
+
       const client = await pgPool.connect();
       try {
         // Check if record already exists
@@ -128,7 +128,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
           'SELECT id FROM sellers_json_cache WHERE domain = $1',
           [lowercaseDomain]
         );
-        
+
         if (checkResult.rows.length > 0) {
           // Update existing record
           // PostgreSQLのデータ型はシステムバージョンによって異なる場合があるため、
@@ -138,7 +138,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
             FROM information_schema.columns 
             WHERE table_name = 'sellers_json_cache' AND column_name = 'content';
           `);
-          
+
           // データ型に応じてクエリを調整
           if (columnCheck.rows.length > 0 && columnCheck.rows[0].data_type === 'jsonb') {
             // JSONBタイプの場合は直接オブジェクトを渡す
@@ -175,21 +175,21 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
               ]
             );
           }
-          
+
           console.log(`📝 Updated sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
         } else {
           // Insert new record
           const newId = uuidv4();
-          
-          // データ型をチェックして適切な方法でデータを挿入
+
+          // Cheeck the data type and insert data accordingly
           const columnCheck = await client.query(`
             SELECT data_type 
             FROM information_schema.columns 
             WHERE table_name = 'sellers_json_cache' AND column_name = 'content';
           `);
-          
+
           if (columnCheck.rows.length > 0 && columnCheck.rows[0].data_type === 'jsonb') {
-            // JSONBタイプの場合
+            // If the column is JSONB, insert the JSON object directly
             await client.query(
               `INSERT INTO sellers_json_cache 
               (id, domain, content, status, status_code, error_message, created_at, updated_at)
@@ -197,7 +197,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
               [
                 newId,
                 lowercaseDomain,
-                sellersJsonData, // 直接JSONBデータとして渡す
+                sellersJsonData,
                 'success',
                 statusCode,
                 null,
@@ -206,7 +206,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
               ]
             );
           } else {
-            // TEXTタイプの場合
+            // If the column is TEXT, convert the JSON object to a string
             await client.query(
               `INSERT INTO sellers_json_cache 
               (id, domain, content, status, status_code, error_message, created_at, updated_at)
@@ -223,17 +223,17 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
               ]
             );
           }
-          
+
           console.log(`📝 Stored new sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
         }
-        
+
         // Show sample seller IDs for verification
         if (sellersJsonData.sellers.length > 0) {
           const sampleCount = Math.min(3, sellersJsonData.sellers.length);
           const sampleIds = sellersJsonData.sellers.slice(0, sampleCount).map(s => s.seller_id);
           console.log(`📊 Sample seller IDs: ${sampleIds.join(', ')}...`);
         }
-        
+
         return Promise.resolve();
       } catch (err) {
         console.error(`❌ Database error for ${domain}: ${err.message}`);
@@ -437,14 +437,14 @@ async function main() {
     if (!options.forceUpdate) {
       try {
         let cachedEntry;
-        
+
         if (DB_PROVIDER === 'postgres') {
           // PostgreSQL implementation using JSONB table
           const result = await pgPool.query(
             'SELECT updated_at FROM sellers_json_cache WHERE domain = $1',
             [domain.toLowerCase()]
           );
-          
+
           // If we have any entry for this domain, consider it cached
           if (result.rows.length > 0) {
             // We need to create a compatible object with updated_at property
