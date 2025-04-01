@@ -4,25 +4,25 @@ import * as psl from 'psl';
  * Utility to validate and parse Ads.txt data
  */
 
-// Error key constants to avoid string literals
+// Error key constants using frontend translation format
 export const ERROR_KEYS = {
-  MISSING_FIELDS: 'errors:adsTxtValidation.missingFields',
-  INVALID_FORMAT: 'errors:adsTxtValidation.invalidFormat',
-  INVALID_RELATIONSHIP: 'errors:adsTxtValidation.invalidRelationship',
-  MISSPELLED_RELATIONSHIP: 'errors:adsTxtValidation.misspelledRelationship',
-  INVALID_ROOT_DOMAIN: 'errors:adsTxtValidation.invalidRootDomain',
-  EMPTY_ACCOUNT_ID: 'errors:adsTxtValidation.emptyAccountId',
-  DUPLICATE_ENTRY: 'errors:adsTxtValidation.duplicateEntry',
-  DUPLICATE_ENTRY_CASE_INSENSITIVE: 'errors:adsTxtValidation.duplicateEntryCaseInsensitive',
-  NO_SELLERS_JSON: 'errors:adsTxtValidation.noSellersJson',
-  DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'errors:adsTxtValidation.directAccountIdNotInSellersJson',
+  MISSING_FIELDS: 'errors.adsTxtValidation.missingFields',
+  INVALID_FORMAT: 'errors.adsTxtValidation.invalidFormat',
+  INVALID_RELATIONSHIP: 'errors.adsTxtValidation.invalidRelationship',
+  MISSPELLED_RELATIONSHIP: 'errors.adsTxtValidation.misspelledRelationship',
+  INVALID_ROOT_DOMAIN: 'errors.adsTxtValidation.invalidRootDomain',
+  EMPTY_ACCOUNT_ID: 'errors.adsTxtValidation.emptyAccountId',
+  DUPLICATE_ENTRY: 'errors.adsTxtValidation.duplicateEntry',
+  DUPLICATE_ENTRY_CASE_INSENSITIVE: 'errors.adsTxtValidation.duplicateEntryCaseInsensitive',
+  NO_SELLERS_JSON: 'errors.adsTxtValidation.noSellersJson',
+  DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'errors.adsTxtValidation.directAccountIdNotInSellersJson',
   RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON:
-    'errors:adsTxtValidation.resellerAccountIdNotInSellersJson',
-  DOMAIN_MISMATCH: 'errors:adsTxtValidation.domainMismatch',
-  DIRECT_NOT_PUBLISHER: 'errors:adsTxtValidation.directNotPublisher',
-  SELLER_ID_NOT_UNIQUE: 'errors:adsTxtValidation.sellerIdNotUnique',
-  RESELLER_NOT_INTERMEDIARY: 'errors:adsTxtValidation.resellerNotIntermediary',
-  SELLERS_JSON_VALIDATION_ERROR: 'errors:adsTxtValidation.sellersJsonValidationError',
+    'errors.adsTxtValidation.resellerAccountIdNotInSellersJson',
+  DOMAIN_MISMATCH: 'errors.adsTxtValidation.domainMismatch',
+  DIRECT_NOT_PUBLISHER: 'errors.adsTxtValidation.directNotPublisher',
+  SELLER_ID_NOT_UNIQUE: 'errors.adsTxtValidation.sellerIdNotUnique',
+  RESELLER_NOT_INTERMEDIARY: 'errors.adsTxtValidation.resellerNotIntermediary',
+  SELLERS_JSON_VALIDATION_ERROR: 'errors.adsTxtValidation.sellersJsonValidationError',
 };
 
 export interface ParsedAdsTxtRecord {

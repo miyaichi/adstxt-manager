@@ -737,35 +737,15 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
   // Parse the key into path components
   let path: string[];
 
-  // 'errors:' If the prefix is present, handle it separately
-  if (key.startsWith('errors:')) {
-    const keyWithoutPrefix = key.replace('errors:', '');
+  // 'errors:' or 'errors.' format
+  if (key.startsWith('errors:') || key.startsWith('errors.')) {
+    // Normalize key format by replacing 'errors:' with 'errors.'
+    const normalizedKey = key.replace('errors:', 'errors.');
+    const keyParts = normalizedKey.split('.');
 
-    // For adsTxtValidation-related error messages, use backend translations
-    if (keyWithoutPrefix.startsWith('adsTxtValidation.')) {
-      const adsTxtKey = keyWithoutPrefix.replace('adsTxtValidation.', '');
-
-      // Get the translation from the errors section
-      const validationTranslations = translations.errors.adsTxtValidation as Record<string, any>;
-      if (validationTranslations && adsTxtKey in validationTranslations) {
-        const translationItem = validationTranslations[adsTxtKey];
-        // If the translation item is an object, use the language key
-        const translation =
-          translationItem && language in translationItem
-            ? translationItem[language]
-            : translationItem?.en;
-
-        if (translation && params) {
-          // Replace parameters in the translation string
-          return Object.entries(params).reduce((str, [paramKey, paramValue]) => {
-            return str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
-          }, translation);
-        }
-        return translation || key;
-      }
-    }
-
-    path = ['errors', ...keyWithoutPrefix.split('.')];
+    // Remove 'errors' and process the rest of the path
+    keyParts.shift();
+    path = ['errors', ...keyParts];
   } else {
     path = key.split('.');
   }
