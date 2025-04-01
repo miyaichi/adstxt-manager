@@ -19,10 +19,10 @@ async function seedDatabase() {
     try {
       // Start transaction
       await db.execute('BEGIN TRANSACTION');
-      
+
       // Execute seed SQL
       await db.execute(sql);
-      
+
       // Commit transaction
       await db.execute('COMMIT');
     } catch (error) {

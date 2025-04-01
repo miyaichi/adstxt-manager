@@ -16,10 +16,10 @@ async function runAlterMigrations() {
     try {
       // Start transaction
       await db.execute('BEGIN TRANSACTION');
-      
+
       // Execute migration SQL
       await db.execute(sql);
-      
+
       // Commit transaction
       await db.execute('COMMIT');
     } catch (error) {
