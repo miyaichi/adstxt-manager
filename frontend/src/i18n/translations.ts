@@ -1,44 +1,240 @@
+// Define translations
 export const translations = {
-  errors: {
-    adsTxtValidation: {
-      invalidFormat: {
-        en: 'Invalid format. Expected comma-separated values',
-        ja: '無効な形式です。カンマ区切りの値が必要です',
+  warnings: {
+    invalidFormat: {
+      title: {
+        en: 'Invalid Format',
+        ja: '無効なフォーマット',
       },
-      missingFields: {
-        en: 'Line must contain at least domain, account ID, and account type',
-        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です',
+      description: {
+        en: 'The format of the Ads.txt entry is invalid and could not be parsed correctly.',
+        ja: 'Ads.txtエントリのフォーマットが無効で、正しく解析できませんでした。',
       },
-      invalidRelationship: {
-        en: 'Relationship type must be either DIRECT or RESELLER',
-        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります',
+      recommendation: {
+        en: 'Ensure the entry follows the correct format: domain.com, account_id, DIRECT|RESELLER, certification_authority_id',
+        ja: 'エントリが正しいフォーマットに従っていることを確認してください: domain.com, account_id, DIRECT|RESELLER, certification_authority_id',
       },
-      misspelledRelationship: {
-        en: '"{{value}}" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER',
-        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です',
+    },
+    missingFields: {
+      title: {
+        en: 'Missing Fields',
+        ja: '必須フィールドの欠落',
       },
-      invalidRootDomain: {
+      description: {
+        en: 'The Ads.txt entry is missing one or more required fields.',
+        ja: 'Ads.txtエントリに1つ以上の必須フィールドがありません。',
+      },
+      recommendation: {
+        en: 'Make sure your entry includes domain, account ID, and account type.',
+        ja: 'エントリにドメイン、アカウントID、アカウントタイプが含まれていることを確認してください。',
+      },
+    },
+    invalidRelationship: {
+      title: {
+        en: 'Invalid Relationship',
+        ja: '無効な関係タイプ',
+      },
+      description: {
+        en: 'The relationship type must be either DIRECT or RESELLER.',
+        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります。',
+      },
+      recommendation: {
+        en: 'Change the relationship type to either DIRECT or RESELLER.',
+        ja: '関係タイプをDIRECTまたはRESELLERに変更してください。',
+      },
+    },
+    misspelledRelationship: {
+      title: {
+        en: 'Misspelled Relationship',
+        ja: 'スペルミスのある関係タイプ',
+      },
+      description: {
+        en: '{{value}} appears to be a misspelled relationship type.',
+        ja: '{{value}}は関係タイプのスペルミスと思われます。',
+      },
+      recommendation: {
+        en: 'Relationship types are case-sensitive and must be exactly DIRECT or RESELLER.',
+        ja: '関係タイプは大文字と小文字が区別され、正確にDIRECTまたはRESELLERである必要があります。',
+      },
+    },
+    invalidRootDomain: {
+      title: {
+        en: 'Invalid Root Domain',
+        ja: '無効なルートドメイン',
+      },
+      description: {
         en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
         ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
       },
-      emptyAccountId: {
-        en: 'Account ID must not be empty',
-        ja: 'アカウントIDは空であってはなりません',
+      recommendation: {
+        en: 'Use a root domain instead of a subdomain for proper validation.',
+        ja: '適切な検証のためにサブドメインではなくルートドメインを使用してください。',
       },
-      duplicateEntry: {
+    },
+    emptyAccountId: {
+      title: {
+        en: 'Empty Account ID',
+        ja: '空のアカウントID',
+      },
+      description: {
+        en: 'Account ID must not be empty.',
+        ja: 'アカウントIDは空であってはなりません。',
+      },
+      recommendation: {
+        en: "Provide a valid account ID, which should be the publisher's ID in the advertising system.",
+        ja: '広告システムでのパブリッシャーのIDである有効なアカウントIDを提供してください。',
+      },
+    },
+    duplicateEntry: {
+      title: {
+        en: 'Duplicate Entry',
+        ja: '重複エントリ',
+      },
+      description: {
         en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
         ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
       },
-      duplicateEntryCaseInsensitive: {
-        en: "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
-        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました',
+      recommendation: {
+        en: 'Remove the duplicate entry to maintain a cleaner ads.txt file.',
+        ja: 'よりクリーンなads.txtファイルを維持するために、重複エントリを削除してください。',
       },
-      // Note: Additional validation messages for sellers.json are defined in the backend
-      // These will be translated on the frontend using the same key structure,
-      // but we avoid duplication by keeping them in one place.
+    },
+    duplicateEntryCaseInsensitive: {
+      title: {
+        en: 'Case-Insensitive Duplicate',
+        ja: '大文字小文字を区別しない重複',
+      },
+      description: {
+        en: 'Duplicate entry found with different case formatting ({{domain}})',
+        ja: '大文字小文字の違いを除いて重複するエントリが見つかりました（{{domain}}）',
+      },
+      recommendation: {
+        en: 'Consolidate entries with consistent capitalization.',
+        ja: '一貫した大文字小文字でエントリを統合してください。',
+      },
+    },
+    noSellersJson: {
+      title: {
+        en: 'No Sellers.json Found',
+        ja: 'Sellers.jsonが見つかりません',
+      },
+      description: {
+        en: 'No sellers.json file found for domain {{domain}}',
+        ja: 'ドメイン{{domain}}のsellers.jsonファイルが見つかりません',
+      },
+      recommendation: {
+        en: 'The advertising system should provide a valid sellers.json file at their domain root.',
+        ja: '広告システムはドメインルートに有効なsellers.jsonファイルを提供する必要があります。',
+      },
+    },
+    directAccountIdNotInSellersJson: {
+      title: {
+        en: 'Account ID Not Found (DIRECT)',
+        ja: 'アカウントIDが見つかりません（DIRECT）',
+      },
+      description: {
+        en: 'Publisher account ID {{account_id}} not found in sellers.json for {{domain}}',
+        ja: 'パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+      },
+      recommendation: {
+        en: 'Verify the account ID or contact the advertising system to update their sellers.json.',
+        ja: 'アカウントIDを確認するか、sellers.jsonを更新するために広告システムに連絡してください。',
+      },
+    },
+    resellerAccountIdNotInSellersJson: {
+      title: {
+        en: 'Account ID Not Found (RESELLER)',
+        ja: 'アカウントIDが見つかりません（RESELLER）',
+      },
+      description: {
+        en: 'Reseller account ID {{account_id}} not found in sellers.json for {{domain}}',
+        ja: 'リセラーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+      },
+      recommendation: {
+        en: 'Verify the account ID or contact the reseller to ensure they are registered.',
+        ja: 'アカウントIDを確認するか、リセラーに連絡して登録を確認してください。',
+      },
+    },
+    domainMismatch: {
+      title: {
+        en: 'Domain Mismatch',
+        ja: 'ドメインの不一致',
+      },
+      description: {
+        en: "The sellers.json domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
+        ja: 'sellers.jsonドメイン（{{seller_domain}}）がパブリッシャードメイン（{{publisher_domain}}）と一致しません',
+      },
+      recommendation: {
+        en: 'For DIRECT relationships, the domains should match. Verify with the advertising system.',
+        ja: 'DIRECT関係の場合、ドメインは一致する必要があります。広告システムで確認してください。',
+      },
+    },
+    directNotPublisher: {
+      title: {
+        en: 'Seller Not Marked as PUBLISHER',
+        ja: 'セラーがPUBLISHERとしてマークされていない',
+      },
+      description: {
+        en: 'Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません（現在のタイプ: {{seller_type}}）',
+      },
+      recommendation: {
+        en: 'For DIRECT relationships, the seller type should be PUBLISHER in sellers.json.',
+        ja: 'DIRECT関係の場合、sellers.jsonでセラータイプはPUBLISHERであるべきです。',
+      },
+    },
+    sellerIdNotUnique: {
+      title: {
+        en: 'Non-Unique Seller ID',
+        ja: '一意でないセラーID',
+      },
+      description: {
+        en: 'Seller ID {{account_id}} appears multiple times in sellers.json for {{domain}}',
+        ja: 'セラーID {{account_id}} が {{domain}} のsellers.jsonに複数回表示されています',
+      },
+      recommendation: {
+        en: 'Contact the advertising system to clarify which entry is correct.',
+        ja: 'どのエントリが正しいかを明確にするために広告システムに連絡してください。',
+      },
+    },
+    resellerNotIntermediary: {
+      title: {
+        en: 'Reseller Not Marked as INTERMEDIARY',
+        ja: 'リセラーがINTERMEDIARYとしてマークされていない',
+      },
+      description: {
+        en: 'Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません（現在のタイプ: {{seller_type}}）',
+      },
+      recommendation: {
+        en: 'For RESELLER relationships, the seller type should be INTERMEDIARY in sellers.json.',
+        ja: 'RESELLER関係の場合、sellers.jsonでセラータイプはINTERMEDIARYであるべきです。',
+      },
+    },
+    sellersJsonValidationError: {
+      title: {
+        en: 'Sellers.json Validation Error',
+        ja: 'Sellers.json検証エラー',
+      },
+      description: {
+        en: 'Error validating against sellers.json for {{domain}}: {{message}}',
+        ja: '{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}',
+      },
+      recommendation: {
+        en: 'This is usually a temporary error. You can proceed but full validation was not possible.',
+        ja: 'これは通常、一時的なエラーです。続行できますが、完全な検証はできませんでした。',
+      },
     },
   },
   common: {
+    recommendation: {
+      en: 'Recommendation',
+      ja: '推奨事項',
+    },
+    learnMore: {
+      en: 'Learn More',
+      ja: '詳細を見る',
+    },
     home: {
       en: 'Home',
       ja: 'ホーム',
@@ -168,6 +364,200 @@ export const translations = {
       ja: '表示',
     },
   },
+  errors: {
+    adsTxtValidation: {
+      invalidFormat: {
+        en: 'Invalid format. Expected comma-separated values',
+        ja: '無効な形式です。カンマ区切りの値が必要です',
+      },
+      missingFields: {
+        en: 'Line must contain at least domain, account ID, and account type',
+        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です',
+      },
+      invalidRelationship: {
+        en: 'Relationship type must be either DIRECT or RESELLER',
+        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります',
+      },
+      misspelledRelationship: {
+        en: '"{{value}}" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER',
+        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です',
+      },
+      invalidRootDomain: {
+        en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
+        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
+      },
+      emptyAccountId: {
+        en: 'Account ID must not be empty',
+        ja: 'アカウントIDは空であってはなりません',
+      },
+      duplicateEntry: {
+        en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
+        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
+      },
+      duplicateEntryCaseInsensitive: {
+        en: "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
+        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました',
+      },
+      noSellersJson: {
+        en: 'No sellers.json file found for domain {{domain}}',
+        ja: 'ドメイン{{domain}}のsellers.jsonファイルが見つかりません',
+      },
+      directAccountIdNotInSellersJson: {
+        en: 'Publisher account ID {{account_id}} not found in sellers.json for {{domain}}',
+        ja: 'パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+      },
+      resellerAccountIdNotInSellersJson: {
+        en: 'Reseller account ID {{account_id}} not found in sellers.json for {{domain}}',
+        ja: 'リセラーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+      },
+      domainMismatch: {
+        en: "The sellers.json domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
+        ja: 'sellers.jsonドメイン（{{seller_domain}}）がパブリッシャードメイン（{{publisher_domain}}）と一致しません',
+      },
+      directNotPublisher: {
+        en: 'Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません（現在のタイプ: {{seller_type}}）',
+      },
+      sellerIdNotUnique: {
+        en: 'Seller ID {{account_id}} appears multiple times in sellers.json for {{domain}}',
+        ja: 'セラーID {{account_id}} が {{domain}} のsellers.jsonに複数回表示されています',
+      },
+      resellerNotIntermediary: {
+        en: 'Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません（現在のタイプ: {{seller_type}}）',
+      },
+      sellersJsonValidationError: {
+        en: 'Error validating against sellers.json for {{domain}}: {{message}}',
+        ja: '{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}',
+      },
+    },
+  },
+  newRequestPage: {
+    breadcrumb: {
+      en: 'New Request',
+      ja: '新規リクエスト',
+    },
+  },
+  requests: {
+    form: {
+      title: {
+        en: 'Create New Request',
+        ja: '新規リクエスト作成',
+      },
+      description: {
+        en: "Fill out this form to request changes to a publisher's ads.txt file.",
+        ja: 'パブリッシャーのads.txtファイルへの変更をリクエストするにはこのフォームに記入してください。',
+      },
+      basicInfo: {
+        en: 'Basic Information',
+        ja: '基本情報',
+      },
+      publisherEmail: {
+        en: 'Publisher Email',
+        ja: 'パブリッシャーのメールアドレス',
+      },
+      publisherName: {
+        en: 'Publisher Name (Optional)',
+        ja: 'パブリッシャー名（任意）',
+      },
+      publisherDomain: {
+        en: 'Publisher Domain (Optional)',
+        ja: 'パブリッシャードメイン（任意）',
+      },
+      requesterEmail: {
+        en: 'Requester Email',
+        ja: 'リクエスターのメールアドレス',
+      },
+      requesterName: {
+        en: 'Requester Name',
+        ja: 'リクエスター名',
+      },
+      adsTxtRecords: {
+        en: 'Ads.txt Records',
+        ja: 'Ads.txtレコード',
+      },
+      uploadTab: {
+        en: 'Upload Records',
+        ja: 'レコードのアップロード',
+      },
+      selectedRecordsTab: {
+        en: 'Selected Records',
+        ja: '選択されたレコード',
+      },
+      selectedRecords: {
+        en: 'Selected Ads.txt Records',
+        ja: '選択されたAds.txtレコード',
+      },
+      noRecordsSelected: {
+        en: 'No records have been selected yet.',
+        ja: 'まだレコードが選択されていません。',
+      },
+      submitRequest: {
+        en: 'Submit Request',
+        ja: 'リクエストを送信',
+      },
+      invalidRecordsWarning: {
+        en: 'Please fix invalid records before submitting the request.',
+        ja: 'リクエストを送信する前に無効なレコードを修正してください。',
+      },
+      requiredFieldsError: {
+        en: 'Please fill out all required fields.',
+        ja: 'すべての必須フィールドに入力してください。',
+      },
+      recordsRequiredError: {
+        en: 'Please add at least one ads.txt record.',
+        ja: '少なくとも1つのads.txtレコードを追加してください。',
+      },
+      processingError: {
+        en: 'An error occurred while processing your request.',
+        ja: 'リクエストの処理中にエラーが発生しました。',
+      },
+      domainValidation: {
+        loading: {
+          en: 'Validating...',
+          ja: '検証中...',
+        },
+        success: {
+          en: 'Valid domain',
+          ja: '有効なドメイン',
+        },
+        error: {
+          en: 'Failed to validate domain',
+          ja: 'ドメインの検証に失敗しました',
+        },
+        invalidFormat: {
+          en: 'Invalid domain format',
+          ja: '無効なドメイン形式',
+        },
+      },
+    },
+    success: {
+      title: {
+        en: 'Request Submitted Successfully',
+        ja: 'リクエストが正常に送信されました',
+      },
+      message: {
+        en: 'Your request has been submitted and an email notification has been sent to the publisher.',
+        ja: 'リクエストが送信され、パブリッシャーにメール通知が送信されました。',
+      },
+      requestId: {
+        en: 'Request ID',
+        ja: 'リクエストID',
+      },
+      accessToken: {
+        en: 'Access Token',
+        ja: 'アクセストークン',
+      },
+      saveInfo: {
+        en: 'Please save this information to check the status of your request later.',
+        ja: '後でリクエストのステータスを確認するためにこの情報を保存してください。',
+      },
+      viewRequest: {
+        en: 'View Request',
+        ja: 'リクエストを表示',
+      },
+    },
+  },
   homePage: {
     title: {
       en: 'Ads.txt Manager',
@@ -220,167 +610,77 @@ export const translations = {
       },
     },
   },
-  newRequestPage: {
-    breadcrumb: {
-      en: 'New Request',
-      ja: '新規リクエスト',
+  errorMessage: {
+    defaultTitle: {
+      en: 'An error occurred',
+      ja: 'エラーが発生しました',
     },
   },
-  notFoundPage: {
-    title: {
-      en: 'Page Not Found',
-      ja: 'ページが見つかりません',
-    },
-    description: {
-      en: 'The page you are looking for may not exist or may have been moved.',
-      ja: 'お探しのページは存在しないか、移動された可能性があります。',
-    },
-    button: {
-      en: 'Return to Home',
-      ja: 'ホームに戻る',
-    },
-  },
-  requestDetailPage: {
-    breadcrumb: {
-      en: 'Request Details',
-      ja: 'リクエスト詳細',
-    },
-    errors: {
-      noId: {
-        en: 'No Request ID',
-        ja: 'リクエストIDがありません',
-      },
-      noIdDescription: {
-        en: 'No request ID has been specified. Please check the URL.',
-        ja: 'リクエストIDが指定されていません。URLを確認してください',
-      },
-      noToken: {
-        en: 'No Token',
-        ja: 'トークンがありません',
-      },
-      noTokenDescription: {
-        en: 'No access token has been specified. Please check the URL.',
-        ja: 'アクセストークンが指定されていません。URLを確認してください',
-      },
-    },
-  },
-  requestListPage: {
-    breadcrumb: {
-      en: 'Request List',
-      ja: 'リクエスト一覧',
-    },
-    title: {
-      en: 'Request List',
-      ja: 'リクエスト一覧',
-    },
-    emailLabel: {
-      en: 'Email Address:',
-      ja: 'メールアドレス:',
-    },
-    searchPlaceholder: {
-      en: 'Enter search terms',
-      ja: '検索内容を入力',
-    },
-    searchLabel: {
-      en: 'Search Requests',
-      ja: 'リクエスト検索',
-    },
-    totalRequests: {
-      en: 'Total {{count}} requests',
-      ja: '合計 {{count}} 件のリクエスト',
-    },
-    noRequests: {
-      en: 'No requests found',
-      ja: 'リクエストが見つかりませんでした',
-    },
-    changeSearch: {
-      en: 'Please change your search criteria',
-      ja: '検索条件を変更してください',
-    },
-    pendingTitle: {
-      en: 'Pending ({{count}})',
-      ja: '保留中 ({{count}})',
-    },
-    approvedTitle: {
-      en: 'Approved ({{count}})',
-      ja: '承認済み ({{count}})',
-    },
-    rejectedTitle: {
-      en: 'Rejected ({{count}})',
-      ja: '却下 ({{count}})',
-    },
-    updatedTitle: {
-      en: 'Updated ({{count}})',
-      ja: '更新済み ({{count}})',
-    },
-    errors: {
-      noEmail: {
-        en: 'No Email Address Specified',
-        ja: 'メールアドレスが指定されていません',
-      },
-      noEmailDescription: {
-        en: 'An email address is required to view requests',
-        ja: 'リクエスト表示にはメールアドレスが必要です',
-      },
-      fetchError: {
-        en: 'An error occurred while retrieving requests',
-        ja: 'リクエストの取得中にエラーが発生しました',
-      },
+  footer: {
+    copyright: {
+      en: '© {{year}} Ads.txt Manager. All rights reserved.',
+      ja: '© {{year}} Ads.txt Manager. All rights reserved.',
     },
   },
   adsTxt: {
     input: {
       title: {
         en: 'Ads.txt Input',
-        ja: 'Ads.txt入力',
+        ja: 'Ads.txtの入力',
       },
       label: {
         en: 'Ads.txt Content',
-        ja: 'Ads.txtコンテンツ',
+        ja: 'Ads.txtの内容',
       },
       placeholder: {
         en: 'Enter Ads.txt content here...',
-        ja: 'Ads.txtコンテンツをここに入力してください...',
+        ja: 'Ads.txtの内容をここに入力してください...',
       },
       example: {
         en: 'Example',
-        ja: '例を表示',
+        ja: '例',
       },
     },
     textInput: {
-      title: {
-        en: 'Ads.txt File Upload',
-        ja: 'Ads.txtファイルアップロード',
-      },
       stats: {
-        en: 'Records: {{total}} | Valid: {{valid}} | Invalid: {{invalid}}',
-        ja: 'レコード数: {{total}} | 有効: {{valid}} | 無効: {{invalid}}',
+        en: 'Total: {{total}}, Valid: {{valid}}, Invalid: {{invalid}}',
+        ja: '合計: {{total}}, 有効: {{valid}}, 無効: {{invalid}}',
       },
       invalidRecordsWarning: {
-        en: '{{invalid}} record(s) contain errors. Please review the errors below.',
-        ja: '{{invalid}}件のレコードにエラーがあります。以下のエラーを確認してください。',
+        en: 'Some records are invalid and will not be included in your request.',
+        ja: '一部のレコードが無効なため、リクエストに含まれません。',
       },
-      foundOnDomain: {
-        en: 'Found ads.txt on this domain',
-        ja: 'このドメインでAds.txtが見つかりました',
+    },
+    recordList: {
+      title: {
+        en: 'Ads.txt Records',
+        ja: 'Ads.txtレコード',
       },
-      useFoundFile: {
-        en: 'Use this file',
-        ja: 'このファイルを使用する',
+      noRecords: {
+        en: 'No records found',
+        ja: 'レコードが見つかりません',
+      },
+      searchLabel: {
+        en: 'Search Records',
+        ja: 'レコードを検索',
+      },
+      searchPlaceholder: {
+        en: 'Search by domain, account ID...',
+        ja: 'ドメイン、アカウントIDで検索...',
+      },
+      noMatchingRecords: {
+        en: 'No matching records found',
+        ja: '一致するレコードが見つかりません',
+      },
+      totalRecords: {
+        en: 'Total records: {{count}}',
+        ja: '合計レコード数: {{count}}',
       },
     },
     recordItem: {
-      domain: {
-        en: 'Domain',
-        ja: 'ドメイン',
-      },
       accountId: {
         en: 'Account ID',
         ja: 'アカウントID',
-      },
-      accountType: {
-        en: 'Account Type',
-        ja: 'アカウントタイプ',
       },
       relationship: {
         en: 'Relationship',
@@ -391,44 +691,20 @@ export const translations = {
         ja: '認証局ID',
       },
       sellerInfo: {
-        en: 'Seller Information',
+        en: 'Seller Info',
         ja: 'セラー情報',
-      },
-      sellerName: {
-        en: 'Name',
-        ja: '名前',
-      },
-      sellerDomain: {
-        en: 'Domain',
-        ja: 'ドメイン',
-      },
-      sellerType: {
-        en: 'Type',
-        ja: 'タイプ',
       },
       confidential: {
         en: 'Confidential',
         ja: '機密',
       },
-      notConfidential: {
-        en: 'Not Confidential',
-        ja: '非機密',
+      sellerDomain: {
+        en: 'Seller Domain',
+        ja: 'セラードメイン',
       },
-      contactEmail: {
-        en: 'Contact Email',
-        ja: '連絡先メール',
-      },
-      showSellerInfo: {
-        en: 'Show seller.json information',
-        ja: 'seller.json情報を表示',
-      },
-      hideSellerInfo: {
-        en: 'Hide seller.json information',
-        ja: 'seller.json情報を隠す',
-      },
-      fetchingSellerInfo: {
-        en: 'Fetching seller information...',
-        ja: 'セラー情報を取得中...',
+      sellerType: {
+        en: 'Seller Type',
+        ja: 'セラータイプ',
       },
       noSellerInfo: {
         en: 'No seller information found',
@@ -438,422 +714,23 @@ export const translations = {
         en: 'Error fetching seller information',
         ja: 'セラー情報の取得中にエラーが発生しました',
       },
-    },
-    recordList: {
-      title: {
-        en: 'Ads.txt Records',
-        ja: 'Ads.txtレコード',
+      fetchingSellerInfo: {
+        en: 'Fetching seller information...',
+        ja: 'セラー情報を取得中...',
       },
-      searchLabel: {
-        en: 'Search Records',
-        ja: 'レコードを検索',
-      },
-      searchPlaceholder: {
-        en: 'Enter domain or account ID',
-        ja: 'ドメインやアカウントIDを入力',
-      },
-      noRecords: {
-        en: 'No records',
-        ja: 'レコードがありません',
-      },
-      noMatchingRecords: {
-        en: 'No records match your search criteria',
-        ja: '検索条件に一致するレコードはありません',
-      },
-      totalRecords: {
-        en: 'Total {{count}} records',
-        ja: '合計 {{count}} 件のレコード',
-      },
-    },
-  },
-  messages: {
-    form: {
-      title: {
-        en: 'New Message',
-        ja: '新規メッセージ',
-      },
-      emailLabel: {
-        en: 'Email Address',
-        ja: 'メールアドレス',
-      },
-      messageLabel: {
-        en: 'Message',
-        ja: 'メッセージ',
-      },
-      messagePlaceholder: {
-        en: 'Enter your message here...',
-        ja: 'メッセージ内容を入力してください...',
-      },
-      requiredFields: {
-        en: 'Message content and email address are required',
-        ja: 'メッセージ内容とメールアドレスは必須です',
-      },
-      sendError: {
-        en: 'An error occurred while sending the message',
-        ja: 'メッセージの送信中にエラーが発生しました',
-      },
-      sendSuccess: {
-        en: 'Message sent successfully',
-        ja: 'メッセージが送信されました',
-      },
-    },
-    list: {
-      title: {
-        en: 'Message History',
-        ja: 'メッセージ履歴',
-      },
-      noMessages: {
-        en: 'No messages yet',
-        ja: 'まだメッセージはありません',
-      },
-      fetchError: {
-        en: 'An error occurred while retrieving messages',
-        ja: 'メッセージの取得中にエラーが発生しました',
-      },
-    },
-    item: {
-      sender: {
-        en: 'From:',
-        ja: '送信者:',
-      },
-      sentAt: {
-        en: 'Sent:',
-        ja: '送信日時:',
-      },
-    },
-  },
-  requests: {
-    form: {
-      title: {
-        en: 'Create New Request',
-        ja: '新規リクエスト作成',
-      },
-      description: {
-        en: 'This form creates a request to update the Ads.txt file. The request will be sent to the publisher for review.',
-        ja: 'このフォームはAds.txtファイル更新のリクエストを作成します。パブリッシャーにリクエストが送信され、確認されます。',
-      },
-      basicInfo: {
-        en: 'Basic Information',
-        ja: '基本情報',
-      },
-      publisherEmail: {
-        en: "Publisher's Email Address *",
-        ja: 'パブリッシャーのメールアドレス *',
-      },
-      publisherName: {
-        en: 'Publisher Name',
-        ja: 'パブリッシャー名',
-      },
-      publisherDomain: {
-        en: 'Publisher Domain',
-        ja: 'パブリッシャードメイン',
-      },
-      domainValidation: {
-        loading: {
-          en: 'Validating domain...',
-          ja: 'ドメインを検証中...',
-        },
-        success: {
-          en: 'Ads.txt found on this domain',
-          ja: 'このドメインでAds.txtが見つかりました',
-        },
-        error: {
-          en: 'Could not find Ads.txt on this domain',
-          ja: 'このドメインでAds.txtが見つかりませんでした',
-        },
-        invalidFormat: {
-          en: 'Invalid domain format',
-          ja: '無効なドメイン形式です',
-        },
-      },
-      requesterEmail: {
-        en: "Requester's Email Address *",
-        ja: 'リクエスターのメールアドレス *',
-      },
-      requesterName: {
-        en: 'Requester Name *',
-        ja: 'リクエスター名 *',
-      },
-      adsTxtRecords: {
-        en: 'Ads.txt Records',
-        ja: 'Ads.txtレコード',
-      },
-      uploadTab: {
-        en: 'Upload',
-        ja: 'アップロード',
-      },
-      selectedRecordsTab: {
-        en: 'Selected Records',
-        ja: '選択レコード',
-      },
-      selectedRecords: {
-        en: 'Selected Records',
-        ja: '選択レコード',
-      },
-      noRecordsSelected: {
-        en: 'No records selected. Please upload a contents to select records.',
-        ja: 'レコードが選択されていません。コンテンツをロードしてレコードを選択してください。',
-      },
-      submitRequest: {
-        en: 'Submit Request',
-        ja: 'リクエスト送信',
-      },
-      requiredFieldsError: {
-        en: "Publisher's email, requester's email, and requester name are required",
-        ja: 'パブリッシャーのメールアドレス、リクエスターのメールアドレス、リクエスター名は必須です',
-      },
-      recordsRequiredError: {
-        en: 'Please select at least one Ads.txt record',
-        ja: '少なくとも1つのAds.txtレコードを選択してください',
-      },
-      invalidRecordsWarning: {
-        en: 'Please fix invalid records before submitting the request',
-        ja: 'リクエストを送信する前に無効なレコードを修正してください',
-      },
-      processingError: {
-        en: 'An error occurred while processing your request',
-        ja: 'リクエスト処理中にエラーが発生しました',
-      },
-    },
-    success: {
-      title: {
-        en: 'Request Submitted Successfully',
-        ja: 'リクエスト送信完了',
-      },
-      message: {
-        en: 'The request has been sent to the publisher. Please save the Request ID and Access Token.',
-        ja: 'リクエストがパブリッシャーに送信されました。リクエストIDとトークンを保存してください。',
-      },
-      requestId: {
-        en: 'Request ID:',
-        ja: 'リクエストID:',
-      },
-      accessToken: {
-        en: 'Access Token:',
-        ja: 'アクセストークン:',
-      },
-      saveInfo: {
-        en: 'You will need this information to check or update your request.',
-        ja: 'リクエストの確認や更新のためにこの情報が必要になります。',
-      },
-      viewRequest: {
-        en: 'View Request',
-        ja: 'リクエストを表示',
-      },
-    },
-    detail: {
-      title: {
-        en: 'Request Details',
-        ja: 'リクエスト詳細',
-      },
-      status: {
-        en: 'Status:',
-        ja: 'ステータス:',
-      },
-      created: {
-        en: 'Created:',
-        ja: '作成日時:',
-      },
-      updated: {
-        en: 'Last Updated:',
-        ja: '最終更新:',
-      },
-      publisher: {
-        title: {
-          en: 'Publisher Information',
-          ja: 'パブリッシャー情報',
-        },
-        email: {
-          en: 'Email:',
-          ja: 'メールアドレス:',
-        },
-        name: {
-          en: 'Name:',
-          ja: '名前:',
-        },
-        domain: {
-          en: 'Domain:',
-          ja: 'ドメイン:',
-        },
-      },
-      requester: {
-        title: {
-          en: 'Requester Information',
-          ja: 'リクエスター情報',
-        },
-        email: {
-          en: 'Email:',
-          ja: 'メールアドレス:',
-        },
-        name: {
-          en: 'Name:',
-          ja: '名前:',
-        },
-      },
-      records: {
-        title: {
-          en: 'Ads.txt Records',
-          ja: 'Ads.txtレコード',
-        },
-      },
-      approvedContent: {
-        en: 'Approved Ads.txt Content',
-        ja: '承認済みAds.txtコンテンツ',
-      },
-      approvedContentDescription: {
-        en: 'The following entries have been approved and are ready to be added to your ads.txt file.',
-        ja: '以下のエントリが承認され、ads.txtファイルに追加する準備ができています。',
-      },
-      contentHelp: {
-        en: 'This content includes approved entries with metadata comments. Missing certification authority IDs are automatically added from sellers.json where available. You can add these lines to your existing ads.txt file.',
-        ja: 'このコンテンツには、メタデータコメント付きの承認済みエントリが含まれています。不足している認証局IDは可能な場合にsellers.jsonから自動的に追加されます。これらの行を既存のads.txtファイルに追加できます。',
-      },
-      copySuccess: {
-        en: 'Content copied to clipboard!',
-        ja: 'コンテンツがクリップボードにコピーされました！',
-      },
-      actions: {
-        title: {
-          en: 'Actions',
-          ja: 'アクション',
-        },
-        approve: {
-          en: 'Approve Request',
-          ja: 'リクエストを承認',
-        },
-        reject: {
-          en: 'Reject Request',
-          ja: 'リクエストを却下',
-        },
-        download: {
-          en: 'Download Ads.txt',
-          ja: 'Ads.txtをダウンロード',
-        },
-        showContent: {
-          en: 'Show Content',
-          ja: 'コンテンツを表示',
-        },
-        copyToClipboard: {
-          en: 'Copy to Clipboard',
-          ja: 'クリップボードにコピー',
-        },
-        approveConfirm: {
-          en: 'Are you sure you want to approve this request?',
-          ja: 'このリクエストを承認してもよろしいですか？',
-        },
-        rejectConfirm: {
-          en: 'Are you sure you want to reject this request?',
-          ja: 'このリクエストを却下してもよろしいですか？',
-        },
-      },
-      loading: {
-        en: 'Loading request details...',
-        ja: 'リクエスト詳細を読み込み中...',
-      },
-      error: {
-        fetchError: {
-          en: 'Failed to fetch request details',
-          ja: 'リクエスト詳細の取得に失敗しました',
-        },
-        updateError: {
-          en: 'Failed to update request status',
-          ja: 'リクエストステータスの更新に失敗しました',
-        },
-      },
-    },
-    item: {
-      status: {
-        en: 'Status:',
-        ja: 'ステータス:',
-      },
-      created: {
-        en: 'Created:',
-        ja: '作成日時:',
-      },
-      publisher: {
-        en: 'Publisher:',
-        ja: 'パブリッシャー:',
-      },
-      requester: {
-        en: 'Requester:',
-        ja: 'リクエスター:',
-      },
-      domain: {
-        en: 'Domain:',
-        ja: 'ドメイン:',
-      },
-      recordCount: {
-        en: 'Records: {{count}}',
-        ja: 'レコード数: {{count}}',
-      },
-      viewDetails: {
-        en: 'View Details',
-        ja: '詳細を表示',
-      },
-    },
-  },
-  footer: {
-    copyright: {
-      en: '(c) {{year}} Ads.txt Manager',
-      ja: '(c) {{year}} Ads.txt マネージャー',
-    },
-  },
-  errorMessage: {
-    defaultTitle: {
-      en: 'An error occurred',
-      ja: 'エラーが発生しました',
     },
   },
 };
 
-// These have the same keys as backend/src/i18n/locales/*/errors.json
-type TranslationItem = {
-  en: string;
-  ja: string;
-  [key: string]: string; // Language key index signature
-};
-type AdsTxtValidationType = {
+// Define type for translation items
+interface TranslationItem {
+  [language: string]: string;
+}
+
+// Define type for ads.txt validation translations
+interface AdsTxtValidationTranslations {
   [key: string]: TranslationItem;
-};
-
-const backendTranslations: {
-  adsTxtValidation: AdsTxtValidationType;
-} = {
-  adsTxtValidation: {
-    noSellersJson: {
-      en: 'No sellers.json file found for the advertising system domain {{domain}}',
-      ja: '広告システムドメイン {{domain}} のsellers.jsonファイルが見つかりません',
-    },
-    directAccountIdNotInSellersJson: {
-      en: 'DIRECT: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}',
-      ja: 'DIRECT: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません',
-    },
-    resellerAccountIdNotInSellersJson: {
-      en: 'RESELLER: Publisher account ID {{account_id}} not found in sellers.json file for {{domain}}',
-      ja: 'RESELLER: パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonファイルに見つかりません',
-    },
-    domainMismatch: {
-      en: "DIRECT: The sellers.json entry domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
-      ja: 'DIRECT: sellers.jsonエントリのドメイン ({{seller_domain}}) がパブリッシャードメイン ({{publisher_domain}}) と一致しません',
-    },
-    directNotPublisher: {
-      en: 'DIRECT: Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
-      ja: 'DIRECT: セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません (現在のタイプ: {{seller_type}})',
-    },
-    sellerIdNotUnique: {
-      en: 'Seller ID {{account_id}} is used multiple times in the sellers.json file for {{domain}}',
-      ja: 'セラーID {{account_id}} は {{domain}} のsellers.jsonファイル内で複数回使用されています',
-    },
-    resellerNotIntermediary: {
-      en: 'RESELLER: Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
-      ja: 'RESELLER: セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません (現在のタイプ: {{seller_type}})',
-    },
-    sellersJsonValidationError: {
-      en: 'Error validating against sellers.json for {{domain}}: {{message}}',
-      ja: '{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}',
-    },
-  },
-};
+}
 
 // Create a translation helper function
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
@@ -868,13 +745,15 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
     if (keyWithoutPrefix.startsWith('adsTxtValidation.')) {
       const adsTxtKey = keyWithoutPrefix.replace('adsTxtValidation.', '');
 
-      // Get the translation from backend translations
-      const validationTranslations = backendTranslations.adsTxtValidation;
-      if (adsTxtKey in validationTranslations) {
+      // Get the translation from the errors section
+      const validationTranslations = translations.errors.adsTxtValidation as Record<string, any>;
+      if (validationTranslations && adsTxtKey in validationTranslations) {
         const translationItem = validationTranslations[adsTxtKey];
         // If the translation item is an object, use the language key
         const translation =
-          language in translationItem ? translationItem[language] : translationItem.en;
+          translationItem && language in translationItem
+            ? translationItem[language]
+            : translationItem?.en;
 
         if (translation && params) {
           // Replace parameters in the translation string
@@ -882,7 +761,7 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
             return str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
           }, translation);
         }
-        return translation;
+        return translation || key;
       }
     }
 
@@ -896,31 +775,36 @@ export const t = (key: string, language: string, params?: Record<string, any>): 
 
   // Navigate through the nested objects
   for (const k of path) {
-    console.log(`Looking for key part: ${k} in`, value);
-    if (value[k] === undefined) {
+    if (!value || value[k] === undefined) {
       console.warn(`Translation key not found: ${key}, failed at part: ${k}`);
       return key;
     }
     value = value[k];
   }
 
-  // Get the translation for the specified language or fallback to English
-  const translation = value[language] || value['en'];
+  // Value should now be either a string or an object with language keys
+  let translation: string;
+
+  if (typeof value === 'string') {
+    // If it's already a string, use it directly
+    translation = value;
+  } else if (value && typeof value === 'object') {
+    // If it's an object, try to get the translation for the current language or fall back to English
+    translation = value[language] || value['en'];
+  } else {
+    console.warn(`No translation found for key: ${key}`);
+    return key;
+  }
+
   if (!translation) {
     console.warn(`Translation not found for key: ${key} in language: ${language}`);
     return key;
   }
 
-  // Debug logging
-  console.log(`Translating ${key} to ${translation} for language ${language} with params:`, params);
-
   // Replace parameters if they exist
   if (params) {
     const result = Object.entries(params).reduce((str, [paramKey, paramValue]) => {
       const replaced = str.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
-      console.log(
-        `Parameter replacement: ${paramKey}=${paramValue}, before: "${str}", after: "${replaced}"`
-      );
       return replaced;
     }, translation);
     return result;

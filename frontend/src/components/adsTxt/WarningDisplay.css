@@ -1,0 +1,163 @@
+.warning-display {
+  margin: 15px 0;
+  padding: 10px 15px;
+  background-color: #fff8e1;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+.warning-list {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.warning-item {
+  padding: 4px 0;
+  line-height: 1.5;
+}
+
+.warning-text {
+  color: #d32f2f;
+  font-size: 14px;
+}
+
+/* Popover styling */
+.warning-popover-container {
+  position: relative;
+  display: inline-block;
+  /* 以下を追加して、ポップオーバーがクリック可能になるようにする */
+  isolation: isolate;
+}
+
+.warning-text-container {
+  display: inline-block;
+  word-break: break-word;
+  font-size: 0.875rem;
+  color: orange;
+  margin-left: 4px;
+}
+
+.warning-popover-trigger {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+  border: none;
+  cursor: pointer;
+  border-radius: 16px;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  transition: all 0.2s ease;
+}
+
+.warning-popover-trigger:hover {
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.16),
+    0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.warning-level-error {
+  color: #ffffff;
+  background-color: #e53935;
+  border: 1px solid #d32f2f;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.warning-level-warning {
+  color: #ffffff;
+  background-color: #ff9800;
+  border: 1px solid #f57c00;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.warning-level-info {
+  color: #ffffff;
+  background-color: #03a9f4;
+  border: 1px solid #0288d1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.warning-popover {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 350px;
+  width: auto;
+  max-width: 90vw;
+  background-color: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 15px;
+  font-size: 14px;
+  color: #333;
+  word-break: break-word;
+  pointer-events: auto; /* マウスイベントを有効化 */
+}
+
+/* Adjust popover position if it would overflow to the right */
+@media (max-width: 768px) {
+  .warning-popover {
+    left: auto;
+    right: 0;
+  }
+
+  .warning-popover::before {
+    left: auto;
+    right: 15px;
+  }
+}
+
+.warning-popover::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 15px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+}
+
+.warning-popover h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.warning-description {
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.warning-recommendation {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.warning-help-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #2196f3;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.warning-help-link:hover {
+  text-decoration: underline;
+}

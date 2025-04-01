@@ -4,6 +4,7 @@ import api from '../../api';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
+import WarningPopover from '../common/WarningPopover';
 
 // Type definition for global cache
 declare global {
@@ -347,22 +348,84 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 {(record as ParsedAdsTxtRecord).has_warning && (
                   <>
                     <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
-                      <Badge variation="warning">{t('common.warning', language)}</Badge>
-                      <Text color="orange" fontSize="0.875rem">
+                      <div className="warning-text-container">
                         {(() => {
                           const warningMessage = (record as ParsedAdsTxtRecord).warning;
                           if (!warningMessage) return '';
 
-                          // Process all warning messages that start with errors:
-                          if (warningMessage.startsWith('errors:')) {
+                          // Process all warning messages that start with errors: or warnings:
+                          if (
+                            warningMessage.startsWith('errors:') ||
+                            warningMessage.startsWith('warnings:')
+                          ) {
                             // Extract parameters from warning_params if available
                             const params = (record as ParsedAdsTxtRecord).warning_params || {};
-                            return t(warningMessage, language, params);
+
+                            // Add standard parameters that might be needed
+                            if (!params.domain && record.domain) {
+                              params.domain = record.domain;
+                            }
+
+                            if (!params.account_id && record.account_id) {
+                              params.account_id = record.account_id;
+                            }
+
+                            // Get the warning type to map to a warning ID
+                            let warningId = '';
+                            if (warningMessage.startsWith('errors:adsTxtValidation.')) {
+                              // Map specific error types to warning IDs based on warnings.ts
+                              const errorType = warningMessage.replace(
+                                'errors:adsTxtValidation.',
+                                ''
+                              );
+
+                              // Map to the correct warning ID format
+                              const errorTypeMap: Record<string, string> = {
+                                invalidFormat: 'invalid-format',
+                                missingFields: 'missing-fields',
+                                invalidRelationship: 'invalid-relationship',
+                                misspelledRelationship: 'misspelled-relationship',
+                                invalidRootDomain: 'invalid-root-domain',
+                                emptyAccountId: 'empty-account-id',
+                                duplicateEntry: 'duplicate-entry',
+                                duplicateEntryCaseInsensitive: 'duplicate-entry-case-insensitive',
+                                noSellersJson: 'no-sellers-json',
+                                directAccountIdNotInSellersJson:
+                                  'direct-account-id-not-in-sellers-json',
+                                resellerAccountIdNotInSellersJson:
+                                  'reseller-account-id-not-in-sellers-json',
+                                domainMismatch: 'domain-mismatch',
+                                directNotPublisher: 'direct-not-publisher',
+                                sellerIdNotUnique: 'seller-id-not-unique',
+                                resellerNotIntermediary: 'reseller-not-intermediary',
+                                sellersJsonValidationError: 'sellers-json-validation-error',
+                              };
+
+                              warningId = errorTypeMap[errorType] || '';
+                            }
+
+                            if (warningId) {
+                              // Create a version of the warning text that is more concise for the button
+                              const warning = t(warningMessage, language, params);
+                              const shortWarning = warning.split(' ').slice(0, 4).join(' ') + '...';
+
+                              return <WarningPopover warningId={warningId} params={params} />;
+                            } else {
+                              return (
+                                <Text color="orange" fontSize="0.875rem">
+                                  {t(warningMessage, language, params)}
+                                </Text>
+                              );
+                            }
                           } else {
-                            return warningMessage;
+                            return (
+                              <Text color="orange" fontSize="0.875rem">
+                                {warningMessage}
+                              </Text>
+                            );
                           }
                         })()}
-                      </Text>
+                      </div>
                     </Flex>
                   </>
                 )}
@@ -378,27 +441,49 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                     if (errorMessage.startsWith('errors:adsTxtValidation.')) {
                       // Handle specific error messages
                       const errType = errorMessage.replace('errors:adsTxtValidation.', '');
-                      const value =
-                        (record as ParsedAdsTxtRecord).raw_line?.split(',')[3]?.trim() || '';
+                      // Get possible parameter values from record
+                      const params: Record<string, any> = {};
 
-                      switch (errType) {
-                        case 'invalidFormat':
-                          return t('errors:adsTxtValidation.invalidFormat', language);
-                        case 'missingFields':
-                          return t('errors:adsTxtValidation.missingFields', language);
-                        case 'invalidRelationship':
-                          return t('errors:adsTxtValidation.invalidRelationship', language);
-                        case 'misspelledRelationship':
-                          return t('errors:adsTxtValidation.misspelledRelationship', language, {
-                            value,
-                          });
-                        case 'invalidRootDomain':
-                          return t('errors:adsTxtValidation.invalidRootDomain', language);
-                        case 'emptyAccountId':
-                          return t('errors:adsTxtValidation.emptyAccountId', language);
-                        default:
-                          return errorMessage;
+                      // Extract domain from record for all messages that need it
+                      params.domain = record.domain;
+
+                      // Extract account_id
+                      params.account_id = record.account_id;
+
+                      // Extract relationship
+                      params.relationship = record.relationship;
+
+                      // For misspelled relationship
+                      if (errType === 'misspelledRelationship') {
+                        params.value =
+                          (record as ParsedAdsTxtRecord).raw_line?.split(',')[3]?.trim() || '';
                       }
+
+                      // For domain mismatch
+                      if (errType === 'domainMismatch' && (record as any).warning_params) {
+                        const wParams = (record as any).warning_params;
+                        params.seller_domain = wParams.seller_domain;
+                        params.publisher_domain = wParams.publisher_domain;
+                      }
+
+                      // For seller type warnings
+                      if (
+                        (errType === 'directNotPublisher' ||
+                          errType === 'resellerNotIntermediary') &&
+                        (record as any).warning_params
+                      ) {
+                        params.seller_type = (record as any).warning_params.seller_type;
+                      }
+
+                      // For sellers.json validation error
+                      if (
+                        errType === 'sellersJsonValidationError' &&
+                        (record as any).warning_params
+                      ) {
+                        params.message = (record as any).warning_params.message;
+                      }
+
+                      return t('errors:adsTxtValidation.' + errType, language, params);
                     } else {
                       return errorMessage;
                     }
