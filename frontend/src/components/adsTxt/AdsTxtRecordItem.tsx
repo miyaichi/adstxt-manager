@@ -114,9 +114,17 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
       const domain = getSellersDomain(record.account_type);
 
+      // Set a timeout 15 seconds for the API request
+      const timeout = 15000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
       try {
         console.log(`Fetching seller information for ${record.account_id} from domain ${domain}`);
+
+        // Using AbortController to set a timeout for the API request
         const response = await api.sellersJson.getSellerById(domain, record.account_id);
+        clearTimeout(timeoutId); // Clear the timeout if the request is successful
 
         if (response.success && response.data) {
           if (response.data.error) {
@@ -154,6 +162,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           setSellerInfo(null);
         }
       } catch (apiError) {
+        clearTimeout(timeoutId); // Clear the timeout if the request fails
+
         // Try with record's domain as fallback
         console.warn(
           `Failed to fetch from ${domain}, trying record domain ${record.domain} instead`
@@ -161,10 +171,14 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         if (domain !== record.domain) {
           try {
+            const fallbackTimeoutId = setTimeout(() => controller.abort(), timeout);
+
             const fallbackResponse = await api.sellersJson.getSellerById(
               record.domain,
               record.account_id
             );
+
+            clearTimeout(fallbackTimeoutId);
 
             if (fallbackResponse.success && fallbackResponse.data && fallbackResponse.data.seller) {
               result = fallbackResponse.data;
@@ -218,9 +232,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       if (globalSellerInfoCache[cacheKey] === null && globalSellerInfoCache[`${cacheKey}_error`]) {
         setError(globalSellerInfoCache[`${cacheKey}_error`]);
       }
+      return; // Explicitly return to stop further processing
     }
+
     // Check localStorage cache
-    else if (loadFromLocalStorage(cacheKey)) {
+    if (loadFromLocalStorage(cacheKey)) {
       const cachedData = loadFromLocalStorage(cacheKey);
       const cachedError = loadFromLocalStorage(`${cacheKey}_error`);
 
@@ -235,9 +251,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         setError(cachedError);
         globalSellerInfoCache[`${cacheKey}_error`] = cachedError;
       }
+      return; // Explicitly return to stop further processing
     }
+
     // Check window-level cache (for backward compatibility)
-    else if (window.__SELLER_INFO_CACHE__ && window.__SELLER_INFO_CACHE__[cacheKey]) {
+    if (window.__SELLER_INFO_CACHE__ && window.__SELLER_INFO_CACHE__[cacheKey]) {
       console.log(`Using window-level cached seller info for ${cacheKey}`);
       setSellerInfo(window.__SELLER_INFO_CACHE__[cacheKey]);
 
@@ -246,10 +264,18 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
       // Save to localStorage
       saveToLocalStorage(cacheKey, window.__SELLER_INFO_CACHE__[cacheKey]);
-    } else {
-      // Fetch from API
-      console.log(`No cache found for ${cacheKey}, fetching from API`);
-      fetchSellerInfo().then((result) => {
+      return; // Explicitly return to stop further processing
+    }
+
+    // Fetch from API
+    console.log(`No cache found for ${cacheKey}, fetching from API`);
+    let isMounted = true; // Track whether the component is mounted
+
+    fetchSellerInfo()
+      .then((result) => {
+        // If the component is unmounted, do not proceed
+        if (!isMounted) return;
+
         if (result) {
           // Save to module-level cache
           globalSellerInfoCache[cacheKey] = result;
@@ -267,17 +293,32 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           globalSellerInfoCache[cacheKey] = null;
           saveToLocalStorage(cacheKey, null);
 
-          // Use local copy of error state to avoid dependency issues
-          const currentError = error;
-          if (currentError) {
-            globalSellerInfoCache[`${cacheKey}_error`] = currentError;
-            saveToLocalStorage(`${cacheKey}_error`, currentError);
+          // Get current error state safely
+          if (isMounted) {
+            // Use a closure to safely get the current error state
+            setError((currentError) => {
+              if (currentError) {
+                globalSellerInfoCache[`${cacheKey}_error`] = currentError;
+                saveToLocalStorage(`${cacheKey}_error`, currentError);
+              }
+              return currentError;
+            });
           }
         }
+      })
+      .catch(() => {
+        if (isMounted) {
+          // Always clear loading state on error
+          setLoading(false);
+        }
       });
-    }
-    // Removed error from dependency array to avoid potential infinite loop
-  }, [record, fetchSellerInfo, getSellersDomain, isParsedRecord, error]);
+
+    // Update the mounted state in the cleanup function
+    return () => {
+      isMounted = false;
+    };
+    // To prevent infinite loop, do not add error to the dependency array
+  }, [record, fetchSellerInfo, getSellersDomain, isParsedRecord]);
 
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">

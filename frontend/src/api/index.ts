@@ -45,6 +45,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000, // The default timeout is 15 seconds
 });
 
 // Add request interceptor to update language on each request
