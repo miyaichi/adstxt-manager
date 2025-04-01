@@ -1,5 +1,5 @@
+import { Alert, Button, Flex, Text } from '@aws-amplify/ui-react';
 import React from 'react';
-import { Alert, Heading, Text, Flex, Button } from '@aws-amplify/ui-react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';

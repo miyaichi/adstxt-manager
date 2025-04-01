@@ -1,5 +1,4 @@
 import React, { CSSProperties, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { WarningInfo } from '../../data/warnings';
 import { t } from '../../i18n/translations';

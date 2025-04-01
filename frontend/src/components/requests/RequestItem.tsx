@@ -1,9 +1,9 @@
+import { Badge, Button, Card, Flex, Heading, Text } from '@aws-amplify/ui-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Flex, Text, Badge, Button, Heading } from '@aws-amplify/ui-react';
-import { Request } from '../../models';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
+import { Request } from '../../models';
 
 interface RequestItemProps {
   request: Request;
@@ -11,9 +11,6 @@ interface RequestItemProps {
 
 const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const { language } = useApp();
-  const formattedDate = new Date(request.updated_at).toLocaleString(
-    language === 'ja' ? 'ja-JP' : 'en-US'
-  );
   const createdDate = new Date(request.created_at).toLocaleString(
     language === 'ja' ? 'ja-JP' : 'en-US'
   );

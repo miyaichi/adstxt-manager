@@ -722,16 +722,6 @@ export const translations = {
   },
 };
 
-// Define type for translation items
-interface TranslationItem {
-  [language: string]: string;
-}
-
-// Define type for ads.txt validation translations
-interface AdsTxtValidationTranslations {
-  [key: string]: TranslationItem;
-}
-
 // Create a translation helper function
 export const t = (key: string, language: string, params?: Record<string, any>): string => {
   // Parse the key into path components

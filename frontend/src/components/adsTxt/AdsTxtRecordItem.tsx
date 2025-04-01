@@ -446,10 +446,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                             }
 
                             if (warningId) {
-                              // Create a version of the warning text that is more concise for the button
-                              const warning = t(warningMessage, language, params);
-                              const shortWarning = warning.split(' ').slice(0, 4).join(' ') + '...';
-
                               return <WarningPopover warningId={warningId} params={params} />;
                             } else {
                               return (
