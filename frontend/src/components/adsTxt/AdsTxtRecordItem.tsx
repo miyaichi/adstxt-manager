@@ -3,38 +3,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import api from '../../api';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
-import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
+import { AdsTxtRecord, ParsedAdsTxtRecord, SellersJsonSellerResponse } from '../../models';
 import WarningPopover from '../common/WarningPopover';
-
-// Type definition for global cache
-declare global {
-  interface Window {
-    __SELLER_INFO_CACHE__?: Record<string, any>;
-  }
-}
-
-// Module-level cache (persists until page reload)
-const globalSellerInfoCache: Record<string, any> = {};
-
-// Save to localStorage
-const saveToLocalStorage = (key: string, value: any) => {
-  try {
-    localStorage.setItem(`seller_info_${key}`, JSON.stringify(value));
-  } catch (e) {
-    console.warn('Failed to save to localStorage:', e);
-  }
-};
-
-// Load from localStorage
-const loadFromLocalStorage = (key: string): any | null => {
-  try {
-    const item = localStorage.getItem(`seller_info_${key}`);
-    return item ? JSON.parse(item) : null;
-  } catch (e) {
-    console.warn('Failed to load from localStorage:', e);
-    return null;
-  }
-};
 
 interface AdsTxtRecordItemProps {
   record: AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string });
@@ -50,7 +20,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   isEditable = false,
 }) => {
   const { language } = useApp();
-  const [sellerInfo, setSellerInfo] = useState<any>(null);
+  const [sellerInfo, setSellerInfo] = useState<SellersJsonSellerResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,117 +74,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     [record.domain]
   );
 
-  // Fetch seller information
-  const fetchSellerInfo = useCallback(async () => {
-    let result = null;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const domain = getSellersDomain(record.account_type);
-      
-      // Check if we should force a refresh from URL params
-      const forceRefresh = new URLSearchParams(window.location.search).get('refresh') === 'true';
-
-      // Set a timeout 15 seconds for the API request
-      const timeout = 15000;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-      try {
-        console.log(`Fetching seller information for ${record.account_id} from domain ${domain}${forceRefresh ? ' (force refresh)' : ''}`);
-
-        // Using AbortController to set a timeout for the API request
-        const response = await api.sellersJson.getSellerById(domain, record.account_id, forceRefresh);
-        clearTimeout(timeoutId); // Clear the timeout if the request is successful
-
-        if (response.success && response.data) {
-          if (response.data.error) {
-            // API succeeded but returned an error
-            console.warn(
-              `Error for Seller ID ${record.account_id} from ${domain}:`,
-              response.data.error
-            );
-            setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
-            setSellerInfo(null);
-          } else if (response.data.found === false) {
-            // sellers.json file found but seller_id doesn't exist
-            console.warn(`Seller ID ${record.account_id} not found in ${domain}`);
-            setError(t('adsTxt.recordItem.noSellerInfo', language));
-            setSellerInfo(null);
-          } else if (response.data.seller) {
-            // Seller info found and matches ads.txt account_id
-            console.log(
-              `Found seller information for ${record.account_id} from ${domain}:`,
-              response.data.seller
-            );
-            result = response.data;
-            setSellerInfo(result);
-            setError(null);
-          } else {
-            // Data returned but no seller info
-            console.warn(`No seller information found for ${record.account_id} from ${domain}`);
-            setError(t('adsTxt.recordItem.noSellerInfo', language));
-            setSellerInfo(null);
-          }
-        } else {
-          // API returned failure
-          console.warn(`API failure for ${record.account_id} from ${domain}:`, response.error);
-          setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
-          setSellerInfo(null);
-        }
-      } catch (apiError) {
-        clearTimeout(timeoutId); // Clear the timeout if the request fails
-
-        // Try with record's domain as fallback
-        console.warn(
-          `Failed to fetch from ${domain}, trying record domain ${record.domain} instead`
-        );
-
-        if (domain !== record.domain) {
-          try {
-            const fallbackTimeoutId = setTimeout(() => controller.abort(), timeout);
-
-            const fallbackResponse = await api.sellersJson.getSellerById(
-              record.domain,
-              record.account_id
-            );
-
-            clearTimeout(fallbackTimeoutId);
-
-            if (fallbackResponse.success && fallbackResponse.data && fallbackResponse.data.seller) {
-              result = fallbackResponse.data;
-              setSellerInfo(result);
-              setError(null);
-            } else if (fallbackResponse.success && fallbackResponse.data) {
-              setError(t('adsTxt.recordItem.noSellerInfo', language));
-              setSellerInfo(null);
-            }
-          } catch (fallbackError) {
-            console.error('Fallback attempt also failed:', fallbackError);
-            console.error('Error fetching seller info:', apiError);
-            setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
-            setSellerInfo(null);
-          }
-        } else {
-          console.error('Error fetching seller info:', apiError);
-          setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
-          setSellerInfo(null);
-        }
-      }
-    } catch (err: any) {
-      console.error('Error fetching seller info:', err);
-      setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
-      setSellerInfo(null);
-    } finally {
-      setLoading(false);
-    }
-
-    return result;
-  }, [record.account_id, record.account_type, record.domain, language, getSellersDomain]);
-
-  // Fetch seller information on component mount with caching
+  // Fetch seller information on component mount
   useEffect(() => {
     // Skip seller.json lookup for invalid records
     if (isParsedRecord && !(record as ParsedAdsTxtRecord).is_valid) {
@@ -222,109 +82,109 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       return;
     }
 
-    // Create unique cache key
+    const requestId = Math.random().toString(36).substring(2, 15);
     const domain = getSellersDomain(record.account_type);
-    const cacheKey = `${domain}-${record.account_id}`;
-
-    // Force a fresh fetch if an error has been cached for this key
-    const forceRefresh = new URLSearchParams(window.location.search).get('refresh') === 'true';
     
-    // Check module-level cache (skip if forceRefresh)
-    if (!forceRefresh && globalSellerInfoCache[cacheKey]) {
-      console.log(`Using module-level cached seller info for ${cacheKey}`);
-      setSellerInfo(globalSellerInfoCache[cacheKey]);
+    console.log(`[${requestId}] Fetching seller information for ${record.account_id} from ${domain}`);
+    
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
 
-      // Restore error message from cache
-      if (globalSellerInfoCache[cacheKey] === null && globalSellerInfoCache[`${cacheKey}_error`]) {
-        setError(globalSellerInfoCache[`${cacheKey}_error`]);
-      }
-      return; // Explicitly return to stop further processing
-    }
-
-    // Check localStorage cache (skip if forceRefresh)
-    if (!forceRefresh && loadFromLocalStorage(cacheKey)) {
-      const cachedData = loadFromLocalStorage(cacheKey);
-      const cachedError = loadFromLocalStorage(`${cacheKey}_error`);
-
-      console.log(`Using localStorage cached seller info for ${cacheKey}`);
-      setSellerInfo(cachedData);
-
-      // Also save to module-level cache
-      globalSellerInfoCache[cacheKey] = cachedData;
-
-      // Restore error message
-      if (cachedData === null && cachedError) {
-        setError(cachedError);
-        globalSellerInfoCache[`${cacheKey}_error`] = cachedError;
-      }
-      return; // Explicitly return to stop further processing
-    }
-
-    // Check window-level cache (skip if forceRefresh)
-    if (!forceRefresh && window.__SELLER_INFO_CACHE__ && window.__SELLER_INFO_CACHE__[cacheKey]) {
-      console.log(`Using window-level cached seller info for ${cacheKey}`);
-      setSellerInfo(window.__SELLER_INFO_CACHE__[cacheKey]);
-
-      // Also save to module-level cache
-      globalSellerInfoCache[cacheKey] = window.__SELLER_INFO_CACHE__[cacheKey];
-
-      // Save to localStorage
-      saveToLocalStorage(cacheKey, window.__SELLER_INFO_CACHE__[cacheKey]);
-      return; // Explicitly return to stop further processing
-    }
-
-    // Fetch from API
-    console.log(`${forceRefresh ? 'Force refreshing' : 'No cache found for'} ${cacheKey}, fetching from API`);
-    let isMounted = true; // Track whether the component is mounted
-
-    fetchSellerInfo()
-      .then((result) => {
-        // If the component is unmounted, do not proceed
+    // Direct API call to backend
+    api.sellersJson.getSellerById(domain, record.account_id)
+      .then((response) => {
         if (!isMounted) return;
-
-        if (result) {
-          // Save to module-level cache
-          globalSellerInfoCache[cacheKey] = result;
-
-          // Save to localStorage
-          saveToLocalStorage(cacheKey, result);
-
-          // Save to window-level cache for backward compatibility
-          if (!window.__SELLER_INFO_CACHE__) {
-            window.__SELLER_INFO_CACHE__ = {};
+        
+        if (response.success && response.data) {
+          if (response.error || (response.data.message && !response.data.found)) {
+            // API succeeded but returned an error
+            const errorMessage = response.error?.message || response.data.message;
+            console.warn(`[${requestId}] Error for Seller ID ${record.account_id} from ${domain}:`, errorMessage);
+            setError(errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+            setSellerInfo(null);
+            setLoading(false);
+          } else if (!response.data.found) {
+            // sellers.json file found but seller_id doesn't exist
+            console.warn(`[${requestId}] Seller ID ${record.account_id} not found in ${domain}`);
+            
+            // Try with record's domain as fallback if different
+            if (domain !== record.domain) {
+              console.log(`[${requestId}] Trying fallback with record.domain: ${record.domain}`);
+              
+              api.sellersJson.getSellerById(record.domain, record.account_id)
+                .then((fallbackResponse) => {
+                  if (!isMounted) return;
+                  
+                  if (fallbackResponse.success && fallbackResponse.data) {
+                    if (fallbackResponse.error || (fallbackResponse.data.message && !fallbackResponse.data.found)) {
+                      // API succeeded but returned an error
+                      const errorMessage = fallbackResponse.error?.message || fallbackResponse.data.message;
+                      console.warn(`[${requestId}] Error for fallback domain:`, errorMessage);
+                      setError(errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                      setSellerInfo(null);
+                    } else if (fallbackResponse.data.found && fallbackResponse.data.seller) {
+                      console.log(`[${requestId}] Found seller info in fallback domain ${record.domain}`);
+                      setSellerInfo(fallbackResponse.data);
+                      setError(null);
+                    } else {
+                      console.warn(`[${requestId}] Seller not found in fallback domain either`);
+                      setError(t('adsTxt.recordItem.noSellerInfo', language));
+                      setSellerInfo(null);
+                    }
+                  } else {
+                    console.warn(`[${requestId}] API failure for fallback domain:`, fallbackResponse.error);
+                    setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                    setSellerInfo(null);
+                  }
+                  setLoading(false);
+                })
+                .catch((err) => {
+                  if (!isMounted) return;
+                  console.error(`[${requestId}] Fallback attempt failed:`, err);
+                  setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                  setSellerInfo(null);
+                  setLoading(false);
+                });
+            } else {
+              setError(t('adsTxt.recordItem.noSellerInfo', language));
+              setSellerInfo(null);
+              setLoading(false);
+            }
+          } else if (response.data.seller) {
+            // Seller info found
+            console.log(`[${requestId}] Found seller information for ${record.account_id} from ${domain}`);
+            setSellerInfo(response.data);
+            setError(null);
+            setLoading(false);
+          } else {
+            // Data returned but no seller info
+            console.warn(`[${requestId}] No seller information found for ${record.account_id} from ${domain}`);
+            setError(t('adsTxt.recordItem.noSellerInfo', language));
+            setSellerInfo(null);
+            setLoading(false);
           }
-          window.__SELLER_INFO_CACHE__[cacheKey] = result;
         } else {
-          // Cache null result
-          globalSellerInfoCache[cacheKey] = null;
-          saveToLocalStorage(cacheKey, null);
-
-          // Get current error state safely
-          if (isMounted) {
-            // Use a closure to safely get the current error state
-            setError((currentError) => {
-              if (currentError) {
-                globalSellerInfoCache[`${cacheKey}_error`] = currentError;
-                saveToLocalStorage(`${cacheKey}_error`, currentError);
-              }
-              return currentError;
-            });
-          }
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          // Always clear loading state on error
+          // API returned failure
+          console.warn(`[${requestId}] API failure for ${record.account_id} from ${domain}:`, response.error);
+          setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+          setSellerInfo(null);
           setLoading(false);
         }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error(`[${requestId}] Error fetching seller info:`, err);
+        setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+        setSellerInfo(null);
+        setLoading(false);
       });
 
-    // Update the mounted state in the cleanup function
+    // Cleanup function to prevent state updates if component unmounts
     return () => {
       isMounted = false;
     };
-    // To prevent infinite loop, do not add error to the dependency array
-  }, [record, fetchSellerInfo, getSellersDomain, isParsedRecord]);
+  }, [record, getSellersDomain, isParsedRecord, language]);
 
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">
@@ -354,26 +214,44 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         {/* Sellers.json Information */}
         {sellerInfo && !loading && sellerInfo.seller && (
-          <Flex gap="1rem" wrap="wrap" marginTop="0.5rem">
-            <Text>
-              <strong>{t('adsTxt.recordItem.sellerInfo', language)}: </strong>
-            </Text>
-            {sellerInfo.seller.is_confidential ? (
-              <Badge variation="warning">{t('adsTxt.recordItem.confidential', language)}</Badge>
-            ) : (
-              <>
-                <Text>{sellerInfo.seller.name || ''}</Text>
-                {sellerInfo.seller.domain ? (
+          <Flex direction="column" gap="0.5rem" marginTop="0.5rem">
+            <Flex alignItems="center" gap="0.5rem">
+              <Text>
+                <strong>{t('adsTxt.recordItem.sellerInfo', language)}: </strong>
+              </Text>
+              {sellerInfo.cache.is_cached && (
+                <Badge variation="info" size="small">
+                  {t('adsTxt.recordItem.cached', language)}
+                </Badge>
+              )}
+            </Flex>
+            
+            <Flex gap="1rem" wrap="wrap">
+              {sellerInfo.seller.is_confidential ? (
+                <Badge variation="warning">{t('adsTxt.recordItem.confidential', language)}</Badge>
+              ) : (
+                <>
+                  <Text>{sellerInfo.seller.name || ''}</Text>
+                  {sellerInfo.seller.domain ? (
+                    <Text>
+                      <strong>{t('adsTxt.recordItem.sellerDomain', language)}: </strong>
+                      {sellerInfo.seller.domain}
+                    </Text>
+                  ) : null}
                   <Text>
-                    <strong>{t('adsTxt.recordItem.sellerDomain', language)}: </strong>
-                    {sellerInfo.seller.domain}
+                    <strong>{t('adsTxt.recordItem.sellerType', language)}: </strong>
+                    {sellerInfo.seller.seller_type}
                   </Text>
-                ) : null}
-                <Text>
-                  <strong>{t('adsTxt.recordItem.sellerType', language)}: </strong>
-                  {sellerInfo.seller.seller_type}
-                </Text>
-              </>
+                </>
+              )}
+            </Flex>
+            
+            {/* Metadata display (simplified) */}
+            {sellerInfo.metadata && sellerInfo.metadata.seller_count > 0 && (
+              <Text fontSize="0.75rem" color="gray">
+                {t('adsTxt.recordItem.sellersCount', language, { count: sellerInfo.metadata.seller_count })}
+                {sellerInfo.metadata.version && ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
+              </Text>
             )}
           </Flex>
         )}
@@ -382,17 +260,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         {!loading && error && (
           <Flex gap="1rem" wrap="wrap" marginTop="0.5rem">
             <Text color="var(--amplify-colors-font-warning)">{error}</Text>
-            <Button 
-              size="small"
-              onClick={() => {
-                // Get current URL and add refresh=true parameter or set it to true if it exists
-                const url = new URL(window.location.href);
-                url.searchParams.set('refresh', 'true');
-                window.location.href = url.toString();
-              }}
-            >
-              {t('common.refresh', language) || 'リフレッシュ'}
-            </Button>
           </Flex>
         )}
 

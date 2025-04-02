@@ -111,6 +111,53 @@ export interface AdsTxtCacheResponse {
   updated_at: string;
 }
 
+// Sellers.json Models
+export interface SellersJsonSeller {
+  seller_id: string;
+  name?: string;
+  domain?: string;
+  seller_type: 'PUBLISHER' | 'INTERMEDIARY' | 'BOTH' | string;
+  is_confidential?: boolean;
+  comment?: string;
+  ext?: any;
+  [key: string]: any;
+}
+
+export interface SellersJsonMetadata {
+  contact_email?: string;
+  contact_address?: string;
+  version?: string;
+  identifiers?: Array<{
+    name: string;
+    value: string;
+    [key: string]: any;
+  }>;
+  seller_count: number;
+  ext?: any;
+}
+
+export interface SellersJsonCacheInfo {
+  is_cached: boolean;
+  last_updated?: string;
+  status?: string;
+  expires_at?: string;
+}
+
+export interface SellersJsonSellerResponse {
+  domain: string;
+  seller: SellersJsonSeller | null;
+  found: boolean;
+  message?: string;
+  metadata: SellersJsonMetadata;
+  cache: SellersJsonCacheInfo;
+}
+
+export interface SellersJsonMetadataResponse {
+  domain: string;
+  metadata: SellersJsonMetadata;
+  cache: SellersJsonCacheInfo;
+}
+
 // API Response Wrappers
 export interface ApiResponse<T> {
   success: boolean;

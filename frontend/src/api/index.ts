@@ -10,6 +10,8 @@ import {
   Request,
   RequestResponse,
   RequestWithRecords,
+  SellersJsonMetadataResponse,
+  SellersJsonSellerResponse,
 } from '../models';
 import { createLogger } from '../utils/logger';
 
@@ -260,17 +262,32 @@ export const adsTxtApi = {
 
 // Sellers.json API calls
 export const sellersJsonApi = {
-  // Get sellers.json for a domain
+  // Get sellers.json for a domain (legacy endpoint for backward compatibility)
   async getSellersJson(domain: string): Promise<ApiResponse<any>> {
     const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`);
     return response.data;
   },
 
-  // Get specific seller by seller_id from a domain's sellers.json
-  async getSellerById(domain: string, sellerId: string, forceRefresh = false): Promise<ApiResponse<any>> {
-    const url = `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}${forceRefresh ? '?force=true' : ''}`;
-    const response = await api.get<ApiResponse<any>>(url);
+  // Get only metadata from a domain's sellers.json (new optimized endpoint)
+  async getMetadata(domain: string): Promise<ApiResponse<SellersJsonMetadataResponse>> {
+    const url = `/sellersJson/${encodeURIComponent(domain)}/metadata`;
+    const response = await api.get<ApiResponse<SellersJsonMetadataResponse>>(url);
     return response.data;
+  },
+
+  // Get specific seller by seller_id from a domain's sellers.json (improved with types)
+  async getSellerById(domain: string, sellerId: string): Promise<ApiResponse<SellersJsonSellerResponse>> {
+    const url = `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}`;
+    logger.debug('Fetching seller data:', { domain, sellerId, url });
+    
+    try {
+      const response = await api.get<ApiResponse<SellersJsonSellerResponse>>(url);
+      logger.debug('Seller data response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching seller data:', error);
+      throw error;
+    }
   },
 };
 
