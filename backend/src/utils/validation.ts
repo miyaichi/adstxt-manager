@@ -339,7 +339,7 @@ export interface CrossCheckValidationResult {
   // Case 14: For DIRECT entries, is the seller_type PUBLISHER?
   directEntryHasPublisherType: boolean | null; // null if not a DIRECT entry
   // Case 15: Is the seller_id unique in the sellers.json file?
-  sellerIdIsUnique: boolean;
+  sellerIdIsUnique: boolean | null;
   // Case 17: For RESELLER entries, is the publisher account ID listed as a seller_id?
   resellerAccountIdInSellersJson: boolean | null; // null if not a RESELLER entry
   // Case 19: For RESELLER entries, is the seller_type INTERMEDIARY?
