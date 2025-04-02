@@ -291,7 +291,7 @@ describe('Message Controller Tests', () => {
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          message: expect.stringContaining('Access token is required')
+          message: expect.stringContaining('Access token is required'),
         })
       );
     });

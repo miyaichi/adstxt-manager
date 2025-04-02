@@ -270,10 +270,12 @@ describe('adsTxtCacheController', () => {
       await getAdsTxt(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Verify next was called with an error
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        statusCode: 400,
-        message: 'Domain is required'
-      }));
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message: 'Domain is required',
+        })
+      );
 
       // Verify no model calls
       expect(mockAdsTxtCacheModel.getByDomain).not.toHaveBeenCalled();

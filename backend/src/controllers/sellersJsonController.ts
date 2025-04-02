@@ -27,7 +27,7 @@ function getSellersJsonUrl(domain: string): string {
     logger.info(`Using special URL for ${domain}: ${url}`);
     return url;
   }
-  
+
   // Use standard URL format (default)
   return `https://${domain}/sellers.json`;
 }
@@ -41,23 +41,23 @@ function getSellersJsonUrl(domain: string): string {
 function findSellerInData(data: any, normalizedSellerId: string) {
   const sellers = data.sellers || [];
   logger.info(`Searching among ${sellers.length} sellers for ID ${normalizedSellerId}`);
-  
+
   // Find the target seller
   const targetSeller = sellers.find(
     (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
   );
-  
+
   if (targetSeller) {
     logger.info(`Found seller with ID ${normalizedSellerId}`);
     return {
       seller: targetSeller,
-      message: null
+      message: null,
     };
   } else {
     logger.warn(`Seller ID ${normalizedSellerId} not found`);
     return {
       seller: null,
-      message: `Seller ID ${normalizedSellerId} not found in sellers.json`
+      message: `Seller ID ${normalizedSellerId} not found in sellers.json`,
     };
   }
 }
@@ -65,10 +65,13 @@ function findSellerInData(data: any, normalizedSellerId: string) {
 /**
  * Create cache record from HTTP response
  * @param domain The domain
- * @param response The HTTP response 
+ * @param response The HTTP response
  * @returns Cache record object
  */
-function createCacheRecordFromResponse(domain: string, response: any): {
+function createCacheRecordFromResponse(
+  domain: string,
+  response: any
+): {
   domain: string;
   content: string | null;
   status: SellersJsonCacheStatus;
@@ -125,26 +128,28 @@ function createCacheRecordFromResponse(domain: string, response: any): {
   } else {
     cacheRecord.error_message = `HTTP error ${response.status}`;
   }
-  
+
   // Log the created cache record
-  logger.debug(`Created cache record for ${domain}: status=${cacheRecord.status}, code=${cacheRecord.status_code}`);
-  
+  logger.debug(
+    `Created cache record for ${domain}: status=${cacheRecord.status}, code=${cacheRecord.status_code}`
+  );
+
   return cacheRecord;
 }
 
 /**
  * Handle error from fetching sellers.json
  * @param domain The domain
- * @param error The error 
+ * @param error The error
  */
 async function handleSellersJsonError(domain: string, error: any): Promise<never> {
   logger.error(`Error fetching sellers.json for domain ${domain}:`, error);
-  
+
   // Check if this is a 404 error, which should be treated as "not_found"
   const statusCode = error.response?.status || null;
   const is404 = statusCode === 404;
   const errorMessage = error.message || 'Unknown error';
-  
+
   // Save to cache with appropriate status
   await SellersJsonCacheModel.saveCache({
     domain,
@@ -154,7 +159,7 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
     status_code: statusCode,
     error_message: is404 ? 'sellers.json file not found' : errorMessage,
   });
-  
+
   // For 404 errors, return a more specific message
   throw new ApiError(
     is404 ? 404 : 500,
@@ -182,7 +187,7 @@ function extractMetadata(content: SellersJsonContent | null): {
   }
 
   const sellers = content.sellers || [];
-  
+
   return {
     // Standard IAB sellers.json fields
     contact_email: content.contact_email,
@@ -191,7 +196,7 @@ function extractMetadata(content: SellersJsonContent | null): {
     identifiers: content.identifiers,
     ext: content.ext,
     // Additional statistics
-    seller_count: sellers.length
+    seller_count: sellers.length,
   };
 }
 
@@ -203,7 +208,7 @@ function extractMetadata(content: SellersJsonContent | null): {
 function formatCacheInfo(cache: any) {
   if (!cache) {
     return {
-      is_cached: false
+      is_cached: false,
     };
   }
 
@@ -211,7 +216,7 @@ function formatCacheInfo(cache: any) {
     is_cached: true,
     last_updated: cache.updated_at,
     status: cache.status,
-    expires_at: getExpiryTime(cache.updated_at)
+    expires_at: getExpiryTime(cache.updated_at),
   };
 }
 
@@ -244,29 +249,38 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
 
   // Normalize seller ID (convert to string and trim whitespace)
   const normalizedSellerId = String(sellerId).trim();
-  
+
   try {
     // Get URL for sellers.json
     const url = getSellersJsonUrl(domain);
-    
+
     logger.info(`Looking for seller_id: ${normalizedSellerId} from ${domain}`);
-    logger.debug(`Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`);
-    
+    logger.debug(
+      `Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`
+    );
+
     // Check the database cache for this domain
     logger.info(`Checking database cache for ${domain}`);
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
     const cacheInfo = formatCacheInfo(cachedData);
-    
+
     // Check if we can use cached data
     const forceRefresh = req.query.force === 'true';
-    const cacheExpired = cachedData ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at) : true;
-    
+    const cacheExpired = cachedData
+      ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)
+      : true;
+
     // If we have a valid cached record that isn't expired, try to use it
     if (cachedData && !forceRefresh && !cacheExpired) {
       try {
         // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
-        if (cachedData.status === 'not_found' || (cachedData.status === 'error' && cachedData.status_code === 404)) {
-          logger.info(`Using cached "${cachedData.status}" result for ${domain} (cached at ${cachedData.updated_at})`);
+        if (
+          cachedData.status === 'not_found' ||
+          (cachedData.status === 'error' && cachedData.status_code === 404)
+        ) {
+          logger.info(
+            `Using cached "${cachedData.status}" result for ${domain} (cached at ${cachedData.updated_at})`
+          );
           return res.status(200).json({
             success: true,
             data: {
@@ -275,48 +289,59 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
               found: false,
               message: `sellers.json file not found for ${domain}`,
               metadata: { seller_count: 0 },
-              cache: cacheInfo
-            }
+              cache: cacheInfo,
+            },
           });
         }
-        
+
         // For "success" status, try to find the seller in cached data
         if (cachedData.status === 'success') {
           // Try to use the optimized PostgreSQL JSONB query first
           try {
-            const optimizedResult = await SellersJsonCacheModel.getSellerByIdOptimized(domain, normalizedSellerId);
-            
+            const optimizedResult = await SellersJsonCacheModel.getSellerByIdOptimized(
+              domain,
+              normalizedSellerId
+            );
+
             // If optimized query was successful, use its results
             if (optimizedResult) {
-              logger.info(`Using optimized JSONB query for ${domain} (cached at ${cachedData.updated_at})`);
+              logger.info(
+                `Using optimized JSONB query for ${domain} (cached at ${cachedData.updated_at})`
+              );
               return res.status(200).json({
                 success: true,
                 data: {
                   domain,
                   seller: optimizedResult.seller,
                   found: optimizedResult.found,
-                  message: optimizedResult.found ? null : `Seller ID ${normalizedSellerId} not found in ${domain}`,
+                  message: optimizedResult.found
+                    ? null
+                    : `Seller ID ${normalizedSellerId} not found in ${domain}`,
                   metadata: optimizedResult.metadata,
-                  cache: cacheInfo
-                }
+                  cache: cacheInfo,
+                },
               });
             }
           } catch (optimizationError) {
-            logger.warn(`Optimized JSONB query failed, falling back to standard method: ${optimizationError}`);
+            logger.warn(
+              `Optimized JSONB query failed, falling back to standard method: ${optimizationError}`
+            );
             // Fall back to standard method
           }
-          
+
           // Fall back to regular JSON parsing if optimization is not available
           const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
-          
+
           if (parsedData && Array.isArray(parsedData.sellers)) {
             // Find seller in cached data
             const result = findSellerInData(parsedData, normalizedSellerId);
-            
+
             // Extract metadata from content
             const metadata = extractMetadata(parsedData);
-            
-            logger.info(`Using cached sellers.json for ${domain} (cached at ${cachedData.updated_at})`);
+
+            logger.info(
+              `Using cached sellers.json for ${domain} (cached at ${cachedData.updated_at})`
+            );
             return res.status(200).json({
               success: true,
               data: {
@@ -325,8 +350,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                 found: result.seller ? true : false,
                 message: result.message,
                 metadata,
-                cache: cacheInfo
-              }
+                cache: cacheInfo,
+              },
             });
           }
         }
@@ -335,7 +360,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         // If there's an error parsing the cached data, fall back to API
       }
     }
-    
+
     // Log why we're not using cache
     if (forceRefresh) {
       logger.info(`Force refresh requested for ${domain}`);
@@ -346,9 +371,9 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     } else {
       logger.info(`Cache status for ${domain} is ${cachedData.status}, fetching fresh data`);
     }
-    
+
     logger.info(`No valid sellers data in cache for ${domain}, fetching from API`);
-    
+
     // Fetch sellers.json data from API
     const response = await axios({
       method: 'get',
@@ -360,20 +385,20 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         Accept: 'application/json',
       },
     });
-    
+
     // Create cache record and save it
     const cacheRecord = createCacheRecordFromResponse(domain, response);
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
     const freshCacheInfo = formatCacheInfo(savedCache);
-    
+
     // Process the response
     logger.info(`Successfully fetched sellers.json from ${domain}`);
     const sellersJson = response.data;
     const result = findSellerInData(sellersJson, normalizedSellerId);
-    
+
     // Extract metadata from content
     const metadata = extractMetadata(sellersJson);
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -382,8 +407,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         found: result.seller ? true : false,
         message: result.message,
         metadata,
-        cache: freshCacheInfo
-      }
+        cache: freshCacheInfo,
+      },
     });
   } catch (error: any) {
     return handleSellersJsonError(domain, error);
@@ -447,7 +472,7 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
 
     // Create cache record from response
     const cacheRecord = createCacheRecordFromResponse(domain, response);
-    
+
     // Save to cache
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
 
@@ -487,7 +512,7 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
   try {
     // Check if we have a cached version
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
-    
+
     // Parse the content and extract metadata
     const parsedContent = SellersJsonCacheModel.getParsedContent(cachedData);
     const metadata = extractMetadata(parsedContent);
@@ -495,55 +520,68 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
 
     // Check if we can use cached data
     const forceRefresh = req.query.force === 'true';
-    const cacheExpired = cachedData ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at) : true;
-    
+    const cacheExpired = cachedData
+      ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)
+      : true;
+
     // If we have valid cached data that isn't expired
     if (cachedData && !forceRefresh && !cacheExpired) {
       // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
-      if (cachedData.status === 'not_found' || (cachedData.status === 'error' && cachedData.status_code === 404)) {
-        logger.info(`Using cached "${cachedData.status}" result for ${domain} metadata (cached at ${cachedData.updated_at})`);
+      if (
+        cachedData.status === 'not_found' ||
+        (cachedData.status === 'error' && cachedData.status_code === 404)
+      ) {
+        logger.info(
+          `Using cached "${cachedData.status}" result for ${domain} metadata (cached at ${cachedData.updated_at})`
+        );
         return res.status(200).json({
           success: true,
           data: {
             domain,
             metadata: { seller_count: 0 },
-            cache: cacheInfo
-          }
+            cache: cacheInfo,
+          },
         });
       }
-      
+
       // For "success" status, return metadata from cache
       if (cachedData.status === 'success') {
-        logger.info(`Serving metadata for domain: ${domain} from cache (cached at ${cachedData.updated_at})`);
-        
+        logger.info(
+          `Serving metadata for domain: ${domain} from cache (cached at ${cachedData.updated_at})`
+        );
+
         return res.status(200).json({
           success: true,
           data: {
             domain,
             metadata,
-            cache: cacheInfo
-          }
+            cache: cacheInfo,
+          },
         });
       }
     }
-    
+
     // Log why we're not using cache
     if (forceRefresh) {
       logger.info(`Force refresh requested for ${domain} metadata`);
     } else if (cacheExpired) {
-      logger.info(`Cache expired for ${domain} metadata, last updated at ${cachedData?.updated_at}`);
+      logger.info(
+        `Cache expired for ${domain} metadata, last updated at ${cachedData?.updated_at}`
+      );
     } else if (!cachedData) {
       logger.info(`No cache found for ${domain} metadata`);
     } else {
-      logger.info(`Cache status for ${domain} metadata is ${cachedData.status}, fetching fresh data`);
+      logger.info(
+        `Cache status for ${domain} metadata is ${cachedData.status}, fetching fresh data`
+      );
     }
-    
+
     // If we don't have valid cache or it's expired, fetch fresh data
     logger.info(`Fetching fresh sellers.json metadata for: ${domain}`);
-    
+
     // Get URL for sellers.json
     const url = getSellersJsonUrl(domain);
-    
+
     // Fetch the sellers.json
     let response;
     try {
@@ -557,28 +595,27 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
     } catch (error: any) {
       return handleSellersJsonError(domain, error);
     }
-    
+
     // Create cache record from response
     const cacheRecord = createCacheRecordFromResponse(domain, response);
-    
+
     // Save to cache
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
-    
+
     // Get the parsed content and extract metadata
     const freshContent = SellersJsonCacheModel.getParsedContent(savedCache);
     const freshMetadata = extractMetadata(freshContent);
     const freshCacheInfo = formatCacheInfo(savedCache);
-    
+
     // Return response
     return res.status(200).json({
       success: true,
       data: {
         domain,
         metadata: freshMetadata,
-        cache: freshCacheInfo
-      }
+        cache: freshCacheInfo,
+      },
     });
-    
   } catch (error: any) {
     return handleSellersJsonError(domain, error);
   }

@@ -69,17 +69,19 @@ describe('SellersJson Controller Tests', () => {
       updated_at: new Date().toISOString(),
     };
 
-    // Mock the getParsedContent method 
-    (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest.fn().mockImplementation((cache) => {
-      if (cache && cache.content && typeof cache.content === 'string') {
-        try {
-          return JSON.parse(cache.content);
-        } catch (e) {
-          return null;
+    // Mock the getParsedContent method
+    (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest
+      .fn()
+      .mockImplementation((cache) => {
+        if (cache && cache.content && typeof cache.content === 'string') {
+          try {
+            return JSON.parse(cache.content);
+          } catch (e) {
+            return null;
+          }
         }
-      }
-      return null;
-    });
+        return null;
+      });
   });
 
   describe('getSellersJson', () => {
@@ -90,9 +92,11 @@ describe('SellersJson Controller Tests', () => {
       // Mock cache response (not expired)
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(mockCache);
       (SellersJsonCacheModel.isCacheExpired as jest.Mock).mockReturnValue(false);
-      
+
       // Mock getParsedContent to return the parsed content
-      (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest.fn().mockReturnValue(mockOpenXSellersJson);
+      (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(mockOpenXSellersJson);
 
       // Act
       const handler = sellersJsonController.getSellersJson;
@@ -214,7 +218,7 @@ describe('SellersJson Controller Tests', () => {
         error_message: 'sellers.json file not found',
       };
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue(notFoundCache);
-      
+
       // Mock getParsedContent for not found case
       (SellersJsonCacheModel.getParsedContent as jest.Mock).mockReturnValueOnce(null);
 

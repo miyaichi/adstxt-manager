@@ -1,8 +1,8 @@
 import express from 'express';
-import { 
-  getSellersJson, 
-  getSellerById, 
-  getSellersJsonMetadata 
+import {
+  getSellersJson,
+  getSellerById,
+  getSellersJsonMetadata,
 } from '../controllers/sellersJsonController';
 
 const router = express.Router();

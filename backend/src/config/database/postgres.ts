@@ -238,15 +238,15 @@ export class PostgresDatabase implements IDatabaseAdapter {
       FROM sellers_json_cache 
       WHERE domain = $1 AND status = 'success'
     `;
-    
+
     const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
-    
+
     if (domainResult.rows.length === 0) {
       return null; // Domain not found or not successful status
     }
-    
+
     const cacheRecord = domainResult.rows[0];
-    
+
     // Now use JSONB operators to extract only the matching seller directly from the database
     // This is much more efficient than loading all sellers and filtering in code
     const sellerSql = `
@@ -274,15 +274,15 @@ export class PostgresDatabase implements IDatabaseAdapter {
       FROM sellers_json_cache sj
       WHERE sj.id = $1
     `;
-    
+
     const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, sellerId]);
-    
+
     if (sellerResult.rows.length === 0) {
       return null;
     }
-    
+
     const result = sellerResult.rows[0];
-    
+
     // Return formatted result with metadata and seller information
     return {
       cacheRecord,
@@ -291,13 +291,14 @@ export class PostgresDatabase implements IDatabaseAdapter {
         contact_email: result.contact_email,
         contact_address: result.contact_address,
         identifiers: result.identifiers,
-        seller_count: parseInt(result.seller_count || '0', 10)
+        seller_count: parseInt(result.seller_count || '0', 10),
       },
       // Extract the first (and should be only) matching seller if any
-      seller: result.matching_sellers && result.matching_sellers.length > 0 
-        ? result.matching_sellers[0] 
-        : null,
-      found: result.matching_sellers && result.matching_sellers.length > 0
+      seller:
+        result.matching_sellers && result.matching_sellers.length > 0
+          ? result.matching_sellers[0]
+          : null,
+      found: result.matching_sellers && result.matching_sellers.length > 0,
     };
   }
 }

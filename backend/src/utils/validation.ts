@@ -8,7 +8,7 @@ import * as psl from 'psl';
 export enum Severity {
   ERROR = 'error',
   WARNING = 'warning',
-  INFO = 'info'
+  INFO = 'info',
 }
 
 // Validation keys without namespace prefixes for cleaner structure
@@ -41,16 +41,16 @@ export interface ParsedAdsTxtRecord {
   line_number: number;
   raw_line: string;
   is_valid: boolean;
-  error?: string;                     // Legacy field
+  error?: string; // Legacy field
   has_warning?: boolean;
-  warning?: string;                   // Legacy field
-  validation_key?: string;            // New field: key identifying the type of validation issue
-  severity?: Severity;                // New field: importance level of the validation issue
+  warning?: string; // Legacy field
+  validation_key?: string; // New field: key identifying the type of validation issue
+  severity?: Severity; // New field: importance level of the validation issue
   warning_params?: Record<string, any>; // Parameters for the warning/error message
-  duplicate_domain?: string;          // Store duplicate domain without overwriting original domain
+  duplicate_domain?: string; // Store duplicate domain without overwriting original domain
   all_warnings?: Array<{ key: string; params?: Record<string, any> }>; // To store multiple warnings
   validation_results?: CrossCheckValidationResult; // Store detailed validation results
-  validation_error?: string;          // Store any error during validation
+  validation_error?: string; // Store any error during validation
 }
 
 /**
@@ -59,7 +59,7 @@ export interface ParsedAdsTxtRecord {
 function createInvalidRecord(
   partialRecord: Partial<ParsedAdsTxtRecord>,
   validationKey: string,
-  severity: Severity = Severity.WARNING  // Default to WARNING for all validation issues
+  severity: Severity = Severity.WARNING // Default to WARNING for all validation issues
 ): ParsedAdsTxtRecord {
   return {
     domain: partialRecord.domain || '',
@@ -69,9 +69,9 @@ function createInvalidRecord(
     line_number: partialRecord.line_number || 0,
     raw_line: partialRecord.raw_line || '',
     is_valid: false,
-    error: validationKey,          // For backward compatibility
+    error: validationKey, // For backward compatibility
     validation_key: validationKey, // New field
-    severity: severity,            // New field
+    severity: severity, // New field
     ...partialRecord, // Allow overriding defaults
   };
 }
@@ -271,9 +271,9 @@ function createWarningRecord(
     ...record,
     is_valid: true, // Keep record valid but mark with warning
     has_warning: true,
-    warning: validationKey,           // For backward compatibility
-    validation_key: validationKey,    // New field
-    severity: severity,               // New field
+    warning: validationKey, // For backward compatibility
+    validation_key: validationKey, // New field
+    severity: severity, // New field
     warning_params: params,
     ...additionalProps,
   };
@@ -288,15 +288,9 @@ function createDuplicateWarningRecord(
   validationKey: string,
   severity: Severity = Severity.WARNING
 ): ParsedAdsTxtRecord {
-  return createWarningRecord(
-    record,
-    validationKey,
-    { domain: publisherDomain },
-    severity,
-    {
-      duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
-    }
-  );
+  return createWarningRecord(record, validationKey, { domain: publisherDomain }, severity, {
+    duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
+  });
 }
 
 /**
@@ -533,7 +527,12 @@ function findDuplicateRecords(
     // Check for exact duplicate
     if (existingRecordMap.has(key)) {
       logger.debug(`Found duplicate for: ${key}`);
-      return createDuplicateWarningRecord(record, publisherDomain, VALIDATION_KEYS.DUPLICATE_ENTRY, Severity.WARNING);
+      return createDuplicateWarningRecord(
+        record,
+        publisherDomain,
+        VALIDATION_KEYS.DUPLICATE_ENTRY,
+        Severity.WARNING
+      );
     }
 
     return record;
@@ -821,8 +820,10 @@ function validateDirectRelationship(
     // Case 15: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
       const count = sellerIdCounts.get(normalizedAccountId)!;
-      validationResult.sellerIdIsUnique = (count === 1);
-      console.log(`Seller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.sellerIdIsUnique}`);
+      validationResult.sellerIdIsUnique = count === 1;
+      console.log(
+        `Seller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.sellerIdIsUnique}`
+      );
     } else {
       // This should not happen if we found a matching seller
       console.warn(`Seller ID ${normalizedAccountId} not found in counts map`);
@@ -859,8 +860,10 @@ function validateResellerRelationship(
     // Case 20: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
       const count = sellerIdCounts.get(normalizedAccountId)!;
-      validationResult.resellerSellerIdIsUnique = (count === 1);
-      console.log(`Reseller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.resellerSellerIdIsUnique}`);
+      validationResult.resellerSellerIdIsUnique = count === 1;
+      console.log(
+        `Reseller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.resellerSellerIdIsUnique}`
+      );
     } else {
       // This should not happen if we found a matching seller
       console.warn(`Reseller ID ${normalizedAccountId} not found in counts map`);
@@ -875,11 +878,15 @@ function validateResellerRelationship(
 /**
  * Create a warning object with key, parameters and severity
  */
-function createWarning(validationKey: string, params: Record<string, any> = {}, severity: Severity = Severity.WARNING) {
-  return { 
-    key: validationKey, 
+function createWarning(
+  validationKey: string,
+  params: Record<string, any> = {},
+  severity: Severity = Severity.WARNING
+) {
+  return {
+    key: validationKey,
     params,
-    severity 
+    severity,
   };
 }
 
@@ -943,16 +950,16 @@ function generateWarnings(
   }
 
   // Case 5/8: Seller ID not unique
-  const hasDuplicateDirectSellerId = 
+  const hasDuplicateDirectSellerId =
     record.relationship === 'DIRECT' &&
     validationResult.accountIdInSellersJson &&
     validationResult.sellerIdIsUnique === false;
-    
-  const hasDuplicateResellerSellerId = 
+
+  const hasDuplicateResellerSellerId =
     record.relationship === 'RESELLER' &&
     validationResult.resellerAccountIdInSellersJson &&
     validationResult.resellerSellerIdIsUnique === false;
-    
+
   if (hasDuplicateDirectSellerId || hasDuplicateResellerSellerId) {
     console.log(`Adding SELLER_ID_NOT_UNIQUE warning for ${record.account_id} in ${record.domain}`);
     warnings.push(
@@ -980,7 +987,6 @@ function generateWarnings(
 
   return warnings;
 }
-
 
 /**
  * Check if an email address is valid

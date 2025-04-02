@@ -33,7 +33,7 @@ export interface SellersJsonContent {
     [key: string]: any;
   }>;
   version?: string;
-  
+
   // Optional fields
   identifiers?: Array<{
     name: string;
@@ -43,7 +43,7 @@ export interface SellersJsonContent {
   contact_email?: string;
   contact_address?: string;
   ext?: any;
-  
+
   // Allow for any additional fields
   [key: string]: any;
 }
@@ -212,7 +212,10 @@ class SellersJsonCacheModel {
    * @param sellerId The seller ID to search for
    * @returns The cache record, seller, metadata and found status if available
    */
-  async getSellerByIdOptimized(domain: string, sellerId: string): Promise<{
+  async getSellerByIdOptimized(
+    domain: string,
+    sellerId: string
+  ): Promise<{
     cacheRecord: SellersJsonCache;
     metadata: any;
     seller: any;
@@ -222,41 +225,49 @@ class SellersJsonCacheModel {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
       const normalizedSellerId = sellerId.toString().trim();
-      
-      logger.info(`[SellersJsonCache] Looking up seller ${normalizedSellerId} in ${normalizedDomain} with optimization`);
-      
+
+      logger.info(
+        `[SellersJsonCache] Looking up seller ${normalizedSellerId} in ${normalizedDomain} with optimization`
+      );
+
       // Check if we're using PostgreSQL
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
-      
+
       if (dbProvider !== 'postgres') {
         logger.info('[SellersJsonCache] Not using PostgreSQL, skipping JSONB optimization');
         return null;
       }
-      
+
       // Get the PostgreSQL database instance
       const postgres = (db as any).implementation as any;
-      
+
       // Check if it has our custom JSONB query method
       if (!postgres.queryJsonBSellerById) {
-        logger.warn('[SellersJsonCache] PostgreSQL instance does not have queryJsonBSellerById method');
+        logger.warn(
+          '[SellersJsonCache] PostgreSQL instance does not have queryJsonBSellerById method'
+        );
         return null;
       }
-      
+
       // Call the optimized method
       const result = await postgres.queryJsonBSellerById(normalizedDomain, normalizedSellerId);
-      
+
       if (!result) {
-        logger.info(`[SellersJsonCache] No optimized result found for ${normalizedSellerId} in ${normalizedDomain}`);
+        logger.info(
+          `[SellersJsonCache] No optimized result found for ${normalizedSellerId} in ${normalizedDomain}`
+        );
         return null;
       }
-      
-      logger.info(`[SellersJsonCache] Found optimized result for ${normalizedSellerId} in ${normalizedDomain}`);
-      
+
+      logger.info(
+        `[SellersJsonCache] Found optimized result for ${normalizedSellerId} in ${normalizedDomain}`
+      );
+
       return {
         cacheRecord: result.cacheRecord,
         metadata: result.metadata,
         seller: result.seller,
-        found: result.found
+        found: result.found,
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);

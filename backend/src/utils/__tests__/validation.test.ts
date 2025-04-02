@@ -1,10 +1,10 @@
 import {
-    crossCheckAdsTxtRecords,
-    ERROR_KEYS,
-    isValidEmail,
-    parseAdsTxtContent,
-    parseAdsTxtLine,
-    ParsedAdsTxtRecord,
+  crossCheckAdsTxtRecords,
+  ERROR_KEYS,
+  isValidEmail,
+  parseAdsTxtContent,
+  parseAdsTxtLine,
+  ParsedAdsTxtRecord,
 } from '../validation';
 
 describe('Validation Utilities', () => {
@@ -78,10 +78,11 @@ describe('Validation Utilities', () => {
       // Create a spy on parseAdsTxtLine and mock its implementation
       // to ensure all test cases are considered invalid
       const originalParseAdsTxtLine = require('../../utils/validation').parseAdsTxtLine;
-      const parseAdsTxtLineSpy = jest.spyOn(require('../../utils/validation'), 'parseAdsTxtLine')
+      const parseAdsTxtLineSpy = jest
+        .spyOn(require('../../utils/validation'), 'parseAdsTxtLine')
         .mockImplementation((line, lineNum) => {
           const result = originalParseAdsTxtLine(line, lineNum);
-          if (result && testCases.some(tc => tc.line === line)) {
+          if (result && testCases.some((tc) => tc.line === line)) {
             return { ...result, is_valid: false };
           }
           return result;
