@@ -9,11 +9,9 @@ export const ERROR_KEYS = {
   MISSING_FIELDS: 'errors.adsTxtValidation.missingFields',
   INVALID_FORMAT: 'errors.adsTxtValidation.invalidFormat',
   INVALID_RELATIONSHIP: 'errors.adsTxtValidation.invalidRelationship',
-  MISSPELLED_RELATIONSHIP: 'errors.adsTxtValidation.misspelledRelationship',
-  INVALID_ROOT_DOMAIN: 'errors.adsTxtValidation.invalidRootDomain',
+  INVALID_DOMAIN: 'errors.adsTxtValidation.invalidDomain',
   EMPTY_ACCOUNT_ID: 'errors.adsTxtValidation.emptyAccountId',
   DUPLICATE_ENTRY: 'errors.adsTxtValidation.duplicateEntry',
-  DUPLICATE_ENTRY_CASE_INSENSITIVE: 'errors.adsTxtValidation.duplicateEntryCaseInsensitive',
   NO_SELLERS_JSON: 'errors.adsTxtValidation.noSellersJson',
   DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'errors.adsTxtValidation.directAccountIdNotInSellersJson',
   RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON:
@@ -129,7 +127,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
   }
 
   // Validate domain using PSL
-  if (!isValidRootDomain(domain)) {
+  if (!psl.isValid(domain)) {
     return createInvalidRecord(
       {
         domain,
@@ -140,7 +138,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      ERROR_KEYS.INVALID_ROOT_DOMAIN
+      ERROR_KEYS.INVALID_DOMAIN
     );
   }
 
@@ -214,33 +212,11 @@ function processRelationship(
         certAuthorityId = rest[1];
       }
     } else {
-      // Check if it's a misspelled relationship type
-      if (isSimilarToRelationship(firstRest)) {
-        return {
-          relationship,
-          certAuthorityId: rest.length > 1 ? rest[1] : undefined,
-          error: ERROR_KEYS.MISSPELLED_RELATIONSHIP,
-        };
-      }
       certAuthorityId = rest[0];
     }
   }
 
   return { relationship, certAuthorityId };
-}
-
-/**
- * Checks if a domain is a valid root domain
- */
-function isValidRootDomain(domain: string): boolean {
-  const isValidRoot = psl.isValid(domain);
-  const parsed = psl.parse(domain);
-
-  // A domain is a root domain if it's valid and the input domain equals the parsed domain
-  // (not a subdomain like sub.example.com)
-  const isRootDomain = isValidRoot && parsed && 'domain' in parsed && parsed.domain === domain;
-
-  return isRootDomain && !domain.includes(' ');
 }
 
 /**
@@ -484,11 +460,8 @@ function createExistingRecordsMap(
 
   for (const record of existingRecords) {
     if (record.is_valid) {
-      // Make all comparisons case-insensitive for better matching
-      // Use domain, account_id, account_type AND relationship for duplicate detection
       const domainLower = record.domain.toLowerCase();
-      const accountTypeLower = record.account_type.toLowerCase();
-      const key = `${domainLower}|${record.account_id}|${accountTypeLower}|${record.relationship}`;
+      const key = `${domainLower}|${record.account_id}|${record.relationship}`;
       existingRecordMap.set(key, record);
     }
   }
@@ -500,9 +473,12 @@ function createExistingRecordsMap(
  * Create lookup key for a record
  */
 function createLookupKey(record: ParsedAdsTxtRecord): string {
+  // Make consistent comparison:
+  // - domain: case insensitive (lowercase)
+  // - account_id: case sensitive (as is)
+  // - relationship: already normalized to DIRECT/RESELLER
   const lowerDomain = record.domain.toLowerCase();
-  const accountTypeLower = record.account_type.toLowerCase();
-  return `${lowerDomain}|${record.account_id}|${accountTypeLower}|${record.relationship}`;
+  return `${lowerDomain}|${record.account_id}|${record.relationship}`;
 }
 
 /**
@@ -536,45 +512,8 @@ function findDuplicateRecords(
       return createDuplicateWarningRecord(record, publisherDomain, ERROR_KEYS.DUPLICATE_ENTRY);
     }
 
-    // Backup check for case-insensitive matches
-    const caseInsensitiveDuplicate = checkForCaseInsensitiveDuplicate(record, existingRecordMap);
-
-    if (caseInsensitiveDuplicate) {
-      logger.debug(`Found case-insensitive duplicate: ${record.domain}`);
-      return createDuplicateWarningRecord(
-        record,
-        publisherDomain,
-        ERROR_KEYS.DUPLICATE_ENTRY_CASE_INSENSITIVE
-      );
-    }
-
     return record;
   });
-}
-
-/**
- * Check for case-insensitive duplicates
- */
-function checkForCaseInsensitiveDuplicate(
-  record: ParsedAdsTxtRecord,
-  existingRecordMap: Map<string, ParsedAdsTxtRecord>
-): boolean {
-  const lowerCaseDomain = record.domain.toLowerCase();
-
-  // Check each entry in the map for potential case-insensitive matches
-  for (const [existingKey, existingRecord] of existingRecordMap.entries()) {
-    const [existingDomain, existingAccountId, existingAccountType, existingRelationship] =
-      existingKey.split('|');
-    if (
-      existingDomain.toLowerCase() === lowerCaseDomain &&
-      existingAccountId === record.account_id &&
-      existingAccountType.toLowerCase() === record.account_type.toLowerCase() &&
-      existingRelationship === record.relationship
-    ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 /**
@@ -938,7 +877,7 @@ function generateWarnings(
     return warnings;
   }
 
-  // Case 13: Domain mismatch for DIRECT
+  // Case 13/18: Domain mismatch for DIRECT
   if (record.relationship === 'DIRECT' && validationResult.domainMatchesSellerJsonEntry === false) {
     warnings.push(
       createWarning(ERROR_KEYS.DOMAIN_MISMATCH, {
@@ -995,51 +934,6 @@ function generateWarnings(
   return warnings;
 }
 
-/**
- * Check if a string is similar to "DIRECT" or "RESELLER"
- * Uses Levenshtein distance to detect typing errors
- * @param str - The string to check
- * @returns Boolean indicating if the string is likely a misspelled relationship
- */
-function isSimilarToRelationship(str: string): boolean {
-  // Calculate Levenshtein distance between two strings
-  function levenshteinDistance(a: string, b: string): number {
-    const matrix: number[][] = [];
-
-    // Initialize matrix
-    for (let i = 0; i <= b.length; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= a.length; j++) {
-      matrix[0][j] = j;
-    }
-
-    // Fill matrix
-    for (let i = 1; i <= b.length; i++) {
-      for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
-          );
-        }
-      }
-    }
-
-    return matrix[b.length][a.length];
-  }
-
-  // Check if input is similar to DIRECT or RESELLER
-  const distanceToDirect = levenshteinDistance(str, 'DIRECT');
-  const distanceToReseller = levenshteinDistance(str, 'RESELLER');
-
-  // If distance is less than 3 (allow for about 2 typos), consider it similar
-  return distanceToDirect <= 2 || distanceToReseller <= 2;
-}
 
 /**
  * Check if an email address is valid

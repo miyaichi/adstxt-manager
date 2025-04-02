@@ -48,7 +48,7 @@ This document describes all the validation warnings that may appear in the Ads.t
 
 ## Domain Warnings
 
-<a id="invalid-root-domain"></a>
+<a id="invalid-domain"></a>
 
 ### Invalid Root Domain
 

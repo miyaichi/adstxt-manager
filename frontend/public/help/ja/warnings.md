@@ -48,7 +48,7 @@
 
 ## ドメインの警告
 
-<a id="invalid-root-domain"></a>
+<a id="invalid-domain"></a>
 
 ### 無効なルートドメイン
 

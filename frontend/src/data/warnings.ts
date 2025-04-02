@@ -4,6 +4,7 @@
 
 export interface WarningInfo {
   id: string;
+  codes: string[];
   level: 'info' | 'warning' | 'error';
   titleKey: string; // i18n reference key
   descriptionKey: string; // i18n reference key
@@ -18,6 +19,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   // Invalid format warnings
   'invalid-format': {
     id: 'invalid-format',
+    codes: [],
     level: 'error',
     titleKey: 'warnings.invalidFormat.title',
     descriptionKey: 'warnings.invalidFormat.description',
@@ -26,6 +28,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'missing-fields': {
     id: 'missing-fields',
+    codes: ['11010'],
     level: 'error',
     titleKey: 'warnings.missingFields.title',
     descriptionKey: 'warnings.missingFields.description',
@@ -36,32 +39,27 @@ export const warningInfos: Record<string, WarningInfo> = {
   // Relationship warnings
   'invalid-relationship': {
     id: 'invalid-relationship',
+    codes: ['11020'],
     level: 'error',
     titleKey: 'warnings.invalidRelationship.title',
     descriptionKey: 'warnings.invalidRelationship.description',
     recommendationKey: 'warnings.invalidRelationship.recommendation',
     helpAnchor: '#invalid-relationship',
   },
-  'misspelled-relationship': {
-    id: 'misspelled-relationship',
-    level: 'warning',
-    titleKey: 'warnings.misspelledRelationship.title',
-    descriptionKey: 'warnings.misspelledRelationship.description',
-    recommendationKey: 'warnings.misspelledRelationship.recommendation',
-    helpAnchor: '#misspelled-relationship',
-  },
 
   // Domain warnings
-  'invalid-root-domain': {
-    id: 'invalid-root-domain',
+  'invalid-domain': {
+    id: 'invalid-domain',
+    codes: ['11030'],
     level: 'warning',
-    titleKey: 'warnings.invalidRootDomain.title',
-    descriptionKey: 'warnings.invalidRootDomain.description',
-    recommendationKey: 'warnings.invalidRootDomain.recommendation',
-    helpAnchor: '#invalid-root-domain',
+    titleKey: 'warnings.invalidDomain.title',
+    descriptionKey: 'warnings.invalidDomain.description',
+    recommendationKey: 'warnings.invalidDomain.recommendation',
+    helpAnchor: '#invalid-domain',
   },
   'empty-account-id': {
     id: 'empty-account-id',
+    codes: [],
     level: 'error',
     titleKey: 'warnings.emptyAccountId.title',
     descriptionKey: 'warnings.emptyAccountId.description',
@@ -72,24 +70,18 @@ export const warningInfos: Record<string, WarningInfo> = {
   // Duplicate warnings
   'duplicate-entry': {
     id: 'duplicate-entry',
+    codes: [],
     level: 'warning',
     titleKey: 'warnings.duplicateEntry.title',
     descriptionKey: 'warnings.duplicateEntry.description',
     recommendationKey: 'warnings.duplicateEntry.recommendation',
     helpAnchor: '#duplicate-entry',
   },
-  'duplicate-entry-case-insensitive': {
-    id: 'duplicate-entry-case-insensitive',
-    level: 'warning',
-    titleKey: 'warnings.duplicateEntryCaseInsensitive.title',
-    descriptionKey: 'warnings.duplicateEntryCaseInsensitive.description',
-    recommendationKey: 'warnings.duplicateEntryCaseInsensitive.recommendation',
-    helpAnchor: '#duplicate-entry-case-insensitive',
-  },
 
   // Sellers.json warnings
   'no-sellers-json': {
     id: 'no-sellers-json',
+    codes: ['12010', '13010'],
     level: 'warning',
     titleKey: 'warnings.noSellersJson.title',
     descriptionKey: 'warnings.noSellersJson.description',
@@ -98,6 +90,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'direct-account-id-not-in-sellers-json': {
     id: 'direct-account-id-not-in-sellers-json',
+    codes: ['12020'],
     level: 'warning',
     titleKey: 'warnings.directAccountIdNotInSellersJson.title',
     descriptionKey: 'warnings.directAccountIdNotInSellersJson.description',
@@ -106,6 +99,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'reseller-account-id-not-in-sellers-json': {
     id: 'reseller-account-id-not-in-sellers-json',
+    codes: ['13020'],
     level: 'warning',
     titleKey: 'warnings.resellerAccountIdNotInSellersJson.title',
     descriptionKey: 'warnings.resellerAccountIdNotInSellersJson.description',
@@ -114,6 +108,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'domain-mismatch': {
     id: 'domain-mismatch',
+    codes: ['12030', '13030'],
     level: 'warning',
     titleKey: 'warnings.domainMismatch.title',
     descriptionKey: 'warnings.domainMismatch.description',
@@ -122,6 +117,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'direct-not-publisher': {
     id: 'direct-not-publisher',
+    codes: ['12040', '12050'],
     level: 'warning',
     titleKey: 'warnings.directNotPublisher.title',
     descriptionKey: 'warnings.directNotPublisher.description',
@@ -130,6 +126,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'seller-id-not-unique': {
     id: 'seller-id-not-unique',
+    codes: ['12060', '13060'],
     level: 'warning',
     titleKey: 'warnings.sellerIdNotUnique.title',
     descriptionKey: 'warnings.sellerIdNotUnique.description',
@@ -138,6 +135,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'reseller-not-intermediary': {
     id: 'reseller-not-intermediary',
+    codes: ['13040', '13050'],
     level: 'warning',
     titleKey: 'warnings.resellerNotIntermediary.title',
     descriptionKey: 'warnings.resellerNotIntermediary.description',
@@ -146,6 +144,7 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
   'sellers-json-validation-error': {
     id: 'sellers-json-validation-error',
+    codes: [],
     level: 'warning',
     titleKey: 'warnings.sellersJsonValidationError.title',
     descriptionKey: 'warnings.sellersJsonValidationError.description',
@@ -168,11 +167,8 @@ export const getWarningIdFromErrorMessage = (errorMessage: string): string | nul
   if (errorMessage.includes('Relationship type must be')) {
     return 'invalid-relationship';
   }
-  if (errorMessage.includes('appears to be a misspelled relationship')) {
-    return 'misspelled-relationship';
-  }
   if (errorMessage.includes('Domain must be a valid root domain')) {
-    return 'invalid-root-domain';
+    return 'invalid-domain';
   }
   if (errorMessage.includes('Account ID must not be empty')) {
     return 'empty-account-id';

@@ -1,10 +1,10 @@
 import {
-  isValidEmail,
-  parseAdsTxtContent,
-  parseAdsTxtLine,
-  crossCheckAdsTxtRecords,
-  ParsedAdsTxtRecord,
-  ERROR_KEYS,
+    crossCheckAdsTxtRecords,
+    ERROR_KEYS,
+    isValidEmail,
+    parseAdsTxtContent,
+    parseAdsTxtLine,
+    ParsedAdsTxtRecord,
 } from '../validation';
 
 describe('Validation Utilities', () => {
@@ -66,8 +66,8 @@ describe('Validation Utilities', () => {
       const testCases = [
         { line: 'google.com', expectedError: ERROR_KEYS.MISSING_FIELDS },
         { line: 'domain, ID', expectedError: ERROR_KEYS.MISSING_FIELDS },
-        { line: 'domain .com, ID, DIRECT', expectedError: ERROR_KEYS.INVALID_ROOT_DOMAIN },
-        { line: 'sub.example.com, 12345, DIRECT', expectedError: ERROR_KEYS.INVALID_ROOT_DOMAIN },
+        { line: 'domain .com, ID, DIRECT', expectedError: ERROR_KEYS.INVALID_DOMAIN },
+        { line: 'sub.example.com, 12345, DIRECT', expectedError: ERROR_KEYS.INVALID_DOMAIN },
         { line: 'example.com, , DIRECT', expectedError: ERROR_KEYS.EMPTY_ACCOUNT_ID },
         { line: 'example.com, 12345, WRONG', expectedError: ERROR_KEYS.INVALID_RELATIONSHIP },
         // Misspelled relationship detection is now handled in a different way

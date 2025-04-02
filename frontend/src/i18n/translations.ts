@@ -43,32 +43,18 @@ export const translations = {
         ja: '関係タイプをDIRECTまたはRESELLERに変更してください。',
       },
     },
-    misspelledRelationship: {
+    invalidDomain: {
       title: {
-        en: 'Misspelled Relationship',
-        ja: 'スペルミスのある関係タイプ',
+        en: 'Invalid Domain',
+        ja: '無効なドメイン',
       },
       description: {
-        en: '{{value}} appears to be a misspelled relationship type.',
-        ja: '{{value}}は関係タイプのスペルミスと思われます。',
+        en: 'Domain must be a valid domain (e.g., example.com)',
+        ja: 'ドメインは有効なドメインである必要があります（例：example.com）',
       },
       recommendation: {
-        en: 'Relationship types are case-sensitive and must be exactly DIRECT or RESELLER.',
-        ja: '関係タイプは大文字と小文字が区別され、正確にDIRECTまたはRESELLERである必要があります。',
-      },
-    },
-    invalidRootDomain: {
-      title: {
-        en: 'Invalid Root Domain',
-        ja: '無効なルートドメイン',
-      },
-      description: {
-        en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
-        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
-      },
-      recommendation: {
-        en: 'Use a root domain instead of a subdomain for proper validation.',
-        ja: '適切な検証のためにサブドメインではなくルートドメインを使用してください。',
+        en: 'Check that the domain name of the advertising system is a valid domain..',
+        ja: '広告システムのドメイン名が有効なドメインであることを確認してください。',
       },
     },
     emptyAccountId: {
@@ -97,20 +83,6 @@ export const translations = {
       recommendation: {
         en: 'Remove the duplicate entry to maintain a cleaner ads.txt file.',
         ja: 'よりクリーンなads.txtファイルを維持するために、重複エントリを削除してください。',
-      },
-    },
-    duplicateEntryCaseInsensitive: {
-      title: {
-        en: 'Case-Insensitive Duplicate',
-        ja: '大文字小文字を区別しない重複',
-      },
-      description: {
-        en: 'Duplicate entry found with different case formatting ({{domain}})',
-        ja: '大文字小文字の違いを除いて重複するエントリが見つかりました（{{domain}}）',
-      },
-      recommendation: {
-        en: 'Consolidate entries with consistent capitalization.',
-        ja: '一貫した大文字小文字でエントリを統合してください。',
       },
     },
     noSellersJson: {
@@ -175,12 +147,12 @@ export const translations = {
         ja: 'セラーがPUBLISHERとしてマークされていない',
       },
       description: {
-        en: 'Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません（現在のタイプ: {{seller_type}}）',
+        en: 'Seller {{account_id}} is not marked as PUBLISHER/BOTH in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHER/BOTHとしてマークされていません（現在のタイプ: {{seller_type}}）',
       },
       recommendation: {
-        en: 'For DIRECT relationships, the seller type should be PUBLISHER in sellers.json.',
-        ja: 'DIRECT関係の場合、sellers.jsonでセラータイプはPUBLISHERであるべきです。',
+        en: 'For DIRECT relationships, the seller type should be PUBLISHER/BOTH in sellers.json.',
+        ja: 'DIRECT関係の場合、sellers.jsonでセラータイプはPUBLISHER/BOTHであるべきです。',
       },
     },
     sellerIdNotUnique: {
@@ -203,12 +175,12 @@ export const translations = {
         ja: 'リセラーがINTERMEDIARYとしてマークされていない',
       },
       description: {
-        en: 'Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません（現在のタイプ: {{seller_type}}）',
+        en: 'Seller {{account_id}} is not marked as INTERMEDIARY/BOTH in sellers.json (current type: {{seller_type}})',
+        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARY/BOTHとしてマークされていません（現在のタイプ: {{seller_type}}）',
       },
       recommendation: {
-        en: 'For RESELLER relationships, the seller type should be INTERMEDIARY in sellers.json.',
-        ja: 'RESELLER関係の場合、sellers.jsonでセラータイプはINTERMEDIARYであるべきです。',
+        en: 'For RESELLER relationships, the seller type should be INTERMEDIARY/BOTH in sellers.json.',
+        ja: 'RESELLER関係の場合、sellers.jsonでセラータイプはINTERMEDIARY/BOTHであるべきです。',
       },
     },
     sellersJsonValidationError: {
@@ -378,11 +350,7 @@ export const translations = {
         en: 'Relationship type must be either DIRECT or RESELLER',
         ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります',
       },
-      misspelledRelationship: {
-        en: '"{{value}}" appears to be a misspelled relationship type. Must be either DIRECT or RESELLER',
-        ja: '「{{value}}」は関係タイプのスペルミスと思われます。DIRECTまたはRESELLERが必要です',
-      },
-      invalidRootDomain: {
+      invalidDomain: {
         en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
         ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
       },
@@ -393,10 +361,6 @@ export const translations = {
       duplicateEntry: {
         en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
         ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
-      },
-      duplicateEntryCaseInsensitive: {
-        en: "Duplicate entry found in publisher's ads.txt with different case formatting ({{domain}})",
-        ja: 'パブリッシャーのads.txt（{{domain}}）に大文字小文字の違いを除いて重複するエントリが見つかりました',
       },
       noSellersJson: {
         en: 'No sellers.json file found for domain {{domain}}',
