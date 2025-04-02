@@ -4,24 +4,33 @@ import * as psl from 'psl';
  * Utility to validate and parse Ads.txt data
  */
 
-// Error key constants using frontend translation format
-export const ERROR_KEYS = {
-  MISSING_FIELDS: 'errors.adsTxtValidation.missingFields',
-  INVALID_FORMAT: 'errors.adsTxtValidation.invalidFormat',
-  INVALID_RELATIONSHIP: 'errors.adsTxtValidation.invalidRelationship',
-  INVALID_DOMAIN: 'errors.adsTxtValidation.invalidDomain',
-  EMPTY_ACCOUNT_ID: 'errors.adsTxtValidation.emptyAccountId',
-  DUPLICATE_ENTRY: 'errors.adsTxtValidation.duplicateEntry',
-  NO_SELLERS_JSON: 'errors.adsTxtValidation.noSellersJson',
-  DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'errors.adsTxtValidation.directAccountIdNotInSellersJson',
-  RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON:
-    'errors.adsTxtValidation.resellerAccountIdNotInSellersJson',
-  DOMAIN_MISMATCH: 'errors.adsTxtValidation.domainMismatch',
-  DIRECT_NOT_PUBLISHER: 'errors.adsTxtValidation.directNotPublisher',
-  SELLER_ID_NOT_UNIQUE: 'errors.adsTxtValidation.sellerIdNotUnique',
-  RESELLER_NOT_INTERMEDIARY: 'errors.adsTxtValidation.resellerNotIntermediary',
-  SELLERS_JSON_VALIDATION_ERROR: 'errors.adsTxtValidation.sellersJsonValidationError',
+// Severity enum to represent the importance level of validation results
+export enum Severity {
+  ERROR = 'error',
+  WARNING = 'warning',
+  INFO = 'info'
+}
+
+// Validation keys without namespace prefixes for cleaner structure
+export const VALIDATION_KEYS = {
+  MISSING_FIELDS: 'missingFields',
+  INVALID_FORMAT: 'invalidFormat',
+  INVALID_RELATIONSHIP: 'invalidRelationship',
+  INVALID_DOMAIN: 'invalidDomain',
+  EMPTY_ACCOUNT_ID: 'emptyAccountId',
+  DUPLICATE_ENTRY: 'duplicateEntry',
+  NO_SELLERS_JSON: 'noSellersJson',
+  DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'directAccountIdNotInSellersJson',
+  RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'resellerAccountIdNotInSellersJson',
+  DOMAIN_MISMATCH: 'domainMismatch',
+  DIRECT_NOT_PUBLISHER: 'directNotPublisher',
+  SELLER_ID_NOT_UNIQUE: 'sellerIdNotUnique',
+  RESELLER_NOT_INTERMEDIARY: 'resellerNotIntermediary',
+  SELLERS_JSON_VALIDATION_ERROR: 'sellersJsonValidationError',
 };
+
+// For backward compatibility
+export const ERROR_KEYS = VALIDATION_KEYS;
 
 export interface ParsedAdsTxtRecord {
   domain: string;
@@ -32,22 +41,25 @@ export interface ParsedAdsTxtRecord {
   line_number: number;
   raw_line: string;
   is_valid: boolean;
-  error?: string;
+  error?: string;                     // Legacy field
   has_warning?: boolean;
-  warning?: string;
-  warning_params?: Record<string, any>; // Parameters for the warning message
-  duplicate_domain?: string; // Store duplicate domain without overwriting original domain
+  warning?: string;                   // Legacy field
+  validation_key?: string;            // New field: key identifying the type of validation issue
+  severity?: Severity;                // New field: importance level of the validation issue
+  warning_params?: Record<string, any>; // Parameters for the warning/error message
+  duplicate_domain?: string;          // Store duplicate domain without overwriting original domain
   all_warnings?: Array<{ key: string; params?: Record<string, any> }>; // To store multiple warnings
   validation_results?: CrossCheckValidationResult; // Store detailed validation results
-  validation_error?: string; // Store any error during validation
+  validation_error?: string;          // Store any error during validation
 }
 
 /**
- * Creates an invalid record with specified error
+ * Creates an invalid record with specified validation issue
  */
 function createInvalidRecord(
   partialRecord: Partial<ParsedAdsTxtRecord>,
-  errorKey: string
+  validationKey: string,
+  severity: Severity = Severity.WARNING  // Default to WARNING for all validation issues
 ): ParsedAdsTxtRecord {
   return {
     domain: partialRecord.domain || '',
@@ -57,7 +69,9 @@ function createInvalidRecord(
     line_number: partialRecord.line_number || 0,
     raw_line: partialRecord.raw_line || '',
     is_valid: false,
-    error: errorKey,
+    error: validationKey,          // For backward compatibility
+    validation_key: validationKey, // New field
+    severity: severity,            // New field
     ...partialRecord, // Allow overriding defaults
   };
 }
@@ -89,7 +103,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      ERROR_KEYS.MISSING_FIELDS
+      VALIDATION_KEYS.MISSING_FIELDS,
+      Severity.WARNING
     );
   }
 
@@ -101,7 +116,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      ERROR_KEYS.INVALID_FORMAT
+      VALIDATION_KEYS.INVALID_FORMAT,
+      Severity.WARNING
     );
   }
 
@@ -122,7 +138,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      error
+      error,
+      Severity.WARNING
     );
   }
 
@@ -138,7 +155,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      ERROR_KEYS.INVALID_DOMAIN
+      VALIDATION_KEYS.INVALID_DOMAIN,
+      Severity.WARNING
     );
   }
 
@@ -154,7 +172,8 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtR
         line_number: lineNumber,
         raw_line: line,
       },
-      ERROR_KEYS.EMPTY_ACCOUNT_ID
+      VALIDATION_KEYS.EMPTY_ACCOUNT_ID,
+      Severity.WARNING
     );
   }
 
@@ -198,7 +217,7 @@ function processRelationship(
     // Invalid relationship type
     return {
       relationship,
-      error: ERROR_KEYS.INVALID_RELATIONSHIP,
+      error: VALIDATION_KEYS.INVALID_RELATIONSHIP,
     };
   }
 
@@ -243,15 +262,18 @@ export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
  */
 function createWarningRecord(
   record: ParsedAdsTxtRecord,
-  warningKey: string,
+  validationKey: string,
   params: Record<string, any> = {},
+  severity: Severity = Severity.WARNING,
   additionalProps: Partial<ParsedAdsTxtRecord> = {}
 ): ParsedAdsTxtRecord {
   return {
     ...record,
     is_valid: true, // Keep record valid but mark with warning
     has_warning: true,
-    warning: warningKey,
+    warning: validationKey,           // For backward compatibility
+    validation_key: validationKey,    // New field
+    severity: severity,               // New field
     warning_params: params,
     ...additionalProps,
   };
@@ -263,12 +285,14 @@ function createWarningRecord(
 function createDuplicateWarningRecord(
   record: ParsedAdsTxtRecord,
   publisherDomain: string,
-  warningKey: string
+  validationKey: string,
+  severity: Severity = Severity.WARNING
 ): ParsedAdsTxtRecord {
   return createWarningRecord(
     record,
-    warningKey,
+    validationKey,
     { domain: publisherDomain },
+    severity,
     {
       duplicate_domain: publisherDomain, // Store the domain where the duplicate was found
     }
@@ -509,7 +533,7 @@ function findDuplicateRecords(
     // Check for exact duplicate
     if (existingRecordMap.has(key)) {
       logger.debug(`Found duplicate for: ${key}`);
-      return createDuplicateWarningRecord(record, publisherDomain, ERROR_KEYS.DUPLICATE_ENTRY);
+      return createDuplicateWarningRecord(record, publisherDomain, VALIDATION_KEYS.DUPLICATE_ENTRY, Severity.WARNING);
     }
 
     return record;
@@ -554,11 +578,12 @@ async function validateAgainstSellersJson(
         // Return the original record with error warning
         return createWarningRecord(
           record,
-          ERROR_KEYS.SELLERS_JSON_VALIDATION_ERROR,
+          VALIDATION_KEYS.SELLERS_JSON_VALIDATION_ERROR,
           {
             message: error.message,
             domain: record.domain,
           },
+          Severity.WARNING,
           {
             validation_error: error.message,
           }
@@ -574,12 +599,7 @@ async function validateAgainstSellersJson(
   return recordsWithSellerValidation;
 }
 
-/**
- * Create a warning object with key and parameters
- */
-function createWarning(key: string, params: Record<string, any>) {
-  return { key, params };
-}
+// Legacy function removed and replaced with enhanced version at line ~870
 
 /**
  * Validate a single record against sellers.json
@@ -611,10 +631,11 @@ async function validateSingleRecord(
   if (!sellersJsonData || !Array.isArray(sellersJsonData.sellers)) {
     return createWarningRecord(
       record,
-      ERROR_KEYS.NO_SELLERS_JSON,
+      VALIDATION_KEYS.NO_SELLERS_JSON,
       {
         domain: record.domain,
       },
+      Severity.WARNING,
       {
         validation_results: validationResult,
       }
@@ -664,8 +685,10 @@ async function validateSingleRecord(
     return {
       ...record,
       has_warning: true,
-      warning: warnings[0].key, // Primary warning key
+      warning: warnings[0].key, // Primary warning key (legacy)
       warning_params: warnings[0].params, // Parameters for primary warning
+      validation_key: warnings[0].key, // New field
+      severity: warnings[0].severity || Severity.WARNING, // New field
       all_warnings: warnings, // Store all warnings with params
       validation_results: validationResult, // Store all validation details
     };
@@ -841,18 +864,29 @@ function validateResellerRelationship(
 }
 
 /**
+ * Create a warning object with key, parameters and severity
+ */
+function createWarning(validationKey: string, params: Record<string, any> = {}, severity: Severity = Severity.WARNING) {
+  return { 
+    key: validationKey, 
+    params,
+    severity 
+  };
+}
+
+/**
  * Generate warnings based on validation results
  */
 function generateWarnings(
   record: ParsedAdsTxtRecord,
   validationResult: CrossCheckValidationResult,
   publisherDomain: string
-): Array<{ key: string; params?: Record<string, any> }> {
-  const warnings: Array<{ key: string; params?: Record<string, any> }> = [];
+): Array<{ key: string; params?: Record<string, any>; severity?: Severity }> {
+  const warnings: Array<{ key: string; params?: Record<string, any>; severity?: Severity }> = [];
 
   // Case 11: Missing sellers.json
   if (!validationResult.hasSellerJson) {
-    warnings.push(createWarning(ERROR_KEYS.NO_SELLERS_JSON, { domain: record.domain }));
+    warnings.push(createWarning(VALIDATION_KEYS.NO_SELLERS_JSON, { domain: record.domain }));
     return warnings; // Return early if no sellers.json
   }
 
@@ -860,14 +894,14 @@ function generateWarnings(
   if (!validationResult.accountIdInSellersJson) {
     if (record.relationship === 'DIRECT') {
       warnings.push(
-        createWarning(ERROR_KEYS.DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON, {
+        createWarning(VALIDATION_KEYS.DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON, {
           domain: record.domain,
           account_id: record.account_id,
         })
       );
     } else {
       warnings.push(
-        createWarning(ERROR_KEYS.RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON, {
+        createWarning(VALIDATION_KEYS.RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON, {
           domain: record.domain,
           account_id: record.account_id,
         })
@@ -880,7 +914,7 @@ function generateWarnings(
   // Case 13/18: Domain mismatch for DIRECT
   if (record.relationship === 'DIRECT' && validationResult.domainMatchesSellerJsonEntry === false) {
     warnings.push(
-      createWarning(ERROR_KEYS.DOMAIN_MISMATCH, {
+      createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
         domain: record.domain,
         publisher_domain: publisherDomain,
         seller_domain: validationResult.sellerData?.domain || 'unknown',
@@ -891,7 +925,7 @@ function generateWarnings(
   // Case 14: DIRECT entry not marked as PUBLISHER
   if (record.relationship === 'DIRECT' && validationResult.directEntryHasPublisherType === false) {
     warnings.push(
-      createWarning(ERROR_KEYS.DIRECT_NOT_PUBLISHER, {
+      createWarning(VALIDATION_KEYS.DIRECT_NOT_PUBLISHER, {
         domain: record.domain,
         account_id: record.account_id,
         seller_type: validationResult.sellerData?.seller_type || 'unknown',
@@ -909,7 +943,7 @@ function generateWarnings(
       validationResult.resellerSellerIdIsUnique === false)
   ) {
     warnings.push(
-      createWarning(ERROR_KEYS.SELLER_ID_NOT_UNIQUE, {
+      createWarning(VALIDATION_KEYS.SELLER_ID_NOT_UNIQUE, {
         domain: record.domain,
         account_id: record.account_id,
       })
@@ -923,7 +957,7 @@ function generateWarnings(
     validationResult.resellerEntryHasIntermediaryType === false
   ) {
     warnings.push(
-      createWarning(ERROR_KEYS.RESELLER_NOT_INTERMEDIARY, {
+      createWarning(VALIDATION_KEYS.RESELLER_NOT_INTERMEDIARY, {
         domain: record.domain,
         account_id: record.account_id,
         seller_type: validationResult.sellerData?.seller_type || 'unknown',

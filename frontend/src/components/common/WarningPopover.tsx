@@ -6,12 +6,15 @@ import '../adsTxt/WarningDisplay.css';
 // Import from the warnings data file
 import { warningInfos } from '../../data/warnings';
 
+import { Severity } from '../../models';
+
 interface WarningPopoverProps {
   warningId: string;
   params?: Record<string, any>;
+  severity?: Severity; // Add severity prop
 }
 
-const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) => {
+const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, severity = 'warning' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { language } = useApp();
@@ -50,7 +53,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) =>
     // Don't close immediately, add a delay
     const timer = setTimeout(() => {
       setIsOpen(false);
-    }, 300); // 300ミリ秒の遅延
+    }, 500); // 500ミリ秒の遅延に増加（ユーザーが読みやすくするため）
     setCloseTimer(timer);
   };
 
@@ -78,7 +81,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) =>
       fontWeight: '600',
       lineHeight: '1.5',
       border: 'none',
-      cursor: 'pointer',
+      cursor: 'default', // ポインタカーソルからデフォルトに変更
       borderRadius: '16px',
       textDecoration: 'none',
       textAlign: 'center' as const, // TypeScript with CSSProperties requires this cast
@@ -89,9 +92,13 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) =>
       transition: 'all 0.2s ease',
       color: '#ffffff',
       textShadow: '0 1px 1px rgba(0,0,0,0.2)',
+      userSelect: 'none', // テキストの選択を防止
     };
 
-    switch (warningInfo.level) {
+    // Priority to passed severity, fall back to warningInfo.level
+    const effectiveSeverity = severity || warningInfo.level || 'warning';
+
+    switch (effectiveSeverity) {
       case 'error':
         return {
           ...baseStyles,
@@ -123,15 +130,16 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) =>
       onMouseEnter={handleTooltipMouseEnter}
       onMouseLeave={handleTooltipMouseLeave}
     >
-      <button
+      <span
         style={buttonStyles}
-        onClick={() => setIsOpen(!isOpen)}
+        role="button"
+        tabIndex={-1} // フォーカス可能にしない
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         aria-expanded={isOpen}
       >
         {shortTitle}
-      </button>
+      </span>
 
       {isOpen && (
         <div
@@ -174,7 +182,25 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params }) =>
 
 // Helper function to get warning info from ID
 function getWarningInfoForId(id: string): WarningInfo | null {
-  return warningInfos[id] || null;
+  // First try direct lookup
+  if (warningInfos[id]) {
+    return warningInfos[id];
+  }
+  
+  // For debugging
+  console.warn(`Warning ID not found: ${id}. Attempting fallback lookup.`);
+  
+  // Try to find a close match (ignoring hyphens/casing differences)
+  const normalizedId = id.toLowerCase().replace(/-/g, '');
+  
+  for (const key in warningInfos) {
+    if (key.toLowerCase().replace(/-/g, '') === normalizedId) {
+      console.log(`Found fallback match: ${key} for ID: ${id}`);
+      return warningInfos[key];
+    }
+  }
+  
+  return null;
 }
 
 export default WarningPopover;

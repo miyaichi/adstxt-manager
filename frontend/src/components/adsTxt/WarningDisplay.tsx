@@ -1,10 +1,18 @@
 import React from 'react';
 import WarningPopover from '../common/WarningPopover';
-import { getWarningIdFromErrorMessage } from '../../data/warnings';
+import { getWarningIdFromErrorMessage, convertValidationKeyToWarningId } from '../../data/warnings';
 import './WarningDisplay.css';
+import { Severity } from '../../models';
+
+interface ValidationMessage {
+  message: string;
+  severity?: Severity;
+  validation_key?: string;
+  params?: Record<string, any>;
+}
 
 interface WarningDisplayProps {
-  errorMessages: string[];
+  errorMessages: string[] | ValidationMessage[];
 }
 
 /**
@@ -16,25 +24,70 @@ const WarningDisplay: React.FC<WarningDisplayProps> = ({ errorMessages }) => {
     return null;
   }
 
+  // Helper function to check if an error message is a ValidationMessage object
+  const isValidationMessage = (message: any): message is ValidationMessage => {
+    return typeof message === 'object' && message !== null && 'message' in message;
+  };
+
   return (
     <div className="warning-display">
       <ul className="warning-list">
-        {errorMessages.map((message, index) => {
-          // Extract parameters from message for use in translation
-          const params = extractParamsFromMessage(message);
+        {errorMessages.map((messageObj, index) => {
+          // Handle both string message format (legacy) and object format (new)
+          if (isValidationMessage(messageObj)) {
+            const { message, severity, validation_key, params } = messageObj;
+            
+            // If we have a validation_key, convert it to a frontend warningId
+            if (validation_key) {
+              const warningId = convertValidationKeyToWarningId(validation_key);
+              
+              // Log for debugging
+              console.log(`Converting validation_key: ${validation_key} to warningId: ${warningId}`);
+              
+              return (
+                <li key={index} className="warning-item">
+                  <WarningPopover 
+                    warningId={warningId}
+                    params={params || {}}
+                    severity={severity}
+                  />
+                </li>
+              );
+            }
+            
+            // Otherwise fall back to the legacy pattern matching
+            const extractedParams = extractParamsFromMessage(message);
+            const warningId = getWarningIdFromErrorMessage(message);
 
-          // Get the warning ID based on the error message pattern
-          const warningId = getWarningIdFromErrorMessage(message);
+            return (
+              <li key={index} className="warning-item">
+                {warningId ? (
+                  <WarningPopover 
+                    warningId={warningId} 
+                    params={extractedParams}
+                    severity={severity}
+                  />
+                ) : (
+                  <span className="warning-text">{message}</span>
+                )}
+              </li>
+            );
+          } else {
+            // Legacy string-based message handling
+            const message = messageObj;
+            const params = extractParamsFromMessage(message);
+            const warningId = getWarningIdFromErrorMessage(message);
 
-          return (
-            <li key={index} className="warning-item">
-              {warningId ? (
-                <WarningPopover warningId={warningId} params={params} />
-              ) : (
-                <span className="warning-text">{message}</span>
-              )}
-            </li>
-          );
+            return (
+              <li key={index} className="warning-item">
+                {warningId ? (
+                  <WarningPopover warningId={warningId} params={params} />
+                ) : (
+                  <span className="warning-text">{message}</span>
+                )}
+              </li>
+            );
+          }
         })}
       </ul>
     </div>

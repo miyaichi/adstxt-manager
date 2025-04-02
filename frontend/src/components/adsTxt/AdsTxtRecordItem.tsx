@@ -391,7 +391,36 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                     <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
                       <div className="warning-text-container">
                         {(() => {
-                          const warningMessage = (record as ParsedAdsTxtRecord).warning;
+                          const parsedRecord = record as ParsedAdsTxtRecord;
+                          
+                          // Check for new validation_key format first
+                          if (parsedRecord.validation_key) {
+                            // Use new validation_key and severity format
+                            const params = parsedRecord.warning_params || {};
+                            
+                            // Add standard parameters that might be needed
+                            if (!params.domain && record.domain) {
+                              params.domain = record.domain;
+                            }
+                            
+                            if (!params.account_id && record.account_id) {
+                              params.account_id = record.account_id;
+                            }
+                            
+                            // Convert the validation_key to warningId format (replace dots with dashes)
+                            const warningId = parsedRecord.validation_key.replace(/\./g, '-');
+                            
+                            return (
+                              <WarningPopover 
+                                warningId={warningId} 
+                                params={params}
+                                severity={parsedRecord.severity} 
+                              />
+                            );
+                          }
+                          
+                          // Fall back to legacy format
+                          const warningMessage = parsedRecord.warning;
                           if (!warningMessage) return '';
 
                           // Process all warning messages that start with errors: or warnings:
@@ -400,7 +429,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                             warningMessage.startsWith('warnings:')
                           ) {
                             // Extract parameters from warning_params if available
-                            const params = (record as ParsedAdsTxtRecord).warning_params || {};
+                            const params = parsedRecord.warning_params || {};
 
                             // Add standard parameters that might be needed
                             if (!params.domain && record.domain) {
@@ -413,19 +442,18 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
                             // Get the warning type to map to a warning ID
                             let warningId = '';
-                            if (warningMessage.startsWith('errors:adsTxtValidation.')) {
+                            if (warningMessage.startsWith('errors:adsTxtValidation.') ||
+                                warningMessage.startsWith('errors.adsTxtValidation.')) {
                               // Map specific error types to warning IDs based on warnings.ts
-                              const errorType = warningMessage.replace(
-                                'errors:adsTxtValidation.',
-                                ''
-                              );
+                              const errorType = warningMessage
+                                .replace('errors:adsTxtValidation.', '')
+                                .replace('errors.adsTxtValidation.', '');
 
                               // Map to the correct warning ID format
                               const errorTypeMap: Record<string, string> = {
                                 invalidFormat: 'invalid-format',
                                 missingFields: 'missing-fields',
                                 invalidRelationship: 'invalid-relationship',
-                                misspelledRelationship: 'misspelled-relationship',
                                 invalidDomain: 'invalid-domain',
                                 emptyAccountId: 'empty-account-id',
                                 duplicateEntry: 'duplicate-entry',
@@ -471,12 +499,35 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 <Badge variation="error">{t('common.invalid', language)}</Badge>
                 <Text color="red" fontSize="0.875rem">
                   {(() => {
-                    const errorMessage = (record as ParsedAdsTxtRecord).error;
+                    const parsedRecord = record as ParsedAdsTxtRecord;
+                    
+                    // Check for new validation_key format first
+                    if (parsedRecord.validation_key) {
+                      const params = parsedRecord.warning_params || {};
+                      
+                      // Add standard parameters that might be needed
+                      if (!params.domain && record.domain) {
+                        params.domain = record.domain;
+                      }
+                      
+                      if (!params.account_id && record.account_id) {
+                        params.account_id = record.account_id;
+                      }
+                      
+                      // Get the translated error message directly using validation_key
+                      return t(`errors.adsTxtValidation.${parsedRecord.validation_key}`, language, params);
+                    }
+                    
+                    // Fall back to legacy error format
+                    const errorMessage = parsedRecord.error;
                     if (!errorMessage) return '';
 
-                    if (errorMessage.startsWith('errors:adsTxtValidation.')) {
+                    if (errorMessage.startsWith('errors:adsTxtValidation.') || 
+                        errorMessage.startsWith('errors.adsTxtValidation.')) {
                       // Handle specific error messages
-                      const errType = errorMessage.replace('errors:adsTxtValidation.', '');
+                      const errType = errorMessage
+                        .replace('errors:adsTxtValidation.', '')
+                        .replace('errors.adsTxtValidation.', '');
                       // Get possible parameter values from record
                       const params: Record<string, any> = {};
 

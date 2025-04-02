@@ -2,10 +2,12 @@
  * Data structure for warning information across the application
  */
 
+import { Severity } from '../models';
+
 export interface WarningInfo {
   id: string;
   codes: string[];
-  level: 'info' | 'warning' | 'error';
+  level: Severity;
   titleKey: string; // i18n reference key
   descriptionKey: string; // i18n reference key
   recommendationKey: string; // i18n reference key
@@ -155,6 +157,19 @@ export const warningInfos: Record<string, WarningInfo> = {
 
 /**
  * Maps error message patterns to warning IDs
+ */
+/**
+ * Converts a backend validation_key (camelCase) to a frontend warningId (kebab-case)
+ */
+export const convertValidationKeyToWarningId = (validationKey: string): string => {
+  // Convert camelCase to kebab-case
+  return validationKey
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+};
+
+/**
+ * Map known error messages to warning IDs
  */
 export const getWarningIdFromErrorMessage = (errorMessage: string): string | null => {
   // Map known error messages to warning IDs
