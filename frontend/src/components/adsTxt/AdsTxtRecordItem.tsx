@@ -301,8 +301,13 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                               params.account_id = record.account_id;
                             }
                             
-                            // Convert the validation_key to warningId format (replace dots with dashes)
-                            const warningId = parsedRecord.validation_key.replace(/\./g, '-');
+                            // Convert the validation_key to warningId format
+                            // 1. Replace dots with dashes
+                            // 2. Convert camelCase to kebab-case (e.g. directAccountId -> direct-account-id)
+                            const warningId = parsedRecord.validation_key
+                              .replace(/\./g, '-')
+                              .replace(/([a-z])([A-Z])/g, '$1-$2')
+                              .toLowerCase();
                             
                             return (
                               <WarningPopover 
