@@ -26,8 +26,10 @@
 .warning-popover-container {
   position: relative;
   display: inline-block;
-  /* 以下を追加して、ポップオーバーがクリック可能になるようにする */
+  /* Make sure the popover is above other elements */
   isolation: isolate;
+  /* z-index of the popover itself */
+  z-index: 500;
 }
 
 .warning-text-container {
@@ -89,20 +91,23 @@
 
 .warning-popover {
   position: absolute;
-  z-index: 100;
+  /* Set a high z-index to ensure it appears above other elements */
+  z-index: 9999;
   top: calc(100% + 10px);
   left: 0;
   min-width: 350px;
   width: auto;
   max-width: 90vw;
   background-color: white;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  /* Emphasize the shadow */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   padding: 15px;
   font-size: 14px;
   color: #333;
   word-break: break-word;
-  pointer-events: auto; /* マウスイベントを有効化 */
+  /* Enables mouse events */
+  pointer-events: auto;
 }
 
 /* Adjust popover position if it would overflow to the right */

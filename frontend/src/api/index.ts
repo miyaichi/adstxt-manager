@@ -276,10 +276,13 @@ export const sellersJsonApi = {
   },
 
   // Get specific seller by seller_id from a domain's sellers.json (improved with types)
-  async getSellerById(domain: string, sellerId: string): Promise<ApiResponse<SellersJsonSellerResponse>> {
+  async getSellerById(
+    domain: string,
+    sellerId: string
+  ): Promise<ApiResponse<SellersJsonSellerResponse>> {
     const url = `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}`;
     logger.debug('Fetching seller data:', { domain, sellerId, url });
-    
+
     try {
       const response = await api.get<ApiResponse<SellersJsonSellerResponse>>(url);
       logger.debug('Seller data response:', response.data);

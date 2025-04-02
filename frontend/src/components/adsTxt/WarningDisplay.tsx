@@ -36,25 +36,23 @@ const WarningDisplay: React.FC<WarningDisplayProps> = ({ errorMessages }) => {
           // Handle both string message format (legacy) and object format (new)
           if (isValidationMessage(messageObj)) {
             const { message, severity, validation_key, params } = messageObj;
-            
+
             // If we have a validation_key, convert it to a frontend warningId
             if (validation_key) {
               const warningId = convertValidationKeyToWarningId(validation_key);
-              
+
               // Log for debugging
-              console.log(`Converting validation_key: ${validation_key} to warningId: ${warningId}`);
-              
+              console.log(
+                `Converting validation_key: ${validation_key} to warningId: ${warningId}`
+              );
+
               return (
                 <li key={index} className="warning-item">
-                  <WarningPopover 
-                    warningId={warningId}
-                    params={params || {}}
-                    severity={severity}
-                  />
+                  <WarningPopover warningId={warningId} params={params || {}} severity={severity} />
                 </li>
               );
             }
-            
+
             // Otherwise fall back to the legacy pattern matching
             const extractedParams = extractParamsFromMessage(message);
             const warningId = getWarningIdFromErrorMessage(message);
@@ -62,8 +60,8 @@ const WarningDisplay: React.FC<WarningDisplayProps> = ({ errorMessages }) => {
             return (
               <li key={index} className="warning-item">
                 {warningId ? (
-                  <WarningPopover 
-                    warningId={warningId} 
+                  <WarningPopover
+                    warningId={warningId}
                     params={extractedParams}
                     severity={severity}
                   />

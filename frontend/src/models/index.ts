@@ -81,16 +81,16 @@ export interface ParsedAdsTxtRecord {
   line_number: number;
   raw_line: string;
   is_valid: boolean;
-  error?: string;                     // Legacy field
+  error?: string; // Legacy field
   has_warning?: boolean;
-  warning?: string;                   // Legacy field
+  warning?: string; // Legacy field
   warning_params?: Record<string, any>; // Parameters for warning/error message
-  validation_key?: string;            // New field: key identifying the validation issue
-  severity?: Severity;                // New field: importance level of the validation issue
-  duplicate_domain?: string;          // Domain where the duplicate was found (for backward compatibility)
+  validation_key?: string; // New field: key identifying the validation issue
+  severity?: Severity; // New field: importance level of the validation issue
+  duplicate_domain?: string; // Domain where the duplicate was found (for backward compatibility)
   all_warnings?: Array<{ key: string; params?: Record<string, any>; severity?: Severity }>; // Multiple warnings with params
-  validation_results?: any;           // Detailed validation results from sellers.json check
-  validation_error?: string;          // Error during sellers.json validation
+  validation_results?: any; // Detailed validation results from sellers.json check
+  validation_error?: string; // Error during sellers.json validation
 }
 
 export interface ProcessAdsTxtResponse {

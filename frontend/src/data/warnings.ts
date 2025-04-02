@@ -163,9 +163,7 @@ export const warningInfos: Record<string, WarningInfo> = {
  */
 export const convertValidationKeyToWarningId = (validationKey: string): string => {
   // Convert camelCase to kebab-case
-  return validationKey
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .toLowerCase();
+  return validationKey.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 };
 
 /**

@@ -81,60 +81,77 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       console.log('Skipping seller.json lookup for invalid record');
       return;
     }
-    
+
     // Skip seller.json lookup if record already has a noSellersJson warning
     const parsedRecord = record as ParsedAdsTxtRecord;
-    if (isParsedRecord && 
-        (parsedRecord.validation_key === 'noSellersJson' || 
-         parsedRecord.warning?.includes('noSellersJson') ||
-         parsedRecord.warning?.includes('No sellers.json file found'))) {
+    if (
+      isParsedRecord &&
+      (parsedRecord.validation_key === 'noSellersJson' ||
+        parsedRecord.warning?.includes('noSellersJson') ||
+        parsedRecord.warning?.includes('No sellers.json file found'))
+    ) {
       console.log('Skipping seller.json lookup for record with noSellersJson warning');
       return;
     }
 
     const requestId = Math.random().toString(36).substring(2, 15);
     const domain = getSellersDomain(record.account_type);
-    
-    console.log(`[${requestId}] Fetching seller information for ${record.account_id} from ${domain}`);
-    
+
+    console.log(
+      `[${requestId}] Fetching seller information for ${record.account_id} from ${domain}`
+    );
+
     let isMounted = true;
     setLoading(true);
     setError(null);
 
     // Direct API call to backend
-    api.sellersJson.getSellerById(domain, record.account_id)
+    api.sellersJson
+      .getSellerById(domain, record.account_id)
       .then((response) => {
         if (!isMounted) return;
-        
+
         if (response.success && response.data) {
           if (response.error || (response.data.message && !response.data.found)) {
             // API succeeded but returned an error
             const errorMessage = response.error?.message || response.data.message;
-            console.warn(`[${requestId}] Error for Seller ID ${record.account_id} from ${domain}:`, errorMessage);
+            console.warn(
+              `[${requestId}] Error for Seller ID ${record.account_id} from ${domain}:`,
+              errorMessage
+            );
             setError(errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language));
             setSellerInfo(null);
             setLoading(false);
           } else if (!response.data.found) {
             // sellers.json file found but seller_id doesn't exist
             console.warn(`[${requestId}] Seller ID ${record.account_id} not found in ${domain}`);
-            
+
             // Try with record's domain as fallback if different
             if (domain !== record.domain) {
               console.log(`[${requestId}] Trying fallback with record.domain: ${record.domain}`);
-              
-              api.sellersJson.getSellerById(record.domain, record.account_id)
+
+              api.sellersJson
+                .getSellerById(record.domain, record.account_id)
                 .then((fallbackResponse) => {
                   if (!isMounted) return;
-                  
+
                   if (fallbackResponse.success && fallbackResponse.data) {
-                    if (fallbackResponse.error || (fallbackResponse.data.message && !fallbackResponse.data.found)) {
+                    if (
+                      fallbackResponse.error ||
+                      (fallbackResponse.data.message && !fallbackResponse.data.found)
+                    ) {
                       // API succeeded but returned an error
-                      const errorMessage = fallbackResponse.error?.message || fallbackResponse.data.message;
+                      const errorMessage =
+                        fallbackResponse.error?.message || fallbackResponse.data.message;
                       console.warn(`[${requestId}] Error for fallback domain:`, errorMessage);
-                      setError(errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                      setError(
+                        errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language)
+                      );
                       setSellerInfo(null);
                     } else if (fallbackResponse.data.found && fallbackResponse.data.seller) {
-                      console.log(`[${requestId}] Found seller info in fallback domain ${record.domain}`);
+                      console.log(
+                        `[${requestId}] Found seller info in fallback domain ${record.domain}`
+                      );
                       setSellerInfo(fallbackResponse.data);
                       setError(null);
                     } else {
@@ -143,7 +160,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                       setSellerInfo(null);
                     }
                   } else {
-                    console.warn(`[${requestId}] API failure for fallback domain:`, fallbackResponse.error);
+                    console.warn(
+                      `[${requestId}] API failure for fallback domain:`,
+                      fallbackResponse.error
+                    );
                     setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
                     setSellerInfo(null);
                   }
@@ -163,20 +183,27 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             }
           } else if (response.data.seller) {
             // Seller info found
-            console.log(`[${requestId}] Found seller information for ${record.account_id} from ${domain}`);
+            console.log(
+              `[${requestId}] Found seller information for ${record.account_id} from ${domain}`
+            );
             setSellerInfo(response.data);
             setError(null);
             setLoading(false);
           } else {
             // Data returned but no seller info
-            console.warn(`[${requestId}] No seller information found for ${record.account_id} from ${domain}`);
+            console.warn(
+              `[${requestId}] No seller information found for ${record.account_id} from ${domain}`
+            );
             setError(t('adsTxt.recordItem.noSellerInfo', language));
             setSellerInfo(null);
             setLoading(false);
           }
         } else {
           // API returned failure
-          console.warn(`[${requestId}] API failure for ${record.account_id} from ${domain}:`, response.error);
+          console.warn(
+            `[${requestId}] API failure for ${record.account_id} from ${domain}:`,
+            response.error
+          );
           setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
           setSellerInfo(null);
           setLoading(false);
@@ -235,7 +262,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 </Badge>
               )}
             </Flex>
-            
+
             <Flex gap="1rem" wrap="wrap">
               {sellerInfo.seller.is_confidential ? (
                 <Badge variation="warning">{t('adsTxt.recordItem.confidential', language)}</Badge>
@@ -255,12 +282,15 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 </>
               )}
             </Flex>
-            
+
             {/* Metadata display (simplified) */}
             {sellerInfo.metadata && sellerInfo.metadata.seller_count > 0 && (
               <Text fontSize="0.75rem" color="gray">
-                {t('adsTxt.recordItem.sellersCount', language, { count: sellerInfo.metadata.seller_count })}
-                {sellerInfo.metadata.version && ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
+                {t('adsTxt.recordItem.sellersCount', language, {
+                  count: sellerInfo.metadata.seller_count,
+                })}
+                {sellerInfo.metadata.version &&
+                  ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
               </Text>
             )}
           </Flex>
@@ -282,25 +312,30 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 {/* Display warning if record has one */}
                 {(record as ParsedAdsTxtRecord).has_warning && (
                   <>
-                    <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
-                      <div className="warning-text-container">
+                    <Flex
+                      gap="0.5rem"
+                      alignItems="center"
+                      marginTop="0.5rem"
+                      style={{ position: 'relative' }}
+                    >
+                      <div className="warning-text-container" style={{ position: 'relative' }}>
                         {(() => {
                           const parsedRecord = record as ParsedAdsTxtRecord;
-                          
+
                           // Check for new validation_key format first
                           if (parsedRecord.validation_key) {
                             // Use new validation_key and severity format
                             const params = parsedRecord.warning_params || {};
-                            
+
                             // Add standard parameters that might be needed
                             if (!params.domain && record.domain) {
                               params.domain = record.domain;
                             }
-                            
+
                             if (!params.account_id && record.account_id) {
                               params.account_id = record.account_id;
                             }
-                            
+
                             // Convert the validation_key to warningId format
                             // 1. Replace dots with dashes
                             // 2. Convert camelCase to kebab-case (e.g. directAccountId -> direct-account-id)
@@ -308,16 +343,16 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                               .replace(/\./g, '-')
                               .replace(/([a-z])([A-Z])/g, '$1-$2')
                               .toLowerCase();
-                            
+
                             return (
-                              <WarningPopover 
-                                warningId={warningId} 
+                              <WarningPopover
+                                warningId={warningId}
                                 params={params}
-                                severity={parsedRecord.severity} 
+                                severity={parsedRecord.severity}
                               />
                             );
                           }
-                          
+
                           // Fall back to legacy format
                           const warningMessage = parsedRecord.warning;
                           if (!warningMessage) return '';
@@ -341,8 +376,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
                             // Get the warning type to map to a warning ID
                             let warningId = '';
-                            if (warningMessage.startsWith('errors:adsTxtValidation.') ||
-                                warningMessage.startsWith('errors.adsTxtValidation.')) {
+                            if (
+                              warningMessage.startsWith('errors:adsTxtValidation.') ||
+                              warningMessage.startsWith('errors.adsTxtValidation.')
+                            ) {
                               // Map specific error types to warning IDs based on warnings.ts
                               const errorType = warningMessage
                                 .replace('errors:adsTxtValidation.', '')
@@ -399,30 +436,36 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 <Text color="red" fontSize="0.875rem">
                   {(() => {
                     const parsedRecord = record as ParsedAdsTxtRecord;
-                    
+
                     // Check for new validation_key format first
                     if (parsedRecord.validation_key) {
                       const params = parsedRecord.warning_params || {};
-                      
+
                       // Add standard parameters that might be needed
                       if (!params.domain && record.domain) {
                         params.domain = record.domain;
                       }
-                      
+
                       if (!params.account_id && record.account_id) {
                         params.account_id = record.account_id;
                       }
-                      
+
                       // Get the translated error message directly using validation_key
-                      return t(`errors.adsTxtValidation.${parsedRecord.validation_key}`, language, params);
+                      return t(
+                        `errors.adsTxtValidation.${parsedRecord.validation_key}`,
+                        language,
+                        params
+                      );
                     }
-                    
+
                     // Fall back to legacy error format
                     const errorMessage = parsedRecord.error;
                     if (!errorMessage) return '';
 
-                    if (errorMessage.startsWith('errors:adsTxtValidation.') || 
-                        errorMessage.startsWith('errors.adsTxtValidation.')) {
+                    if (
+                      errorMessage.startsWith('errors:adsTxtValidation.') ||
+                      errorMessage.startsWith('errors.adsTxtValidation.')
+                    ) {
                       // Handle specific error messages
                       const errType = errorMessage
                         .replace('errors:adsTxtValidation.', '')

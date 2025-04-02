@@ -14,7 +14,11 @@ interface WarningPopoverProps {
   severity?: Severity; // Add severity prop
 }
 
-const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, severity = 'warning' }) => {
+const WarningPopover: React.FC<WarningPopoverProps> = ({
+  warningId,
+  params,
+  severity = 'warning',
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { language } = useApp();
@@ -53,7 +57,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
     // Don't close immediately, add a delay
     const timer = setTimeout(() => {
       setIsOpen(false);
-    }, 500); // 500ミリ秒の遅延に増加（ユーザーが読みやすくするため）
+    }, 800);
     setCloseTimer(timer);
   };
 
@@ -81,7 +85,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
       fontWeight: '600',
       lineHeight: '1.5',
       border: 'none',
-      cursor: 'default', // ポインタカーソルからデフォルトに変更
+      cursor: 'default',
       borderRadius: '16px',
       textDecoration: 'none',
       textAlign: 'center' as const, // TypeScript with CSSProperties requires this cast
@@ -90,9 +94,8 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
         ? '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
         : '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.2s ease',
-      color: '#ffffff',
-      textShadow: '0 1px 1px rgba(0,0,0,0.2)',
-      userSelect: 'none', // テキストの選択を防止
+      userSelect: 'none',
+      minWidth: '120px',
     };
 
     // Priority to passed severity, fall back to warningInfo.level
@@ -104,21 +107,28 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
           ...baseStyles,
           backgroundColor: '#e53935',
           border: '1px solid #d32f2f',
+          color: '#ffffff', // White text for improved visibility
+          textShadow: '0 1px 1px rgba(0,0,0,0.2)',
         } as CSSProperties;
       case 'warning':
         return {
           ...baseStyles,
           backgroundColor: '#ff9800',
           border: '1px solid #f57c00',
+          color: '#000000', // Black text for improved visibility
         } as CSSProperties;
       case 'info':
         return {
           ...baseStyles,
           backgroundColor: '#03a9f4',
           border: '1px solid #0288d1',
+          color: '#000000', // Black text for improved visibility
         } as CSSProperties;
       default:
-        return baseStyles;
+        return {
+          ...baseStyles,
+          color: '#000000', // Black text for improved visibility
+        };
     }
   };
 
@@ -129,11 +139,16 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
       className="warning-popover-container"
       onMouseEnter={handleTooltipMouseEnter}
       onMouseLeave={handleTooltipMouseLeave}
+      style={{ position: 'relative', zIndex: isOpen ? 9999 : 500 }}
     >
       <span
-        style={buttonStyles}
+        style={{
+          ...buttonStyles,
+          position: 'relative',
+          zIndex: isOpen ? 9999 : 500,
+        }}
         role="button"
-        tabIndex={-1} // フォーカス可能にしない
+        tabIndex={-1} // Disable tab focus
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         aria-expanded={isOpen}
@@ -147,6 +162,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({ warningId, params, seve
           role="tooltip"
           onMouseEnter={handleTooltipMouseEnter}
           onMouseLeave={handleTooltipMouseLeave}
+          style={{ zIndex: 9999 }}
         >
           <div className="warning-popover-content">
             <h3>{title}</h3>
@@ -186,20 +202,20 @@ function getWarningInfoForId(id: string): WarningInfo | null {
   if (warningInfos[id]) {
     return warningInfos[id];
   }
-  
+
   // For debugging
   console.warn(`Warning ID not found: ${id}. Attempting fallback lookup.`);
-  
+
   // Try to find a close match (ignoring hyphens/casing differences)
   const normalizedId = id.toLowerCase().replace(/-/g, '');
-  
+
   for (const key in warningInfos) {
     if (key.toLowerCase().replace(/-/g, '') === normalizedId) {
       console.log(`Found fallback match: ${key} for ID: ${id}`);
       return warningInfos[key];
     }
   }
-  
+
   return null;
 }
 
