@@ -45,14 +45,15 @@ export const HelpPage: React.FC = () => {
     // Scroll to the specific warning section if provided
     if (warningId && !isLoading) {
       setTimeout(() => {
-        const element = document.getElementById(warningId);
+        const warningElement = document.getElementById(warningId);
+        const element = warningElement?.parentElement?.nextElementSibling;
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           // Add a highlight class temporarily
           element.classList.add('highlight-section');
           setTimeout(() => {
             element.classList.remove('highlight-section');
-          }, 3000);
+          }, 5000);
         }
       }, 100); // Small delay to ensure the DOM is ready
     }
