@@ -223,4 +223,81 @@ export class PostgresDatabase implements IDatabaseAdapter {
   public getRawPool(): Pool {
     return this.pool;
   }
+
+  /**
+   * Query for a specific seller in the sellers_json_cache table using JSONB operators
+   * This is a PostgreSQL-specific optimization that leverages the JSONB type
+   * @param domain The domain to search in
+   * @param sellerId The seller ID to search for
+   * @returns The matching seller data if found
+   */
+  public async queryJsonBSellerById(domain: string, sellerId: string): Promise<any> {
+    // First check if the domain exists and has valid data
+    const domainCheckSql = `
+      SELECT id, domain, status, status_code, error_message, content, created_at, updated_at 
+      FROM sellers_json_cache 
+      WHERE domain = $1 AND status = 'success'
+    `;
+    
+    const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+    
+    if (domainResult.rows.length === 0) {
+      return null; // Domain not found or not successful status
+    }
+    
+    const cacheRecord = domainResult.rows[0];
+    
+    // Now use JSONB operators to extract only the matching seller directly from the database
+    // This is much more efficient than loading all sellers and filtering in code
+    const sellerSql = `
+      SELECT 
+        sj.id,
+        sj.domain,
+        sj.status, 
+        sj.status_code,
+        sj.error_message,
+        sj.created_at,
+        sj.updated_at,
+        jsonb_extract_path(sj.content, 'version') as version,
+        jsonb_extract_path(sj.content, 'contact_email') as contact_email,
+        jsonb_extract_path(sj.content, 'contact_address') as contact_address,
+        jsonb_extract_path(sj.content, 'identifiers') as identifiers,
+        (
+          SELECT jsonb_agg(s) 
+          FROM jsonb_array_elements(sj.content->'sellers') s 
+          WHERE s->>'seller_id' = $2
+        ) as matching_sellers,
+        (
+          SELECT COUNT(*) 
+          FROM jsonb_array_elements(sj.content->'sellers')
+        ) as seller_count
+      FROM sellers_json_cache sj
+      WHERE sj.id = $1
+    `;
+    
+    const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, sellerId]);
+    
+    if (sellerResult.rows.length === 0) {
+      return null;
+    }
+    
+    const result = sellerResult.rows[0];
+    
+    // Return formatted result with metadata and seller information
+    return {
+      cacheRecord,
+      metadata: {
+        version: result.version,
+        contact_email: result.contact_email,
+        contact_address: result.contact_address,
+        identifiers: result.identifiers,
+        seller_count: parseInt(result.seller_count || '0', 10)
+      },
+      // Extract the first (and should be only) matching seller if any
+      seller: result.matching_sellers && result.matching_sellers.length > 0 
+        ? result.matching_sellers[0] 
+        : null,
+      found: result.matching_sellers && result.matching_sellers.length > 0
+    };
+  }
 }

@@ -282,6 +282,31 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         
         // For "success" status, try to find the seller in cached data
         if (cachedData.status === 'success') {
+          // Try to use the optimized PostgreSQL JSONB query first
+          try {
+            const optimizedResult = await SellersJsonCacheModel.getSellerByIdOptimized(domain, normalizedSellerId);
+            
+            // If optimized query was successful, use its results
+            if (optimizedResult) {
+              logger.info(`Using optimized JSONB query for ${domain} (cached at ${cachedData.updated_at})`);
+              return res.status(200).json({
+                success: true,
+                data: {
+                  domain,
+                  seller: optimizedResult.seller,
+                  found: optimizedResult.found,
+                  message: optimizedResult.found ? null : `Seller ID ${normalizedSellerId} not found in ${domain}`,
+                  metadata: optimizedResult.metadata,
+                  cache: cacheInfo
+                }
+              });
+            }
+          } catch (optimizationError) {
+            logger.warn(`Optimized JSONB query failed, falling back to standard method: ${optimizationError}`);
+            // Fall back to standard method
+          }
+          
+          // Fall back to regular JSON parsing if optimization is not available
           const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
           
           if (parsedData && Array.isArray(parsedData.sellers)) {
