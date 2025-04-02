@@ -267,10 +267,9 @@ export const sellersJsonApi = {
   },
 
   // Get specific seller by seller_id from a domain's sellers.json
-  async getSellerById(domain: string, sellerId: string): Promise<ApiResponse<any>> {
-    const response = await api.get<ApiResponse<any>>(
-      `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}`
-    );
+  async getSellerById(domain: string, sellerId: string, forceRefresh = false): Promise<ApiResponse<any>> {
+    const url = `/sellersJson/${encodeURIComponent(domain)}/seller/${encodeURIComponent(sellerId)}${forceRefresh ? '?force=true' : ''}`;
+    const response = await api.get<ApiResponse<any>>(url);
     return response.data;
   },
 };

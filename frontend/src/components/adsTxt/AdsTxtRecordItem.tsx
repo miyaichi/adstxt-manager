@@ -113,6 +113,9 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       setError(null);
 
       const domain = getSellersDomain(record.account_type);
+      
+      // Check if we should force a refresh from URL params
+      const forceRefresh = new URLSearchParams(window.location.search).get('refresh') === 'true';
 
       // Set a timeout 15 seconds for the API request
       const timeout = 15000;
@@ -120,10 +123,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {
-        console.log(`Fetching seller information for ${record.account_id} from domain ${domain}`);
+        console.log(`Fetching seller information for ${record.account_id} from domain ${domain}${forceRefresh ? ' (force refresh)' : ''}`);
 
         // Using AbortController to set a timeout for the API request
-        const response = await api.sellersJson.getSellerById(domain, record.account_id);
+        const response = await api.sellersJson.getSellerById(domain, record.account_id, forceRefresh);
         clearTimeout(timeoutId); // Clear the timeout if the request is successful
 
         if (response.success && response.data) {
@@ -223,8 +226,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     const domain = getSellersDomain(record.account_type);
     const cacheKey = `${domain}-${record.account_id}`;
 
-    // Check module-level cache
-    if (globalSellerInfoCache[cacheKey]) {
+    // Force a fresh fetch if an error has been cached for this key
+    const forceRefresh = new URLSearchParams(window.location.search).get('refresh') === 'true';
+    
+    // Check module-level cache (skip if forceRefresh)
+    if (!forceRefresh && globalSellerInfoCache[cacheKey]) {
       console.log(`Using module-level cached seller info for ${cacheKey}`);
       setSellerInfo(globalSellerInfoCache[cacheKey]);
 
@@ -235,8 +241,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       return; // Explicitly return to stop further processing
     }
 
-    // Check localStorage cache
-    if (loadFromLocalStorage(cacheKey)) {
+    // Check localStorage cache (skip if forceRefresh)
+    if (!forceRefresh && loadFromLocalStorage(cacheKey)) {
       const cachedData = loadFromLocalStorage(cacheKey);
       const cachedError = loadFromLocalStorage(`${cacheKey}_error`);
 
@@ -254,8 +260,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       return; // Explicitly return to stop further processing
     }
 
-    // Check window-level cache (for backward compatibility)
-    if (window.__SELLER_INFO_CACHE__ && window.__SELLER_INFO_CACHE__[cacheKey]) {
+    // Check window-level cache (skip if forceRefresh)
+    if (!forceRefresh && window.__SELLER_INFO_CACHE__ && window.__SELLER_INFO_CACHE__[cacheKey]) {
       console.log(`Using window-level cached seller info for ${cacheKey}`);
       setSellerInfo(window.__SELLER_INFO_CACHE__[cacheKey]);
 
@@ -268,7 +274,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     }
 
     // Fetch from API
-    console.log(`No cache found for ${cacheKey}, fetching from API`);
+    console.log(`${forceRefresh ? 'Force refreshing' : 'No cache found for'} ${cacheKey}, fetching from API`);
     let isMounted = true; // Track whether the component is mounted
 
     fetchSellerInfo()
@@ -376,6 +382,17 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         {!loading && error && (
           <Flex gap="1rem" wrap="wrap" marginTop="0.5rem">
             <Text color="var(--amplify-colors-font-warning)">{error}</Text>
+            <Button 
+              size="small"
+              onClick={() => {
+                // Get current URL and add refresh=true parameter or set it to true if it exists
+                const url = new URL(window.location.href);
+                url.searchParams.set('refresh', 'true');
+                window.location.href = url.toString();
+              }}
+            >
+              {t('common.refresh', language) || 'リフレッシュ'}
+            </Button>
           </Flex>
         )}
 

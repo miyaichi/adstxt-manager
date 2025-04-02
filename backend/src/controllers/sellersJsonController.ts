@@ -41,9 +41,11 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
   const normalizedSellerId = String(sellerId).trim();
 
   try {
-    // First, check the cache
+    // First, check the cache, but skip if force=true is in query params
+    const forceRefresh = req.query.force === 'true';
     const cacheKey = `${domain}:${normalizedSellerId}`;
-    if (sellerIdCache.has(cacheKey)) {
+    
+    if (!forceRefresh && sellerIdCache.has(cacheKey)) {
       logger.info(`Using cached result for seller_id: ${normalizedSellerId} from ${domain}`);
       return res.status(200).json({
         success: true,
