@@ -126,6 +126,9 @@ function createCacheRecordFromResponse(domain: string, response: any): {
     cacheRecord.error_message = `HTTP error ${response.status}`;
   }
   
+  // Log the created cache record
+  logger.debug(`Created cache record for ${domain}: status=${cacheRecord.status}, code=${cacheRecord.status_code}`);
+  
   return cacheRecord;
 }
 
@@ -137,21 +140,27 @@ function createCacheRecordFromResponse(domain: string, response: any): {
 async function handleSellersJsonError(domain: string, error: any): Promise<never> {
   logger.error(`Error fetching sellers.json for domain ${domain}:`, error);
   
-  // Save error to cache
+  // Check if this is a 404 error, which should be treated as "not_found"
+  const statusCode = error.response?.status || null;
+  const is404 = statusCode === 404;
   const errorMessage = error.message || 'Unknown error';
+  
+  // Save to cache with appropriate status
   await SellersJsonCacheModel.saveCache({
     domain,
     content: null,
-    status: 'error',
-    status_code: error.response?.status || null,
-    error_message: errorMessage,
+    // Use "not_found" status for 404 errors
+    status: is404 ? 'not_found' : 'error',
+    status_code: statusCode,
+    error_message: is404 ? 'sellers.json file not found' : errorMessage,
   });
   
+  // For 404 errors, return a more specific message
   throw new ApiError(
-    500,
-    `Error fetching sellers.json: ${errorMessage}`,
-    'errors:sellersFetchError',
-    { message: errorMessage }
+    is404 ? 404 : 500,
+    is404 ? `sellers.json not found for ${domain}` : `Error fetching sellers.json: ${errorMessage}`,
+    is404 ? 'errors:sellersJsonNotFound' : 'errors:sellersFetchError',
+    { message: is404 ? 'File not found' : errorMessage }
   );
 }
 
@@ -248,34 +257,69 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
     const cacheInfo = formatCacheInfo(cachedData);
     
-    // If we have a valid cached record, try to use it
-    if (cachedData && cachedData.status === 'success') {
+    // Check if we can use cached data
+    const forceRefresh = req.query.force === 'true';
+    const cacheExpired = cachedData ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at) : true;
+    
+    // If we have a valid cached record that isn't expired, try to use it
+    if (cachedData && !forceRefresh && !cacheExpired) {
       try {
-        const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
-        
-        if (parsedData && Array.isArray(parsedData.sellers)) {
-          // Find seller in cached data
-          const result = findSellerInData(parsedData, normalizedSellerId);
-          
-          // Extract metadata from content
-          const metadata = extractMetadata(parsedData);
-          
+        // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
+        if (cachedData.status === 'not_found' || (cachedData.status === 'error' && cachedData.status_code === 404)) {
+          logger.info(`Using cached "${cachedData.status}" result for ${domain} (cached at ${cachedData.updated_at})`);
           return res.status(200).json({
             success: true,
             data: {
               domain,
-              seller: result.seller || null,
-              found: result.seller ? true : false,
-              message: result.message,
-              metadata,
+              seller: null,
+              found: false,
+              message: `sellers.json file not found for ${domain}`,
+              metadata: { seller_count: 0 },
               cache: cacheInfo
             }
           });
+        }
+        
+        // For "success" status, try to find the seller in cached data
+        if (cachedData.status === 'success') {
+          const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
+          
+          if (parsedData && Array.isArray(parsedData.sellers)) {
+            // Find seller in cached data
+            const result = findSellerInData(parsedData, normalizedSellerId);
+            
+            // Extract metadata from content
+            const metadata = extractMetadata(parsedData);
+            
+            logger.info(`Using cached sellers.json for ${domain} (cached at ${cachedData.updated_at})`);
+            return res.status(200).json({
+              success: true,
+              data: {
+                domain,
+                seller: result.seller || null,
+                found: result.seller ? true : false,
+                message: result.message,
+                metadata,
+                cache: cacheInfo
+              }
+            });
+          }
         }
       } catch (error: any) {
         logger.error(`Error parsing cached sellers.json for ${domain}: ${error.message}`);
         // If there's an error parsing the cached data, fall back to API
       }
+    }
+    
+    // Log why we're not using cache
+    if (forceRefresh) {
+      logger.info(`Force refresh requested for ${domain}`);
+    } else if (cacheExpired) {
+      logger.info(`Cache expired for ${domain}, last updated at ${cachedData?.updated_at}`);
+    } else if (!cachedData) {
+      logger.info(`No cache found for ${domain}`);
+    } else {
+      logger.info(`Cache status for ${domain} is ${cachedData.status}, fetching fresh data`);
     }
     
     logger.info(`No valid sellers data in cache for ${domain}, fetching from API`);
@@ -424,18 +468,49 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
     const metadata = extractMetadata(parsedContent);
     const cacheInfo = formatCacheInfo(cachedData);
 
-    // If we have valid cached data
-    if (cachedData && cachedData.status === 'success') {
-      logger.info(`Serving metadata for domain: ${domain} from cache`);
+    // Check if we can use cached data
+    const forceRefresh = req.query.force === 'true';
+    const cacheExpired = cachedData ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at) : true;
+    
+    // If we have valid cached data that isn't expired
+    if (cachedData && !forceRefresh && !cacheExpired) {
+      // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
+      if (cachedData.status === 'not_found' || (cachedData.status === 'error' && cachedData.status_code === 404)) {
+        logger.info(`Using cached "${cachedData.status}" result for ${domain} metadata (cached at ${cachedData.updated_at})`);
+        return res.status(200).json({
+          success: true,
+          data: {
+            domain,
+            metadata: { seller_count: 0 },
+            cache: cacheInfo
+          }
+        });
+      }
       
-      return res.status(200).json({
-        success: true,
-        data: {
-          domain,
-          metadata,
-          cache: cacheInfo
-        }
-      });
+      // For "success" status, return metadata from cache
+      if (cachedData.status === 'success') {
+        logger.info(`Serving metadata for domain: ${domain} from cache (cached at ${cachedData.updated_at})`);
+        
+        return res.status(200).json({
+          success: true,
+          data: {
+            domain,
+            metadata,
+            cache: cacheInfo
+          }
+        });
+      }
+    }
+    
+    // Log why we're not using cache
+    if (forceRefresh) {
+      logger.info(`Force refresh requested for ${domain} metadata`);
+    } else if (cacheExpired) {
+      logger.info(`Cache expired for ${domain} metadata, last updated at ${cachedData?.updated_at}`);
+    } else if (!cachedData) {
+      logger.info(`No cache found for ${domain} metadata`);
+    } else {
+      logger.info(`Cache status for ${domain} metadata is ${cachedData.status}, fetching fresh data`);
     }
     
     // If we don't have valid cache or it's expired, fetch fresh data

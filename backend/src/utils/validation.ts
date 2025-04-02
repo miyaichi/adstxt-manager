@@ -710,7 +710,7 @@ function createInitialValidationResult(): CrossCheckValidationResult {
     accountIdInSellersJson: false,
     domainMatchesSellerJsonEntry: null,
     directEntryHasPublisherType: null,
-    sellerIdIsUnique: false,
+    sellerIdIsUnique: null, // Changed from false to null to indicate unknown state
     resellerAccountIdInSellersJson: null,
     resellerEntryHasIntermediaryType: null,
     resellerSellerIdIsUnique: null,
@@ -820,12 +820,17 @@ function validateDirectRelationship(
 
     // Case 15: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
-      validationResult.sellerIdIsUnique = sellerIdCounts.get(normalizedAccountId)! === 1;
+      const count = sellerIdCounts.get(normalizedAccountId)!;
+      validationResult.sellerIdIsUnique = (count === 1);
+      console.log(`Seller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.sellerIdIsUnique}`);
     } else {
-      validationResult.sellerIdIsUnique = false;
+      // This should not happen if we found a matching seller
+      console.warn(`Seller ID ${normalizedAccountId} not found in counts map`);
+      validationResult.sellerIdIsUnique = null;
     }
   } else {
-    validationResult.sellerIdIsUnique = false;
+    // If no matching seller found, we can't determine uniqueness
+    validationResult.sellerIdIsUnique = null;
   }
 }
 
@@ -853,13 +858,17 @@ function validateResellerRelationship(
 
     // Case 20: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
-      validationResult.resellerSellerIdIsUnique = sellerIdCounts.get(normalizedAccountId)! === 1;
+      const count = sellerIdCounts.get(normalizedAccountId)!;
+      validationResult.resellerSellerIdIsUnique = (count === 1);
+      console.log(`Reseller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.resellerSellerIdIsUnique}`);
     } else {
-      validationResult.resellerSellerIdIsUnique = false;
+      // This should not happen if we found a matching seller
+      console.warn(`Reseller ID ${normalizedAccountId} not found in counts map`);
+      validationResult.resellerSellerIdIsUnique = null;
     }
   } else {
     validationResult.resellerEntryHasIntermediaryType = null;
-    validationResult.resellerSellerIdIsUnique = false;
+    validationResult.resellerSellerIdIsUnique = null; // Changed from false to null
   }
 }
 
@@ -887,7 +896,7 @@ function generateWarnings(
   // Case 11: Missing sellers.json
   if (!validationResult.hasSellerJson) {
     warnings.push(createWarning(VALIDATION_KEYS.NO_SELLERS_JSON, { domain: record.domain }));
-    return warnings; // Return early if no sellers.json
+    return warnings; // Return early if no sellers.json - don't add other warnings
   }
 
   // Case 12/17 Account ID not found
@@ -934,14 +943,18 @@ function generateWarnings(
   }
 
   // Case 5/8: Seller ID not unique
-  if (
-    (record.relationship === 'DIRECT' &&
-      validationResult.accountIdInSellersJson &&
-      validationResult.sellerIdIsUnique === false) ||
-    (record.relationship === 'RESELLER' &&
-      validationResult.resellerAccountIdInSellersJson &&
-      validationResult.resellerSellerIdIsUnique === false)
-  ) {
+  const hasDuplicateDirectSellerId = 
+    record.relationship === 'DIRECT' &&
+    validationResult.accountIdInSellersJson &&
+    validationResult.sellerIdIsUnique === false;
+    
+  const hasDuplicateResellerSellerId = 
+    record.relationship === 'RESELLER' &&
+    validationResult.resellerAccountIdInSellersJson &&
+    validationResult.resellerSellerIdIsUnique === false;
+    
+  if (hasDuplicateDirectSellerId || hasDuplicateResellerSellerId) {
+    console.log(`Adding SELLER_ID_NOT_UNIQUE warning for ${record.account_id} in ${record.domain}`);
     warnings.push(
       createWarning(VALIDATION_KEYS.SELLER_ID_NOT_UNIQUE, {
         domain: record.domain,

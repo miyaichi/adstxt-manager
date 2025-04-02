@@ -81,6 +81,16 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       console.log('Skipping seller.json lookup for invalid record');
       return;
     }
+    
+    // Skip seller.json lookup if record already has a noSellersJson warning
+    const parsedRecord = record as ParsedAdsTxtRecord;
+    if (isParsedRecord && 
+        (parsedRecord.validation_key === 'noSellersJson' || 
+         parsedRecord.warning?.includes('noSellersJson') ||
+         parsedRecord.warning?.includes('No sellers.json file found'))) {
+      console.log('Skipping seller.json lookup for record with noSellersJson warning');
+      return;
+    }
 
     const requestId = Math.random().toString(36).substring(2, 15);
     const domain = getSellersDomain(record.account_type);
@@ -256,8 +266,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           </Flex>
         )}
 
-        {/* Error Message */}
-        {!loading && error && (
+        {/* Error Message - but hide if it's about sellers.json not found as it's shown in popover */}
+        {!loading && error && !error.includes('sellers.json') && (
           <Flex gap="1rem" wrap="wrap" marginTop="0.5rem">
             <Text color="var(--amplify-colors-font-warning)">{error}</Text>
           </Flex>
