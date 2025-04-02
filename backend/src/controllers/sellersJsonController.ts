@@ -50,17 +50,14 @@ function findSellerInData(data: any, normalizedSellerId: string) {
   if (targetSeller) {
     logger.info(`Found seller with ID ${normalizedSellerId}`);
     return {
-      contact_email: data.contact_email,
-      version: data.version,
-      identifiers: data.identifiers || [],
       seller: targetSeller,
+      message: null
     };
   } else {
     logger.warn(`Seller ID ${normalizedSellerId} not found`);
     return {
-      found: false,
-      message: 'Seller ID not found in sellers.json',
-      sellerId: normalizedSellerId,
+      seller: null,
+      message: `Seller ID ${normalizedSellerId} not found in sellers.json`
     };
   }
 }
@@ -159,6 +156,69 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
 }
 
 /**
+ * Extract metadata from sellers.json content according to IAB spec
+ * @param content The sellers.json content
+ * @returns The extracted metadata and statistics
+ */
+function extractMetadata(content: SellersJsonContent | null): {
+  contact_email?: string;
+  contact_address?: string;
+  version?: string;
+  identifiers?: any[];
+  seller_count: number;
+  ext?: any;
+} {
+  if (!content) {
+    return { seller_count: 0 };
+  }
+
+  const sellers = content.sellers || [];
+  
+  return {
+    // Standard IAB sellers.json fields
+    contact_email: content.contact_email,
+    contact_address: content.contact_address,
+    version: content.version,
+    identifiers: content.identifiers,
+    ext: content.ext,
+    // Additional statistics
+    seller_count: sellers.length
+  };
+}
+
+/**
+ * Format cache information for API response
+ * @param cache The cache data
+ * @returns Formatted cache info
+ */
+function formatCacheInfo(cache: any) {
+  if (!cache) {
+    return {
+      is_cached: false
+    };
+  }
+
+  return {
+    is_cached: true,
+    last_updated: cache.updated_at,
+    status: cache.status,
+    expires_at: getExpiryTime(cache.updated_at)
+  };
+}
+
+/**
+ * Calculate when a cache entry will expire
+ * @param updatedAt Last update timestamp
+ * @returns Expiry timestamp
+ */
+function getExpiryTime(updatedAt: string): string {
+  const updatedDate = new Date(updatedAt);
+  const expiryHours = 24; // Same as in isCacheExpired
+  const expiryDate = new Date(updatedDate.getTime() + expiryHours * 60 * 60 * 1000);
+  return expiryDate.toISOString();
+}
+
+/**
  * Get a specific seller from a domain's sellers.json by seller_id
  * @route GET /api/sellersjson/:domain/seller/:sellerId
  */
@@ -186,6 +246,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     // Check the database cache for this domain
     logger.info(`Checking database cache for ${domain}`);
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
+    const cacheInfo = formatCacheInfo(cachedData);
     
     // If we have a valid cached record, try to use it
     if (cachedData && cachedData.status === 'success') {
@@ -195,12 +256,20 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         if (parsedData && Array.isArray(parsedData.sellers)) {
           // Find seller in cached data
           const result = findSellerInData(parsedData, normalizedSellerId);
-          // Mark result as from cache
-          const resultWithCache = { ...result, from_db_cache: true };
+          
+          // Extract metadata from content
+          const metadata = extractMetadata(parsedData);
           
           return res.status(200).json({
             success: true,
-            data: resultWithCache,
+            data: {
+              domain,
+              seller: result.seller || null,
+              found: result.seller ? true : false,
+              message: result.message,
+              metadata,
+              cache: cacheInfo
+            }
           });
         }
       } catch (error: any) {
@@ -223,23 +292,32 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       },
     });
     
+    // Create cache record and save it
+    const cacheRecord = createCacheRecordFromResponse(domain, response);
+    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
+    const freshCacheInfo = formatCacheInfo(savedCache);
+    
     // Process the response
     logger.info(`Successfully fetched sellers.json from ${domain}`);
     const sellersJson = response.data;
     const result = findSellerInData(sellersJson, normalizedSellerId);
     
+    // Extract metadata from content
+    const metadata = extractMetadata(sellersJson);
+    
     return res.status(200).json({
       success: true,
-      data: result,
+      data: {
+        domain,
+        seller: result.seller || null,
+        found: result.seller ? true : false,
+        message: result.message,
+        metadata,
+        cache: freshCacheInfo
+      }
     });
   } catch (error: any) {
-    logger.error(`Error fetching seller ${sellerId} from ${domain}:`, error);
-    throw new ApiError(
-      500,
-      `Error fetching seller information: ${error.message}`,
-      'errors:sellersFetchError',
-      { message: error.message }
-    );
+    return handleSellersJsonError(domain, error);
   }
 });
 
@@ -321,6 +399,86 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
         updated_at: savedCache.updated_at,
       },
     });
+  } catch (error: any) {
+    return handleSellersJsonError(domain, error);
+  }
+});
+
+/**
+ * Get metadata from a domain's sellers.json without the full sellers array
+ * @route GET /api/sellersjson/:domain/metadata
+ */
+export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Response) => {
+  const { domain } = req.params;
+
+  if (!domain) {
+    throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
+  }
+
+  try {
+    // Check if we have a cached version
+    const cachedData = await SellersJsonCacheModel.getByDomain(domain);
+    
+    // Parse the content and extract metadata
+    const parsedContent = SellersJsonCacheModel.getParsedContent(cachedData);
+    const metadata = extractMetadata(parsedContent);
+    const cacheInfo = formatCacheInfo(cachedData);
+
+    // If we have valid cached data
+    if (cachedData && cachedData.status === 'success') {
+      logger.info(`Serving metadata for domain: ${domain} from cache`);
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          domain,
+          metadata,
+          cache: cacheInfo
+        }
+      });
+    }
+    
+    // If we don't have valid cache or it's expired, fetch fresh data
+    logger.info(`Fetching fresh sellers.json metadata for: ${domain}`);
+    
+    // Get URL for sellers.json
+    const url = getSellersJsonUrl(domain);
+    
+    // Fetch the sellers.json
+    let response;
+    try {
+      logger.info(`Fetching from URL: ${url}`);
+      response = await axios.get(url, {
+        timeout: 30000,
+        validateStatus: () => true,
+        maxContentLength: 200 * 1024 * 1024,
+        decompress: true,
+      });
+    } catch (error: any) {
+      return handleSellersJsonError(domain, error);
+    }
+    
+    // Create cache record from response
+    const cacheRecord = createCacheRecordFromResponse(domain, response);
+    
+    // Save to cache
+    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
+    
+    // Get the parsed content and extract metadata
+    const freshContent = SellersJsonCacheModel.getParsedContent(savedCache);
+    const freshMetadata = extractMetadata(freshContent);
+    const freshCacheInfo = formatCacheInfo(savedCache);
+    
+    // Return response
+    return res.status(200).json({
+      success: true,
+      data: {
+        domain,
+        metadata: freshMetadata,
+        cache: freshCacheInfo
+      }
+    });
+    
   } catch (error: any) {
     return handleSellersJsonError(domain, error);
   }

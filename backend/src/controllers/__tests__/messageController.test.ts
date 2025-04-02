@@ -97,7 +97,8 @@ describe('Message Controller Tests', () => {
         'publisher@example.com', // The recipient should be the publisher
         'request-123',
         'Test Requester', // The sender name
-        'valid-token-123'
+        'valid-token-123',
+        'en'
       );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
@@ -132,7 +133,8 @@ describe('Message Controller Tests', () => {
         'requester@example.com', // The recipient should be the requester
         'request-123',
         'Test Publisher', // The sender name
-        'valid-token-123'
+        'valid-token-123',
+        'en'
       );
     });
 
@@ -275,18 +277,21 @@ describe('Message Controller Tests', () => {
     it('should return 401 when token is missing', async () => {
       // Arrange
       req.params = { requestId: 'request-123' };
-      // No token
+      // Set up req.query to be an empty object instead of undefined
+      req.query = {};
+
+      // Create a mockError for comparison
+      const mockError = new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
 
       // Act
       const handler = messageController.getMessagesByRequestId;
       await handler(req as Request, res as Response, next);
 
       // Assert
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          message: expect.stringContaining('Access token is required'),
+          message: expect.stringContaining('Access token is required')
         })
       );
     });

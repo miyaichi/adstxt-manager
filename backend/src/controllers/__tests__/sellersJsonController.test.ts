@@ -68,6 +68,18 @@ describe('SellersJson Controller Tests', () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    // Mock the getParsedContent method 
+    (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest.fn().mockImplementation((cache) => {
+      if (cache && cache.content && typeof cache.content === 'string') {
+        try {
+          return JSON.parse(cache.content);
+        } catch (e) {
+          return null;
+        }
+      }
+      return null;
+    });
   });
 
   describe('getSellersJson', () => {
@@ -78,6 +90,9 @@ describe('SellersJson Controller Tests', () => {
       // Mock cache response (not expired)
       (SellersJsonCacheModel.getByDomain as jest.Mock).mockResolvedValue(mockCache);
       (SellersJsonCacheModel.isCacheExpired as jest.Mock).mockReturnValue(false);
+      
+      // Mock getParsedContent to return the parsed content
+      (SellersJsonCacheModel.getParsedContent as jest.Mock) = jest.fn().mockReturnValue(mockOpenXSellersJson);
 
       // Act
       const handler = sellersJsonController.getSellersJson;
@@ -92,7 +107,7 @@ describe('SellersJson Controller Tests', () => {
         success: true,
         data: expect.objectContaining({
           domain: 'openx.com',
-          content: JSON.parse(mockCache.content),
+          content: mockOpenXSellersJson,
           cached: true,
         }),
       });
@@ -132,7 +147,7 @@ describe('SellersJson Controller Tests', () => {
         success: true,
         data: expect.objectContaining({
           domain: 'openx.com',
-          content: expect.any(Object),
+          content: mockOpenXSellersJson,
           cached: false,
         }),
       });
@@ -169,7 +184,7 @@ describe('SellersJson Controller Tests', () => {
         success: true,
         data: expect.objectContaining({
           domain: 'openx.com',
-          content: expect.any(Object),
+          content: mockOpenXSellersJson,
           cached: false,
         }),
       });
@@ -199,6 +214,9 @@ describe('SellersJson Controller Tests', () => {
         error_message: 'sellers.json file not found',
       };
       (SellersJsonCacheModel.saveCache as jest.Mock).mockResolvedValue(notFoundCache);
+      
+      // Mock getParsedContent for not found case
+      (SellersJsonCacheModel.getParsedContent as jest.Mock).mockReturnValueOnce(null);
 
       // Act
       const handler = sellersJsonController.getSellersJson;

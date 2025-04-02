@@ -16,14 +16,35 @@ export interface SellersJsonCache extends DatabaseRecord {
 
 export type SellersJsonCacheStatus = 'success' | 'not_found' | 'invalid_format' | 'error';
 
+/**
+ * Interface representing the IAB sellers.json content structure
+ * Based on IAB Tech Lab sellers.json specification v1.0
+ */
 export interface SellersJsonContent {
+  // Required fields
   sellers?: Array<{
-    seller_id?: string;
+    seller_id: string;
     name?: string;
     domain?: string;
-    seller_type?: string;
+    seller_type: 'PUBLISHER' | 'INTERMEDIARY' | 'BOTH' | string;
+    is_confidential?: boolean;
+    comment?: string;
+    ext?: any;
     [key: string]: any;
   }>;
+  version?: string;
+  
+  // Optional fields
+  identifiers?: Array<{
+    name: string;
+    value: string;
+    [key: string]: any;
+  }>;
+  contact_email?: string;
+  contact_address?: string;
+  ext?: any;
+  
+  // Allow for any additional fields
   [key: string]: any;
 }
 

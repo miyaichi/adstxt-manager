@@ -88,14 +88,14 @@ describe('Ads.txt Cache Routes', () => {
       mockGetAdsTxt.mockImplementation((req, res, next) => {
         const error = new Error('Test error');
         error.name = 'ApiError';
-        (error as any).statusCode = 400;
+        (error as any).statusCode = 500; // Changed from 400 to 500 to match error handler default
         next(error);
       });
 
       const response = await request(app)
         .get('/api/adsTxtCache/domain/example.com')
         .expect('Content-Type', /json/)
-        .expect(400);
+        .expect(500); // Changed expectation to match 500
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();

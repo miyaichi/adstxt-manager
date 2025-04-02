@@ -97,6 +97,7 @@ describe('adsTxtCacheController', () => {
       const updatedData: AdsTxtCache = {
         ...cachedData,
         content: 'example.com, 12345, DIRECT, updated',
+        error_message: null,
         updated_at: new Date().toISOString(),
       };
 
@@ -124,6 +125,7 @@ describe('adsTxtCacheController', () => {
           url: updatedData.url,
           status: updatedData.status,
           status_code: updatedData.status_code,
+          error_message: updatedData.error_message,
           created_at: updatedData.created_at,
           updated_at: updatedData.updated_at,
         },
@@ -190,6 +192,21 @@ describe('adsTxtCacheController', () => {
       (axiosError as any).response = { status: 404 };
       mockedAxios.get.mockRejectedValue(axiosError);
 
+      // Mock saveCache to return consistent results matching controller's expectations
+      mockAdsTxtCacheModel.saveCache.mockImplementation(async (data) => {
+        return {
+          id: '1',
+          domain: data.domain,
+          content: data.content,
+          url: data.url,
+          status: 'not_found',
+          status_code: 404,
+          error_message: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      });
+
       // Call the controller
       await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
 
@@ -246,15 +263,17 @@ describe('adsTxtCacheController', () => {
       // Setup request - missing domain
       mockRequest.params = {};
 
-      // Call the controller
-      await getAdsTxt(mockRequest as Request, mockResponse as Response, jest.fn());
+      // Mock the next function to capture the error
+      const mockNext = jest.fn();
 
-      // Verify response
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(jsonMock).toHaveBeenCalledWith({
-        success: false,
-        error: expect.stringContaining('domain'),
-      });
+      // Call the controller
+      await getAdsTxt(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Verify next was called with an error
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        statusCode: 400,
+        message: 'Domain is required'
+      }));
 
       // Verify no model calls
       expect(mockAdsTxtCacheModel.getByDomain).not.toHaveBeenCalled();

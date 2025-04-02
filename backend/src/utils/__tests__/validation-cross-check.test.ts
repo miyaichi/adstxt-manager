@@ -106,13 +106,23 @@ describe('crossCheckAdsTxtRecords Tests', () => {
 
     // Mock AdsTxtCache to return null
     mockGetByDomain.mockResolvedValueOnce(null);
+    
+    // Mock SellersJsonCache to return sellers.json with NO_SELLERS_JSON status 
+    // (this adds has_warning to the result)
+    mockGetByDomain.mockResolvedValueOnce({
+      status: 'error',
+      content: null,
+    });
 
     // Act
     const result = await crossCheckAdsTxtRecords(publisherDomain, records);
 
-    // Assert
-    expect(result).toEqual(records); // Should return original records unchanged
+    // Assert - Don't do exact equality check due to additional warnings from sellers.json check
+    expect(result.length).toEqual(records.length); 
+    expect(result[0].domain).toEqual('google.com');
+    expect(result[0].account_id).toEqual('12345');
     expect(mockGetByDomain).toHaveBeenCalledWith(publisherDomain);
+    expect(mockGetByDomain).toHaveBeenCalledWith('google.com');
   });
 
   // Add more tests for the specific validation cases
