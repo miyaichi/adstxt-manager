@@ -15,11 +15,148 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
-// Map for caching
-const domainSellerDataCache: Map<string, any> = new Map();
+/**
+ * Get the URL for a domain's sellers.json file
+ * @param domain The domain to get the URL for
+ * @returns The URL for the domain's sellers.json file
+ */
+function getSellersJsonUrl(domain: string): string {
+  // Use special URLs for known domains
+  if (domain in SPECIAL_DOMAINS) {
+    const url = SPECIAL_DOMAINS[domain];
+    logger.info(`Using special URL for ${domain}: ${url}`);
+    return url;
+  }
+  
+  // Use standard URL format (default)
+  return `https://${domain}/sellers.json`;
+}
 
-// Cache for seller IDs (caching search results)
-const sellerIdCache: Map<string, any> = new Map();
+/**
+ * Process sellers.json data to find a specific seller
+ * @param data The sellers.json data
+ * @param normalizedSellerId The normalized seller ID to find
+ * @returns The found seller or a not found result
+ */
+function findSellerInData(data: any, normalizedSellerId: string) {
+  const sellers = data.sellers || [];
+  logger.info(`Searching among ${sellers.length} sellers for ID ${normalizedSellerId}`);
+  
+  // Find the target seller
+  const targetSeller = sellers.find(
+    (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
+  );
+  
+  if (targetSeller) {
+    logger.info(`Found seller with ID ${normalizedSellerId}`);
+    return {
+      contact_email: data.contact_email,
+      version: data.version,
+      identifiers: data.identifiers || [],
+      seller: targetSeller,
+    };
+  } else {
+    logger.warn(`Seller ID ${normalizedSellerId} not found`);
+    return {
+      found: false,
+      message: 'Seller ID not found in sellers.json',
+      sellerId: normalizedSellerId,
+    };
+  }
+}
+
+/**
+ * Create cache record from HTTP response
+ * @param domain The domain
+ * @param response The HTTP response 
+ * @returns Cache record object
+ */
+function createCacheRecordFromResponse(domain: string, response: any): {
+  domain: string;
+  content: string | null;
+  status: SellersJsonCacheStatus;
+  status_code: number | null;
+  error_message: string | null;
+} {
+  // Initialize cache record with explicit type to allow for string assignments
+  const cacheRecord: {
+    domain: string;
+    content: string | null;
+    status: SellersJsonCacheStatus;
+    status_code: number | null;
+    error_message: string | null;
+  } = {
+    domain,
+    content: null,
+    status: 'error' as SellersJsonCacheStatus,
+    status_code: response.status,
+    error_message: null,
+  };
+
+  // Process response based on status code
+  if (response.status === 200) {
+    try {
+      const contentType = response.headers['content-type'];
+
+      // Check if response is JSON
+      if (contentType && contentType.includes('application/json')) {
+        // Validate that it's a sellers.json format
+        const jsonData: SellersJsonContent = response.data;
+
+        if (
+          jsonData &&
+          (Array.isArray(jsonData.sellers) || jsonData.contact_email || jsonData.identifiers)
+        ) {
+          cacheRecord.status = 'success';
+          cacheRecord.content = JSON.stringify(jsonData);
+        } else {
+          cacheRecord.status = 'invalid_format';
+          cacheRecord.error_message =
+            'Response is JSON but does not contain required sellers.json fields';
+        }
+      } else {
+        cacheRecord.status = 'invalid_format';
+        cacheRecord.error_message = `Invalid content type: ${contentType}`;
+      }
+    } catch (error) {
+      cacheRecord.status = 'invalid_format';
+      cacheRecord.error_message = 'Failed to parse JSON response';
+    }
+  } else if (response.status === 404) {
+    cacheRecord.status = 'not_found';
+    cacheRecord.error_message = 'sellers.json file not found';
+  } else {
+    cacheRecord.error_message = `HTTP error ${response.status}`;
+  }
+  
+  return cacheRecord;
+}
+
+/**
+ * Handle error from fetching sellers.json
+ * @param domain The domain
+ * @param error The error 
+ */
+async function handleSellersJsonError(domain: string, error: any): Promise<never> {
+  logger.error(`Error fetching sellers.json for domain ${domain}:`, error);
+  
+  // Save error to cache
+  const errorMessage = error.message || 'Unknown error';
+  await SellersJsonCacheModel.saveCache({
+    domain,
+    content: null,
+    status: 'error',
+    status_code: error.response?.status || null,
+    error_message: errorMessage,
+  });
+  
+  throw new ApiError(
+    500,
+    `Error fetching sellers.json: ${errorMessage}`,
+    'errors:sellersFetchError',
+    { message: errorMessage }
+  );
+}
 
 /**
  * Get a specific seller from a domain's sellers.json by seller_id
@@ -36,264 +173,61 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
   }
 
-  // Since sellerId can be provided in various types (string or number),
-  // prepare a string-converted sellerId for comparison (also removing unnecessary whitespace)
+  // Normalize seller ID (convert to string and trim whitespace)
   const normalizedSellerId = String(sellerId).trim();
-
+  
   try {
-    // First, check the cache, but skip if force=true is in query params
-    const forceRefresh = req.query.force === 'true';
-    const cacheKey = `${domain}:${normalizedSellerId}`;
+    // Get URL for sellers.json
+    const url = getSellersJsonUrl(domain);
     
-    if (!forceRefresh && sellerIdCache.has(cacheKey)) {
-      logger.info(`Using cached result for seller_id: ${normalizedSellerId} from ${domain}`);
-      return res.status(200).json({
-        success: true,
-        data: sellerIdCache.get(cacheKey),
-        cached: true,
-      });
-    }
-
-    // Determine URL to fetch
-    let url: string;
-
-    // Use standard URL format (default)
-    url = `https://${domain}/sellers.json`;
-
-    // Some domains require special URLs
-    if (domain in SPECIAL_DOMAINS) {
-      url = SPECIAL_DOMAINS[domain];
-      logger.info(`Using special URL for ${domain}: ${url}`);
-    }
-
     logger.info(`Looking for seller_id: ${normalizedSellerId} from ${domain}`);
-
-    // Add debug information
-    logger.debug(
-      `Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`
-    );
-
-    let sellerData;
-
-    // Check in-memory cache for fast access
-    if (domainSellerDataCache.has(domain)) {
-      sellerData = domainSellerDataCache.get(domain);
-      logger.info(`Using in-memory cached sellers.json data for ${domain}`);
-    }
-
-    // Check if the cached data is valid
-    if (sellerData && Array.isArray(sellerData.sellers)) {
-      // Find the seller matching the seller_id
-      const targetSeller = sellerData.sellers.find(
-        (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
-      );
-
-      logger.info(
-        `Searching among ${sellerData.sellers.length} sellers in ${domain} for ID ${normalizedSellerId}`
-      );
-
-      if (targetSeller) {
-        // If seller is found
-        logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
-
-        const result = {
-          contact_email: sellerData.contact_email,
-          version: sellerData.version,
-          identifiers: sellerData.identifiers || [],
-          seller: targetSeller,
-        };
-
-        // Save result to cache
-        sellerIdCache.set(cacheKey, result);
-
-        return res.status(200).json({
-          success: true,
-          data: result,
-        });
-      } else {
-        logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
-
-        // If seller ID is not found, return "not found" information instead of an error
-        const notFoundResult = {
-          found: false,
-          message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
-          sellerId: normalizedSellerId,
-        };
-
-        // Also cache "not found" results
-        sellerIdCache.set(cacheKey, notFoundResult);
-
-        return res.status(200).json({
-          success: true,
-          data: notFoundResult,
-        });
-      }
-    }
-
-    // If in-memory cache doesn't have the data, check the database
+    logger.debug(`Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`);
+    
+    // Check the database cache for this domain
     logger.info(`Checking database cache for ${domain}`);
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
-
+    
+    // If we have a valid cached record, try to use it
     if (cachedData && cachedData.status === 'success') {
       try {
         const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
-
+        
         if (parsedData && Array.isArray(parsedData.sellers)) {
-          // Store in-memory for faster access
-          domainSellerDataCache.set(domain, parsedData);
-
-          // Find the seller matching the seller_id
-          const targetSeller = parsedData.sellers.find(
-            (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
-          );
-
-          logger.info(
-            `Searching among ${parsedData.sellers.length} sellers in ${domain} from DB cache for ID ${normalizedSellerId}`
-          );
-
-          if (targetSeller) {
-            logger.info(`Found seller with ID ${normalizedSellerId} in ${domain} from DB cache`);
-
-            const result = {
-              contact_email: parsedData.contact_email,
-              version: parsedData.version,
-              identifiers: parsedData.identifiers || [],
-              seller: targetSeller,
-              from_db_cache: true,
-            };
-
-            // Save result to cache
-            sellerIdCache.set(cacheKey, result);
-
-            return res.status(200).json({
-              success: true,
-              data: result,
-            });
-          } else {
-            logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain} in DB cache`);
-
-            const notFoundResult = {
-              found: false,
-              message: `Seller ID ${normalizedSellerId} not found in ${domain}`,
-              sellerId: normalizedSellerId,
-              from_db_cache: true,
-            };
-
-            sellerIdCache.set(cacheKey, notFoundResult);
-
-            return res.status(200).json({
-              success: true,
-              data: notFoundResult,
-            });
-          }
+          // Find seller in cached data
+          const result = findSellerInData(parsedData, normalizedSellerId);
+          // Mark result as from cache
+          const resultWithCache = { ...result, from_db_cache: true };
+          
+          return res.status(200).json({
+            success: true,
+            data: resultWithCache,
+          });
         }
       } catch (error: any) {
-        logger.error(`Error parsing cached sellers.json from DB for ${domain}: ${error.message}`);
-        // If there's an error parsing the cached data, fall back to fetching from the API
+        logger.error(`Error parsing cached sellers.json for ${domain}: ${error.message}`);
+        // If there's an error parsing the cached data, fall back to API
       }
     }
-
-    logger.info(`No sellers data available in cache for ${domain}, will fetch from API`);
-
-    // Use streaming with Axios (default approach or fallback)
+    
+    logger.info(`No valid sellers data in cache for ${domain}, fetching from API`);
+    
+    // Fetch sellers.json data from API
     const response = await axios({
       method: 'get',
       url: url,
-      responseType: 'stream',
+      responseType: 'json',
       timeout: 30000,
       headers: {
         'User-Agent': 'AdsTxtManager/1.0',
         Accept: 'application/json',
       },
     });
-
-    const stream = response.data;
-
-    // Variables for processing JSON data
-    let sellerFound = false;
-    let contactInfo: Record<string, string> = {};
-    let identifiers: Array<Record<string, string>> = [];
-    let version = '';
-
-    // Simple approach: load the entire JSON into memory and process it
-    const processingPromise = new Promise<any>(async (resolve, reject) => {
-      try {
-        // Simple approach: load the entire JSON into memory and process it
-        let responseData = '';
-
-        stream.on('data', (chunk) => {
-          responseData += chunk.toString();
-        });
-
-        stream.on('end', () => {
-          try {
-            // Parse the complete response
-            const sellersJson = JSON.parse(responseData);
-            logger.info(
-              `Successfully parsed sellers.json from ${domain}, found ${sellersJson.sellers?.length || 0} sellers`
-            );
-
-            // Extract metadata
-            if (sellersJson.contact_email) contactInfo.contact_email = sellersJson.contact_email;
-            if (sellersJson.contact_address)
-              contactInfo.contact_address = sellersJson.contact_address;
-            if (sellersJson.version) version = sellersJson.version;
-            if (Array.isArray(sellersJson.identifiers)) identifiers = sellersJson.identifiers;
-
-            // Find the target seller
-            const targetSeller = sellersJson.sellers?.find(
-              (seller: any) => String(seller.seller_id).trim() === normalizedSellerId
-            );
-
-            if (targetSeller) {
-              sellerFound = true;
-              logger.info(`Found seller with ID ${normalizedSellerId} in ${domain}`);
-
-              // Construct the response object
-              const result = {
-                ...contactInfo,
-                version,
-                identifiers,
-                seller: targetSeller,
-              };
-
-              // Save the result to cache
-              sellerIdCache.set(cacheKey, result);
-
-              resolve(result);
-            } else {
-              logger.warn(`Seller ID ${normalizedSellerId} not found in ${domain}`);
-              const notFoundResult = {
-                error: null,
-                found: false,
-                message: 'Seller ID not found in sellers.json',
-                sellerId: normalizedSellerId,
-              };
-
-              // Also cache "not found" results
-              sellerIdCache.set(cacheKey, notFoundResult);
-
-              resolve(notFoundResult);
-            }
-          } catch (err: any) {
-            logger.error(`Error parsing sellers.json from ${domain}: ${err.message}`);
-            reject(new Error(`Error parsing sellers.json: ${err.message}`));
-          }
-        });
-
-        stream.on('error', (err) => {
-          logger.error(`Stream error for ${url}: ${err.message}`);
-          reject(new Error(`Stream error: ${err.message}`));
-        });
-      } catch (error: any) {
-        logger.error(`Error processing sellers.json from ${domain}: ${error.message}`);
-        reject(new Error(`Processing error: ${error.message}`));
-      }
-    });
-
-    // Wait for the processing to complete
-    const result = await processingPromise;
-
+    
+    // Process the response
+    logger.info(`Successfully fetched sellers.json from ${domain}`);
+    const sellersJson = response.data;
+    const result = findSellerInData(sellersJson, normalizedSellerId);
+    
     return res.status(200).json({
       success: true,
       data: result,
@@ -345,20 +279,10 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
       });
     }
 
-    // Either no cache or cache expired, fetch fresh data
-    logger.info(`Fetching fresh sellers.json for domain: ${domain}`);
+    logger.info(`Cache expired or not found, fetching fresh sellers.json for: ${domain}`);
 
-    // Determine URL to fetch
-    let url: string;
-
-    // Use standard URL format (default)
-    url = `https://${domain}/sellers.json`;
-
-    // Some domains require special URLs
-    if (domain in SPECIAL_DOMAINS) {
-      url = SPECIAL_DOMAINS[domain];
-      logger.info(`Using special URL for ${domain}: ${url}`);
-    }
+    // Get URL for sellers.json
+    const url = getSellersJsonUrl(domain);
 
     // Fetch the sellers.json
     let response;
@@ -367,65 +291,16 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
       response = await axios.get(url, {
         timeout: 30000, // Increase timeout for large files
         validateStatus: () => true, // Allow any status code
-        maxContentLength: 200 * 1024 * 1024, // 200MB to handle Google's ~114MB file
+        maxContentLength: 200 * 1024 * 1024, // 200MB for large files
         decompress: true, // Handle gzipped responses
       });
     } catch (error: any) {
-      logger.error(`Error fetching from ${url}: ${error.message}`);
-      throw new Error(`Failed to fetch sellers.json: ${error.message}`);
+      return handleSellersJsonError(domain, error);
     }
 
-    // Prepare cache record
-    let cacheRecord: {
-      domain: string;
-      content: string | null;
-      status: SellersJsonCacheStatus;
-      status_code: number | null;
-      error_message: string | null;
-    } = {
-      domain,
-      content: null,
-      status: 'error',
-      status_code: response.status,
-      error_message: null,
-    };
-
-    // Process response based on status code
-    if (response.status === 200) {
-      try {
-        const contentType = response.headers['content-type'];
-
-        // Check if response is JSON
-        if (contentType && contentType.includes('application/json')) {
-          // Validate that it's a sellers.json format (should have sellers array or other required fields)
-          const jsonData: SellersJsonContent = response.data;
-
-          if (
-            jsonData &&
-            (Array.isArray(jsonData.sellers) || jsonData.contact_email || jsonData.identifiers)
-          ) {
-            cacheRecord.status = 'success';
-            cacheRecord.content = JSON.stringify(jsonData);
-          } else {
-            cacheRecord.status = 'invalid_format';
-            cacheRecord.error_message =
-              'Response is JSON but does not contain required sellers.json fields';
-          }
-        } else {
-          cacheRecord.status = 'invalid_format';
-          cacheRecord.error_message = `Invalid content type: ${contentType}`;
-        }
-      } catch (error) {
-        cacheRecord.status = 'invalid_format';
-        cacheRecord.error_message = 'Failed to parse JSON response';
-      }
-    } else if (response.status === 404) {
-      cacheRecord.status = 'not_found';
-      cacheRecord.error_message = 'sellers.json file not found';
-    } else {
-      cacheRecord.error_message = `HTTP error ${response.status}`;
-    }
-
+    // Create cache record from response
+    const cacheRecord = createCacheRecordFromResponse(domain, response);
+    
     // Save to cache
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
 
@@ -447,23 +322,6 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
       },
     });
   } catch (error: any) {
-    logger.error(`Error fetching sellers.json for domain ${domain}:`, error);
-
-    // Save error to cache
-    const errorMessage = error.message || 'Unknown error';
-    await SellersJsonCacheModel.saveCache({
-      domain,
-      content: null,
-      status: 'error',
-      status_code: error.response?.status || null,
-      error_message: errorMessage,
-    });
-
-    throw new ApiError(
-      500,
-      `Error fetching sellers.json: ${errorMessage}`,
-      'errors:sellersFetchError',
-      { message: errorMessage }
-    );
+    return handleSellersJsonError(domain, error);
   }
 });
