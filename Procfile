@@ -1,1 +1,1 @@
-web: cd frontend && npx serve -s build -l 8080 --no-clipboard
+web: cd frontend && npm ci && npm run build && npx serve -s build -l 8080 --no-clipboard
