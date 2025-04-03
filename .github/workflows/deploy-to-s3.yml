@@ -22,11 +22,17 @@ jobs:
           node-version: '18'
           cache: 'npm'
           
-      - name: Install root dependencies
-        run: npm ci
-        
-      - name: Build application
-        run: npm run build
+      - name: Install and build backend
+        run: |
+          cd backend
+          npm ci
+          npm run build
+          
+      - name: Install and build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
         
       - name: Create deployment package
         run: |
@@ -39,7 +45,7 @@ jobs:
           
           # Install production dependencies
           cd deploy
-          npm ci --only=production
+          npm install --omit=dev
           cd ..
           
           # Create zip file
