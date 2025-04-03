@@ -49,11 +49,11 @@ export const translations = {
         ja: '無効なドメイン',
       },
       description: {
-        en: 'Domain must be a valid domain (e.g., example.com)',
-        ja: 'ドメインは有効なドメインである必要があります（例：example.com）',
+        en: 'Domain must be a valid domain (e.g., example.com).',
+        ja: 'ドメインは有効なドメインである必要があります（例：example.com）。',
       },
       recommendation: {
-        en: 'Check that the domain name of the advertising system is a valid domain..',
+        en: 'Check that the domain name of the advertising system is a valid domain.',
         ja: '広告システムのドメイン名が有効なドメインであることを確認してください。',
       },
     },

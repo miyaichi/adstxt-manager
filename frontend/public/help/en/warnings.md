@@ -36,25 +36,15 @@ This document describes all the validation warnings that may appear in the Ads.t
 
 ---
 
-<a id="misspelled-relationship"></a>
-
-### Misspelled Relationship
-
-**Description**: The relationship type appears to be misspelled (for example, "Direct" instead of "DIRECT").
-
-**Recommendation**: Relationship types are case-sensitive and must be exactly DIRECT or RESELLER. Correct the spelling and capitalization.
-
----
-
 ## Domain Warnings
 
 <a id="invalid-domain"></a>
 
-### Invalid Root Domain
+### Invalid Domain
 
-**Description**: The domain in the entry is not a valid root domain. Subdomains are not recommended in Ads.txt entries.
+**Description**: The domain in the entry is not a valid domain.
 
-**Recommendation**: Use a root domain (e.g., example.com) instead of a subdomain (sub.example.com). This ensures proper validation with the sellers.json files.
+**Recommendation**: Check that the domain name of the advertising system is a valid domain.
 
 ---
 
