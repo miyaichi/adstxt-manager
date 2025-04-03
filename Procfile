@@ -1,1 +1,1 @@
-web: npm --prefix backend start
+web: cd frontend && npx serve -s build -l 8080 --no-clipboard
