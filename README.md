@@ -126,6 +126,7 @@ eb init
 eb create production-environment \
   --database \
   --database.engine postgres \
+  --database.version 15.4 \
   --database.instance db.t3.medium \
   --database.size 20 \
   --database.username dbadmin \
@@ -166,13 +167,50 @@ eb setenv \
 eb deploy
 ```
 
+#### 簡易デプロイ手順（トラブルシューティング用）
+
+データベース接続に問題がある場合は、以下の手順でまず基本的な環境をデプロイできます:
+
+1. プロジェクトルートに移動し、以下のコマンドを実行してシンプルな構成でデプロイ:
+
+```bash
+eb deploy
+```
+
+2. デプロイ後、診断エンドポイントにアクセスして環境情報を確認:
+```
+http://your-environment-url/diagnostics
+```
+
+3. 環境が正常に動作していることを確認後、以下のコマンドでデータベース接続情報を設定:
+
+```bash
+eb setenv \
+  DB_PROVIDER=postgres \
+  PGHOST=your-rds-hostname.amazonaws.com \
+  PGPORT=5432 \
+  PGDATABASE=ebdb \
+  PGUSER=dbadmin \
+  PGPASSWORD=your-password
+```
+
+4. アプリケーションが安定して動作するようになったら、必要に応じて他の環境変数も設定:
+
+```bash
+eb setenv \
+  EMAIL_ADDRESS=your-verified-email@example.com \
+  APPLICATION_URL=your-eb-domain.elasticbeanstalk.com
+```
+
 #### カスタマイズ
 
 `.ebextensions`ディレクトリの設定ファイルを編集して以下をカスタマイズできます:
 
+- **最小構成**: `19_minimal_config.config`、`20_standalone_server.config`、`21_minimal_env.config`はトラブルシューティング用の最小構成です
 - **データベース設定**: `02_rds.config`ファイルでRDSインスタンスの設定を変更
 - **SES設定**: `03_ses.config`ファイルでSESの設定を変更
 - **環境変数**: `01_env.config`ファイルで環境変数を変更
+- **診断ツール**: `23_diagnostics.config`は環境の診断情報を提供します
 
 ## データベース構造
 
