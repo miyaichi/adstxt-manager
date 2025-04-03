@@ -135,6 +135,23 @@ eb create production-environment \
   --service-role aws-elasticbeanstalk-service-role
 ```
 
+#### aws-elasticbeanstalk-service-roleの作成方法
+
+Elastic Beanstalk用のサービスロールがない場合は、以下の手順で作成できます:
+
+1. AWSコンソールからIAMに移動
+2. ロール > 新しいロールの作成
+3. 「AWS サービス」を選択し、「Elastic Beanstalk」を選択
+4. 「Elastic Beanstalk Managed Service Role」ポリシーをアタッチ
+5. ロール名を「aws-elasticbeanstalk-service-role」に設定して作成
+
+または、AWS CLIで以下のコマンドを実行:
+
+```bash
+aws iam create-role --role-name aws-elasticbeanstalk-service-role --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"elasticbeanstalk.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam attach-role-policy --role-name aws-elasticbeanstalk-service-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService
+```
+
 4. 環境変数の設定:
 
 ```bash
