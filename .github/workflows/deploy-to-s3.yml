@@ -1,0 +1,60 @@
+name: Build and Deploy to S3
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install root dependencies
+        run: npm ci
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp -r backend/dist deploy/
+          cp -r frontend/build deploy/public
+          cp backend/package.json deploy/
+          cp backend/package-lock.json deploy/
+          cp Procfile deploy/
+          
+          # Install production dependencies
+          cd deploy
+          npm ci --only=production
+          cd ..
+          
+          # Create zip file
+          zip -r adstxt-manager.zip deploy
+        
+      - name: Configure AWS credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Upload to S3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-${{ github.sha }}.zip
+          aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-latest.zip
