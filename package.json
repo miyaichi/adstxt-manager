@@ -6,9 +6,12 @@
     "build:backend": "cd backend && npm ci && npm run build",
     "build:frontend": "cd frontend && npm ci && npm run build",
     "build": "npm run build:backend && npm run build:frontend",
-    "start": "cd backend && npm start",
+    "start": "node server.js",
     "install": "cd backend && npm install && cd ../frontend && npm install",
     "test": "cd backend && npm test && cd ../frontend && npm test"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
   },
   "engines": {
     "node": ">=18.0.0"
