@@ -126,7 +126,7 @@ eb init
 eb create production-environment \
   --database \
   --database.engine postgres \
-  --database.instance db.t3.micro \
+  --database.instance db.t3.medium \
   --database.size 20 \
   --database.username dbadmin \
   --database.password <安全なパスワード> \
