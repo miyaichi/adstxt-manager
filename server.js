@@ -24,6 +24,8 @@ const startBackend = () => {
     PORT: BACKEND_PORT,
     NODE_ENV: process.env.NODE_ENV || 'production',
     DB_PATH: process.env.DB_PATH || './backend/db/database.sqlite',
+    // メモリ使用量を制限
+    NODE_OPTIONS: '--max-old-space-size=512'
   };
   
   // バックエンドサーバーを子プロセスとして起動
