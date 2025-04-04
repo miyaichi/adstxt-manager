@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# デバッグ情報の出力
+echo "Running before_install.sh"
+echo "Current directory: $(pwd)"
+echo "Directory listing:"
+ls -la
+
 echo "Preparing for installation..."
 
 # 必要なツールがインストールされているか確認

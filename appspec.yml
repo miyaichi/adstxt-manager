@@ -7,14 +7,10 @@ files:
 
 permissions:
   - object: /home/ec2-user/adstxt-manager
+    pattern: "**"
     owner: ec2-user
     group: ec2-user
     mode: 755
-  - object: /home/ec2-user/adstxt-manager/scripts
-    owner: ec2-user
-    group: ec2-user
-    mode: 755
-    type: directory
 
 hooks:
   BeforeInstall:

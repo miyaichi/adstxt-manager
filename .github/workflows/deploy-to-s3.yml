@@ -110,8 +110,11 @@ jobs:
           # Create a clean directory structure for CodeDeploy
           mkdir -p temp_deploy/deploy
           
-          # Copy application files
+          # Copy application files (everything from the deploy directory)
           cp -r deploy/* temp_deploy/deploy/
+          
+          # Make sure scripts directory exists and has execute permissions
+          chmod +x temp_deploy/scripts/*.sh
           
           # Ensure appspec.yml and scripts are at the root level
           cd temp_deploy
