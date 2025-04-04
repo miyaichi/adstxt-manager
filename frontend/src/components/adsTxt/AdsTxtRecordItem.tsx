@@ -22,7 +22,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   const { language } = useApp();
   const [sellerInfo, setSellerInfo] = useState<SellersJsonSellerResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<boolean>(false);
 
   // Check if the record is a parsed record with validation data
   const isParsedRecord = 'is_valid' in record;
@@ -73,6 +73,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     },
     [record.domain]
   );
+  
 
   // Fetch seller information on component mount
   useEffect(() => {
@@ -82,15 +83,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       return;
     }
 
-    // Skip seller.json lookup if record already has a noSellersJson warning
+    // Skip seller.json lookup if record is invalid
     const parsedRecord = record as ParsedAdsTxtRecord;
-    if (
-      isParsedRecord &&
-      (parsedRecord.validation_key === 'noSellersJson' ||
-        parsedRecord.warning?.includes('noSellersJson') ||
-        parsedRecord.warning?.includes('No sellers.json file found'))
-    ) {
-      console.log('Skipping seller.json lookup for record with noSellersJson warning');
+    if (isParsedRecord && parsedRecord.validation_key === 'noSellersJson') {
+      console.log('Skipping seller.json lookup for record with noSellersJson validation_key');
       return;
     }
 
@@ -103,7 +99,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
     let isMounted = true;
     setLoading(true);
-    setError(null);
+    setError(false);
 
     // Direct API call to backend
     api.sellersJson
@@ -119,7 +115,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
               `[${requestId}] Error for Seller ID ${record.account_id} from ${domain}:`,
               errorMessage
             );
-            setError(errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+            setError(true);
             setSellerInfo(null);
             setLoading(false);
           } else if (!response.data.found) {
@@ -144,19 +140,17 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                       const errorMessage =
                         fallbackResponse.error?.message || fallbackResponse.data.message;
                       console.warn(`[${requestId}] Error for fallback domain:`, errorMessage);
-                      setError(
-                        errorMessage || t('adsTxt.recordItem.errorFetchingSellerInfo', language)
-                      );
+                      setError(true);
                       setSellerInfo(null);
                     } else if (fallbackResponse.data.found && fallbackResponse.data.seller) {
                       console.log(
                         `[${requestId}] Found seller info in fallback domain ${record.domain}`
                       );
                       setSellerInfo(fallbackResponse.data);
-                      setError(null);
+                      setError(false);
                     } else {
                       console.warn(`[${requestId}] Seller not found in fallback domain either`);
-                      setError(t('adsTxt.recordItem.noSellerInfo', language));
+                      setError(true);
                       setSellerInfo(null);
                     }
                   } else {
@@ -164,7 +158,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                       `[${requestId}] API failure for fallback domain:`,
                       fallbackResponse.error
                     );
-                    setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                    setError(true);
                     setSellerInfo(null);
                   }
                   setLoading(false);
@@ -172,12 +166,12 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                 .catch((err) => {
                   if (!isMounted) return;
                   console.error(`[${requestId}] Fallback attempt failed:`, err);
-                  setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+                  setError(true);
                   setSellerInfo(null);
                   setLoading(false);
                 });
             } else {
-              setError(t('adsTxt.recordItem.noSellerInfo', language));
+              setError(true);
               setSellerInfo(null);
               setLoading(false);
             }
@@ -187,14 +181,14 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
               `[${requestId}] Found seller information for ${record.account_id} from ${domain}`
             );
             setSellerInfo(response.data);
-            setError(null);
+            setError(false);
             setLoading(false);
           } else {
             // Data returned but no seller info
             console.warn(
               `[${requestId}] No seller information found for ${record.account_id} from ${domain}`
             );
-            setError(t('adsTxt.recordItem.noSellerInfo', language));
+            setError(true);
             setSellerInfo(null);
             setLoading(false);
           }
@@ -204,7 +198,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             `[${requestId}] API failure for ${record.account_id} from ${domain}:`,
             response.error
           );
-          setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+          setError(true);
           setSellerInfo(null);
           setLoading(false);
         }
@@ -212,7 +206,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
       .catch((err) => {
         if (!isMounted) return;
         console.error(`[${requestId}] Error fetching seller info:`, err);
-        setError(t('adsTxt.recordItem.errorFetchingSellerInfo', language));
+        setError(true);
         setSellerInfo(null);
         setLoading(false);
       });
@@ -249,59 +243,76 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           )}
         </Flex>
 
-        {/* Sellers.json Information */}
-        {sellerInfo && !loading && sellerInfo.seller && (
-          <Flex direction="column" gap="0.5rem" marginTop="0.5rem">
-            <Flex alignItems="center" gap="0.5rem">
-              <Text>
-                <strong>{t('adsTxt.recordItem.sellerInfo', language)}: </strong>
+        {/* Seller Information Section */}
+        <Flex direction="column" gap="0.5rem" marginTop="0.5rem">
+          
+          {loading && (
+            <Flex direction="row" gap="0.25rem" alignItems="center">
+              <Loader size="small" />
+              <Text fontSize="0.875rem" color="gray">
+                {t('adsTxt.recordItem.fetchingSellerInfo', language)}
               </Text>
-              {sellerInfo.cache.is_cached && (
-                <Badge variation="info" size="small">
-                  {t('adsTxt.recordItem.cached', language)}
-                </Badge>
-              )}
             </Flex>
+          )}
+          
+          {!loading && (!sellerInfo || !sellerInfo.seller || error) && (
+            <Text color="var(--amplify-colors-font-warning)">
+              {t('adsTxt.recordItem.noSellerInfo', language)}
+            </Text>
+          )}
+          
+          {!loading && sellerInfo && sellerInfo.seller && (
+            <Card variation="elevated" padding="0.75rem" backgroundColor="#f8f8f8">
+              <Flex direction="column" gap="0.5rem">
+                {/* Cached indicator */}
+                {sellerInfo.cache.is_cached && (
+                  <Flex justifyContent="flex-end">
+                    <Badge variation="info" size="small">
+                      {t('adsTxt.recordItem.cached', language)}
+                    </Badge>
+                  </Flex>
+                )}
+                
+                {/* Seller details */}
+                {sellerInfo.seller.is_confidential ? (
+                  <Text>{t('adsTxt.recordItem.confidentialInfo', language)}</Text>
+                ) : (
+                  <>
+                    {sellerInfo.seller.name && (
+                      <Text fontWeight="bold">{sellerInfo.seller.name}</Text>
+                    )}
+                    
+                    <Flex gap="1rem" wrap="wrap">
+                      {sellerInfo.seller.domain && (
+                        <Text>
+                          <strong>{t('adsTxt.recordItem.sellerDomain', language)}: </strong>
+                          {sellerInfo.seller.domain}
+                        </Text>
+                      )}
+                      <Text>
+                        <strong>{t('adsTxt.recordItem.sellerType', language)}: </strong>
+                        {sellerInfo.seller.seller_type}
+                      </Text>
+                    </Flex>
+                  </>
+                )}
 
-            <Flex gap="1rem" wrap="wrap">
-              {sellerInfo.seller.is_confidential ? (
-                <Badge variation="warning">{t('adsTxt.recordItem.confidential', language)}</Badge>
-              ) : (
-                <>
-                  <Text>{sellerInfo.seller.name || ''}</Text>
-                  {sellerInfo.seller.domain ? (
-                    <Text>
-                      <strong>{t('adsTxt.recordItem.sellerDomain', language)}: </strong>
-                      {sellerInfo.seller.domain}
-                    </Text>
-                  ) : null}
-                  <Text>
-                    <strong>{t('adsTxt.recordItem.sellerType', language)}: </strong>
-                    {sellerInfo.seller.seller_type}
+                {/* Metadata display (simplified) */}
+                {sellerInfo.metadata && sellerInfo.metadata.seller_count > 0 && (
+                  <Text fontSize="0.75rem" color="gray">
+                    {t('adsTxt.recordItem.sellersCount', language, {
+                      count: sellerInfo.metadata.seller_count,
+                    })}
+                    {sellerInfo.metadata.version &&
+                      ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
                   </Text>
-                </>
-              )}
-            </Flex>
+                )}
+              </Flex>
+            </Card>
+          )}
+        </Flex>
 
-            {/* Metadata display (simplified) */}
-            {sellerInfo.metadata && sellerInfo.metadata.seller_count > 0 && (
-              <Text fontSize="0.75rem" color="gray">
-                {t('adsTxt.recordItem.sellersCount', language, {
-                  count: sellerInfo.metadata.seller_count,
-                })}
-                {sellerInfo.metadata.version &&
-                  ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
-              </Text>
-            )}
-          </Flex>
-        )}
-
-        {/* Error Message - but hide if it's about sellers.json not found as it's shown in popover */}
-        {!loading && error && !error.includes('sellers.json') && (
-          <Flex gap="1rem" wrap="wrap" marginTop="0.5rem">
-            <Text color="var(--amplify-colors-font-warning)">{error}</Text>
-          </Flex>
-        )}
+        {/* Hide duplicate error message as we already show error inside seller info section */}
 
         {isParsedRecord && showValidation && (
           <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
@@ -523,15 +534,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           </Flex>
         )}
 
-        {/* Loading Indicator */}
-        {loading && (
-          <Flex direction="row" gap="0.25rem" alignItems="center" marginTop="0.25rem">
-            <Loader size="small" />
-            <Text fontSize="0.75rem" color="gray">
-              {t('adsTxt.recordItem.fetchingSellerInfo', language)}
-            </Text>
-          </Flex>
-        )}
+        {/* Loading indicator is now shown inside the seller info section */}
 
         {isEditable && (
           <Flex justifyContent="flex-end" gap="0.5rem" marginTop="0.5rem">

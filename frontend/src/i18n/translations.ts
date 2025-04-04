@@ -1048,13 +1048,9 @@ export const translations = {
         en: 'Certification Authority ID',
         ja: '認証局ID',
       },
-      sellerInfo: {
-        en: 'Seller Info',
-        ja: 'セラー情報',
-      },
-      confidential: {
-        en: 'Confidential',
-        ja: '機密',
+      confidentialInfo: {
+        en: 'Seller information is confidential',
+        ja: 'セラー情報は非公開です',
       },
       sellerDomain: {
         en: 'Seller Domain',
@@ -1065,16 +1061,24 @@ export const translations = {
         ja: 'セラータイプ',
       },
       noSellerInfo: {
-        en: 'No seller information found',
-        ja: 'セラー情報が見つかりません',
-      },
-      errorFetchingSellerInfo: {
-        en: 'Error fetching seller information',
-        ja: 'セラー情報の取得中にエラーが発生しました',
+        en: 'No seller information available',
+        ja: 'セラー情報がありません',
       },
       fetchingSellerInfo: {
         en: 'Fetching seller information...',
         ja: 'セラー情報を取得中...',
+      },
+      cached: {
+        en: 'Cached',
+        ja: 'キャッシュ済み',
+      },
+      sellersCount: {
+        en: 'Total sellers: {{count}}',
+        ja: 'セラー総数: {{count}}',
+      },
+      version: {
+        en: 'Version',
+        ja: 'バージョン',
       },
     },
   },

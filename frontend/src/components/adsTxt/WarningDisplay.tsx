@@ -100,16 +100,36 @@ const WarningDisplay: React.FC<WarningDisplayProps> = ({ errorMessages }) => {
 function extractParamsFromMessage(message: string): Record<string, string> {
   const params: Record<string, string> = {};
 
-  // Extract domain parameters
-  const domainMatch = message.match(/\(([^)]+)\)/);
-  if (domainMatch && domainMatch[1]) {
-    params.domain = domainMatch[1];
+  // Extract domain parameters from different patterns
+  // Pattern: (example.com)
+  const standardDomainMatch = message.match(/\(([^)]+\.[^)]+)\)/);
+  if (standardDomainMatch && standardDomainMatch[1]) {
+    params.domain = standardDomainMatch[1];
+  }
+  
+  // Pattern: domain example.com
+  const domainWordMatch = message.match(/domain\s+([a-z0-9.-]+\.[a-z0-9]+)/i);
+  if (!params.domain && domainWordMatch && domainWordMatch[1]) {
+    params.domain = domainWordMatch[1];
+  }
+  
+  // Pattern: for example.com
+  const forDomainMatch = message.match(/for\s+([a-z0-9.-]+\.[a-z0-9]+)/i);
+  if (!params.domain && forDomainMatch && forDomainMatch[1]) {
+    params.domain = forDomainMatch[1];
   }
 
   // Extract account_id parameters
+  // Standard pattern: account ID xxx
   const accountIdMatch = message.match(/account ID ([\w\d.-]+)/i);
   if (accountIdMatch && accountIdMatch[1]) {
     params.account_id = accountIdMatch[1];
+  }
+  
+  // Seller ID pattern: Seller ID xxx
+  const sellerIdMatch = message.match(/Seller ID ([\w\d.-]+)/i);
+  if (!params.account_id && sellerIdMatch && sellerIdMatch[1]) {
+    params.account_id = sellerIdMatch[1];
   }
 
   // Extract seller_type parameters
@@ -140,7 +160,10 @@ function extractParamsFromMessage(message: string): Record<string, string> {
   if (errorMessageMatch && errorMessageMatch[1]) {
     params.message = errorMessageMatch[1];
   }
-
+  
+  // Log for debugging
+  console.log('Extracted params from message:', message, params);
+  
   return params;
 }
 

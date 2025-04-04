@@ -192,17 +192,24 @@ export const getWarningIdFromErrorMessage = (errorMessage: string): string | nul
   if (errorMessage.includes('Duplicate entry found')) {
     return 'duplicate-entry';
   }
-  if (errorMessage.includes('No sellers.json file found')) {
+  if (
+    errorMessage.includes('No sellers.json file found') ||
+    errorMessage.includes('sellers.json file not found') ||
+    errorMessage.includes('sellers.json not found')
+  ) {
     return 'no-sellers-json';
   }
   if (
-    errorMessage.includes('DIRECT: Publisher account ID') &&
+    (errorMessage.includes('DIRECT: Publisher account ID') || 
+     errorMessage.includes('Publisher account ID') ||
+     errorMessage.includes('Seller ID')) &&
     errorMessage.includes('not found in sellers.json')
   ) {
     return 'direct-account-id-not-in-sellers-json';
   }
   if (
-    errorMessage.includes('RESELLER: Publisher account ID') &&
+    (errorMessage.includes('RESELLER: Publisher account ID') ||
+     errorMessage.includes('Reseller account ID')) &&
     errorMessage.includes('not found in sellers.json')
   ) {
     return 'reseller-account-id-not-in-sellers-json';
