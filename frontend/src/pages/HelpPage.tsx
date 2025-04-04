@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useSearchParams } from 'react-router-dom';
 import rehypeRaw from 'rehype-raw';
 import { useApp } from '../context/AppContext';
+import { t } from '../i18n/translations';
 import './HelpPage.css';
 
 export const HelpPage: React.FC = () => {
@@ -36,7 +37,7 @@ export const HelpPage: React.FC = () => {
       })
       .catch((err) => {
         console.error('Failed to load help content', err);
-        setError('Failed to load help content. Please try again later.');
+        setError(t('helpPage.error', language));
         setIsLoading(false);
       });
   }, [language]);
@@ -68,7 +69,7 @@ export const HelpPage: React.FC = () => {
   return (
     <div className="help-container">
       {isLoading ? (
-        <div className="loading">Loading help content...</div>
+        <div className="loading">{t('helpPage.loading', language)}</div>
       ) : error ? (
         <div className="error">{error}</div>
       ) : (

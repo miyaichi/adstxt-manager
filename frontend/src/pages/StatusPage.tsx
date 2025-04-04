@@ -1,6 +1,8 @@
 import { Badge, Card, Divider, Flex, Heading, Loader, Text, View } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api';
+import { useApp } from '../context/AppContext';
+import { t } from '../i18n/translations';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('StatusPage');
@@ -22,6 +24,7 @@ interface StatusData {
 }
 
 const StatusPage: React.FC = () => {
+  const { language } = useApp();
   const [loading, setLoading] = useState(true);
   const [statusData, setStatusData] = useState<StatusData>({
     frontend: {
@@ -167,7 +170,7 @@ const StatusPage: React.FC = () => {
 
   return (
     <View padding="medium">
-      <Heading level={2}>System Status</Heading>
+      <Heading level={2}>{t('statusPage.title', language)}</Heading>
 
       {error && (
         <View
@@ -183,9 +186,9 @@ const StatusPage: React.FC = () => {
       <Flex direction="column" gap="medium">
         {/* Frontend Status */}
         <Card>
-          <Heading level={3}>Frontend Status</Heading>
+          <Heading level={3}>{t('statusPage.frontend.title', language)}</Heading>
           <Flex alignItems="center" gap="small" marginBottom="medium">
-            <Text>Status:</Text>
+            <Text>{t('statusPage.frontend.status', language)}</Text>
             <Badge variation={statusData.frontend.status === 'OK' ? 'success' : 'error'}>
               {statusData.frontend.status}
             </Badge>
@@ -194,50 +197,52 @@ const StatusPage: React.FC = () => {
           <Divider />
 
           <Heading level={4} marginTop="medium">
-            Environment Variables
+            {t('statusPage.environment.title', language)}
           </Heading>
           <View>{renderEnvironmentVariables(statusData.frontend.environment)}</View>
         </Card>
 
         {/* Backend Status */}
         <Card>
-          <Heading level={3}>Backend Status</Heading>
+          <Heading level={3}>{t('statusPage.backend.title', language)}</Heading>
 
           {statusData.backend ? (
             <>
               <Flex alignItems="center" gap="small" marginBottom="medium">
-                <Text>Status:</Text>
+                <Text>{t('statusPage.backend.status', language)}</Text>
                 <Badge variation={statusData.backend.status === 'OK' ? 'success' : 'error'}>
                   {statusData.backend.status}
                 </Badge>
               </Flex>
 
               <Flex alignItems="center" gap="small" marginBottom="medium">
-                <Text>Database:</Text>
+                <Text>{t('statusPage.backend.database', language)}</Text>
                 <Badge variation={statusData.backend.database.connected ? 'success' : 'error'}>
-                  {statusData.backend.database.connected ? 'Connected' : 'Disconnected'}
+                  {statusData.backend.database.connected 
+                    ? t('statusPage.backend.connected', language) 
+                    : t('statusPage.backend.disconnected', language)}
                 </Badge>
               </Flex>
 
               {statusData.backend.error && (
                 <Text color="red" marginBottom="medium">
-                  Error: {statusData.backend.error}
+                  {t('statusPage.backend.error', language)} {statusData.backend.error}
                 </Text>
               )}
 
               <Text marginBottom="medium">
-                Last checked: {new Date(statusData.backend.time).toLocaleString()}
+                {t('statusPage.backend.lastChecked', language)} {new Date(statusData.backend.time).toLocaleString(language === 'ja' ? 'ja-JP' : 'en-US')}
               </Text>
 
               <Divider />
 
               <Heading level={4} marginTop="medium">
-                Environment Variables
+                {t('statusPage.environment.title', language)}
               </Heading>
               <View>{renderEnvironmentVariables(statusData.backend.environment)}</View>
             </>
           ) : (
-            <Text>Could not connect to backend</Text>
+            <Text>{t('statusPage.backend.couldNotConnect', language)}</Text>
           )}
         </Card>
       </Flex>

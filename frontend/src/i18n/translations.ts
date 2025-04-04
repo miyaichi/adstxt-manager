@@ -521,6 +521,232 @@ export const translations = {
         ja: 'リクエストを表示',
       },
     },
+    item: {
+      publisher: {
+        en: 'Publisher',
+        ja: 'パブリッシャー',
+      },
+      domain: {
+        en: 'Domain',
+        ja: 'ドメイン',
+      },
+      requester: {
+        en: 'Requester',
+        ja: 'リクエスター',
+      },
+      recordCount: {
+        en: 'Records: {{count}}',
+        ja: 'レコード数: {{count}}',
+      },
+      status: {
+        en: 'Status',
+        ja: 'ステータス',
+      },
+      created: {
+        en: 'Created',
+        ja: '作成日時',
+      },
+      viewDetails: {
+        en: 'View Details',
+        ja: '詳細を表示',
+      },
+    },
+    detail: {
+      title: {
+        en: 'Request Details',
+        ja: 'リクエスト詳細',
+      },
+      publisher: {
+        title: {
+          en: 'Publisher Information',
+          ja: 'パブリッシャー情報',
+        },
+        email: {
+          en: 'Email:',
+          ja: 'メールアドレス:',
+        },
+        name: {
+          en: 'Name:',
+          ja: '名前:',
+        },
+        domain: {
+          en: 'Domain:',
+          ja: 'ドメイン:',
+        },
+      },
+      requester: {
+        title: {
+          en: 'Requester Information',
+          ja: 'リクエスター情報',
+        },
+        email: {
+          en: 'Email:',
+          ja: 'メールアドレス:',
+        },
+        name: {
+          en: 'Name:',
+          ja: '名前:',
+        },
+      },
+      created: {
+        en: 'Created:',
+        ja: '作成日時:',
+      },
+      updated: {
+        en: 'Updated:',
+        ja: '更新日時:',
+      },
+      records: {
+        title: {
+          en: 'Records',
+          ja: 'レコード',
+        },
+      },
+      actions: {
+        approve: {
+          en: 'Approve Request',
+          ja: 'リクエストを承認',
+        },
+        reject: {
+          en: 'Reject Request',
+          ja: 'リクエストを拒否',
+        },
+        approveConfirm: {
+          en: 'Are you sure you want to approve this request?',
+          ja: 'このリクエストを承認してもよろしいですか？',
+        },
+        rejectConfirm: {
+          en: 'Are you sure you want to reject this request?',
+          ja: 'このリクエストを拒否してもよろしいですか？',
+        },
+        showContent: {
+          en: 'Show Content',
+          ja: 'コンテンツを表示',
+        },
+        copyToClipboard: {
+          en: 'Copy to Clipboard',
+          ja: 'クリップボードにコピー',
+        },
+        download: {
+          en: 'Download',
+          ja: 'ダウンロード',
+        },
+      },
+      approvedContent: {
+        en: 'Approved Ads.txt Content',
+        ja: '承認済みAds.txtコンテンツ',
+      },
+      approvedContentDescription: {
+        en: 'The following entries have been approved and are ready to be added to your ads.txt file.',
+        ja: '以下のエントリが承認され、ads.txtファイルに追加する準備ができています。',
+      },
+      copySuccess: {
+        en: 'Copied to clipboard!',
+        ja: 'クリップボードにコピーしました！',
+      },
+      contentHelp: {
+        en: 'This content includes approved entries with metadata comments. You can add these lines to your existing ads.txt file.',
+        ja: 'このコンテンツには、メタデータコメント付きの承認されたエントリが含まれています。これらの行を既存のads.txtファイルに追加できます。',
+      },
+      loading: {
+        en: 'Loading messages...',
+        ja: 'メッセージを読み込んでいます...',
+      },
+      error: {
+        fetchError: {
+          en: 'Failed to fetch request details',
+          ja: 'リクエストの詳細の取得に失敗しました',
+        },
+        updateError: {
+          en: 'Failed to update request status',
+          ja: 'リクエストステータスの更新に失敗しました',
+        },
+        generateError: {
+          en: 'Failed to generate ads.txt content',
+          ja: 'ads.txtコンテンツの生成に失敗しました',
+        },
+      },
+    },
+  },
+  messages: {
+    list: {
+      title: {
+        en: 'Messages',
+        ja: 'メッセージ',
+      },
+      noMessages: {
+        en: 'No messages yet',
+        ja: 'まだメッセージはありません',
+      },
+      loading: {
+        en: 'Loading messages...',
+        ja: 'メッセージを読み込み中...',
+      },
+      fetchError: {
+        en: 'Failed to fetch messages',
+        ja: 'メッセージの取得に失敗しました',
+      },
+    },
+    form: {
+      title: {
+        en: 'Send Message',
+        ja: 'メッセージを送信',
+      },
+      placeholder: {
+        en: 'Type your message here...',
+        ja: 'メッセージをここに入力してください...',
+      },
+      messagePlaceholder: {
+        en: 'Type your message here...',
+        ja: 'メッセージをここに入力してください...',
+      },
+      send: {
+        en: 'Send',
+        ja: '送信',
+      },
+      requiredFields: {
+        en: 'Please fill all required fields',
+        ja: '必須項目をすべて入力してください',
+      },
+      sendError: {
+        en: 'Failed to send message',
+        ja: 'メッセージの送信に失敗しました',
+      },
+      sendSuccess: {
+        en: 'Message sent successfully',
+        ja: 'メッセージが正常に送信されました',
+      },
+      emailLabel: {
+        en: 'Your Email',
+        ja: 'あなたのメールアドレス',
+      },
+      messageLabel: {
+        en: 'Message',
+        ja: 'メッセージ',
+      },
+    },
+    item: {
+      publisher: {
+        en: 'Publisher',
+        ja: 'パブリッシャー',
+      },
+      requester: {
+        en: 'Requester',
+        ja: 'リクエスター',
+      },
+      sent: {
+        en: 'Sent',
+        ja: '送信日時',
+      },
+      sender: {
+        en: 'From:',
+        ja: '送信者:',
+      },
+      sentAt: {
+        en: 'Sent:',
+        ja: '送信日時:',
+      },
+    },
   },
   homePage: {
     title: {
@@ -574,10 +800,178 @@ export const translations = {
       },
     },
   },
+  requestListPage: {
+    breadcrumb: {
+      en: 'Requests',
+      ja: 'リクエスト一覧',
+    },
+    title: {
+      en: 'Requests',
+      ja: 'リクエスト一覧',
+    },
+    emailLabel: {
+      en: 'Email:',
+      ja: 'メールアドレス:',
+    },
+    searchLabel: {
+      en: 'Search Requests',
+      ja: 'リクエストを検索',
+    },
+    searchPlaceholder: {
+      en: 'Search by ID, email, name, domain, status...',
+      ja: 'ID、メールアドレス、名前、ドメイン、ステータスなどで検索...',
+    },
+    noRequests: {
+      en: 'No requests found',
+      ja: 'リクエストが見つかりません',
+    },
+    changeSearch: {
+      en: 'Try changing your search criteria',
+      ja: '検索条件を変更してみてください',
+    },
+    totalRequests: {
+      en: 'Total: {{count}} requests',
+      ja: '合計: {{count}} 件のリクエスト',
+    },
+    pendingTitle: {
+      en: 'Pending Requests ({{count}})',
+      ja: '保留中のリクエスト ({{count}}件)',
+    },
+    updatedTitle: {
+      en: 'Updated Requests ({{count}})',
+      ja: '更新済みのリクエスト ({{count}}件)',
+    },
+    approvedTitle: {
+      en: 'Approved Requests ({{count}})',
+      ja: '承認済みのリクエスト ({{count}}件)',
+    },
+    rejectedTitle: {
+      en: 'Rejected Requests ({{count}})',
+      ja: '拒否されたリクエスト ({{count}}件)',
+    },
+    errors: {
+      noEmail: {
+        en: 'No Email Provided',
+        ja: 'メールアドレスが提供されていません',
+      },
+      noEmailDescription: {
+        en: 'Please provide an email address to view requests',
+        ja: 'リクエストを表示するにはメールアドレスを提供してください',
+      },
+      fetchError: {
+        en: 'Failed to fetch requests',
+        ja: 'リクエストの取得に失敗しました',
+      },
+    },
+  },
+  requestDetailPage: {
+    breadcrumb: {
+      en: 'Request Details',
+      ja: 'リクエスト詳細',
+    },
+    errors: {
+      noId: {
+        en: 'No Request ID Provided',
+        ja: 'リクエストIDが提供されていません',
+      },
+      noIdDescription: {
+        en: 'Please provide a request ID to view its details',
+        ja: '詳細を表示するにはリクエストIDを提供してください',
+      },
+      noToken: {
+        en: 'No Access Token Provided',
+        ja: 'アクセストークンが提供されていません',
+      },
+      noTokenDescription: {
+        en: 'Please provide an access token to view this request',
+        ja: 'このリクエストを表示するにはアクセストークンを提供してください',
+      },
+    },
+  },
   errorMessage: {
     defaultTitle: {
       en: 'An error occurred',
       ja: 'エラーが発生しました',
+    },
+  },
+  notFoundPage: {
+    title: {
+      en: 'Page Not Found',
+      ja: 'ページが見つかりません',
+    },
+    description: {
+      en: 'The page you are looking for does not exist or has been moved.',
+      ja: 'お探しのページは存在しないか、移動されました。',
+    },
+    button: {
+      en: 'Back to Home',
+      ja: 'ホームに戻る',
+    },
+  },
+  helpPage: {
+    loading: {
+      en: 'Loading help content...',
+      ja: 'ヘルプコンテンツを読み込んでいます...',
+    },
+    error: {
+      en: 'Failed to load help content. Please try again later.',
+      ja: 'ヘルプコンテンツの読み込みに失敗しました。後でもう一度お試しください。',
+    },
+  },
+  statusPage: {
+    title: {
+      en: 'System Status',
+      ja: 'システム状態',
+    },
+    frontend: {
+      title: {
+        en: 'Frontend Status',
+        ja: 'フロントエンド状態',
+      },
+      status: {
+        en: 'Status:',
+        ja: '状態:',
+      },
+    },
+    backend: {
+      title: {
+        en: 'Backend Status',
+        ja: 'バックエンド状態',
+      },
+      status: {
+        en: 'Status:',
+        ja: '状態:',
+      },
+      database: {
+        en: 'Database:',
+        ja: 'データベース:',
+      },
+      connected: {
+        en: 'Connected',
+        ja: '接続済み',
+      },
+      disconnected: {
+        en: 'Disconnected',
+        ja: '未接続',
+      },
+      error: {
+        en: 'Error:',
+        ja: 'エラー:',
+      },
+      lastChecked: {
+        en: 'Last checked:',
+        ja: '最終確認日時:',
+      },
+      couldNotConnect: {
+        en: 'Could not connect to backend',
+        ja: 'バックエンドに接続できませんでした',
+      },
+    },
+    environment: {
+      title: {
+        en: 'Environment Variables',
+        ja: '環境変数',
+      },
     },
   },
   footer: {
