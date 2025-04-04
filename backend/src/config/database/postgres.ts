@@ -303,7 +303,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
     try {
       const result = await this.pool.query(sql, [id]);
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error(`Error deleting from ${table}`, error);
       throw error;

@@ -2,12 +2,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import i18nextMiddleware from 'i18next-http-middleware';
+import swaggerUi from 'swagger-ui-express';
 import { initializeDatabase } from './config/database';
 import db from './config/database/index';
 import { isCloudEnvironment } from './config/environment';
 import i18next from './i18n';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import apiRoutes from './routes';
+import apiV1Routes from './api/v1/routes';
+import { specs } from './api/v1/docs/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -101,6 +104,12 @@ app.get('/status', statusHandler);
 
 // API routes
 app.use('/api', apiRoutes);
+
+// External API v1 routes
+app.use('/api/v1', apiV1Routes);
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Health check route
 app.get('/health', (req, res) => {
