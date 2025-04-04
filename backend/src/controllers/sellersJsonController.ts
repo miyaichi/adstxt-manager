@@ -56,7 +56,7 @@ function findSellerInData(data: any, normalizedSellerId: string) {
     logger.warn(`Seller ID ${normalizedSellerId} not found`);
     return {
       seller: null,
-      key: 'directAccountIdNotInSellersJson',
+      key: 'direct-account-id-not-in-sellers-json',
       params: { account_id: normalizedSellerId },
     };
   }
@@ -164,7 +164,7 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
   throw new ApiError(
     is404 ? 404 : 500,
     '', // Empty message as we'll use keys
-    is404 ? 'noSellersJson' : 'sellersJsonFetchError',
+    is404 ? 'no-sellers-json' : 'sellers-json-fetch-error',
     { domain, message: is404 ? '' : errorMessage }
   );
 }
@@ -287,7 +287,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
               domain,
               seller: null,
               found: false,
-              key: 'noSellersJson',
+              key: 'no-sellers-json',
               params: { domain },
               metadata: { seller_count: 0 },
               cache: cacheInfo,
@@ -315,7 +315,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                   domain,
                   seller: optimizedResult.seller,
                   found: optimizedResult.found,
-                  key: optimizedResult.found ? null : 'accountIdNotInSellersJson',
+                  key: optimizedResult.found ? null : 'account-id-not-in-sellers-json',
                   params: optimizedResult.found ? null : { domain, account_id: normalizedSellerId },
                   metadata: optimizedResult.metadata,
                   cache: cacheInfo,

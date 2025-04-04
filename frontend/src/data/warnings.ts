@@ -155,10 +155,3 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
 };
 
-/**
- * Converts a backend validation_key (camelCase) to a frontend warningId (kebab-case)
- */
-export const convertValidationKeyToWarningId = (validationKey: string): string => {
-  // Convert camelCase to kebab-case
-  return validationKey.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-};

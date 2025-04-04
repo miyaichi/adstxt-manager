@@ -1,6 +1,5 @@
 import React from 'react';
 import WarningPopover from '../common/WarningPopover';
-import { convertValidationKeyToWarningId } from '../../data/warnings';
 import './WarningDisplay.css';
 import { Severity } from '../../models';
 
@@ -28,11 +27,10 @@ const WarningDisplay: React.FC<WarningDisplayProps> = ({ errorMessages }) => {
     <div className="warning-display">
       <ul className="warning-list">
         {errorMessages.map((message, index) => {
-          const warningId = convertValidationKeyToWarningId(message.key);
           return (
             <li key={index} className="warning-item">
               <WarningPopover
-                warningId={warningId}
+                warningId={message.key}
                 params={message.params || {}}
                 severity={message.severity}
               />
