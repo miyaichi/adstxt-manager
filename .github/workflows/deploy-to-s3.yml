@@ -22,6 +22,15 @@ jobs:
           node-version: '18'
           cache: 'npm'
           
+      - name: Create frontend environment file for build
+        run: |
+          # Create frontend .env file for build time
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > frontend/.env
+          echo "REACT_APP_ENVIRONMENT=production" >> frontend/.env
+          
+          echo "Frontend .env file created for build:"
+          cat frontend/.env
+          
       - name: Install and build backend
         run: |
           cd backend
@@ -33,13 +42,9 @@ jobs:
           cd frontend
           npm install
           npm run build
-        
-      - name: Create environment files
+      
+      - name: Create backend environment file for deployment
         run: |
-          # Create frontend .env file
-          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > frontend/.env
-          echo "REACT_APP_ENVIRONMENT=production" >> frontend/.env
-          
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
           echo "PORT=${{ secrets.PORT || '3001' }}" >> backend/.env
@@ -112,6 +117,9 @@ jobs:
           
           # Copy application files (everything from the deploy directory)
           cp -r deploy/* temp_deploy/deploy/
+          
+          # Copy .env file to deploy directory
+          cp backend/.env temp_deploy/deploy/
           
           # Make sure scripts directory exists and has execute permissions
           chmod +x temp_deploy/scripts/*.sh

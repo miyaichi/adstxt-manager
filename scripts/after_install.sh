@@ -37,17 +37,39 @@ elif [ "$(uname -m)" = "x86_64" ]; then
     fi
 fi
 
-# 環境変数ファイルがすでに存在する場合はバックアップ
+# 環境変数ファイルの確認
 if [ -f ".env" ]; then
-    echo "Backing up existing .env file..."
+    echo "Found .env file, creating backup..."
     cp .env .env.bak
+else
+    echo "Warning: .env file not found in deployment!"
+    
+    # 基本的な.envファイルを作成
+    echo "Creating basic .env file..."
+    cat > .env << 'EOF'
+NODE_ENV=production
+PORT=3001
+DB_PROVIDER=sqlite
+SQLITE_PATH=/home/ec2-user/adstxt-manager/data/adstxt-manager.db
+EOF
+    echo ".env file created."
 fi
 
-# データベースディレクトリへのシンボリックリンク作成（SQLite使用時）
+echo "Contents of .env file (first 5 lines):"
+head -n 5 .env
+
+# データベースディレクトリの設定
+echo "Setting up data directory..."
+mkdir -p $DEPLOY_DIR/data
+chmod 755 $DEPLOY_DIR/data
+
+# SQLiteを使用する場合のディレクトリ設定
 if grep -q "DB_PROVIDER=sqlite" .env 2>/dev/null; then
-    echo "Setting up SQLite database directory..."
-    mkdir -p $DEPLOY_DIR/data
-    chmod 755 $DEPLOY_DIR/data
+    echo "SQLite database configured, path: $(grep SQLITE_PATH .env | cut -d= -f2)"
+    # SQLiteディレクトリが存在することを確認
+    SQLITE_DIR=$(dirname $(grep SQLITE_PATH .env | cut -d= -f2))
+    mkdir -p $SQLITE_DIR
+    chmod 755 $SQLITE_DIR
 fi
 
 echo "Setup completed successfully"
