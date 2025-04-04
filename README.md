@@ -86,6 +86,21 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 アプリケーションは任意のホスティングサービスにデプロイできます。
 
+### GitHub Actions と AWS S3 によるデプロイ
+
+mainブランチへの変更がプッシュされると、GitHub Actionsが自動的に以下の処理を実行します：
+
+1. アプリケーションのビルド
+2. すべての依存関係と共にZIPファイルにパッケージング
+3. AWS S3バケットへのアップロード
+
+この機能を利用するには、GitHubリポジトリのSettingsで以下のSecretsを設定してください：
+
+- AWS_ACCESS_KEY_ID: AWS アクセスキーID
+- AWS_SECRET_ACCESS_KEY: AWS シークレットアクセスキー
+- AWS_REGION: AWS リージョン（例：ap-northeast-1）
+- S3_BUCKET: ZIPファイルをアップロードするS3バケット名
+
 ## データベース構造
 
 アプリケーションは以下のテーブルを使用します：
