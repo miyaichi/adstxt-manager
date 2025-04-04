@@ -34,11 +34,6 @@ checkserver.js
 *.env
 .env.*
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-
 # Virtual environments
 venv/
 .venv/
