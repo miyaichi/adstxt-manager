@@ -102,8 +102,15 @@ jobs:
           npm install --omit=dev --no-scripts
           cd ..
           
-          # Create zip file
-          zip -r adstxt-manager.zip deploy
+          # Copy CodeDeploy files
+          mkdir -p temp_deploy
+          cp -r scripts temp_deploy/
+          cp appspec.yml temp_deploy/
+          
+          # Create zip file with all files needed for CodeDeploy
+          cp -r deploy temp_deploy/
+          cd temp_deploy
+          zip -r ../adstxt-manager.zip .
         
       # Upload to S3 only when running on main branch push
       - name: Upload to S3
