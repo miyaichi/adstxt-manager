@@ -73,7 +73,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     },
     [record.domain]
   );
-  
 
   // Fetch seller information on component mount
   useEffect(() => {
@@ -108,12 +107,12 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         if (!isMounted) return;
 
         if (response.success && response.data) {
-          if (response.error || (response.data.message && !response.data.found)) {
+          if (response.error || (response.data.key && !response.data.found)) {
             // API succeeded but returned an error
-            const errorMessage = response.error?.message || response.data.message;
+            const errorKey = response.error?.key || response.data.key;
             console.warn(
               `[${requestId}] Error for Seller ID ${record.account_id} from ${domain}:`,
-              errorMessage
+              errorKey
             );
             setError(true);
             setSellerInfo(null);
@@ -134,12 +133,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                   if (fallbackResponse.success && fallbackResponse.data) {
                     if (
                       fallbackResponse.error ||
-                      (fallbackResponse.data.message && !fallbackResponse.data.found)
+                      (fallbackResponse.data.key && !fallbackResponse.data.found)
                     ) {
                       // API succeeded but returned an error
-                      const errorMessage =
-                        fallbackResponse.error?.message || fallbackResponse.data.message;
-                      console.warn(`[${requestId}] Error for fallback domain:`, errorMessage);
+                      const errorKey = fallbackResponse.error?.key || fallbackResponse.data.key;
+                      console.warn(`[${requestId}] Error for fallback domain:`, errorKey);
                       setError(true);
                       setSellerInfo(null);
                     } else if (fallbackResponse.data.found && fallbackResponse.data.seller) {
@@ -245,7 +243,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         {/* Seller Information Section */}
         <Flex direction="column" gap="0.5rem" marginTop="0.5rem">
-          
           {loading && (
             <Flex direction="row" gap="0.25rem" alignItems="center">
               <Loader size="small" />
@@ -254,13 +251,13 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
               </Text>
             </Flex>
           )}
-          
+
           {!loading && (!sellerInfo || !sellerInfo.seller || error) && (
             <Text color="var(--amplify-colors-font-warning)">
               {t('adsTxt.recordItem.noSellerInfo', language)}
             </Text>
           )}
-          
+
           {!loading && sellerInfo && sellerInfo.seller && (
             <Card variation="elevated" padding="0.75rem" backgroundColor="#f8f8f8">
               <Flex direction="column" gap="0.5rem">
@@ -272,7 +269,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                     </Badge>
                   </Flex>
                 )}
-                
+
                 {/* Seller details */}
                 {sellerInfo.seller.is_confidential ? (
                   <Text>{t('adsTxt.recordItem.confidentialInfo', language)}</Text>
@@ -281,7 +278,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                     {sellerInfo.seller.name && (
                       <Text fontWeight="bold">{sellerInfo.seller.name}</Text>
                     )}
-                    
+
                     <Flex gap="1rem" wrap="wrap">
                       {sellerInfo.seller.domain && (
                         <Text>

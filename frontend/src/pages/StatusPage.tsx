@@ -218,8 +218,8 @@ const StatusPage: React.FC = () => {
               <Flex alignItems="center" gap="small" marginBottom="medium">
                 <Text>{t('statusPage.backend.database', language)}</Text>
                 <Badge variation={statusData.backend.database.connected ? 'success' : 'error'}>
-                  {statusData.backend.database.connected 
-                    ? t('statusPage.backend.connected', language) 
+                  {statusData.backend.database.connected
+                    ? t('statusPage.backend.connected', language)
                     : t('statusPage.backend.disconnected', language)}
                 </Badge>
               </Flex>
@@ -231,7 +231,10 @@ const StatusPage: React.FC = () => {
               )}
 
               <Text marginBottom="medium">
-                {t('statusPage.backend.lastChecked', language)} {new Date(statusData.backend.time).toLocaleString(language === 'ja' ? 'ja-JP' : 'en-US')}
+                {t('statusPage.backend.lastChecked', language)}{' '}
+                {new Date(statusData.backend.time).toLocaleString(
+                  language === 'ja' ? 'ja-JP' : 'en-US'
+                )}
               </Text>
 
               <Divider />

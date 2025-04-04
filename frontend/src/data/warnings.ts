@@ -156,83 +156,9 @@ export const warningInfos: Record<string, WarningInfo> = {
 };
 
 /**
- * Maps error message patterns to warning IDs
- */
-/**
  * Converts a backend validation_key (camelCase) to a frontend warningId (kebab-case)
  */
 export const convertValidationKeyToWarningId = (validationKey: string): string => {
   // Convert camelCase to kebab-case
   return validationKey.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-};
-
-/**
- * Map known error messages to warning IDs
- */
-export const getWarningIdFromErrorMessage = (errorMessage: string): string | null => {
-  // Map known error messages to warning IDs
-  if (errorMessage.includes('Invalid format')) {
-    return 'invalid-format';
-  }
-  if (errorMessage.includes('must contain at least')) {
-    return 'missing-fields';
-  }
-  if (errorMessage.includes('Relationship type must be')) {
-    return 'invalid-relationship';
-  }
-  if (errorMessage.includes('Domain must be a valid root domain')) {
-    return 'invalid-domain';
-  }
-  if (errorMessage.includes('Account ID must not be empty')) {
-    return 'empty-account-id';
-  }
-  if (errorMessage.includes('Duplicate entry found') && errorMessage.includes('different case')) {
-    return 'duplicate-entry-case-insensitive';
-  }
-  if (errorMessage.includes('Duplicate entry found')) {
-    return 'duplicate-entry';
-  }
-  if (
-    errorMessage.includes('No sellers.json file found') ||
-    errorMessage.includes('sellers.json file not found') ||
-    errorMessage.includes('sellers.json not found')
-  ) {
-    return 'no-sellers-json';
-  }
-  if (
-    (errorMessage.includes('DIRECT: Publisher account ID') || 
-     errorMessage.includes('Publisher account ID') ||
-     errorMessage.includes('Seller ID')) &&
-    errorMessage.includes('not found in sellers.json')
-  ) {
-    return 'direct-account-id-not-in-sellers-json';
-  }
-  if (
-    (errorMessage.includes('RESELLER: Publisher account ID') ||
-     errorMessage.includes('Reseller account ID')) &&
-    errorMessage.includes('not found in sellers.json')
-  ) {
-    return 'reseller-account-id-not-in-sellers-json';
-  }
-  if (errorMessage.includes('The sellers.json entry domain')) {
-    return 'domain-mismatch';
-  }
-  if (errorMessage.includes('DIRECT: Seller') && errorMessage.includes('not marked as PUBLISHER')) {
-    return 'direct-not-publisher';
-  }
-  if (errorMessage.includes('Seller ID') && errorMessage.includes('used multiple times')) {
-    return 'seller-id-not-unique';
-  }
-  if (
-    errorMessage.includes('RESELLER: Seller') &&
-    errorMessage.includes('not marked as INTERMEDIARY')
-  ) {
-    return 'reseller-not-intermediary';
-  }
-  if (errorMessage.includes('Error validating against sellers.json')) {
-    return 'sellers-json-validation-error';
-  }
-
-  // Unknown error type
-  return null;
 };

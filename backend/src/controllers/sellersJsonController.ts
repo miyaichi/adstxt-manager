@@ -51,13 +51,13 @@ function findSellerInData(data: any, normalizedSellerId: string) {
     logger.info(`Found seller with ID ${normalizedSellerId}`);
     return {
       seller: targetSeller,
-      message: null,
     };
   } else {
     logger.warn(`Seller ID ${normalizedSellerId} not found`);
     return {
       seller: null,
-      message: `Seller ID ${normalizedSellerId} not found in sellers.json`,
+      key: 'directAccountIdNotInSellersJson',
+      params: { account_id: normalizedSellerId },
     };
   }
 }
@@ -163,9 +163,9 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
   // For 404 errors, return a more specific message
   throw new ApiError(
     is404 ? 404 : 500,
-    is404 ? `sellers.json not found for ${domain}` : `Error fetching sellers.json: ${errorMessage}`,
-    is404 ? 'errors:sellersJsonNotFound' : 'errors:sellersFetchError',
-    { message: is404 ? 'File not found' : errorMessage }
+    '', // Empty message as we'll use keys
+    is404 ? 'noSellersJson' : 'sellersJsonFetchError',
+    { domain, message: is404 ? '' : errorMessage }
   );
 }
 
@@ -287,7 +287,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
               domain,
               seller: null,
               found: false,
-              message: `sellers.json file not found for ${domain}`,
+              key: 'noSellersJson',
+              params: { domain },
               metadata: { seller_count: 0 },
               cache: cacheInfo,
             },
@@ -314,9 +315,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                   domain,
                   seller: optimizedResult.seller,
                   found: optimizedResult.found,
-                  message: optimizedResult.found
-                    ? null
-                    : `Seller ID ${normalizedSellerId} not found in ${domain}`,
+                  key: optimizedResult.found ? null : 'accountIdNotInSellersJson',
+                  params: optimizedResult.found ? null : { domain, account_id: normalizedSellerId },
                   metadata: optimizedResult.metadata,
                   cache: cacheInfo,
                 },
@@ -348,7 +348,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
                 domain,
                 seller: result.seller || null,
                 found: result.seller ? true : false,
-                message: result.message,
+                key: result.key,
+                params: result.params,
                 metadata,
                 cache: cacheInfo,
               },
@@ -405,7 +406,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
         domain,
         seller: result.seller || null,
         found: result.seller ? true : false,
-        message: result.message,
+        key: result.key,
+        params: result.params,
         metadata,
         cache: freshCacheInfo,
       },

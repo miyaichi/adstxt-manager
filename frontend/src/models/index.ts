@@ -147,7 +147,8 @@ export interface SellersJsonSellerResponse {
   domain: string;
   seller: SellersJsonSeller | null;
   found: boolean;
-  message?: string;
+  key?: string; // エラーキー
+  params?: Record<string, any>; // エラーパラメータ
   metadata: SellersJsonMetadata;
   cache: SellersJsonCacheInfo;
 }
@@ -164,6 +165,8 @@ export interface ApiResponse<T> {
   data: T;
   error?: {
     message: string;
+    key?: string;
+    params?: Record<string, any>;
     stack?: string;
   };
 }

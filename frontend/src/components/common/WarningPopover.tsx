@@ -203,15 +203,11 @@ function getWarningInfoForId(id: string): WarningInfo | null {
     return warningInfos[id];
   }
 
-  // For debugging
-  console.warn(`Warning ID not found: ${id}. Attempting fallback lookup.`);
-
   // Try to find a close match (ignoring hyphens/casing differences)
   const normalizedId = id.toLowerCase().replace(/-/g, '');
 
   for (const key in warningInfos) {
     if (key.toLowerCase().replace(/-/g, '') === normalizedId) {
-      console.log(`Found fallback match: ${key} for ID: ${id}`);
       return warningInfos[key];
     }
   }
