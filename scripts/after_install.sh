@@ -9,16 +9,13 @@ echo "Setting up application..."
 # 作業ディレクトリに移動
 cd $DEPLOY_DIR
 
-# ZIPファイルが存在するか確認
-if [ ! -f "adstxt-manager.zip" ]; then
-    echo "Error: adstxt-manager.zip not found!"
-    exit 1
-fi
+# デバッグ情報
+echo "Current directory: $(pwd)"
+echo "Directory listing:"
+ls -la
 
-# ZIPファイルを解凍
-echo "Extracting application files..."
-unzip -o adstxt-manager.zip
-chmod -R 755 deploy
+# ディレクトリ権限の設定
+chmod -R 755 .
 
 # 依存関係のクリーンインストール
 echo "Installing dependencies..."
