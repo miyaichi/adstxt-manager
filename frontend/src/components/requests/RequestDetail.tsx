@@ -377,6 +377,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                   records={request.records}
                   onStatusChange={handleRecordStatusChange}
                   isEditable={request.request.status === 'pending'}
+                  showValidation={true}
                 />
 
                 {approvedRecords.length > 0 && (
