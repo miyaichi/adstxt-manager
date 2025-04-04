@@ -14,22 +14,101 @@ export class PostgresDatabase implements IDatabaseAdapter {
   private pool: Pool;
 
   private constructor() {
-    this.pool = new Pool({
-      host: process.env.PGHOST || 'localhost',
-      port: parseInt(process.env.PGPORT || '5432'),
-      database: process.env.PGDATABASE || 'adstxt_manager',
-      user: process.env.PGUSER || 'postgres',
-      password: process.env.PGPASSWORD || '',
-      max: parseInt(process.env.PG_MAX_POOL_SIZE || '10'),
-      idleTimeoutMillis: 30000,
-    });
+    // Check if DATABASE_URL is provided (common in cloud environments)
+    if (process.env.DATABASE_URL) {
+      // If connection string is provided, use it directly
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: this.getSslConfig(),
+        max: parseInt(process.env.PG_MAX_POOL_SIZE || '10'),
+        idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000'),
+        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '10000'),
+      });
+      console.log('Connected to PostgreSQL database using connection string');
+    } else {
+      // Use individual connection parameters
+      this.pool = new Pool({
+        host: process.env.PGHOST || 'localhost',
+        port: parseInt(process.env.PGPORT || '5432'),
+        database: process.env.PGDATABASE || 'adstxt_manager',
+        user: process.env.PGUSER || 'postgres',
+        password: process.env.PGPASSWORD || '',
+        ssl: this.getSslConfig(),
+        max: parseInt(process.env.PG_MAX_POOL_SIZE || '10'),
+        idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000'),
+        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '10000'),
+      });
+      console.log(`Connected to PostgreSQL database at ${process.env.PGHOST || 'localhost'}`);
+    }
 
+    // Register error handler for connection pool
     this.pool.on('error', (err) => {
       console.error('Unexpected error on idle PostgreSQL client', err);
-      process.exit(1);
+      // Don't crash the server on connection errors, just log them
+      // process.exit(1); - removed to improve resilience
     });
 
-    console.log('Connected to the PostgreSQL database');
+    // Setup connection validation
+    this.setupConnectionValidation();
+  }
+  
+  /**
+   * Configure SSL settings based on environment
+   */
+  private getSslConfig(): boolean | { [key: string]: any } {
+    // Check if SSL is explicitly disabled
+    if (process.env.PG_SSL_DISABLED === 'true') {
+      return false;
+    }
+
+    // For AWS RDS, Heroku, and many other cloud providers
+    if (process.env.PG_SSL_REQUIRED === 'true') {
+      return {
+        rejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false',
+        ca: process.env.PG_SSL_CA ? process.env.PG_SSL_CA : undefined,
+        cert: process.env.PG_SSL_CERT ? process.env.PG_SSL_CERT : undefined,
+        key: process.env.PG_SSL_KEY ? process.env.PG_SSL_KEY : undefined,
+      };
+    }
+
+    // If running in a cloud environment, default to requiring SSL with self-signed certs
+    const isCloudEnv = process.env.NODE_ENV === 'production' || 
+                       process.env.IS_CLOUD === 'true' || 
+                       !!process.env.DATABASE_URL;
+    
+    if (isCloudEnv) {
+      return {
+        rejectUnauthorized: false
+      };
+    }
+
+    // Local development default
+    return false;
+  }
+  
+  /**
+   * Set up periodic validation of connections
+   */
+  private setupConnectionValidation() {
+    // Only set up validation in production
+    if (process.env.NODE_ENV !== 'production') return;
+    
+    const checkInterval = parseInt(process.env.PG_HEALTH_CHECK_INTERVAL || '30000');
+    
+    setInterval(async () => {
+      try {
+        const client = await this.pool.connect();
+        const result = await client.query('SELECT 1');
+        client.release();
+        
+        if (result.rowCount !== 1) {
+          console.warn('PostgreSQL health check returned unexpected result');
+        }
+      } catch (err) {
+        console.error('PostgreSQL health check failed:', err);
+        // Here you could implement more sophisticated recovery logic
+      }
+    }, checkInterval);
   }
 
   /**

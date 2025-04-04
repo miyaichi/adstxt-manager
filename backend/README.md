@@ -107,6 +107,8 @@ To use PostgreSQL instead of SQLite:
    ```
 
 2. Configure the environment variables in your `.env` file:
+
+   **Local Development PostgreSQL:**
    ```
    DB_PROVIDER=postgres
    PGHOST=localhost
@@ -115,6 +117,32 @@ To use PostgreSQL instead of SQLite:
    PGUSER=postgres
    PGPASSWORD=yourpassword
    PG_MAX_POOL_SIZE=10
+   ```
+
+   **AWS RDS or Other Cloud Database:**
+   ```
+   DB_PROVIDER=postgres
+   
+   # Option 1: Using connection string (recommended for cloud environments)
+   DATABASE_URL=postgres://username:password@your-rds-endpoint.rds.amazonaws.com:5432/adstxt_manager
+   
+   # Option 2: Individual parameters
+   PGHOST=your-rds-endpoint.rds.amazonaws.com
+   PGPORT=5432
+   PGDATABASE=adstxt_manager
+   PGUSER=username
+   PGPASSWORD=password
+   
+   # SSL Configuration (typically required for AWS RDS)
+   PG_SSL_REQUIRED=true
+   # For self-signed certificates or development:
+   PG_SSL_REJECT_UNAUTHORIZED=false
+   
+   # Advanced connection pool settings
+   PG_MAX_POOL_SIZE=20
+   PG_IDLE_TIMEOUT=60000
+   PG_CONNECTION_TIMEOUT=15000
+   PG_HEALTH_CHECK_INTERVAL=60000
    ```
 
 3. Initialize the PostgreSQL database structure:
@@ -132,6 +160,23 @@ To use PostgreSQL instead of SQLite:
    ```
 
 5. Start the application - it will automatically use PostgreSQL.
+
+##### SSL Certificate Configuration (Optional)
+
+For custom SSL certificate configuration with AWS RDS or other cloud providers:
+
+```
+# Path to certificate files
+PG_SSL_CA=/path/to/ca-certificate.pem
+PG_SSL_CERT=/path/to/client-certificate.pem
+PG_SSL_KEY=/path/to/client-key.pem
+```
+
+Alternatively, you can include the certificate contents directly in the environment variables:
+
+```
+PG_SSL_CA=-----BEGIN CERTIFICATE-----\nMII...\n-----END CERTIFICATE-----
+```
 
 This design allows for flexible switching between database providers without code changes.
 
@@ -210,9 +255,21 @@ The application uses a flexible database abstraction:
 
    - `SqliteDatabase`: Persistent file-based storage for simpler deployments
    - `PostgresDatabase`: PostgreSQL integration for increased scalability
+     - Full support for AWS RDS and other cloud database providers
+     - SSL/TLS connection with configurable certificate validation
+     - Connection pooling with health checks and automatic recovery
+     - Both connection string and individual parameter formats supported
    - `MockDatabase`: In-memory storage for testing
 
-3. **Adding New Providers**:
+3. **Cloud Database Support**:
+
+   - Automatic detection of cloud environments
+   - Support for DATABASE_URL format (common in AWS, Heroku, Railway, etc.)
+   - Proper SSL/TLS configuration for secure connections
+   - Connection pool optimization for cloud environments
+   - Connection monitoring and health checks in production
+
+4. **Adding New Providers**:
    - Implement the `IDatabaseAdapter` interface
    - Update the factory in `src/config/database/index.ts` to use your implementation
 

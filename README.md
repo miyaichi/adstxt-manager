@@ -125,21 +125,45 @@ mainブランチへの変更がプッシュされると、自動デプロイパ�
 
 自動デプロイを有効にするには、GitHubリポジトリのSettingsで以下のSecretsを設定してください：
 
-**AWS認証情報**:
+**AWS認証情報** (Secrets):
 - `AWS_ACCESS_KEY_ID`: AWS アクセスキーID
 - `AWS_SECRET_ACCESS_KEY`: AWS シークレットアクセスキー
 - `AWS_REGION`: AWS リージョン（例：ap-northeast-1）
 - `S3_BUCKET`: デプロイパッケージをアップロードするS3バケット名
 
-**CodeDeploy設定**:
+**CodeDeploy設定** (Variables):
 - `CODEDEPLOY_APP_NAME`: CodeDeployアプリケーション名
 - `CODEDEPLOY_DEPLOYMENT_GROUP`: デプロイグループ名
 
-**アプリケーション環境変数**:
+**データベース設定** (Secrets):
+- SQLite使用時:
+  - `SQLITE_PATH`: SQLiteファイルのパス
+
+- PostgreSQL使用時 (AWS RDSなど):
+  - **推奨設定** (必須):
+    - `DB_HOST`: データベースホスト（AWS RDSエンドポイントなど）
+    - `DB_PORT`: データベースポート（通常は5432）
+    - `DB_NAME`: データベース名
+    - `DB_USER`: データベースユーザー名（マスターユーザーまたは専用ユーザー）
+    - `DB_PASSWORD`: データベースパスワード
+    
+    注: これらの個別パラメータから自動的に `DATABASE_URL` が生成されます
+  
+  - SSL証明書設定（オプション）:
+    - `DB_SSL_CA`: CA証明書ファイルパスまたは内容
+    - `DB_SSL_CERT`: クライアント証明書ファイルパスまたは内容
+    - `DB_SSL_KEY`: クライアント鍵ファイルパスまたは内容
+
+**アプリケーション環境変数** (Variables):
 - `REACT_APP_API_URL`: フロントエンドがAPIにアクセスするURL
 - `DB_PROVIDER`: データベースプロバイダ（`sqlite`または`postgres`）
 - `PORT`: バックエンドサーバーのポート番号（デフォルト: 3001）
-- その他、必要に応じてデータベース設定などを追加
+- `DB_SSL_REQUIRED`: SSL接続を使用するかどうか（`true`または`false`）
+- `DB_SSL_REJECT_UNAUTHORIZED`: 自己署名証明書を許可するかどうか（`true`または`false`）
+- `DB_MAX_POOL_SIZE`: 接続プールの最大サイズ
+- `DB_IDLE_TIMEOUT`: アイドル接続のタイムアウト（ミリ秒）
+- `DB_CONNECTION_TIMEOUT`: 接続タイムアウト（ミリ秒）
+- `DB_HEALTH_CHECK_INTERVAL`: ヘルスチェック間隔（ミリ秒）
 
 #### マニュアルデプロイ
 
@@ -197,14 +221,91 @@ CodeDeployを使用せずに手動でデプロイする場合は、以下の手�
 
 #### PostgreSQL設定例
 
+**一般的なPostgreSQL設定:**
 ```
 DB_PROVIDER=postgres
-PGHOST=your-db-host.rds.amazonaws.com
-PGPORT=5432
-PGDATABASE=adstxt_manager
-PGUSER=dbadmin
-PGPASSWORD=your_password
-PG_MAX_POOL_SIZE=10
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=adstxt_manager
+DB_USER=dbadmin
+DB_PASSWORD=your_password
+DB_MAX_POOL_SIZE=10
+```
+
+**AWS RDS / クラウド環境向け設定:**
+```
+DB_PROVIDER=postgres
+
+# 個別のパラメータを使用（推奨方法）
+# これらのパラメータから自動的にDATABASE_URLが生成されます
+DB_HOST=your-rds-endpoint.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=adstxt_manager
+DB_USER=dbadmin
+DB_PASSWORD=your_password
+
+# SSL/TLS設定 (AWS RDSでは通常必須)
+DB_SSL_REQUIRED=true
+# 自己署名証明書または開発環境の場合:
+DB_SSL_REJECT_UNAUTHORIZED=false
+
+# 接続プール最適化設定
+DB_MAX_POOL_SIZE=20
+DB_IDLE_TIMEOUT=60000
+DB_CONNECTION_TIMEOUT=15000
+DB_HEALTH_CHECK_INTERVAL=60000
+```
+
+**カスタムSSL証明書が必要な場合:**
+```
+# 証明書ファイルへのパス
+DB_SSL_CA=/path/to/ca-certificate.pem
+DB_SSL_CERT=/path/to/client-certificate.pem
+DB_SSL_KEY=/path/to/client-key.pem
+```
+
+### GitHub Actionsに設定すべき推奨項目
+
+**Secrets** (機密情報):
+```
+# AWS認証情報
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_REGION=ap-northeast-1
+S3_BUCKET=my-deployment-bucket
+
+# Database設定 (AWS RDS)
+DB_HOST=mydb.123456789012.ap-northeast-1.rds.amazonaws.com
+DB_NAME=adstxt_manager
+DB_USER=admin
+DB_PASSWORD=your-secure-password
+
+# アプリケーション認証
+JWT_SECRET=your-secure-jwt-secret
+
+# メール設定
+EMAIL_USER=noreply@example.com
+EMAIL_PASSWORD=your-email-password
+```
+
+**Variables** (環境設定):
+```
+# デプロイ設定
+CODEDEPLOY_APP_NAME=AdsTxtManager
+CODEDEPLOY_DEPLOYMENT_GROUP=Production
+
+# アプリケーション設定
+REACT_APP_API_URL=https://api.example.com
+DB_PROVIDER=postgres
+PORT=3001
+
+# PostgreSQL最適化設定
+DB_SSL_REQUIRED=true
+DB_SSL_REJECT_UNAUTHORIZED=false  # 自己署名証明書の場合
+DB_MAX_POOL_SIZE=20
+DB_CONNECTION_TIMEOUT=15000
+DB_IDLE_TIMEOUT=60000
+DB_HEALTH_CHECK_INTERVAL=60000
 ```
 
 ## 使用例

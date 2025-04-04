@@ -53,12 +53,109 @@ jobs:
           if [ "${{ vars.DB_PROVIDER }}" = "sqlite" ]; then
             echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/home/ec2-user/adstxt-manager/data/adstxt-manager.db' }}" >> backend/.env
           else
-            echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
-            echo "DB_PORT=${{ secrets.DB_PORT || '5432' }}" >> backend/.env
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
-            echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
-            echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT || '5432' }}/${{ secrets.DB_NAME }}" >> backend/.env
+            # Set individual connection parameters using DB_ prefix and generate DATABASE_URL
+            # Set database host/endpoint
+            if [ -n "${{ secrets.DB_HOST }}" ]; then
+              echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
+              DB_HOST="${{ secrets.DB_HOST }}"
+            else
+              echo "Warning: No database host specified (DB_HOST)"
+              echo "DB_HOST=localhost" >> backend/.env
+              echo "PGHOST=localhost" >> backend/.env
+              DB_HOST="localhost"
+            fi
+            
+            # Set database port
+            if [ -n "${{ secrets.DB_PORT }}" ]; then
+              echo "DB_PORT=${{ secrets.DB_PORT }}" >> backend/.env
+              DB_PORT="${{ secrets.DB_PORT }}"
+            else
+              echo "DB_PORT=5432" >> backend/.env
+              echo "PGPORT=5432" >> backend/.env
+              DB_PORT="5432"
+            fi
+            
+            # Set database name
+            if [ -n "${{ secrets.DB_NAME }}" ]; then
+              echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
+              DB_NAME="${{ secrets.DB_NAME }}"
+            else
+              echo "Warning: No database name specified (DB_NAME)"
+              echo "DB_NAME=adstxt_manager" >> backend/.env
+              echo "PGDATABASE=adstxt_manager" >> backend/.env
+              DB_NAME="adstxt_manager"
+            fi
+            
+            # Set database user
+            if [ -n "${{ secrets.DB_USER }}" ]; then
+              echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
+              DB_USER="${{ secrets.DB_USER }}"
+            else
+              echo "Warning: No database user specified (DB_USER)"
+              echo "DB_USER=postgres" >> backend/.env
+              echo "PGUSER=postgres" >> backend/.env
+              DB_USER="postgres"
+            fi
+            
+            # Set database password
+            if [ -n "${{ secrets.DB_PASSWORD }}" ]; then
+              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
+              DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            else
+              echo "Warning: No database password specified (DB_PASSWORD)"
+              echo "DB_PASSWORD=" >> backend/.env
+              echo "PGPASSWORD=" >> backend/.env
+              DB_PASSWORD=""
+            fi
+            
+            # Generate DATABASE_URL from individual parameters
+            echo "DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" >> backend/.env
+            echo "Generated DATABASE_URL from individual parameters"
+            
+            # SSL/TLS Configuration for AWS RDS and cloud databases
+            echo "DB_SSL_REQUIRED=${{ vars.DB_SSL_REQUIRED || 'true' }}" >> backend/.env
+            echo "PG_SSL_REQUIRED=${{ vars.DB_SSL_REQUIRED || 'true' }}" >> backend/.env  # For backward compatibility
+            
+            echo "DB_SSL_REJECT_UNAUTHORIZED=${{ vars.DB_SSL_REJECT_UNAUTHORIZED || 'false' }}" >> backend/.env
+            echo "PG_SSL_REJECT_UNAUTHORIZED=${{ vars.DB_SSL_REJECT_UNAUTHORIZED || 'false' }}" >> backend/.env  # For backward compatibility
+            
+            # Connection pool settings
+            echo "DB_MAX_POOL_SIZE=${{ vars.DB_MAX_POOL_SIZE || '20' }}" >> backend/.env
+            echo "PG_MAX_POOL_SIZE=${{ vars.DB_MAX_POOL_SIZE || '20' }}" >> backend/.env  # For backward compatibility
+            
+            echo "DB_IDLE_TIMEOUT=${{ vars.DB_IDLE_TIMEOUT || '60000' }}" >> backend/.env
+            echo "PG_IDLE_TIMEOUT=${{ vars.DB_IDLE_TIMEOUT || '60000' }}" >> backend/.env  # For backward compatibility
+            
+            echo "DB_CONNECTION_TIMEOUT=${{ vars.DB_CONNECTION_TIMEOUT || '15000' }}" >> backend/.env
+            echo "PG_CONNECTION_TIMEOUT=${{ vars.DB_CONNECTION_TIMEOUT || '15000' }}" >> backend/.env  # For backward compatibility
+            
+            echo "DB_HEALTH_CHECK_INTERVAL=${{ vars.DB_HEALTH_CHECK_INTERVAL || '60000' }}" >> backend/.env
+            echo "PG_HEALTH_CHECK_INTERVAL=${{ vars.DB_HEALTH_CHECK_INTERVAL || '60000' }}" >> backend/.env  # For backward compatibility
+            
+            # Optional SSL Certificate paths (if using custom certificates)
+            if [ -n "${{ secrets.DB_SSL_CA }}" ]; then
+              echo "DB_SSL_CA=${{ secrets.DB_SSL_CA }}" >> backend/.env
+              echo "PG_SSL_CA=${{ secrets.DB_SSL_CA }}" >> backend/.env  # For backward compatibility
+            elif [ -n "${{ secrets.PG_SSL_CA }}" ]; then
+              echo "DB_SSL_CA=${{ secrets.PG_SSL_CA }}" >> backend/.env
+              echo "PG_SSL_CA=${{ secrets.PG_SSL_CA }}" >> backend/.env
+            fi
+            
+            if [ -n "${{ secrets.DB_SSL_CERT }}" ]; then
+              echo "DB_SSL_CERT=${{ secrets.DB_SSL_CERT }}" >> backend/.env
+              echo "PG_SSL_CERT=${{ secrets.DB_SSL_CERT }}" >> backend/.env  # For backward compatibility
+            elif [ -n "${{ secrets.PG_SSL_CERT }}" ]; then
+              echo "DB_SSL_CERT=${{ secrets.PG_SSL_CERT }}" >> backend/.env
+              echo "PG_SSL_CERT=${{ secrets.PG_SSL_CERT }}" >> backend/.env
+            fi
+            
+            if [ -n "${{ secrets.DB_SSL_KEY }}" ]; then
+              echo "DB_SSL_KEY=${{ secrets.DB_SSL_KEY }}" >> backend/.env
+              echo "PG_SSL_KEY=${{ secrets.PG_SSL_KEY }}" >> backend/.env  # For backward compatibility
+            elif [ -n "${{ secrets.PG_SSL_KEY }}" ]; then
+              echo "DB_SSL_KEY=${{ secrets.PG_SSL_KEY }}" >> backend/.env
+              echo "PG_SSL_KEY=${{ secrets.PG_SSL_KEY }}" >> backend/.env
+            fi
           fi
 
           # Additional configurations

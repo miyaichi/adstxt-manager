@@ -11,7 +11,24 @@ cd $APP_DIR
 
 # Initialize database
 echo "Running database migrations..."
-node dist/db/migrations/run.js || echo "⚠️ Database initialization failed, continuing anyway..."
+
+# Determine database type and run appropriate migrations
+if grep -q "DB_PROVIDER=postgres" .env 2>/dev/null || grep -q "DATABASE_URL=postgres" .env 2>/dev/null; then
+    echo "PostgreSQL detected, running PostgreSQL migrations..."
+    
+    # Check if we're using AWS RDS
+    if grep -q "amazonaws.com" .env 2>/dev/null; then
+        echo "AWS RDS detected, using PostgreSQL-specific migrations..."
+    fi
+    
+    # Run PostgreSQL migrations
+    node dist/db/migrations/run_ads_txt_cache.js || echo "⚠️ ads_txt_cache migration failed, continuing..."
+    node dist/db/migrations/run_alter_ads_txt_cache.js || echo "⚠️ alter_ads_txt_cache migration failed, continuing..."
+    node dist/db/migrations/run_sellers_json_postgres.js || echo "⚠️ sellers_json migration failed, continuing..."
+else
+    echo "SQLite detected, running SQLite migrations..."
+    node dist/db/migrations/run.js || echo "⚠️ Database initialization failed, continuing anyway..."
+fi
 
 # Start application with PM2
 echo "Starting application with PM2..."
