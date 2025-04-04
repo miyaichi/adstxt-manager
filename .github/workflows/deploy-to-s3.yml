@@ -122,13 +122,13 @@ jobs:
           aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-latest.zip
 
           # Deploy with CodeDeploy if configured
-          if [ -n "${{ vers.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ vers.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
+          if [ -n "${{ vars.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
             echo "Creating CodeDeploy deployment..."
             
             # Create deployment
             DEPLOYMENT_ID=$(aws deploy create-deployment \
-              --application-name ${{ vers.CODEDEPLOY_APP_NAME }} \
-              --deployment-group-name ${{ vers.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+              --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
+              --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
               --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
               --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
               --output text --query 'deploymentId')
