@@ -25,13 +25,13 @@ jobs:
       - name: Install and build backend
         run: |
           cd backend
-          npm ci
+          npm install
           npm run build
           
       - name: Install and build frontend
         run: |
           cd frontend
-          npm ci
+          npm install
           npm run build
         
       - name: Create deployment package
@@ -43,9 +43,9 @@ jobs:
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
           
-          # Install production dependencies
+          # Install production dependencies without triggering scripts
           cd deploy
-          npm install --omit=dev
+          npm install --omit=dev --no-scripts
           cd ..
           
           # Create zip file
