@@ -84,22 +84,99 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 ## デプロイ
 
-アプリケーションは任意のホスティングサービスにデプロイできます。
+アプリケーションは任意のホスティングサービスにデプロイできます。本リポジトリでは、GitHub ActionsとAWS CodeDeployを使用した自動デプロイパイプラインを実装しています。
 
-### GitHub Actions と AWS S3 によるデプロイ
+### GitHub ActionsとAWS CodeDeployによる自動デプロイ
 
-mainブランチへの変更がプッシュされると、GitHub Actionsが自動的に以下の処理を実行します：
+mainブランチへの変更がプッシュされると、自動デプロイパイプラインが起動し、次の処理が実行されます：
 
-1. アプリケーションのビルド
-2. すべての依存関係と共にZIPファイルにパッケージング
-3. AWS S3バケットへのアップロード
+1. **ビルドプロセス**:
+   - バックエンドとフロントエンドのビルド
+   - 環境変数ファイルの生成
+   - 依存関係のインストール
 
-この機能を利用するには、GitHubリポジトリのSettingsで以下のSecretsを設定してください：
+2. **パッケージング**:
+   - アプリケーションファイルと依存関係のパッケージング
+   - CodeDeployのデプロイスクリプトの追加
+   - ZIPファイルの作成
 
-- AWS_ACCESS_KEY_ID: AWS アクセスキーID
-- AWS_SECRET_ACCESS_KEY: AWS シークレットアクセスキー
-- AWS_REGION: AWS リージョン（例：ap-northeast-1）
-- S3_BUCKET: ZIPファイルをアップロードするS3バケット名
+3. **デプロイプロセス**:
+   - ZIPファイルをAWS S3バケットにアップロード
+   - AWS CodeDeployでEC2インスタンスへのデプロイを開始
+   - デプロイ状態の初期確認
+
+#### 必要なAWSリソース
+
+1. **EC2インスタンス**:
+   - Amazon Linux 2023推奨
+   - CodeDeployエージェントがインストールされていること(UserDataを使用)
+   - セキュリティグループの設定（HTTPポート開放）
+   - 適切なIAMロールがアタッチされていること（S3読み取り権限含む）
+
+2. **IAMロール設定**:
+   - EC2インスタンス用ロール: `AmazonS3ReadOnlyAccess`ポリシーを含むこと
+   - CodeDeploy用サービスロール: `AWSCodeDeployRole`ポリシーを含むこと
+
+3. **CodeDeployの設定**:
+   - CodeDeployアプリケーションの作成
+   - デプロイグループの作成（EC2インスタンスをターゲットに設定）
+
+#### GitHubリポジトリの設定
+
+自動デプロイを有効にするには、GitHubリポジトリのSettingsで以下のSecretsを設定してください：
+
+**AWS認証情報**:
+- `AWS_ACCESS_KEY_ID`: AWS アクセスキーID
+- `AWS_SECRET_ACCESS_KEY`: AWS シークレットアクセスキー
+- `AWS_REGION`: AWS リージョン（例：ap-northeast-1）
+- `S3_BUCKET`: デプロイパッケージをアップロードするS3バケット名
+
+**CodeDeploy設定**:
+- `CODEDEPLOY_APP_NAME`: CodeDeployアプリケーション名
+- `CODEDEPLOY_DEPLOYMENT_GROUP`: デプロイグループ名
+
+**アプリケーション環境変数**:
+- `REACT_APP_API_URL`: フロントエンドがAPIにアクセスするURL
+- `DB_PROVIDER`: データベースプロバイダ（`sqlite`または`postgres`）
+- `PORT`: バックエンドサーバーのポート番号（デフォルト: 3001）
+- その他、必要に応じてデータベース設定などを追加
+
+#### マニュアルデプロイ
+
+CodeDeployを使用せずに手動でデプロイする場合は、以下の手順に従ってください：
+
+1. アプリケーションのビルド:
+   ```bash
+   # バックエンドのビルド
+   cd backend
+   npm install
+   npm run build
+
+   # フロントエンドのビルド
+   cd ../frontend
+   npm install
+   npm run build
+   ```
+
+2. サーバーへのファイル転送:
+   ```bash
+   # 必要なファイルの準備
+   mkdir -p deploy
+   cp -r backend/dist deploy/
+   cp -r frontend/build deploy/public
+   cp backend/package.json deploy/
+   cp backend/.env deploy/
+
+   # サーバーへの転送
+   scp -r deploy user@your-server:/path/to/app
+   ```
+
+3. アプリケーションの起動:
+   ```bash
+   cd /path/to/app
+   npm install --production
+   node dist/server.js
+   ```
 
 ## データベース構造
 
