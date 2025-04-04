@@ -1,4 +1,4 @@
-name: Build and Deploy to S3
+name: Build and Deploy to EC2
 
 on:
   push:
@@ -28,9 +28,6 @@ jobs:
           echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > frontend/.env
           echo "REACT_APP_ENVIRONMENT=production" >> frontend/.env
           
-          echo "Frontend .env file created for build:"
-          cat frontend/.env
-          
       - name: Install and build backend
         run: |
           cd backend
@@ -43,7 +40,7 @@ jobs:
           npm install
           npm run build
       
-      - name: Create backend environment file for deployment
+      - name: Create backend environment file
         run: |
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
@@ -52,11 +49,10 @@ jobs:
           # Database configuration
           echo "DB_PROVIDER=${{ secrets.DB_PROVIDER || 'postgres' }}" >> backend/.env
           
-          # SQLite configuration (if needed)
+          # SQLite or PostgreSQL configuration
           if [ "${{ secrets.DB_PROVIDER }}" = "sqlite" ]; then
-            echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/app/data/adstxt-manager.db' }}" >> backend/.env
+            echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/home/ec2-user/adstxt-manager/data/adstxt-manager.db' }}" >> backend/.env
           else
-            # PostgreSQL configuration
             echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
             echo "DB_PORT=${{ secrets.DB_PORT || '5432' }}" >> backend/.env
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
@@ -65,31 +61,19 @@ jobs:
             echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT || '5432' }}/${{ secrets.DB_NAME }}" >> backend/.env
           fi
           
-          # AWS configuration
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> backend/.env
-          echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
-          
-          # CORS configuration
+          # Additional configurations
           echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN || secrets.REACT_APP_API_URL }}" >> backend/.env
-          
-          # JWT configuration
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
-          
-          # Email configuration
           echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> backend/.env
           echo "EMAIL_PORT=${{ secrets.EMAIL_PORT || '587' }}" >> backend/.env
           echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> backend/.env
           echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> backend/.env
-          
-          # Mask sensitive information before printing
-          echo "Backend .env file created (with sensitive values masked):"
-          cat backend/.env | sed 's/\(DB_PASSWORD=\).*/\1********/' | sed 's/\(JWT_SECRET=\).*/\1********/' | sed 's/\(EMAIL_PASSWORD=\).*/\1********/'
-          
-          echo "Frontend .env file created:"
-          cat frontend/.env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> backend/.env
+          echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
       
       - name: Create deployment package
         run: |
+          # Create app directories
           mkdir -p deploy
           cp -r backend/dist deploy/
           cp -r frontend/build deploy/public
@@ -102,62 +86,33 @@ jobs:
           mkdir -p deploy/src/db/migrations
           cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
           
-          # Install production dependencies without triggering scripts
+          # Install production dependencies
           cd deploy
           npm install --omit=dev --no-scripts
           cd ..
           
-          # Copy CodeDeploy files
-          mkdir -p temp_deploy
+          # Create CodeDeploy structure
+          mkdir -p temp_deploy/deploy
           cp -r scripts temp_deploy/
           cp appspec.yml temp_deploy/
-          
-          # Create a clean directory structure for CodeDeploy
-          mkdir -p temp_deploy/deploy
-          
-          # Copy application files (everything from the deploy directory)
           cp -r deploy/* temp_deploy/deploy/
-          
-          # Copy .env file to deploy directory
-          cp backend/.env temp_deploy/deploy/
-          
-          # Make sure scripts directory exists and has execute permissions
           chmod +x temp_deploy/scripts/*.sh
           
-          # Ensure appspec.yml and scripts are at the root level
+          # Create zip file
           cd temp_deploy
-          
-          # Create the zip file
-          echo "Creating deployment package with the following structure:"
-          ls -la
-          echo "Deploy directory contents:"
-          ls -la deploy/ || echo "deploy directory not found"
-          echo "Scripts directory contents:"
-          ls -la scripts/ || echo "scripts directory not found"
-          
           zip -r ../adstxt-manager.zip .
-          
-          # Validate zip file contents
           cd ..
-          echo "Validating zip file contents:"
-          unzip -l adstxt-manager.zip | head -20
         
-      # Upload to S3 and deploy only when running on main branch push
-      - name: Upload to S3 and trigger deployment
+      - name: Deploy to AWS
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          # Check if AWS credentials are available
+          # Check required secrets
           if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ] || [ -z "${{ secrets.S3_BUCKET }}" ]; then
-            echo "Error: AWS credentials or S3 bucket not configured in GitHub secrets"
-            echo "Please set the following secrets in your GitHub repository:"
-            echo "- AWS_ACCESS_KEY_ID"
-            echo "- AWS_SECRET_ACCESS_KEY"
-            echo "- AWS_REGION"
-            echo "- S3_BUCKET"
+            echo "Error: AWS credentials or S3 bucket not configured"
             exit 1
           fi
           
@@ -166,7 +121,7 @@ jobs:
           aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-${{ github.sha }}.zip
           aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-latest.zip
           
-          # Check if CodeDeploy application and deployment group exist
+          # Deploy with CodeDeploy if configured
           if [ -n "${{ secrets.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ secrets.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
             echo "Creating CodeDeploy deployment..."
             
@@ -175,43 +130,29 @@ jobs:
               --application-name ${{ secrets.CODEDEPLOY_APP_NAME }} \
               --deployment-group-name ${{ secrets.CODEDEPLOY_DEPLOYMENT_GROUP }} \
               --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
-              --description "Deployment triggered by GitHub Actions - Commit: ${{ github.sha }}" \
+              --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
               --output text --query 'deploymentId')
             
             if [ -n "$DEPLOYMENT_ID" ]; then
-              echo "Deployment created successfully. Deployment ID: $DEPLOYMENT_ID"
+              echo "✅ Deployment initiated with ID: $DEPLOYMENT_ID"
               
-              # Wait for deployment to complete (optional)
-              echo "Waiting for deployment to complete..."
-              
-              # Add a short delay to ensure AWS recognizes the deployment
-              sleep 5
-              
-              # Poll for initial deployment status only (don't wait for completion)
-              sleep 15  # 初期状態を確認するための短い待機時間
-              
-              # デプロイステータスを一度だけチェック
+              # Check initial status
+              sleep 10
               STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text)
-              echo "Current deployment status: $STATUS"
+              echo "Current status: $STATUS"
               
-              # デプロイがエラーになっていなければ成功とみなす
+              # Show console link
+              echo "📝 Monitor deployment at: https://${{ secrets.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/deployments/${DEPLOYMENT_ID}?region=${{ secrets.AWS_REGION }}"
+              
+              # Exit with error only if deployment immediately failed
               if [ "$STATUS" == "FAILED" ]; then
-                echo "❌ Deployment failed immediately with status: $STATUS"
-                aws deploy get-deployment --deployment-id $DEPLOYMENT_ID
+                echo "❌ Deployment failed immediately"
                 exit 1
-              else
-                echo "✅ Deployment initiated successfully with ID: $DEPLOYMENT_ID"
-                echo "👉 Check AWS CodeDeploy console for final status."
-                echo "📝 Deployment URL: https://${{ secrets.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/deployments/${DEPLOYMENT_ID}?region=${{ secrets.AWS_REGION }}"
-                # デプロイコマンドの検証APIを呼び出す
-                aws deploy get-deployment-config --deployment-config-name ${{ secrets.CODEDEPLOY_DEPLOYMENT_CONFIG || 'CodeDeployDefault.OneAtATime' }} > /dev/null
-                echo "✓ Deployment configuration validated."
               fi
             else
               echo "❌ Failed to create deployment"
               exit 1
             fi
           else
-            echo "⚠️ CodeDeploy application or deployment group not specified in secrets."
-            echo "Skipping automatic deployment. Upload to S3 completed successfully."
+            echo "⚠️ CodeDeploy not configured. S3 upload completed successfully."
           fi

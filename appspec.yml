@@ -1,10 +1,13 @@
 version: 0.0
 os: linux
+
+# Files to deploy
 files:
   - source: deploy
     destination: /home/ec2-user/adstxt-manager
     overwrite: true
 
+# Set permissions on deployed files
 permissions:
   - object: /home/ec2-user/adstxt-manager
     pattern: "**"
@@ -12,20 +15,28 @@ permissions:
     group: ec2-user
     mode: 755
 
+# Lifecycle hooks
 hooks:
-  BeforeInstall:
-    - location: scripts/before_install.sh
-      timeout: 300
-      runas: ec2-user
-  AfterInstall:
-    - location: scripts/after_install.sh
-      timeout: 300
-      runas: ec2-user
-  ApplicationStart:
-    - location: scripts/application_start.sh
-      timeout: 300
-      runas: ec2-user
+  # Stop running application before deployment
   ApplicationStop:
     - location: scripts/application_stop.sh
-      timeout: 300
+      timeout: 120
+      runas: ec2-user
+      
+  # Prepare environment before installation
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 180
+      runas: ec2-user
+      
+  # Configure application after files are in place
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 240
+      runas: ec2-user
+      
+  # Start the application after configuration
+  ApplicationStart:
+    - location: scripts/application_start.sh
+      timeout: 180
       runas: ec2-user
