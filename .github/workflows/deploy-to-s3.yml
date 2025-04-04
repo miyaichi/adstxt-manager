@@ -11,46 +11,46 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-          
+
       - name: Create frontend environment file for build
         run: |
           # Create frontend .env file for build time
-          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > frontend/.env
-          echo "REACT_APP_ENVIRONMENT=production" >> frontend/.env
-          
+          echo "REACT_APP_API_URL=${{ vars.REACT_APP_API_URL }}" > frontend/.env
+          echo "REACT_APP_ENVIRONMENT=${{ vars.REACT_APP_ENVIRONMENT }}" >> frontend/.env
+
       - name: Install and build backend
         run: |
           cd backend
           npm install
           npm run build
-          
+
       - name: Install and build frontend
         run: |
           cd frontend
           npm install
           npm run build
-      
+
       - name: Create backend environment file
         run: |
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
-          echo "PORT=${{ secrets.PORT || '3001' }}" >> backend/.env
-          
+          echo "PORT=${{ vars.PORT || '3001' }}" >> backend/.env
+
           # Database configuration
-          echo "DB_PROVIDER=${{ secrets.DB_PROVIDER || 'postgres' }}" >> backend/.env
-          
+          echo "DB_PROVIDER=${{ vars.DB_PROVIDER || 'postgres' }}" >> backend/.env
+
           # SQLite or PostgreSQL configuration
-          if [ "${{ secrets.DB_PROVIDER }}" = "sqlite" ]; then
+          if [ "${{ vars.DB_PROVIDER }}" = "sqlite" ]; then
             echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/home/ec2-user/adstxt-manager/data/adstxt-manager.db' }}" >> backend/.env
           else
             echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
@@ -60,17 +60,17 @@ jobs:
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
             echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT || '5432' }}/${{ secrets.DB_NAME }}" >> backend/.env
           fi
-          
+
           # Additional configurations
-          echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN || secrets.REACT_APP_API_URL }}" >> backend/.env
+          echo "CORS_ORIGIN=${{ vars.CORS_ORIGIN || vars.REACT_APP_API_URL }}" >> backend/.env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
-          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> backend/.env
-          echo "EMAIL_PORT=${{ secrets.EMAIL_PORT || '587' }}" >> backend/.env
+          echo "EMAIL_HOST=${{ vars.EMAIL_HOST }}" >> backend/.env
+          echo "EMAIL_PORT=${{ vars.EMAIL_PORT || '587' }}" >> backend/.env
           echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> backend/.env
           echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> backend/.env
           echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> backend/.env
           echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
-      
+
       - name: Create deployment package
         run: |
           # Create app directories
@@ -81,28 +81,28 @@ jobs:
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
           cp backend/.env deploy/
-          
+
           # Copy SQL migration files
           mkdir -p deploy/src/db/migrations
           cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
-          
+
           # Install production dependencies
           cd deploy
           npm install --omit=dev --no-scripts
           cd ..
-          
+
           # Create CodeDeploy structure
           mkdir -p temp_deploy/deploy
           cp -r scripts temp_deploy/
           cp appspec.yml temp_deploy/
           cp -r deploy/* temp_deploy/deploy/
           chmod +x temp_deploy/scripts/*.sh
-          
+
           # Create zip file
           cd temp_deploy
           zip -r ../adstxt-manager.zip .
           cd ..
-        
+
       - name: Deploy to AWS
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -115,20 +115,20 @@ jobs:
             echo "Error: AWS credentials or S3 bucket not configured"
             exit 1
           fi
-          
+
           # Upload to S3
           echo "Uploading deployment package to S3..."
           aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-${{ github.sha }}.zip
           aws s3 cp adstxt-manager.zip s3://${{ secrets.S3_BUCKET }}/adstxt-manager-latest.zip
-          
+
           # Deploy with CodeDeploy if configured
-          if [ -n "${{ secrets.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ secrets.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
+          if [ -n "${{ vers.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ vers.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
             echo "Creating CodeDeploy deployment..."
             
             # Create deployment
             DEPLOYMENT_ID=$(aws deploy create-deployment \
-              --application-name ${{ secrets.CODEDEPLOY_APP_NAME }} \
-              --deployment-group-name ${{ secrets.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+              --application-name ${{ vers.CODEDEPLOY_APP_NAME }} \
+              --deployment-group-name ${{ vers.CODEDEPLOY_DEPLOYMENT_GROUP }} \
               --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
               --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
               --output text --query 'deploymentId')
