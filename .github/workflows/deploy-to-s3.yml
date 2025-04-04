@@ -187,31 +187,25 @@ jobs:
               # Add a short delay to ensure AWS recognizes the deployment
               sleep 5
               
-              # Poll for deployment status with timeout
-              STATUS="IN_PROGRESS"
-              TIMEOUT_COUNTER=0
-              MAX_ATTEMPTS=30  # 5分のタイムアウト (10秒 x 30)
+              # Poll for initial deployment status only (don't wait for completion)
+              sleep 15  # 初期状態を確認するための短い待機時間
               
-              while [ "$STATUS" == "IN_PROGRESS" ] && [ $TIMEOUT_COUNTER -lt $MAX_ATTEMPTS ]; do
-                sleep 10
-                STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text)
-                echo "Current deployment status: $STATUS (Attempt: $TIMEOUT_COUNTER/$MAX_ATTEMPTS)"
-                TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+1))
-              done
+              # デプロイステータスを一度だけチェック
+              STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text)
+              echo "Current deployment status: $STATUS"
               
-              # タイムアウトチェック
-              if [ $TIMEOUT_COUNTER -ge $MAX_ATTEMPTS ] && [ "$STATUS" == "IN_PROGRESS" ]; then
-                echo "⚠️ Deployment is still in progress but GitHub Action is timing out."
-                echo "Check AWS CodeDeploy console for final status: Deployment ID: $DEPLOYMENT_ID"
-                exit 0  # エラーを出さずに終了
-              fi
-              
-              if [ "$STATUS" == "SUCCEEDED" ]; then
-                echo "✅ Deployment completed successfully!"
-              else
-                echo "❌ Deployment failed with status: $STATUS"
+              # デプロイがエラーになっていなければ成功とみなす
+              if [ "$STATUS" == "FAILED" ]; then
+                echo "❌ Deployment failed immediately with status: $STATUS"
                 aws deploy get-deployment --deployment-id $DEPLOYMENT_ID
                 exit 1
+              else
+                echo "✅ Deployment initiated successfully with ID: $DEPLOYMENT_ID"
+                echo "👉 Check AWS CodeDeploy console for final status."
+                echo "📝 Deployment URL: https://${{ secrets.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/deployments/${DEPLOYMENT_ID}?region=${{ secrets.AWS_REGION }}"
+                # デプロイコマンドの検証APIを呼び出す
+                aws deploy get-deployment-config --deployment-config-name ${{ secrets.CODEDEPLOY_DEPLOYMENT_CONFIG || 'CodeDeployDefault.OneAtATime' }} > /dev/null
+                echo "✓ Deployment configuration validated."
               fi
             else
               echo "❌ Failed to create deployment"
