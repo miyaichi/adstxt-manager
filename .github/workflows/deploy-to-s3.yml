@@ -34,6 +34,55 @@ jobs:
           npm install
           npm run build
         
+      - name: Create environment files
+        run: |
+          # Create frontend .env file
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > frontend/.env
+          echo "REACT_APP_ENVIRONMENT=production" >> frontend/.env
+          
+          # Create backend .env file
+          echo "NODE_ENV=production" > backend/.env
+          echo "PORT=${{ secrets.PORT || '3001' }}" >> backend/.env
+          
+          # Database configuration
+          echo "DB_PROVIDER=${{ secrets.DB_TYPE || 'postgres' }}" >> backend/.env
+          
+          # SQLite configuration (if needed)
+          if [ "${{ secrets.DB_TYPE }}" = "sqlite" ]; then
+            echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/app/data/adstxt-manager.db' }}" >> backend/.env
+          else
+            # PostgreSQL configuration
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
+            echo "DB_PORT=${{ secrets.DB_PORT || '5432' }}" >> backend/.env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
+            echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT || '5432' }}/${{ secrets.DB_NAME }}" >> backend/.env
+          fi
+          
+          # AWS configuration
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> backend/.env
+          echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
+          
+          # CORS configuration
+          echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN || secrets.REACT_APP_API_URL }}" >> backend/.env
+          
+          # JWT configuration
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
+          
+          # Email configuration
+          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> backend/.env
+          echo "EMAIL_PORT=${{ secrets.EMAIL_PORT || '587' }}" >> backend/.env
+          echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> backend/.env
+          echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> backend/.env
+          
+          # Mask sensitive information before printing
+          echo "Backend .env file created (with sensitive values masked):"
+          cat backend/.env | sed 's/\(DB_PASSWORD=\).*/\1********/' | sed 's/\(JWT_SECRET=\).*/\1********/' | sed 's/\(EMAIL_PASSWORD=\).*/\1********/'
+          
+          echo "Frontend .env file created:"
+          cat frontend/.env
+      
       - name: Create deployment package
         run: |
           mkdir -p deploy
@@ -42,6 +91,7 @@ jobs:
           cp backend/package.json deploy/
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
+          cp backend/.env deploy/
           
           # Install production dependencies without triggering scripts
           cd deploy
