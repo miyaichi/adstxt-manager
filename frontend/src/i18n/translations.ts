@@ -231,6 +231,42 @@ export const translations = {
       en: 'Please enter some content',
       ja: 'コンテンツを入力してください',
     },
+    cancel: {
+      en: 'Cancel',
+      ja: 'キャンセル',
+    },
+    loading: {
+      en: 'Loading...',
+      ja: '読み込み中...',
+    },
+    updating: {
+      en: 'Updating...',
+      ja: '更新中...',
+    },
+    iAmRequester: {
+      en: 'I am the requester',
+      ja: '私がリクエスターです',
+    },
+    selectTabToViewMessages: {
+      en: 'Select tab to view messages',
+      ja: 'メッセージを表示するタブを選択してください',
+    },
+    loadMessages: {
+      en: 'Load Messages',
+      ja: 'メッセージを読み込む',
+    },
+    areYouRequester: {
+      en: 'Are you the requester ({email}) for this request?',
+      ja: 'あなたはこのリクエストのリクエスター（{email}）ですか？',
+    },
+    identifiedAsRequester: {
+      en: 'You have been identified as the requester ({email})',
+      ja: 'あなたはリクエスター（{email}）として識別されました',
+    },
+    copySuccess: {
+      en: 'Copied to clipboard!',
+      ja: 'クリップボードにコピーしました！',
+    },
     status: {
       pending: {
         en: 'Pending',
@@ -611,6 +647,10 @@ export const translations = {
           en: 'Reject Request',
           ja: 'リクエストを拒否',
         },
+        edit: {
+          en: 'Edit Request',
+          ja: 'リクエストを編集',
+        },
         approveConfirm: {
           en: 'Are you sure you want to approve this request?',
           ja: 'このリクエストを承認してもよろしいですか？',
@@ -916,6 +956,74 @@ export const translations = {
     error: {
       en: 'Failed to load help content. Please try again later.',
       ja: 'ヘルプコンテンツの読み込みに失敗しました。後でもう一度お試しください。',
+    },
+  },
+  editRequest: {
+    breadcrumb: {
+      en: 'Edit Request',
+      ja: 'リクエストを編集',
+    },
+    title: {
+      en: 'Edit Request',
+      ja: 'リクエストを編集',
+    },
+    publisherInfo: {
+      en: 'Publisher Information',
+      ja: 'パブリッシャー情報',
+    },
+    requesterInfo: {
+      en: 'Requester Information',
+      ja: 'リクエスター情報',
+    },
+    records: {
+      en: 'Edit Ads.txt Records',
+      ja: 'Ads.txtレコードを編集',
+    },
+    submitButton: {
+      en: 'Update Request',
+      ja: 'リクエストを更新',
+    },
+    success: {
+      en: 'Request updated successfully! Redirecting...',
+      ja: 'リクエストが正常に更新されました！リダイレクトしています...',
+    },
+    error: {
+      missingParams: {
+        en: 'Missing Parameters',
+        ja: 'パラメータが不足しています',
+      },
+      missingParamsDescription: {
+        en: 'Request ID and token are required to edit a request',
+        ja: 'リクエストを編集するにはリクエストIDとトークンが必要です',
+      },
+      fetchFailed: {
+        en: 'Failed to fetch request details',
+        ja: 'リクエスト詳細の取得に失敗しました',
+      },
+      notFound: {
+        en: 'Request Not Found',
+        ja: 'リクエストが見つかりません',
+      },
+      notFoundDescription: {
+        en: 'The requested record could not be found or you may not have permission to view it',
+        ja: 'リクエストされたレコードが見つからないか、表示する権限がない可能性があります',
+      },
+      cannotEdit: {
+        en: 'Cannot Edit Request',
+        ja: 'リクエストを編集できません',
+      },
+      cannotEditDescription: {
+        en: 'This request cannot be edited because it has already been approved or updated',
+        ja: 'このリクエストは既に承認または更新されているため、編集できません',
+      },
+      noRecords: {
+        en: 'Please add at least one record',
+        ja: '少なくとも1つのレコードを追加してください',
+      },
+      updateFailed: {
+        en: 'Failed to update request',
+        ja: 'リクエストの更新に失敗しました',
+      },
     },
   },
   statusPage: {

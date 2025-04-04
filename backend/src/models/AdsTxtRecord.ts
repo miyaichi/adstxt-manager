@@ -170,6 +170,27 @@ class AdsTxtRecordModel {
       updated_at: now,
     })) as AdsTxtRecord | null;
   }
+
+  /**
+   * Delete all records for a request
+   * @param requestId - The request ID
+   * @returns Promise with boolean indicating success
+   */
+  async deleteByRequestId(requestId: string): Promise<boolean> {
+    try {
+      const records = await this.getByRequestId(requestId);
+      
+      // Delete each record individually
+      for (const record of records) {
+        await db.delete(this.tableName, record.id);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting records by requestId:', error);
+      return false;
+    }
+  }
 }
 
 export default new AdsTxtRecordModel();

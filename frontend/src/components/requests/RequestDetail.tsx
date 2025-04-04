@@ -12,6 +12,7 @@ import {
   View,
 } from '@aws-amplify/ui-react';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adsTxtApi, messageApi, requestApi } from '../../api';
 import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
@@ -42,7 +43,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [messageTabSelected, setMessageTabSelected] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
+  const [isRequester, setIsRequester] = useState(false); // リクエスターかどうかの状態
+  const [editMode, setEditMode] = useState(false); // 編集モードの状態
   const { tokens } = useTheme();
+  const navigate = useNavigate();
 
   const fetchRequestDetails = useCallback(async () => {
     try {
@@ -190,10 +194,78 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     }
   };
 
+  // Check if current user is the requester
+  const checkIfRequester = useCallback(() => {
+    if (request) {
+      // 1. Check localStorage email first
+      const userEmail = localStorage.getItem('userEmail');
+      if (userEmail && userEmail === request.request.requester_email) {
+        setIsRequester(true);
+        return;
+      }
+      
+      // 2. Ask user if they are the requester if they haven't been asked before
+      const askedBefore = sessionStorage.getItem(`askedIfRequester_${requestId}`);
+      if (!askedBefore) {
+        // Only ask once per session
+        sessionStorage.setItem(`askedIfRequester_${requestId}`, 'true');
+        
+        const isRequesterConfirm = window.confirm(
+          t('common.areYouRequester', language, { email: request.request.requester_email })
+        );
+        
+        if (isRequesterConfirm) {
+          // Save email to localStorage for future checks
+          localStorage.setItem('userEmail', request.request.requester_email);
+          setIsRequester(true);
+          return;
+        }
+      }
+      
+      // 3. Token-based heuristic - if token is available, and status is pending/rejected,
+      // it's likely that this is the requester viewing the request
+      if (token && (request.request.status === 'pending' || request.request.status === 'rejected')) {
+        setIsRequester(true);
+        return;
+      }
+      
+      setIsRequester(false);
+    }
+  }, [request, requestId, token]);
+  
+  // Handle edit button click
+  const handleEditRequest = () => {
+    navigate(`/request/${requestId}/edit?token=${token}`);
+  };
+  
+  // リクエスター確認ボタンのハンドラー
+  const handleIdentifyAsRequester = () => {
+    if (request) {
+      localStorage.setItem('userEmail', request.request.requester_email);
+      setIsRequester(true);
+      alert(t('common.identifiedAsRequester', language, { email: request.request.requester_email }));
+    }
+  };
+  
   // Fetch request details when the component mounts
   useEffect(() => {
     fetchRequestDetails();
   }, [requestId, token, fetchRequestDetails]);
+  
+  // Check if requester when request data changes
+  useEffect(() => {
+    checkIfRequester();
+  }, [request, checkIfRequester]);
+  
+  // デバッグ用：isRequesterの状態が変わったらログ出力
+  useEffect(() => {
+    console.log('DEBUG: isRequester =', isRequester);
+    console.log('DEBUG: request status =', request?.request.status);
+    if (request) {
+      console.log('DEBUG: requester_email =', request.request.requester_email);
+      console.log('DEBUG: localStorage email =', localStorage.getItem('userEmail'));
+    }
+  }, [isRequester, request]);
 
   // Fetch messages when the message tab is selected
   useEffect(() => {
@@ -236,7 +308,18 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
       <Flex direction="column" gap="1.5rem">
         <Flex justifyContent="space-between" alignItems="center">
           <Heading level={2}>{t('requests.detail.title', language)}</Heading>
-          {getStatusBadge(request.request.status)}
+          <Flex gap="1rem" alignItems="center">
+            {!isRequester && (
+              <Button
+                variation="link"
+                size="small"
+                onClick={handleIdentifyAsRequester}
+              >
+                {t('common.iAmRequester', language)}
+              </Button>
+            )}
+            {getStatusBadge(request.request.status)}
+          </Flex>
         </Flex>
 
         <Divider />
@@ -311,7 +394,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             </Card>
           </Flex>
 
-          {request.request.status === 'pending' && (
+          {request.request.status === 'pending' && !isRequester && (
             <Flex gap="1rem" marginTop="1rem">
               <Button
                 variation="primary"
@@ -336,6 +419,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 flex="1"
               >
                 {t('requests.detail.actions.reject', language)}
+              </Button>
+            </Flex>
+          )}
+
+          {/* リクエスター向けの操作ボタン - 編集可能な状態（保留中または拒否）の場合のみ表示 */}
+          {isRequester && (request.request.status === 'pending' || request.request.status === 'rejected') && (
+            <Flex gap="1rem" marginTop="1rem">
+              <Button
+                variation="primary"
+                onClick={handleEditRequest}
+                isLoading={loading}
+              >
+                {t('requests.detail.actions.edit', language)}
               </Button>
             </Flex>
           )}
@@ -383,11 +479,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                 {approvedRecords.length > 0 && (
                   <Card variation="outlined" padding="1rem" marginTop="1rem">
                     <Heading level={4}>
-                      {t('requests.detail.approvedContent', language) || 'Approved Ads.txt Content'}
+                      {t('requests.detail.approvedContent', language)}
                     </Heading>
                     <Text marginBottom="1rem">
-                      {t('requests.detail.approvedContentDescription', language) ||
-                        'The following entries have been approved and are ready to be added to your ads.txt file.'}
+                      {t('requests.detail.approvedContentDescription', language)}
                     </Text>
 
                     <Flex gap="1rem" marginBottom="1rem">
@@ -397,7 +492,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                         flex="1"
                         isDisabled={showAdsTxtContent}
                       >
-                        {t('requests.detail.actions.showContent', language) || 'Show Content'}
+                        {t('requests.detail.actions.showContent', language)}
                       </Button>
 
                       {showAdsTxtContent && (
@@ -408,16 +503,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                                 navigator.clipboard.writeText(adsTxtContent);
                                 // Show success toast or feedback here if needed
                                 alert(
-                                  t('requests.detail.copySuccess', language) ||
-                                    'Copied to clipboard!'
+                                  t('requests.detail.copySuccess', language) || t('common.copySuccess', language)
                                 );
                               }
                             }}
                             variation="menu"
                             flex="1"
                           >
-                            {t('requests.detail.actions.copyToClipboard', language) ||
-                              'Copy to Clipboard'}
+                            {t('requests.detail.actions.copyToClipboard', language)}
                           </Button>
 
                           <Button
@@ -436,7 +529,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                             variation="menu"
                             flex="1"
                           >
-                            {t('requests.detail.actions.download', language) || 'Download'}
+                            {t('requests.detail.actions.download', language)}
                           </Button>
                         </>
                       )}
@@ -467,8 +560,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                           marginTop="0.5rem"
                           color={tokens.colors.font.tertiary}
                         >
-                          {t('requests.detail.contentHelp', language) ||
-                            'This content includes approved entries with metadata comments. You can add these lines to your existing ads.txt file.'}
+                          {t('requests.detail.contentHelp', language)}
                         </Text>
                       </Card>
                     )}
@@ -505,7 +597,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                   )
                 ) : (
                   <Flex direction="column" alignItems="center" padding="2rem">
-                    <Text>Select tab to view messages</Text>
+                    <Text>{t('common.selectTabToViewMessages', language)}</Text>
                     <Button
                       onClick={() => {
                         logger.debug('Manual message loading button clicked');
@@ -513,7 +605,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                       }}
                       marginTop="1rem"
                     >
-                      Load Messages
+                      {t('common.loadMessages', language)}
                     </Button>
                   </Flex>
                 )}

@@ -19,6 +19,16 @@
       "linkText": "View Request Status",
       "warning": "This link is unique to you and should not be shared with others.",
       "signature": "Thank you,\nAds.txt Manager"
+    },
+    "update": {
+      "subject": "Updated Ads.txt Request from {{requesterName}}",
+      "title": "Ads.txt Request Updated",
+      "greeting": "Dear Publisher,",
+      "message": "{{requesterName}} ({{requesterEmail}}) has updated their previous Ads.txt request.",
+      "action": "To review the updated request, please click the link below:",
+      "linkText": "View Updated Request",
+      "warning": "This link is unique to you and should not be shared with others.",
+      "signature": "Thank you,\nAds.txt Manager"
     }
   },
   "statusUpdate": {

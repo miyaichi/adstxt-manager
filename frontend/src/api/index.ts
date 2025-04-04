@@ -134,6 +134,21 @@ export const requestApi = {
     const response = await api.get<ApiResponse<Request[]>>(url);
     return response.data;
   },
+  
+  // Update a request with new records
+  async updateRequest(
+    id: string,
+    data: {
+      token: string;
+      records: AdsTxtRecord[];
+      requester_name?: string;
+      publisher_name?: string;
+      publisher_domain?: string;
+    }
+  ): Promise<ApiResponse<RequestResponse>> {
+    const response = await api.put<ApiResponse<RequestResponse>>(`/requests/${id}`, data);
+    return response.data;
+  },
 };
 
 // Message API calls

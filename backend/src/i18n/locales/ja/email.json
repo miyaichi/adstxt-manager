@@ -19,6 +19,16 @@
       "linkText": "リクエスト状況を表示",
       "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
       "signature": "ありがとうございます。\nAds.txtマネージャー"
+    },
+    "update": {
+      "subject": "{{requesterName}}からのAds.txtリクエスト更新",
+      "title": "Ads.txtリクエストが更新されました",
+      "greeting": "パブリッシャー様、",
+      "message": "{{requesterName}}（{{requesterEmail}}）が以前のAds.txtリクエストを更新しました。",
+      "action": "更新されたリクエストを確認するには、以下のリンクをクリックしてください：",
+      "linkText": "更新されたリクエストを表示",
+      "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
+      "signature": "ありがとうございます。\nAds.txtマネージャー"
     }
   },
   "statusUpdate": {

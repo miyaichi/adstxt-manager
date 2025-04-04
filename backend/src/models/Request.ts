@@ -147,6 +147,23 @@ class RequestModel {
       order: { field: 'updated_at', direction: 'DESC' },
     });
   }
+
+  /**
+   * Update a request with new data
+   * @param id - The request ID
+   * @param requestData - Updated request data
+   * @returns Promise with the updated request
+   */
+  async update(id: string, requestData: Partial<CreateRequestDTO>): Promise<Request | null> {
+    const now = new Date().toISOString();
+    
+    const updateData: Partial<Request> = {
+      ...requestData,
+      updated_at: now,
+    };
+    
+    return (await db.update(this.tableName, id, updateData)) as Request | null;
+  }
 }
 
 export default new RequestModel();

@@ -5,6 +5,7 @@ import {
   getRequest,
   getRequestsByEmail,
   updatePublisherInfo,
+  updateRequest,
   updateRequestStatus,
 } from '../controllers/requestController';
 
@@ -23,6 +24,7 @@ router.post('/', upload.single('adsTxtFile'), createRequest);
 router.get('/:id', getRequest);
 router.patch('/:id/status', updateRequestStatus);
 router.patch('/:id/publisher', updatePublisherInfo);
+router.put('/:id', updateRequest);
 router.get('/email/:email', getRequestsByEmail);
 
 export default router;

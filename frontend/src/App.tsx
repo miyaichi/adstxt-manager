@@ -12,6 +12,7 @@ import RequestDetailPage from './pages/RequestDetailPage';
 import RequestListPage from './pages/RequestListPage';
 import StatusPage from './pages/StatusPage';
 import HelpPage from './pages/HelpPage';
+import EditRequestPage from './pages/EditRequestPage';
 
 // Import theme
 import { theme } from './styles/theme';
@@ -25,6 +26,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/new-request" element={<NewRequestPage />} />
             <Route path="/request/:id" element={<RequestDetailPage />} />
+            <Route path="/request/:id/edit" element={<EditRequestPage />} />
             <Route path="/requests" element={<RequestListPage />} />
             <Route path="/status" element={<StatusPage />} />
             <Route path="/help" element={<HelpPage />} />

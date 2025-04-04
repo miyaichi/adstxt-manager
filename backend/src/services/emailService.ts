@@ -162,6 +162,47 @@ class EmailService {
 
     return transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send a notification email about a request update
+   * @param publisherEmail - The publisher's email address
+   * @param requestId - The ID of the request
+   * @param requesterName - The name of the requester
+   * @param requesterEmail - The email of the requester
+   * @param token - The secure token for accessing the request
+   * @param language - The language code to use for the email
+   * @returns Promise resolving to the nodemailer info object
+   */
+  async sendRequestUpdateNotification(
+    publisherEmail: string,
+    requestId: string,
+    requesterName: string,
+    requesterEmail: string,
+    token: string,
+    language: string = 'en'
+  ) {
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+
+    const subject = i18next.t('email:request.update.subject', { requesterName, lng: language });
+    const html = `
+      <h1>${i18next.t('email:request.update.title', { lng: language })}</h1>
+      <p>${i18next.t('email:request.update.greeting', { lng: language })}</p>
+      <p>${i18next.t('email:request.update.message', { requesterName, requesterEmail, lng: language })}</p>
+      <p>${i18next.t('email:request.update.action', { lng: language })}</p>
+      <p><a href="${requestUrl}">${i18next.t('email:request.update.linkText', { lng: language })}</a></p>
+      <p>${i18next.t('email:request.update.warning', { lng: language })}</p>
+      <p>${i18next.t('email:request.update.signature', { lng: language })}</p>
+    `;
+
+    const mailOptions = {
+      from: `"${config.email.fromName}" <${config.email.from}>`,
+      to: publisherEmail,
+      subject,
+      html,
+    };
+
+    return transporter.sendMail(mailOptions);
+  }
 }
 
 export default new EmailService();
