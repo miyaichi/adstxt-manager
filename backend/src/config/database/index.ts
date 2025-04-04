@@ -39,6 +39,7 @@ export interface IDatabaseAdapter {
   getById<T extends DatabaseRecord>(table: string, id: string): Promise<T | null>;
   query<T extends DatabaseRecord>(table: string, query?: DatabaseQuery): Promise<T[]>;
   execute<T>(sql: string, params?: any[]): Promise<T | T[] | null>;
+  delete(table: string, id: string): Promise<boolean>;
   // Optional method for clearing data (useful for testing)
   clear?(): Promise<void>;
 }
@@ -112,6 +113,13 @@ class DatabaseAdapter implements IDatabaseAdapter {
    */
   async execute<T>(sql: string, params?: any[]): Promise<T | T[] | null> {
     return await this.implementation.execute(sql, params);
+  }
+
+  /**
+   * Delete a record by ID
+   */
+  async delete(table: string, id: string): Promise<boolean> {
+    return await this.implementation.delete(table, id);
   }
 
   /**

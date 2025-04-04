@@ -290,6 +290,25 @@ export class SqliteDatabase {
   }
 
   /**
+   * Delete a record by ID
+   */
+  public async delete(table: string, id: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const sql = `DELETE FROM ${table} WHERE id = ?`;
+
+      this.db.run(sql, [id], function (this: { changes: number }, err) {
+        if (err) {
+          console.error(`Error deleting from ${table}`, err);
+          reject(err);
+          return;
+        }
+
+        resolve(this.changes > 0);
+      });
+    });
+  }
+
+  /**
    * Get the raw SQLite database instance for direct access
    * This should be used sparingly and only when the abstract methods aren't sufficient
    */

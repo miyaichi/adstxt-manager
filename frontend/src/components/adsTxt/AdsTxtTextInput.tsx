@@ -49,25 +49,30 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
   useEffect(() => {
     if (initialRecords && initialRecords.length > 0) {
       // 初期レコードを表示形式に変換
-      setParsedRecords(initialRecords.map((record, index) => ({
-        ...record,
-        // ParsedAdsTxtRecord 用のプロパティを追加
-        is_valid: true,
-        line_number: index + 1, // 必須の line_number プロパティを追加
-        raw_line: `${record.domain}, ${record.account_id}, ${record.account_type}, ${record.relationship}${record.certification_authority_id ? `, ${record.certification_authority_id}` : ''}`,
-        has_warning: false,
-      })));
-      
+      setParsedRecords(
+        initialRecords.map((record, index) => ({
+          ...record,
+          // ParsedAdsTxtRecord 用のプロパティを追加
+          is_valid: true,
+          line_number: index + 1, // 必須の line_number プロパティを追加
+          raw_line: `${record.domain}, ${record.account_id}, ${record.account_type}, ${record.relationship}${record.certification_authority_id ? `, ${record.certification_authority_id}` : ''}`,
+          has_warning: false,
+        }))
+      );
+
       // 親コンポーネントにレコードを渡す
       onRecordsSelected(initialRecords);
-      
+
       // テキストエリアに変換
-      const content = initialRecords.map(record => 
-        `${record.domain}, ${record.account_id}, ${record.account_type}, ${record.relationship}${record.certification_authority_id ? `, ${record.certification_authority_id}` : ''}`
-      ).join('\n');
-      
+      const content = initialRecords
+        .map(
+          (record) =>
+            `${record.domain}, ${record.account_id}, ${record.account_type}, ${record.relationship}${record.certification_authority_id ? `, ${record.certification_authority_id}` : ''}`
+        )
+        .join('\n');
+
       setAdsTxtContent(content);
-      
+
       // 統計情報を設定
       setStats({
         total: initialRecords.length,
@@ -76,7 +81,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
       });
     }
   }, [initialRecords, onRecordsSelected]);
-  
+
   // Update publisher domain when passed from parent
   useEffect(() => {
     // Check if it's a RequestForm component context by looking for certain props

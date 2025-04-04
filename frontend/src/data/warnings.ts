@@ -154,4 +154,3 @@ export const warningInfos: Record<string, WarningInfo> = {
     helpAnchor: '#sellers-json-validation-error',
   },
 };
-

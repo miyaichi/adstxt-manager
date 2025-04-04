@@ -134,7 +134,7 @@ export const requestApi = {
     const response = await api.get<ApiResponse<Request[]>>(url);
     return response.data;
   },
-  
+
   // Update a request with new records
   async updateRequest(
     id: string,

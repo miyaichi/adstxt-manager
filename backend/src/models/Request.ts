@@ -156,12 +156,12 @@ class RequestModel {
    */
   async update(id: string, requestData: Partial<CreateRequestDTO>): Promise<Request | null> {
     const now = new Date().toISOString();
-    
+
     const updateData: Partial<Request> = {
       ...requestData,
       updated_at: now,
     };
-    
+
     return (await db.update(this.tableName, id, updateData)) as Request | null;
   }
 }

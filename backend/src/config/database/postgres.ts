@@ -217,6 +217,21 @@ export class PostgresDatabase implements IDatabaseAdapter {
   }
 
   /**
+   * Delete a record by ID
+   */
+  public async delete(table: string, id: string): Promise<boolean> {
+    const sql = `DELETE FROM ${table} WHERE id = $1`;
+
+    try {
+      const result = await this.pool.query(sql, [id]);
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error(`Error deleting from ${table}`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get the raw database pool for direct access
    * This should be used sparingly and only when the abstract methods aren't sufficient
    */

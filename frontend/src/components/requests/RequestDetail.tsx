@@ -11,16 +11,16 @@ import {
   useTheme,
   View,
 } from '@aws-amplify/ui-react';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adsTxtApi, messageApi, requestApi } from '../../api';
+import { useApp } from '../../context/AppContext';
+import { t } from '../../i18n/translations';
 import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
 import MessageForm from '../messages/MessageForm';
 import MessageList from '../messages/MessageList';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
 
 interface RequestDetailProps {
   requestId: string;
@@ -44,7 +44,6 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const [messageTabSelected, setMessageTabSelected] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
   const [isRequester, setIsRequester] = useState(false); // リクエスターかどうかの状態
-  const [editMode, setEditMode] = useState(false); // 編集モードの状態
   const { tokens } = useTheme();
   const navigate = useNavigate();
 
@@ -203,17 +202,17 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
         setIsRequester(true);
         return;
       }
-      
+
       // 2. Ask user if they are the requester if they haven't been asked before
       const askedBefore = sessionStorage.getItem(`askedIfRequester_${requestId}`);
       if (!askedBefore) {
         // Only ask once per session
         sessionStorage.setItem(`askedIfRequester_${requestId}`, 'true');
-        
+
         const isRequesterConfirm = window.confirm(
           t('common.areYouRequester', language, { email: request.request.requester_email })
         );
-        
+
         if (isRequesterConfirm) {
           // Save email to localStorage for future checks
           localStorage.setItem('userEmail', request.request.requester_email);
@@ -221,42 +220,47 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           return;
         }
       }
-      
+
       // 3. Token-based heuristic - if token is available, and status is pending/rejected,
       // it's likely that this is the requester viewing the request
-      if (token && (request.request.status === 'pending' || request.request.status === 'rejected')) {
+      if (
+        token &&
+        (request.request.status === 'pending' || request.request.status === 'rejected')
+      ) {
         setIsRequester(true);
         return;
       }
-      
+
       setIsRequester(false);
     }
-  }, [request, requestId, token]);
-  
+  }, [request, requestId, token, language]);
+
   // Handle edit button click
   const handleEditRequest = () => {
     navigate(`/request/${requestId}/edit?token=${token}`);
   };
-  
+
   // リクエスター確認ボタンのハンドラー
   const handleIdentifyAsRequester = () => {
     if (request) {
       localStorage.setItem('userEmail', request.request.requester_email);
       setIsRequester(true);
-      alert(t('common.identifiedAsRequester', language, { email: request.request.requester_email }));
+      alert(
+        t('common.identifiedAsRequester', language, { email: request.request.requester_email })
+      );
     }
   };
-  
+
   // Fetch request details when the component mounts
   useEffect(() => {
     fetchRequestDetails();
   }, [requestId, token, fetchRequestDetails]);
-  
+
   // Check if requester when request data changes
   useEffect(() => {
     checkIfRequester();
   }, [request, checkIfRequester]);
-  
+
   // デバッグ用：isRequesterの状態が変わったらログ出力
   useEffect(() => {
     console.log('DEBUG: isRequester =', isRequester);
@@ -310,11 +314,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           <Heading level={2}>{t('requests.detail.title', language)}</Heading>
           <Flex gap="1rem" alignItems="center">
             {!isRequester && (
-              <Button
-                variation="link"
-                size="small"
-                onClick={handleIdentifyAsRequester}
-              >
+              <Button variation="link" size="small" onClick={handleIdentifyAsRequester}>
                 {t('common.iAmRequester', language)}
               </Button>
             )}
@@ -424,17 +424,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
           )}
 
           {/* リクエスター向けの操作ボタン - 編集可能な状態（保留中または拒否）の場合のみ表示 */}
-          {isRequester && (request.request.status === 'pending' || request.request.status === 'rejected') && (
-            <Flex gap="1rem" marginTop="1rem">
-              <Button
-                variation="primary"
-                onClick={handleEditRequest}
-                isLoading={loading}
-              >
-                {t('requests.detail.actions.edit', language)}
-              </Button>
-            </Flex>
-          )}
+          {isRequester &&
+            (request.request.status === 'pending' || request.request.status === 'rejected') && (
+              <Flex gap="1rem" marginTop="1rem">
+                <Button variation="primary" onClick={handleEditRequest} isLoading={loading}>
+                  {t('requests.detail.actions.edit', language)}
+                </Button>
+              </Flex>
+            )}
         </Flex>
 
         <Divider />
@@ -478,9 +475,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
 
                 {approvedRecords.length > 0 && (
                   <Card variation="outlined" padding="1rem" marginTop="1rem">
-                    <Heading level={4}>
-                      {t('requests.detail.approvedContent', language)}
-                    </Heading>
+                    <Heading level={4}>{t('requests.detail.approvedContent', language)}</Heading>
                     <Text marginBottom="1rem">
                       {t('requests.detail.approvedContentDescription', language)}
                     </Text>
@@ -503,7 +498,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
                                 navigator.clipboard.writeText(adsTxtContent);
                                 // Show success toast or feedback here if needed
                                 alert(
-                                  t('requests.detail.copySuccess', language) || t('common.copySuccess', language)
+                                  t('requests.detail.copySuccess', language) ||
+                                    t('common.copySuccess', language)
                                 );
                               }
                             }}

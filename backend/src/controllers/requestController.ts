@@ -347,35 +347,43 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
  */
 export const updateRequest = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { token, records, publisher_email, requester_email, requester_name, publisher_name, publisher_domain } = req.body;
-  
+  const {
+    token,
+    records,
+    publisher_email,
+    requester_email,
+    requester_name,
+    publisher_name,
+    publisher_domain,
+  } = req.body;
+
   // Validate token
   if (!token || typeof token !== 'string') {
     throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
-  
+
   // Get existing request to check token and permissions
   const existingRequest = await RequestModel.getByIdWithToken(id, token);
-  
+
   if (!existingRequest) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
-  
+
   // Only allow updates if status is pending or rejected
   if (existingRequest.status !== 'pending' && existingRequest.status !== 'rejected') {
     throw new ApiError(400, 'Cannot update request in current status', 'errors:cannotUpdate');
   }
-  
+
   // Validate that requester email matches the original request (security check)
   if (requester_email && requester_email !== existingRequest.requester_email) {
     throw new ApiError(400, 'Cannot change requester email', 'errors:cannotChangeRequesterEmail');
   }
-  
+
   // Validate that publisher email matches the original request (security check)
   if (publisher_email && publisher_email !== existingRequest.publisher_email) {
     throw new ApiError(400, 'Cannot change publisher email', 'errors:cannotChangePublisherEmail');
   }
-  
+
   // Only update request data if provided
   if (requester_name || publisher_name || publisher_domain) {
     await RequestModel.update(id, {
@@ -384,31 +392,49 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       publisher_domain: publisher_domain || existingRequest.publisher_domain,
     });
   }
-  
+
   // Update records if provided
   if (records && Array.isArray(records) && records.length > 0) {
-    // Delete existing records
-    await AdsTxtRecordModel.deleteByRequestId(id);
-    
-    // Create new records
-    const recordsData = records.map((record: any) => ({
-      request_id: id,
-      domain: record.domain,
-      account_id: record.account_id,
-      account_type: record.account_type,
-      certification_authority_id: record.certification_authority_id,
-      relationship: record.relationship || 'DIRECT',
-    }));
-    
-    await AdsTxtRecordModel.bulkCreate(recordsData);
+    try {
+      // Prepare new records data before deletion to minimize time without records
+      const recordsData = records.map((record: any) => ({
+        request_id: id,
+        domain: record.domain,
+        account_id: record.account_id,
+        account_type: record.account_type,
+        certification_authority_id: record.certification_authority_id,
+        relationship: record.relationship || 'DIRECT',
+      }));
+
+      // Delete existing records
+      const deleteResult = await AdsTxtRecordModel.deleteByRequestId(id);
+
+      if (!deleteResult) {
+        console.error(`Failed to delete records for request ${id}`);
+        throw new ApiError(500, 'Failed to update records', 'errors:failedToDeleteRecords');
+      }
+
+      // Create new records
+      const newRecords = await AdsTxtRecordModel.bulkCreate(recordsData);
+
+      if (!newRecords || newRecords.length === 0) {
+        console.error(`Failed to create new records for request ${id}`);
+        throw new ApiError(500, 'Failed to create new records', 'errors:failedToCreateRecords');
+      }
+
+      console.log(`Successfully updated ${newRecords.length} records for request ${id}`);
+    } catch (error) {
+      console.error('Error updating records:', error);
+      throw new ApiError(500, 'Failed to update records', 'errors:failedToUpdateRecords');
+    }
   }
-  
+
   // Update request status to updated
   await RequestModel.updateStatus(id, 'updated');
-  
+
   // Get the preferred language from the request header
   const language = req.language || 'en';
-  
+
   // Send email notification to publisher
   try {
     await emailService.sendRequestUpdateNotification(
@@ -423,13 +449,13 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
     console.error('Error sending update notification email:', error);
     // Continue even if email fails
   }
-  
+
   res.status(200).json({
     success: true,
     data: {
       request_id: id,
       token: token,
-      status: 'updated'
+      status: 'updated',
     },
   });
 });

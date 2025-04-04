@@ -182,7 +182,7 @@ const RequestForm: React.FC = () => {
       if (response.success) {
         // 作成時にリクエスターのメールアドレスをローカルストレージに保存
         localStorage.setItem('userEmail', formData.requester_email);
-        
+
         setSuccess({
           requestId: response.data.request_id,
           token: response.data.token,

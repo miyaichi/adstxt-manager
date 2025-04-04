@@ -179,12 +179,12 @@ class AdsTxtRecordModel {
   async deleteByRequestId(requestId: string): Promise<boolean> {
     try {
       const records = await this.getByRequestId(requestId);
-      
+
       // Delete each record individually
       for (const record of records) {
         await db.delete(this.tableName, record.id);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting records by requestId:', error);
