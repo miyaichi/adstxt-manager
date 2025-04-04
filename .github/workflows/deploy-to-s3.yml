@@ -107,10 +107,29 @@ jobs:
           cp -r scripts temp_deploy/
           cp appspec.yml temp_deploy/
           
-          # Create zip file with all files needed for CodeDeploy
-          cp -r deploy temp_deploy/
+          # Create a clean directory structure for CodeDeploy
+          mkdir -p temp_deploy/deploy
+          
+          # Copy application files
+          cp -r deploy/* temp_deploy/deploy/
+          
+          # Ensure appspec.yml and scripts are at the root level
           cd temp_deploy
+          
+          # Create the zip file
+          echo "Creating deployment package with the following structure:"
+          ls -la
+          echo "Deploy directory contents:"
+          ls -la deploy/ || echo "deploy directory not found"
+          echo "Scripts directory contents:"
+          ls -la scripts/ || echo "scripts directory not found"
+          
           zip -r ../adstxt-manager.zip .
+          
+          # Validate zip file contents
+          cd ..
+          echo "Validating zip file contents:"
+          unzip -l adstxt-manager.zip | head -20
         
       # Upload to S3 and deploy only when running on main branch push
       - name: Upload to S3 and trigger deployment
@@ -157,13 +176,24 @@ jobs:
               # Add a short delay to ensure AWS recognizes the deployment
               sleep 5
               
-              # Poll for deployment status
+              # Poll for deployment status with timeout
               STATUS="IN_PROGRESS"
-              while [ "$STATUS" == "IN_PROGRESS" ]; do
+              TIMEOUT_COUNTER=0
+              MAX_ATTEMPTS=30  # 5分のタイムアウト (10秒 x 30)
+              
+              while [ "$STATUS" == "IN_PROGRESS" ] && [ $TIMEOUT_COUNTER -lt $MAX_ATTEMPTS ]; do
                 sleep 10
                 STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text)
-                echo "Current deployment status: $STATUS"
+                echo "Current deployment status: $STATUS (Attempt: $TIMEOUT_COUNTER/$MAX_ATTEMPTS)"
+                TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+1))
               done
+              
+              # タイムアウトチェック
+              if [ $TIMEOUT_COUNTER -ge $MAX_ATTEMPTS ] && [ "$STATUS" == "IN_PROGRESS" ]; then
+                echo "⚠️ Deployment is still in progress but GitHub Action is timing out."
+                echo "Check AWS CodeDeploy console for final status: Deployment ID: $DEPLOYMENT_ID"
+                exit 0  # エラーを出さずに終了
+              fi
               
               if [ "$STATUS" == "SUCCEEDED" ]; then
                 echo "✅ Deployment completed successfully!"

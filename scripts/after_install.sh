@@ -2,7 +2,7 @@
 set -e
 
 DEPLOY_DIR="/home/ec2-user/adstxt-manager"
-APP_DIR="$DEPLOY_DIR/deploy"
+APP_DIR="$DEPLOY_DIR"
 
 echo "Setting up application..."
 
