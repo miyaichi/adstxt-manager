@@ -22,13 +22,13 @@ npm install
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
   echo "Creating .env file..."
-  echo "REACT_APP_API_BASE_URL=http://localhost:4000" > .env
+  echo "REACT_APP_API_BASE_URL=http://localhost:3001" > .env
   echo "REACT_APP_VERSION=0.1.0" >> .env
 fi
 
 # Success message
 echo "Setup complete! You can now start the development server with 'npm start'"
-echo "Make sure the backend server is running on port 4000 (or update the proxy in package.json)"
+echo "Make sure the backend server is running on port 3001 (or update the proxy in package.json)"
 
 # Offer to start development server
 read -p "Would you like to start the development server now? (y/n) " -n 1 -r

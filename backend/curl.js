@@ -2,7 +2,7 @@
 /**
  * Enhanced curl alternative for adstxt-manager
  * Usage: node curl.js <url> [-X METHOD] [-d DATA] [-v] [--save]
- * Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save
+ * Example: node curl.js http://localhost:3001/api/adsTxtCache/domain/asahi.com --save
  */
 
 const http = require('http');
@@ -18,9 +18,9 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Allowed hosts - security restriction
 const ALLOWED_HOSTS = [
-  'localhost:4000', // backend API
+  'localhost:3001', // backend API
   'localhost:3000', // frontend dev server
-  '127.0.0.1:4000', // backend API alternative
+  '127.0.0.1:3001', // backend API alternative
   '127.0.0.1:3000', // frontend dev server alternative
 ];
 
@@ -61,7 +61,7 @@ for (let i = 0; i < args.length; i++) {
 if (!urlArg) {
   console.log('Usage: node curl.js <url> [-X METHOD] [-d DATA] [-v] [--save]');
   console.log(
-    'Example: node curl.js http://localhost:4000/api/adsTxtCache/domain/asahi.com --save'
+    'Example: node curl.js http://localhost:3001/api/adsTxtCache/domain/asahi.com --save'
   );
   process.exit(1);
 }

@@ -2,8 +2,8 @@
 /**
  * Simple API test tool for adstxt-manager
  * Usage: node test-api.js <method> <url> [data]
- * Example: node test-api.js GET http://localhost:4000/api/sellersjson/google.com/seller/123
- * Example: node test-api.js POST http://localhost:4000/api/messages -d '{"content":"test"}'
+ * Example: node test-api.js GET http://localhost:3001/api/sellersjson/google.com/seller/123
+ * Example: node test-api.js POST http://localhost:3001/api/messages -d '{"content":"test"}'
  */
 
 const http = require('http');
@@ -13,9 +13,9 @@ const fs = require('fs');
 
 // Allowed hosts - only allow connections to frontend/backend
 const ALLOWED_HOSTS = [
-  'localhost:4000', // backend API
+  'localhost:3001', // backend API
   'localhost:3000', // frontend dev server
-  '127.0.0.1:4000', // backend API alternative
+  '127.0.0.1:3001', // backend API alternative
   '127.0.0.1:3000', // frontend dev server alternative
 ];
 
@@ -33,10 +33,10 @@ function showUsage() {
   console.log('');
   console.log('Examples:');
   console.log(
-    '  node test-api.js GET http://localhost:4000/api/sellersjson/openx.com/seller/537121234'
+    '  node test-api.js GET http://localhost:3001/api/sellersjson/openx.com/seller/537121234'
   );
   console.log(
-    '  node test-api.js POST http://localhost:4000/api/messages -d \'{"content":"test", "request_id":"123"}\''
+    '  node test-api.js POST http://localhost:3001/api/messages -d \'{"content":"test", "request_id":"123"}\''
   );
   process.exit(1);
 }

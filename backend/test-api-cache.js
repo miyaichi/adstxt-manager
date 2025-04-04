@@ -7,11 +7,11 @@ async function testSellersJsonAPI() {
     // First test the base API endpoint to see if the server is responding
     console.log('Testing base API endpoint first');
     try {
-      const baseResponse = await axios.get('http://localhost:4000/api/status');
+      const baseResponse = await axios.get('http://localhost:3001/api/status');
       console.log('Base API response:', baseResponse.status, baseResponse.data);
     } catch (error) {
       console.error('Error accessing base API:', error.message);
-      console.error('Connection refused. Make sure the server is running on port 4000');
+      console.error('Connection refused. Make sure the server is running on port 3001');
       return; // Stop further tests if we can't even reach the server
     }
     
@@ -21,7 +21,7 @@ async function testSellersJsonAPI() {
     console.log(`Testing sellers.json API for domain: ${domain}, seller: ${sellerId}`);
     
     // Make sure server is running locally
-    const baseUrl = 'http://localhost:4000/api';
+    const baseUrl = 'http://localhost:3001/api';
     
     // Print request details for debugging
     axios.interceptors.request.use(request => {

@@ -41,7 +41,7 @@ const getLanguage = (): string => {
 
 // Configure axios
 // Use relative path - let the React proxy handle the redirection in development
-// In development mode, the proxy in package.json will redirect /api to http://localhost:4000/api
+// In development mode, the proxy in package.json will redirect /api to http://localhost:3001/api
 const api = axios.create({
   baseURL: '/api',
   headers: {

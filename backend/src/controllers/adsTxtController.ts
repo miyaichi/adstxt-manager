@@ -118,7 +118,7 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
 
         // Force ads.txt fetch by calling the domain validation endpoint directly with force parameter
         const axios = (await import('axios')).default;
-        const port = process.env.PORT || 4000; // Use consistent default port
+        const port = process.env.PORT || 3001; // Use consistent default port
         const cacheResponse = await axios.get(
           `http://localhost:${port}/api/adsTxtCache/domain/${encodeURIComponent(publisherDomain)}?force=true`
         );

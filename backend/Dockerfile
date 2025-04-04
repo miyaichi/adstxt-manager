@@ -17,7 +17,7 @@ RUN apk add --no-cache --virtual .build-deps \
 # COPY . .
 # RUN npm run build
 
-EXPOSE 4000
+EXPOSE 3001
 
 # CMD will be overridden by docker-compose.yml
 CMD ["npm", "start"]

@@ -5,7 +5,7 @@ dotenv.config();
 // Application configuration variables
 export default {
   server: {
-    port: process.env.PORT || 4000,
+    port: process.env.PORT || 3001,
     env: process.env.NODE_ENV || 'development',
     appUrl: process.env.APP_URL || 'http://localhost:3000',
   },

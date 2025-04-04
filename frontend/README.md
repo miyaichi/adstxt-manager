@@ -96,7 +96,7 @@ npm run test:coverage
 
 ## Backend Connection
 
-This frontend is configured to work with the Ads.txt Manager backend. Make sure the backend server is running on port 4000 (or update the proxy in `package.json` if using a different port).
+This frontend is configured to work with the Ads.txt Manager backend. Make sure the backend server is running on port 3001 (or update the proxy in `package.json` if using a different port).
 
 ## License
 

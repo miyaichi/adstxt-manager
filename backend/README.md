@@ -145,7 +145,7 @@ docker-compose up -d
 
 This will start:
 
-- The backend server on port 4000
+- The backend server on port 3001
 - MailHog SMTP server on port 1025
 - MailHog web interface on port 8025
 

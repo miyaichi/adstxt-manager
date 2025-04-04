@@ -63,10 +63,10 @@ const StatusPage: React.FC = () => {
         // Add additional frontend information
         frontendEnv['BROWSER'] = navigator.userAgent;
         frontendEnv['BASE_URL'] = window.location.origin;
-        // In development, the backend is at localhost:4000, but accessed via proxy
+        // In development, the backend is at localhost:3001, but accessed via proxy
         frontendEnv['BACKEND_URL'] =
           process.env.NODE_ENV === 'development'
-            ? 'http://localhost:4000'
+            ? 'http://localhost:3001'
             : process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
         console.log('Attempting to fetch backend status...');
@@ -112,7 +112,7 @@ const StatusPage: React.FC = () => {
         }
 
         if (err?.code === 'ERR_NETWORK') {
-          errorMessage = `Network error: Could not reach backend server. Check if the server is running at port 4000`;
+          errorMessage = `Network error: Could not reach backend server. Check if the server is running at port 3001`;
         }
 
         setError(errorMessage);
@@ -121,10 +121,10 @@ const StatusPage: React.FC = () => {
         const frontendEnv = getFilteredEnvVars();
         frontendEnv['BROWSER'] = navigator.userAgent;
         frontendEnv['BASE_URL'] = window.location.origin;
-        // In development, the backend is at localhost:4000, but accessed via proxy
+        // In development, the backend is at localhost:3001, but accessed via proxy
         frontendEnv['BACKEND_URL'] =
           process.env.NODE_ENV === 'development'
-            ? 'http://localhost:4000'
+            ? 'http://localhost:3001'
             : process.env.REACT_APP_BACKEND_URL || window.location.origin;
 
         setStatusData({
