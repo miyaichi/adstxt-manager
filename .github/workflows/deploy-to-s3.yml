@@ -93,6 +93,10 @@ jobs:
           cp Procfile deploy/
           cp backend/.env deploy/
           
+          # Copy SQL migration files
+          mkdir -p deploy/src/db/migrations
+          cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
+          
           # Install production dependencies without triggering scripts
           cd deploy
           npm install --omit=dev --no-scripts
