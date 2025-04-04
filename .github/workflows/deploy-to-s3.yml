@@ -50,10 +50,10 @@ jobs:
           echo "PORT=${{ secrets.PORT || '3001' }}" >> backend/.env
           
           # Database configuration
-          echo "DB_PROVIDER=${{ secrets.DB_TYPE || 'postgres' }}" >> backend/.env
+          echo "DB_PROVIDER=${{ secrets.DB_PROVIDER || 'postgres' }}" >> backend/.env
           
           # SQLite configuration (if needed)
-          if [ "${{ secrets.DB_TYPE }}" = "sqlite" ]; then
+          if [ "${{ secrets.DB_PROVIDER }}" = "sqlite" ]; then
             echo "SQLITE_PATH=${{ secrets.SQLITE_PATH || '/app/data/adstxt-manager.db' }}" >> backend/.env
           else
             # PostgreSQL configuration
