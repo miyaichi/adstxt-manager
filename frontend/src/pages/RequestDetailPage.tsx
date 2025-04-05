@@ -10,6 +10,7 @@ const RequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const role = searchParams.get('role');
   const { language } = useApp();
 
   if (!id) {
@@ -39,7 +40,7 @@ const RequestDetailPage: React.FC = () => {
         ]}
       />
 
-      <RequestDetail requestId={id} token={token} />
+      <RequestDetail requestId={id} token={token} initialRole={role as 'publisher' | 'requester' | undefined} />
     </Flex>
   );
 };

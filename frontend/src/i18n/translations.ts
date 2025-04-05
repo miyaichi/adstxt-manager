@@ -243,10 +243,6 @@ export const translations = {
       en: 'Updating...',
       ja: '更新中...',
     },
-    iAmRequester: {
-      en: 'I am the requester',
-      ja: '私がリクエスターです',
-    },
     selectTabToViewMessages: {
       en: 'Select tab to view messages',
       ja: 'メッセージを表示するタブを選択してください',
@@ -254,14 +250,6 @@ export const translations = {
     loadMessages: {
       en: 'Load Messages',
       ja: 'メッセージを読み込む',
-    },
-    areYouRequester: {
-      en: 'Are you the requester ({email}) for this request?',
-      ja: 'あなたはこのリクエストのリクエスター（{email}）ですか？',
-    },
-    identifiedAsRequester: {
-      en: 'You have been identified as the requester ({email})',
-      ja: 'あなたはリクエスター（{email}）として識別されました',
     },
     copySuccess: {
       en: 'Copied to clipboard!',
@@ -285,7 +273,7 @@ export const translations = {
         ja: '更新済み',
       },
     },
-    role: {
+    roles: {
       publisher: {
         en: 'Publisher',
         ja: 'パブリッシャー',

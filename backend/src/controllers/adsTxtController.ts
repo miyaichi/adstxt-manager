@@ -244,8 +244,8 @@ export const generateAdsTxtContent = asyncHandler(async (req: Request, res: Resp
   const approvedRecords = records.filter((record) => record.status === 'approved');
 
   // Get requester info from the request
-  const requesterName = request.requester_name;
-  const requesterEmail = request.requester_email;
+  const requesterName = request.request.requester_name;
+  const requesterEmail = request.request.requester_email;
 
   // Format current date in a readable format
   const currentDate = new Date();

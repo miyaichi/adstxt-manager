@@ -128,7 +128,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   // Get the preferred language from the request header
   const language = req.language || 'en';
 
-  // Send notification emails
+  // Send notification emails with role-specific tokens
   try {
     await Promise.all([
       emailService.sendPublisherRequestNotification(
@@ -136,16 +136,18 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         request.id,
         requester_name,
         requester_email,
-        request.token,
-        language
+        request.publisher_token || request.token || '',
+        language,
+        'publisher'
       ),
       emailService.sendRequesterConfirmation(
         requester_email,
         requester_name,
         publisher_email,
         request.id,
-        request.token,
-        language
+        request.requester_token || request.token || '',
+        language,
+        'requester'
       ),
     ]);
   } catch (error) {
@@ -157,6 +159,9 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
     success: true,
     data: {
       request_id: request.id,
+      publisher_token: request.publisher_token,
+      requester_token: request.requester_token,
+      // Include legacy token for backward compatibility
       token: request.token,
     },
   });
@@ -174,11 +179,13 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(401, 'Access token is required', 'errors:accessTokenRequired');
   }
 
-  const request = await RequestModel.getByIdWithToken(id, token);
+  const result = await RequestModel.getByIdWithToken(id, token);
 
-  if (!request) {
+  if (!result) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
+
+  const { request, role } = result;
 
   // Get associated Ads.txt records
   const adsTxtRecords = await AdsTxtRecordModel.getByRequestId(id);
@@ -188,6 +195,7 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
     data: {
       request,
       records: adsTxtRecords,
+      role, // Include the user's role in the response
     },
   });
 });
@@ -213,10 +221,19 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
   }
 
   // Verify the token
-  const request = await RequestModel.getByIdWithToken(id, token);
+  const result = await RequestModel.getByIdWithToken(id, token);
 
-  if (!request) {
+  if (!result) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
+  }
+  
+  const { request, role } = result;
+  
+  // Only publishers should be able to approve/reject requests
+  if (status === 'approved' || status === 'rejected') {
+    if (role && role !== 'publisher') {
+      throw new ApiError(403, 'Only publishers can approve or reject requests', 'errors:unauthorized');
+    }
   }
 
   // Update the status
@@ -244,13 +261,14 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
 
   // Send email notifications
   try {
-    // Notify the requester of the status change
+    // Notify the requester of the status change using role-specific token
     await emailService.sendStatusUpdateNotification(
       request.requester_email,
       id,
       status,
-      request.token,
-      language
+      request.requester_token || request.token || '',
+      language,
+      'requester'
     );
   } catch (error) {
     console.error('Error sending status update email:', error);
@@ -284,10 +302,17 @@ export const updatePublisherInfo = asyncHandler(async (req: Request, res: Respon
   }
 
   // Verify the token
-  const request = await RequestModel.getByIdWithToken(id, token);
+  const result = await RequestModel.getByIdWithToken(id, token);
 
-  if (!request) {
+  if (!result) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
+  }
+  
+  const { request, role } = result;
+  
+  // Only publishers should be able to update publisher info
+  if (role && role !== 'publisher') {
+    throw new ApiError(403, 'Only publishers can update publisher information', 'errors:unauthorized');
   }
 
   // Update publisher info
@@ -363,15 +388,22 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Get existing request to check token and permissions
-  const existingRequest = await RequestModel.getByIdWithToken(id, token);
+  const existingResult = await RequestModel.getByIdWithToken(id, token);
 
-  if (!existingRequest) {
+  if (!existingResult) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
+
+  const { request: existingRequest, role } = existingResult;
 
   // Only allow updates if status is pending or rejected
   if (existingRequest.status !== 'pending' && existingRequest.status !== 'rejected') {
     throw new ApiError(400, 'Cannot update request in current status', 'errors:cannotUpdate');
+  }
+
+  // Only requesters should be able to update the request contents
+  if (role && role !== 'requester') {
+    throw new ApiError(403, 'Only requesters can update request contents', 'errors:unauthorized');
   }
 
   // Validate that requester email matches the original request (security check)
@@ -435,27 +467,34 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
   // Get the preferred language from the request header
   const language = req.language || 'en';
 
-  // Send email notification to publisher
+  // Send email notification to publisher with their role-specific token
   try {
     await emailService.sendRequestUpdateNotification(
       existingRequest.publisher_email,
       id,
       existingRequest.requester_name,
       existingRequest.requester_email,
-      token,
-      language
+      existingRequest.publisher_token || token,
+      language,
+      'publisher'
     );
   } catch (error) {
     console.error('Error sending update notification email:', error);
     // Continue even if email fails
   }
 
+  // Get the updated request with the new tokens
+  const updatedRequest = await RequestModel.getById(id);
+  
   res.status(200).json({
     success: true,
     data: {
       request_id: id,
-      token: token,
+      token: token, // Keep original token in response for backwards compatibility
+      publisher_token: updatedRequest?.publisher_token,
+      requester_token: updatedRequest?.requester_token,
       status: 'updated',
+      role: role // Include role in response
     },
   });
 });

@@ -7,7 +7,9 @@ export interface Request {
   publisher_name?: string;
   publisher_domain?: string;
   status: 'pending' | 'approved' | 'rejected' | 'updated';
-  token: string;
+  token?: string; // Legacy token
+  publisher_token?: string; // Publisher-specific token
+  requester_token?: string; // Requester-specific token
   created_at: string;
   updated_at: string;
 }
@@ -24,12 +26,15 @@ export interface CreateRequestData {
 
 export interface RequestResponse {
   request_id: string;
-  token: string;
+  token?: string; // Legacy token
+  publisher_token?: string; // Publisher-specific token
+  requester_token?: string; // Requester-specific token
 }
 
 export interface RequestWithRecords {
   request: Request;
   records: AdsTxtRecord[];
+  role?: 'publisher' | 'requester'; // User's role for this request
 }
 
 // Message Models

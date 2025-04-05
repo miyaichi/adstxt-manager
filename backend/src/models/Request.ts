@@ -11,7 +11,9 @@ export interface Request extends DatabaseRecord {
   publisher_name?: string;
   publisher_domain?: string;
   status: 'pending' | 'approved' | 'rejected' | 'updated';
-  token: string;
+  token?: string; // Legacy token (will be deprecated)
+  publisher_token?: string; // New publisher-specific token
+  requester_token?: string; // New requester-specific token
   created_at: string;
   updated_at: string;
 }
@@ -37,7 +39,14 @@ class RequestModel {
    */
   async create(requestData: CreateRequestDTO): Promise<Request> {
     const id = uuidv4();
-    const token = tokenService.generateToken(id, requestData.publisher_email);
+    const tokens = tokenService.generateRequestTokens(
+      id, 
+      requestData.publisher_email, 
+      requestData.requester_email
+    );
+    
+    // Also generate legacy token for backward compatibility
+    const legacyToken = tokenService.generateToken(id, requestData.publisher_email);
     const now = new Date().toISOString();
 
     const request: Request = {
@@ -48,7 +57,9 @@ class RequestModel {
       publisher_name: requestData.publisher_name,
       publisher_domain: requestData.publisher_domain,
       status: 'pending',
-      token,
+      token: legacyToken, // Legacy token
+      publisher_token: tokens.publisherToken,
+      requester_token: tokens.requesterToken,
       created_at: now,
       updated_at: now,
     };
@@ -60,20 +71,33 @@ class RequestModel {
    * Get a request by ID and verify token access
    * @param id - The request ID
    * @param token - The access token
-   * @returns Promise with the request or null if not found/invalid token
+   * @returns Promise with the request and role info if found/valid token
    */
-  async getByIdWithToken(id: string, token: string): Promise<Request | null> {
+  async getByIdWithToken(
+    id: string, 
+    token: string
+  ): Promise<{ request: Request; role?: 'publisher' | 'requester' } | null> {
     const request = await db.getById<Request>(this.tableName, id);
 
     if (!request) {
       return null;
     }
 
-    if (!tokenService.verifyToken(token, request.token)) {
+    // Verify token using the updated method that supports both token types
+    const tokenVerification = tokenService.verifyToken(token, {
+      token: request.token,
+      publisherToken: request.publisher_token,
+      requesterToken: request.requester_token
+    });
+
+    if (!tokenVerification.isValid) {
       return null;
     }
 
-    return request;
+    return { 
+      request,
+      role: tokenVerification.role
+    };
   }
 
   /**

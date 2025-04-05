@@ -28,11 +28,13 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Verify the token and request
-  const request = await RequestModel.getByIdWithToken(request_id, token);
+  const requestResult = await RequestModel.getByIdWithToken(request_id, token);
 
-  if (!request) {
+  if (!requestResult) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
+
+  const { request, role } = requestResult;
 
   // Create the message
   const messageData: CreateMessageDTO = {
@@ -56,12 +58,20 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
     // Get the preferred language from the request header
     const language = req.language || 'en';
 
+    // Determine recipient role and token
+    const recipientRole = sender_email === request.publisher_email ? 'requester' : 'publisher';
+    const recipientToken = 
+      recipientRole === 'publisher' 
+        ? (request.publisher_token || request.token || '')
+        : (request.requester_token || request.token || '');
+
     await emailService.sendMessageNotification(
       recipientEmail,
       request_id,
       senderName,
-      request.token,
-      language
+      recipientToken,
+      language,
+      recipientRole
     );
   } catch (error) {
     console.error('Error sending message notification email:', error);

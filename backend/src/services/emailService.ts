@@ -14,6 +14,7 @@ class EmailService {
    * @param requesterEmail - The email of the requester
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
+   * @param role - The role of the recipient (publisher)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendPublisherRequestNotification(
@@ -22,9 +23,10 @@ class EmailService {
     requesterName: string,
     requesterEmail: string,
     token: string,
-    language: string = 'en'
+    language: string = 'en',
+    role: string = 'publisher'
   ) {
-    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}`;
 
     const subject = i18next.t('email:request.publisher.subject', { requesterName, lng: language });
     const html = `
@@ -55,6 +57,7 @@ class EmailService {
    * @param requestId - The ID of the request
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
+   * @param role - The role of the recipient (requester)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendRequesterConfirmation(
@@ -63,9 +66,10 @@ class EmailService {
     publisherEmail: string,
     requestId: string,
     token: string,
-    language: string = 'en'
+    language: string = 'en',
+    role: string = 'requester'
   ) {
-    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}`;
 
     const subject = i18next.t('email:request.requester.subject', { lng: language });
     const html = `
@@ -95,6 +99,7 @@ class EmailService {
    * @param status - The new status
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
+   * @param role - The role of the recipient
    * @returns Promise resolving to the nodemailer info object
    */
   async sendStatusUpdateNotification(
@@ -102,9 +107,10 @@ class EmailService {
     requestId: string,
     status: string,
     token: string,
-    language: string = 'en'
+    language: string = 'en',
+    role: string = 'requester'
   ) {
-    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}`;
     const statusText = status.charAt(0).toUpperCase() + status.slice(1);
 
     const subject = i18next.t('email:statusUpdate.subject', { status: statusText, lng: language });
@@ -133,6 +139,7 @@ class EmailService {
    * @param senderName - The name of the message sender
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
+   * @param role - The role of the recipient
    * @returns Promise resolving to the nodemailer info object
    */
   async sendMessageNotification(
@@ -140,9 +147,12 @@ class EmailService {
     requestId: string,
     senderName: string,
     token: string,
-    language: string = 'en'
+    language: string = 'en',
+    role?: string
   ) {
-    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+    // If role is not specified, don't add it to the URL to maintain backward compatibility
+    const roleParam = role ? `&role=${role}` : '';
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}${roleParam}`;
 
     const subject = i18next.t('email:message.subject', { lng: language });
     const html = `
@@ -171,6 +181,7 @@ class EmailService {
    * @param requesterEmail - The email of the requester
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
+   * @param role - The role of the recipient (publisher)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendRequestUpdateNotification(
@@ -179,9 +190,10 @@ class EmailService {
     requesterName: string,
     requesterEmail: string,
     token: string,
-    language: string = 'en'
+    language: string = 'en',
+    role: string = 'publisher'
   ) {
-    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}`;
+    const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}`;
 
     const subject = i18next.t('email:request.update.subject', { requesterName, lng: language });
     const html = `

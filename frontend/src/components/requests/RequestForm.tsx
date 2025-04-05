@@ -55,7 +55,9 @@ const RequestForm: React.FC = () => {
   const [hasInvalidRecords, setHasInvalidRecords] = useState(false);
   const [success, setSuccess] = useState<{
     requestId: string;
-    token: string;
+    token?: string;
+    publisher_token?: string;
+    requester_token?: string;
   } | null>(null);
 
   // Domain validation states
@@ -183,9 +185,12 @@ const RequestForm: React.FC = () => {
         // 作成時にリクエスターのメールアドレスをローカルストレージに保存
         localStorage.setItem('userEmail', formData.requester_email);
 
+        // Use requester_token if available, otherwise fall back to legacy token
         setSuccess({
           requestId: response.data.request_id,
           token: response.data.token,
+          publisher_token: response.data.publisher_token,
+          requester_token: response.data.requester_token,
         });
         // Clear form
         setFormData({
@@ -209,7 +214,9 @@ const RequestForm: React.FC = () => {
 
   const handleViewRequest = () => {
     if (success) {
-      navigate(`/request/${success.requestId}?token=${success.token}`);
+      // リクエスターの場合、リクエスタートークンとリクエスターロールを使用
+      const token = success.requester_token || success.token || '';
+      navigate(`/request/${success.requestId}?token=${token}&role=requester`);
     }
   };
 
@@ -229,8 +236,17 @@ const RequestForm: React.FC = () => {
             <Text fontWeight="bold">{t('requests.success.requestId', language)}</Text>
             <Text fontFamily="monospace">{success.requestId}</Text>
             <Divider marginBlock="1rem" />
-            <Text fontWeight="bold">{t('requests.success.accessToken', language)}</Text>
-            <Text fontFamily="monospace">{success.token}</Text>
+            
+            <Text fontWeight="bold">{t('requests.success.requesterToken', language) || 'Requester Token'}</Text>
+            <Text fontFamily="monospace">{success.requester_token || success.token}</Text>
+            
+            {success.publisher_token && (
+              <>
+                <Divider marginBlock="1rem" />
+                <Text fontWeight="bold">{t('requests.success.publisherToken', language) || 'Publisher Token'}</Text>
+                <Text fontFamily="monospace">{success.publisher_token}</Text>
+              </>
+            )}
           </Flex>
 
           <Text>{t('requests.success.saveInfo', language)}</Text>

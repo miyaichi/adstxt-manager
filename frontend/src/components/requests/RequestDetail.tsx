@@ -25,13 +25,14 @@ import MessageList from '../messages/MessageList';
 interface RequestDetailProps {
   requestId: string;
   token: string;
+  initialRole?: 'publisher' | 'requester';
 }
 
 // Create a logger for the component
 const logger = createLogger('RequestDetail');
 
-const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
-  logger.debug('Rendering with props:', { requestId, token });
+const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initialRole }) => {
+  logger.debug('Rendering with props:', { requestId, token, initialRole });
   const { language } = useApp();
 
   const [request, setRequest] = useState<RequestWithRecords | null>(null);
@@ -43,7 +44,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [messageTabSelected, setMessageTabSelected] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
-  const [isRequester, setIsRequester] = useState(false); // リクエスターかどうかの状態
+  const [userRole, setUserRole] = useState<'publisher' | 'requester' | null>(initialRole || null);
   const { tokens } = useTheme();
   const navigate = useNavigate();
 
@@ -193,83 +194,66 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
     }
   };
 
-  // Check if current user is the requester
-  const checkIfRequester = useCallback(() => {
+  // Determine the user's role based on API response or URL parameter
+  const determineUserRole = useCallback(() => {
+    // If we already have a role from the URL parameter, keep it
+    if (userRole) {
+      return;
+    }
+    
+    // If API returned a role, use it
+    if (request && request.role) {
+      setUserRole(request.role);
+      return;
+    }
+
     if (request) {
-      // 1. Check localStorage email first
+      // Check localStorage email as a fallback
       const userEmail = localStorage.getItem('userEmail');
-      if (userEmail && userEmail === request.request.requester_email) {
-        setIsRequester(true);
-        return;
-      }
-
-      // 2. Ask user if they are the requester if they haven't been asked before
-      const askedBefore = sessionStorage.getItem(`askedIfRequester_${requestId}`);
-      if (!askedBefore) {
-        // Only ask once per session
-        sessionStorage.setItem(`askedIfRequester_${requestId}`, 'true');
-
-        const isRequesterConfirm = window.confirm(
-          t('common.areYouRequester', language, { email: request.request.requester_email })
-        );
-
-        if (isRequesterConfirm) {
-          // Save email to localStorage for future checks
-          localStorage.setItem('userEmail', request.request.requester_email);
-          setIsRequester(true);
+      if (userEmail) {
+        if (userEmail === request.request.requester_email) {
+          setUserRole('requester');
+          return;
+        } else if (userEmail === request.request.publisher_email) {
+          setUserRole('publisher');
           return;
         }
       }
-
-      // 3. Token-based heuristic - if token is available, and status is pending/rejected,
-      // it's likely that this is the requester viewing the request
-      if (
-        token &&
-        (request.request.status === 'pending' || request.request.status === 'rejected')
-      ) {
-        setIsRequester(true);
-        return;
-      }
-
-      setIsRequester(false);
+      
+      // Default to publisher if we can't determine
+      // This is a safe default since most actions require explicit permission
+      setUserRole('publisher');
     }
-  }, [request, requestId, token, language]);
+  }, [request, userRole]);
 
   // Handle edit button click
   const handleEditRequest = () => {
-    navigate(`/request/${requestId}/edit?token=${token}`);
+    const roleParam = userRole ? `&role=${userRole}` : '';
+    navigate(`/request/${requestId}/edit?token=${token}${roleParam}`);
   };
 
-  // リクエスター確認ボタンのハンドラー
-  const handleIdentifyAsRequester = () => {
-    if (request) {
-      localStorage.setItem('userEmail', request.request.requester_email);
-      setIsRequester(true);
-      alert(
-        t('common.identifiedAsRequester', language, { email: request.request.requester_email })
-      );
-    }
-  };
 
   // Fetch request details when the component mounts
   useEffect(() => {
     fetchRequestDetails();
   }, [requestId, token, fetchRequestDetails]);
 
-  // Check if requester when request data changes
+  // Determine user role when request data changes
   useEffect(() => {
-    checkIfRequester();
-  }, [request, checkIfRequester]);
+    determineUserRole();
+  }, [request, determineUserRole]);
 
-  // デバッグ用：isRequesterの状態が変わったらログ出力
+  // デバッグ用：userRoleの状態が変わったらログ出力
   useEffect(() => {
-    console.log('DEBUG: isRequester =', isRequester);
+    console.log('DEBUG: userRole =', userRole);
+    console.log('DEBUG: API role =', request?.role);
     console.log('DEBUG: request status =', request?.request.status);
     if (request) {
       console.log('DEBUG: requester_email =', request.request.requester_email);
+      console.log('DEBUG: publisher_email =', request.request.publisher_email);
       console.log('DEBUG: localStorage email =', localStorage.getItem('userEmail'));
     }
-  }, [isRequester, request]);
+  }, [userRole, request]);
 
   // Fetch messages when the message tab is selected
   useEffect(() => {
@@ -313,10 +297,12 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
         <Flex justifyContent="space-between" alignItems="center">
           <Heading level={2}>{t('requests.detail.title', language)}</Heading>
           <Flex gap="1rem" alignItems="center">
-            {!isRequester && (
-              <Button variation="link" size="small" onClick={handleIdentifyAsRequester}>
-                {t('common.iAmRequester', language)}
-              </Button>
+            {userRole && (
+              <Badge variation="info">
+                {userRole === 'publisher' 
+                  ? t('common.roles.publisher', language)
+                  : t('common.roles.requester', language)}
+              </Badge>
             )}
             {getStatusBadge(request.request.status)}
           </Flex>
@@ -394,7 +380,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             </Card>
           </Flex>
 
-          {request.request.status === 'pending' && !isRequester && (
+          {/* Publisher-only actions */}
+          {request.request.status === 'pending' && userRole === 'publisher' && (
             <Flex gap="1rem" marginTop="1rem">
               <Button
                 variation="primary"
@@ -423,8 +410,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token }) => {
             </Flex>
           )}
 
-          {/* リクエスター向けの操作ボタン - 編集可能な状態（保留中または拒否）の場合のみ表示 */}
-          {isRequester &&
+          {/* Requester-only actions */}
+          {userRole === 'requester' &&
             (request.request.status === 'pending' || request.request.status === 'rejected') && (
               <Flex gap="1rem" marginTop="1rem">
                 <Button variation="primary" onClick={handleEditRequest} isLoading={loading}>

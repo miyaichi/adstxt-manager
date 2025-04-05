@@ -11,6 +11,7 @@
     "test": "jest",
     "migrate": "ts-node src/db/migrations/run.ts",
     "migrate:sellers": "ts-node src/db/migrations/run_sellers_json.ts",
+    "migrate:tokens": "ts-node src/db/migrations/run_token_fields.ts",
     "migrate:pg": "ts-node src/db/migrations/postgresql-setup.ts",
     "migrate:pg:force": "ts-node src/db/migrations/postgresql-setup.ts --migrate",
     "seed": "ts-node src/db/seeds/run.ts",

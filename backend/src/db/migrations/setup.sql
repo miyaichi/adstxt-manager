@@ -16,6 +16,8 @@ CREATE TABLE requests (
   status TEXT CHECK(status IN ('pending', 'approved', 'rejected', 'updated')) NOT NULL DEFAULT 'pending',
   ads_txt_content TEXT,
   token TEXT UNIQUE NOT NULL,
+  publisher_token TEXT UNIQUE,
+  requester_token TEXT UNIQUE,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
