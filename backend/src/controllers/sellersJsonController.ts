@@ -147,9 +147,13 @@ export async function fetchSellersJsonWithCache(
       const errorCache = await SellersJsonCacheModel.getByDomain(domain);
 
       // Create error response with cache data if available
-      const errorResponse = {
+      const errorResponse: {
+        isCached: boolean;
+        status: SellersJsonCacheStatus | null;
+        updatedAt: string | null;
+      } = {
         isCached: false, // Freshly fetched error
-        status: errorCache?.status || 'error',
+        status: (errorCache?.status as SellersJsonCacheStatus) || 'error',
         updatedAt: errorCache?.updated_at || new Date().toISOString(),
       };
 
@@ -164,7 +168,11 @@ export async function fetchSellersJsonWithCache(
       );
 
       // In case saving to cache also fails, return generic error info
-      const fallbackErrorResponse = {
+      const fallbackErrorResponse: {
+        isCached: boolean;
+        status: SellersJsonCacheStatus | null;
+        updatedAt: string | null;
+      } = {
         isCached: false,
         status: 'error',
         updatedAt: new Date().toISOString(),

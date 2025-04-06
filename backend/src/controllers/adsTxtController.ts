@@ -76,7 +76,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         } else {
           // ドメイン内の同じタイプの他のエントリから certification_authority_id を探す
           // 例: 同じドメインの他のエントリに certification_authority_id があれば使用する
-          let foundCertId = null;
+          let foundCertId: string | null = null;
 
           // 1. 現在のドメインの他のレコードで同じドメインのものを探す
           for (const otherRecord of recordEntries) {
@@ -85,7 +85,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               otherRecord.domain === record.domain &&
               otherRecord.certification_authority_id
             ) {
-              foundCertId = otherRecord.certification_authority_id;
+              foundCertId = otherRecord.certification_authority_id || null;
               break;
             }
           }
@@ -166,18 +166,19 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         optimized_length: enhancedContent.length,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error optimizing ads.txt content:', error);
 
     // エラーハンドリング - APIエラーとしてフォーマットして返す
     if (error instanceof ApiError) {
       throw error;
     } else {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new ApiError(
         500,
-        `Error optimizing ads.txt content: ${error.message || 'Unknown error'}`,
+        `Error optimizing ads.txt content: ${errorMessage}`,
         'errors:optimizationFailed',
-        { message: error.message }
+        { message: errorMessage }
       );
     }
   }
