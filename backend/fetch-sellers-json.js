@@ -602,9 +602,12 @@ function fetchUrl(url) {
     const request = https.get(
       url,
       {
-        timeout: 30000,
+        timeout: 30000, // 30 seconds timeout
+        validateStatus: () => true, // Allow any status code for proper error handling
+        maxContentLength: 200 * 1024 * 1024, // 200MB for large files
+        decompress: true, // Handle gzipped responses
         headers: {
-          'User-Agent': 'Mozilla/5.0 AdsTxtManager/1.0',
+          'User-Agent': 'AdsTxtManager/1.0',
           Accept: 'application/json',
         },
       },
