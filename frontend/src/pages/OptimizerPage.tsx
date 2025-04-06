@@ -108,6 +108,11 @@ const OptimizerPage: React.FC = () => {
     try {
       setIsLoading(true);
       resetMessages();
+      
+      // Clear previous content first
+      setOriginalContent('');
+      setOptimizedContent('');
+      setStats(null);
 
       // Fetch content from domain
       const fetchedContent = await fetchFromDomain();
