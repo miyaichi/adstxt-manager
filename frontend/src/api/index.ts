@@ -298,7 +298,10 @@ export const adsTxtApi = {
 export const sellersJsonApi = {
   // Get sellers.json for a domain (legacy endpoint for backward compatibility)
   async getSellersJson(domain: string): Promise<ApiResponse<any>> {
-    const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`);
+    const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`, {
+      // Get sellers.json for the first time, so we set a longer timeout
+      timeout: 30000,
+    });
     return response.data;
   },
 
