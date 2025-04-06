@@ -15,6 +15,172 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
+// HTTP request configuration
+const HTTP_REQUEST_CONFIG = {
+  timeout: 10000, // 10 seconds timeout
+  validateStatus: () => true, // Allow any status code for proper error handling
+  maxContentLength: 200 * 1024 * 1024, // 200MB for large files
+  decompress: true, // Handle gzipped responses
+  headers: {
+    'User-Agent': 'AdsTxtManager/1.0',
+    Accept: 'application/json',
+  },
+};
+
+// Cache expiration time in hours
+const CACHE_EXPIRATION_HOURS = 24;
+
+/**
+ * Common function to fetch sellers.json data with cache handling
+ * @param domain Target domain
+ * @param forceRefresh Whether to force refresh cache
+ * @returns Sellers.json data and cache information
+ */
+export async function fetchSellersJsonWithCache(
+  domain: string,
+  forceRefresh = false
+): Promise<{
+  sellersJsonData: SellersJsonContent | null;
+  cacheInfo: {
+    isCached: boolean;
+    status: SellersJsonCacheStatus | null;
+    updatedAt: string | null;
+  };
+}> {
+  logger.info(`[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${domain}`);
+
+  // Check cache first
+  const cachedData = await SellersJsonCacheModel.getByDomain(domain);
+  const cacheExpired = cachedData
+    ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at, CACHE_EXPIRATION_HOURS)
+    : true;
+
+  // Use valid cache if available and not forcing refresh
+  if (cachedData && !forceRefresh && !cacheExpired) {
+    const status = cachedData.status;
+    logger.info(
+      `[fetchSellersJsonWithCache] Using cached "${status}" result for ${domain} (cached at ${cachedData.updated_at})`
+    );
+
+    // Standard cache response
+    const cacheResponse = {
+      isCached: true,
+      status,
+      updatedAt: cachedData.updated_at,
+    };
+
+    // Handle different cache statuses
+    if (status === 'success' && cachedData.content) {
+      // Return parsed content for success status
+      const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
+      return {
+        sellersJsonData: parsedData,
+        cacheInfo: cacheResponse,
+      };
+    } else if (status === 'not_found' || status === 'error') {
+      // Return null data for error/not found status
+      return {
+        sellersJsonData: null,
+        cacheInfo: cacheResponse,
+      };
+    }
+  }
+
+  // Need to fetch new data
+  const reason = !cachedData ? 'not in cache' : forceRefresh ? 'force refresh' : 'cache expired';
+  logger.info(`[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${domain} (${reason})`);
+
+  // Fetch from URL
+  try {
+    // Get URL for sellers.json
+    const url = getSellersJsonUrl(domain);
+    logger.info(`[fetchSellersJsonWithCache] Fetching from URL: ${url}`);
+
+    // Fetch the sellers.json
+    const response = await axios.get(url, HTTP_REQUEST_CONFIG);
+
+    logger.info(
+      `[fetchSellersJsonWithCache] Got response from ${domain} with status: ${response.status}`
+    );
+
+    // Create cache record from response
+    const cacheRecord = createCacheRecordFromResponse(domain, response);
+
+    // Save to cache
+    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
+    logger.info(
+      `[fetchSellersJsonWithCache] Saved ${domain} to cache with status: ${savedCache.status}`
+    );
+
+    // Standard response for freshly fetched data
+    const fetchResponse = {
+      isCached: false, // Freshly fetched
+      status: savedCache.status,
+      updatedAt: savedCache.updated_at,
+    };
+
+    // Return the appropriate data
+    if (savedCache.status === 'success' && savedCache.content) {
+      const parsedData = SellersJsonCacheModel.getParsedContent(savedCache);
+      return {
+        sellersJsonData: parsedData,
+        cacheInfo: fetchResponse,
+      };
+    } else {
+      return {
+        sellersJsonData: null,
+        cacheInfo: fetchResponse,
+      };
+    }
+  } catch (error) {
+    logger.error(`[fetchSellersJsonWithCache] Error fetching sellers.json for ${domain}:`, error);
+
+    // Save error to cache
+    try {
+      // Use handleSellersJsonError but catch the thrown ApiError
+      await handleSellersJsonError(domain, error).catch(() => {
+        // Catch and ignore the ApiError since we're handling this internally
+        logger.info(`[fetchSellersJsonWithCache] Error handled and saved to cache for ${domain}`);
+      });
+
+      // Get the newly saved error cache
+      const errorCache = await SellersJsonCacheModel.getByDomain(domain);
+
+      // Create error response with cache data if available
+      const errorResponse = {
+        isCached: false, // Freshly fetched error
+        status: errorCache?.status || 'error',
+        updatedAt: errorCache?.updated_at || new Date().toISOString(),
+      };
+
+      return {
+        sellersJsonData: null,
+        cacheInfo: errorResponse,
+      };
+    } catch (saveError) {
+      logger.error(
+        `[fetchSellersJsonWithCache] Failed to save error to cache for ${domain}:`,
+        saveError
+      );
+
+      // In case saving to cache also fails, return generic error info
+      const fallbackErrorResponse = {
+        isCached: false,
+        status: 'error',
+        updatedAt: new Date().toISOString(),
+      };
+
+      return {
+        sellersJsonData: null,
+        cacheInfo: fallbackErrorResponse,
+      };
+    }
+  }
+}
+
+// Export utility functions for other controllers
+export { createCacheRecordFromResponse, getSellersJsonUrl, handleSellersJsonError };
+
 /**
  * Get the URL for a domain's sellers.json file
  * @param domain The domain to get the URL for
@@ -150,15 +316,17 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
   const is404 = statusCode === 404;
   const errorMessage = error.message || 'Unknown error';
 
-  // Save to cache with appropriate status
-  await SellersJsonCacheModel.saveCache({
+  // Create error cache record
+  const errorCacheRecord = {
     domain,
     content: null,
-    // Use "not_found" status for 404 errors
-    status: is404 ? 'not_found' : 'error',
+    status: is404 ? 'not_found' : ('error' as SellersJsonCacheStatus),
     status_code: statusCode,
     error_message: is404 ? 'sellers.json file not found' : errorMessage,
-  });
+  };
+
+  // Save to cache with appropriate status
+  await SellersJsonCacheModel.saveCache(errorCacheRecord);
 
   // For 404 errors, return a more specific message
   throw new ApiError(
@@ -226,9 +394,10 @@ function formatCacheInfo(cache: any) {
  * @returns Expiry timestamp
  */
 function getExpiryTime(updatedAt: string): string {
+  if (!updatedAt) return '';
+
   const updatedDate = new Date(updatedAt);
-  const expiryHours = 24; // Same as in isCacheExpired
-  const expiryDate = new Date(updatedDate.getTime() + expiryHours * 60 * 60 * 1000);
+  const expiryDate = new Date(updatedDate.getTime() + CACHE_EXPIRATION_HOURS * 60 * 60 * 1000);
   return expiryDate.toISOString();
 }
 
@@ -251,167 +420,107 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
   const normalizedSellerId = String(sellerId).trim();
 
   try {
-    // Get URL for sellers.json
-    const url = getSellersJsonUrl(domain);
-
     logger.info(`Looking for seller_id: ${normalizedSellerId} from ${domain}`);
     logger.debug(
       `Request details: domain=${domain}, sellerId=${sellerId}, normalizedSellerId=${normalizedSellerId}`
     );
 
-    // Check the database cache for this domain
-    logger.info(`Checking database cache for ${domain}`);
-    const cachedData = await SellersJsonCacheModel.getByDomain(domain);
-    const cacheInfo = formatCacheInfo(cachedData);
-
-    // Check if we can use cached data
+    // 共通関数を使用してsellers.jsonデータを取得
     const forceRefresh = req.query.force === 'true';
-    const cacheExpired = cachedData
-      ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)
-      : true;
+    const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
 
-    // If we have a valid cached record that isn't expired, try to use it
-    if (cachedData && !forceRefresh && !cacheExpired) {
-      try {
-        // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
-        if (
-          cachedData.status === 'not_found' ||
-          (cachedData.status === 'error' && cachedData.status_code === 404)
-        ) {
-          logger.info(
-            `Using cached "${cachedData.status}" result for ${domain} (cached at ${cachedData.updated_at})`
-          );
-          return res.status(200).json({
-            success: true,
-            data: {
-              domain,
-              seller: null,
-              found: false,
-              key: 'no-sellers-json',
-              params: { domain },
-              metadata: { seller_count: 0 },
-              cache: cacheInfo,
-            },
-          });
-        }
+    // キャッシュ情報をフォーマット
+    const formattedCacheInfo = {
+      is_cached: cacheInfo.isCached,
+      last_updated: cacheInfo.updatedAt,
+      status: cacheInfo.status,
+      expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
+    };
 
-        // For "success" status, try to find the seller in cached data
-        if (cachedData.status === 'success') {
-          // Try to use the optimized PostgreSQL JSONB query first
-          try {
-            const optimizedResult = await SellersJsonCacheModel.getSellerByIdOptimized(
-              domain,
-              normalizedSellerId
-            );
-
-            // If optimized query was successful, use its results
-            if (optimizedResult) {
-              logger.info(
-                `Using optimized JSONB query for ${domain} (cached at ${cachedData.updated_at})`
-              );
-              return res.status(200).json({
-                success: true,
-                data: {
-                  domain,
-                  seller: optimizedResult.seller,
-                  found: optimizedResult.found,
-                  key: optimizedResult.found ? null : 'account-id-not-in-sellers-json',
-                  params: optimizedResult.found ? null : { domain, account_id: normalizedSellerId },
-                  metadata: optimizedResult.metadata,
-                  cache: cacheInfo,
-                },
-              });
-            }
-          } catch (optimizationError) {
-            logger.warn(
-              `Optimized JSONB query failed, falling back to standard method: ${optimizationError}`
-            );
-            // Fall back to standard method
-          }
-
-          // Fall back to regular JSON parsing if optimization is not available
-          const parsedData = SellersJsonCacheModel.getParsedContent(cachedData);
-
-          if (parsedData && Array.isArray(parsedData.sellers)) {
-            // Find seller in cached data
-            const result = findSellerInData(parsedData, normalizedSellerId);
-
-            // Extract metadata from content
-            const metadata = extractMetadata(parsedData);
-
-            logger.info(
-              `Using cached sellers.json for ${domain} (cached at ${cachedData.updated_at})`
-            );
-            return res.status(200).json({
-              success: true,
-              data: {
-                domain,
-                seller: result.seller || null,
-                found: result.seller ? true : false,
-                key: result.key,
-                params: result.params,
-                metadata,
-                cache: cacheInfo,
-              },
-            });
-          }
-        }
-      } catch (error: any) {
-        logger.error(`Error parsing cached sellers.json for ${domain}: ${error.message}`);
-        // If there's an error parsing the cached data, fall back to API
-      }
+    // データがない場合（not_foundやerror）
+    if (!sellersJsonData) {
+      logger.info(`No sellers.json data available for ${domain} (status: ${cacheInfo.status})`);
+      return res.status(200).json({
+        success: true,
+        data: {
+          domain,
+          seller: null,
+          found: false,
+          key: 'no-sellers-json',
+          params: { domain },
+          metadata: { seller_count: 0 },
+          cache: formattedCacheInfo,
+        },
+      });
     }
 
-    // Log why we're not using cache
-    if (forceRefresh) {
-      logger.info(`Force refresh requested for ${domain}`);
-    } else if (cacheExpired) {
-      logger.info(`Cache expired for ${domain}, last updated at ${cachedData?.updated_at}`);
-    } else if (!cachedData) {
-      logger.info(`No cache found for ${domain}`);
-    } else {
-      logger.info(`Cache status for ${domain} is ${cachedData.status}, fetching fresh data`);
-    }
-
-    logger.info(`No valid sellers data in cache for ${domain}, fetching from API`);
-
-    // Fetch sellers.json data from API
-    const response = await axios({
-      method: 'get',
-      url: url,
-      responseType: 'json',
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'AdsTxtManager/1.0',
-        Accept: 'application/json',
-      },
-    });
-
-    // Create cache record and save it
-    const cacheRecord = createCacheRecordFromResponse(domain, response);
-    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
-    const freshCacheInfo = formatCacheInfo(savedCache);
-
-    // Process the response
-    logger.info(`Successfully fetched sellers.json from ${domain}`);
-    const sellersJson = response.data;
-    const result = findSellerInData(sellersJson, normalizedSellerId);
-
-    // Extract metadata from content
-    const metadata = extractMetadata(sellersJson);
-
-    return res.status(200).json({
-      success: true,
-      data: {
+    // データがある場合、最適化クエリを試す
+    try {
+      const optimizedResult = await SellersJsonCacheModel.getSellerByIdOptimized(
         domain,
-        seller: result.seller || null,
-        found: result.seller ? true : false,
-        key: result.key,
-        params: result.params,
-        metadata,
-        cache: freshCacheInfo,
-      },
-    });
+        normalizedSellerId
+      );
+
+      // If optimized query was successful, use its results
+      if (optimizedResult) {
+        logger.info(`Using optimized JSONB query for ${domain}`);
+        return res.status(200).json({
+          success: true,
+          data: {
+            domain,
+            seller: optimizedResult.seller,
+            found: optimizedResult.found,
+            key: optimizedResult.found ? null : 'account-id-not-in-sellers-json',
+            params: optimizedResult.found ? null : { domain, account_id: normalizedSellerId },
+            metadata: optimizedResult.metadata,
+            cache: formattedCacheInfo,
+          },
+        });
+      }
+    } catch (optimizationError) {
+      logger.warn(
+        `Optimized JSONB query failed, falling back to standard method: ${optimizationError}`
+      );
+      // 標準メソッドにフォールバック
+    }
+
+    // 通常のJSON解析で売り手を検索
+    if (Array.isArray(sellersJsonData.sellers)) {
+      // 売り手をデータ内で検索
+      const result = findSellerInData(sellersJsonData, normalizedSellerId);
+
+      // メタデータを抽出
+      const metadata = extractMetadata(sellersJsonData);
+
+      logger.info(`Using standard search for seller ${normalizedSellerId} in ${domain}`);
+      return res.status(200).json({
+        success: true,
+        data: {
+          domain,
+          seller: result.seller || null,
+          found: result.seller ? true : false,
+          key: result.key,
+          params: result.params,
+          metadata,
+          cache: formattedCacheInfo,
+        },
+      });
+    } else {
+      // sellers配列がない場合
+      logger.warn(`No sellers array in data for ${domain}`);
+      return res.status(200).json({
+        success: true,
+        data: {
+          domain,
+          seller: null,
+          found: false,
+          key: 'invalid-sellers-json-format',
+          params: { domain },
+          metadata: extractMetadata(sellersJsonData),
+          cache: formattedCacheInfo,
+        },
+      });
+    }
   } catch (error: any) {
     return handleSellersJsonError(domain, error);
   }
@@ -429,70 +538,24 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
   }
 
   try {
-    // Check if we have a cached version
+    // 共通関数を使用してsellers.jsonデータを取得
+    const forceRefresh = req.query.force === 'true';
+    const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
+
+    // 元のキャッシュデータを取得して詳細情報を返す
     const cachedData = await SellersJsonCacheModel.getByDomain(domain);
 
-    // If we have cached data and it's not expired, return it
-    if (cachedData && !SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)) {
-      logger.info(`Serving cached sellers.json for domain: ${domain}`);
-
-      // Get the parsed content directly without redundant parsing
-      const parsedContent = SellersJsonCacheModel.getParsedContent(cachedData);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          domain,
-          content: parsedContent,
-          status: cachedData.status,
-          status_code: cachedData.status_code,
-          error_message: cachedData.error_message,
-          cached: true,
-          updated_at: cachedData.updated_at,
-        },
-      });
-    }
-
-    logger.info(`Cache expired or not found, fetching fresh sellers.json for: ${domain}`);
-
-    // Get URL for sellers.json
-    const url = getSellersJsonUrl(domain);
-
-    // Fetch the sellers.json
-    let response;
-    try {
-      logger.info(`Fetching from URL: ${url}`);
-      response = await axios.get(url, {
-        timeout: 30000, // Increase timeout for large files
-        validateStatus: () => true, // Allow any status code
-        maxContentLength: 200 * 1024 * 1024, // 200MB for large files
-        decompress: true, // Handle gzipped responses
-      });
-    } catch (error: any) {
-      return handleSellersJsonError(domain, error);
-    }
-
-    // Create cache record from response
-    const cacheRecord = createCacheRecordFromResponse(domain, response);
-
-    // Save to cache
-    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
-
-    // Get the parsed content
-    const parsedContent = SellersJsonCacheModel.getParsedContent(savedCache);
-
-    // Return response
     return res.status(200).json({
       success: true,
       data: {
         domain,
-        url: url,
-        content: parsedContent,
-        status: savedCache.status,
-        status_code: savedCache.status_code,
-        error_message: savedCache.error_message,
-        cached: false,
-        updated_at: savedCache.updated_at,
+        url: getSellersJsonUrl(domain),
+        content: sellersJsonData,
+        status: cachedData?.status || cacheInfo.status,
+        status_code: cachedData?.status_code || null,
+        error_message: cachedData?.error_message || null,
+        cached: cacheInfo.isCached,
+        updated_at: cachedData?.updated_at || cacheInfo.updatedAt,
       },
     });
   } catch (error: any) {
@@ -512,110 +575,28 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
   }
 
   try {
-    // Check if we have a cached version
-    const cachedData = await SellersJsonCacheModel.getByDomain(domain);
-
-    // Parse the content and extract metadata
-    const parsedContent = SellersJsonCacheModel.getParsedContent(cachedData);
-    const metadata = extractMetadata(parsedContent);
-    const cacheInfo = formatCacheInfo(cachedData);
-
-    // Check if we can use cached data
+    // 共通関数を使用してsellers.jsonデータを取得
     const forceRefresh = req.query.force === 'true';
-    const cacheExpired = cachedData
-      ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at)
-      : true;
+    const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
 
-    // If we have valid cached data that isn't expired
-    if (cachedData && !forceRefresh && !cacheExpired) {
-      // For "not_found" or "error" with 404 status, we can reuse the cache to avoid unnecessary HTTP requests
-      if (
-        cachedData.status === 'not_found' ||
-        (cachedData.status === 'error' && cachedData.status_code === 404)
-      ) {
-        logger.info(
-          `Using cached "${cachedData.status}" result for ${domain} metadata (cached at ${cachedData.updated_at})`
-        );
-        return res.status(200).json({
-          success: true,
-          data: {
-            domain,
-            metadata: { seller_count: 0 },
-            cache: cacheInfo,
-          },
-        });
-      }
+    // メタデータを抽出
+    const metadata = extractMetadata(sellersJsonData);
 
-      // For "success" status, return metadata from cache
-      if (cachedData.status === 'success') {
-        logger.info(
-          `Serving metadata for domain: ${domain} from cache (cached at ${cachedData.updated_at})`
-        );
+    // キャッシュ情報をフォーマット
+    const formattedCacheInfo = {
+      is_cached: cacheInfo.isCached,
+      last_updated: cacheInfo.updatedAt,
+      status: cacheInfo.status,
+      expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
+    };
 
-        return res.status(200).json({
-          success: true,
-          data: {
-            domain,
-            metadata,
-            cache: cacheInfo,
-          },
-        });
-      }
-    }
-
-    // Log why we're not using cache
-    if (forceRefresh) {
-      logger.info(`Force refresh requested for ${domain} metadata`);
-    } else if (cacheExpired) {
-      logger.info(
-        `Cache expired for ${domain} metadata, last updated at ${cachedData?.updated_at}`
-      );
-    } else if (!cachedData) {
-      logger.info(`No cache found for ${domain} metadata`);
-    } else {
-      logger.info(
-        `Cache status for ${domain} metadata is ${cachedData.status}, fetching fresh data`
-      );
-    }
-
-    // If we don't have valid cache or it's expired, fetch fresh data
-    logger.info(`Fetching fresh sellers.json metadata for: ${domain}`);
-
-    // Get URL for sellers.json
-    const url = getSellersJsonUrl(domain);
-
-    // Fetch the sellers.json
-    let response;
-    try {
-      logger.info(`Fetching from URL: ${url}`);
-      response = await axios.get(url, {
-        timeout: 30000,
-        validateStatus: () => true,
-        maxContentLength: 200 * 1024 * 1024,
-        decompress: true,
-      });
-    } catch (error: any) {
-      return handleSellersJsonError(domain, error);
-    }
-
-    // Create cache record from response
-    const cacheRecord = createCacheRecordFromResponse(domain, response);
-
-    // Save to cache
-    const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
-
-    // Get the parsed content and extract metadata
-    const freshContent = SellersJsonCacheModel.getParsedContent(savedCache);
-    const freshMetadata = extractMetadata(freshContent);
-    const freshCacheInfo = formatCacheInfo(savedCache);
-
-    // Return response
+    // レスポンスを返す
     return res.status(200).json({
       success: true,
       data: {
         domain,
-        metadata: freshMetadata,
-        cache: freshCacheInfo,
+        metadata,
+        cache: formattedCacheInfo,
       },
     });
   } catch (error: any) {

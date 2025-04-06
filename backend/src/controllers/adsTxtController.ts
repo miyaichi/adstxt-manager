@@ -1,8 +1,12 @@
+import axios from 'axios';
 import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel from '../models/AdsTxtRecord';
 import RequestModel from '../models/Request';
 import { crossCheckAdsTxtRecords, optimizeAdsTxt, parseAdsTxtContent } from '../utils/validation';
+
+// Import the shared fetch function for sellers.json data
+import { fetchSellersJsonWithCache } from '../controllers/sellersJsonController';
 
 /**
  * Update the status of an Ads.txt record
@@ -102,14 +106,23 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               if (domainSellersJsonCache.has(domain)) {
                 sellersJsonData = domainSellersJsonCache.get(domain);
               } else {
-                const cachedSellersJson = await SellersJsonCacheModel.getByDomain(domain);
-                if (
-                  cachedSellersJson &&
-                  cachedSellersJson.status === 'success' &&
-                  cachedSellersJson.content
-                ) {
-                  sellersJsonData = SellersJsonCacheModel.parseContent(cachedSellersJson.content);
-                  domainSellersJsonCache.set(domain, sellersJsonData);
+                // Use the shared fetch function
+                const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
+                  domain,
+                  false
+                );
+
+                // Store results for TAG-ID lookup
+                if (fetchedData) {
+                  sellersJsonData = fetchedData;
+                  domainSellersJsonCache.set(domain, fetchedData);
+                  console.log(
+                    `Using sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`
+                  );
+                } else {
+                  console.log(
+                    `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
+                  );
                 }
               }
 
@@ -449,14 +462,23 @@ export const generateAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         if (domainSellersJsonCache.has(record.domain)) {
           sellersJsonData = domainSellersJsonCache.get(record.domain);
         } else {
-          const cachedSellersJson = await SellersJsonCacheModel.getByDomain(record.domain);
-          if (
-            cachedSellersJson &&
-            cachedSellersJson.status === 'success' &&
-            cachedSellersJson.content
-          ) {
-            sellersJsonData = SellersJsonCacheModel.parseContent(cachedSellersJson.content);
-            domainSellersJsonCache.set(record.domain, sellersJsonData);
+          // Use the shared fetch function
+          const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
+            record.domain,
+            false
+          );
+
+          // Store results for TAG-ID lookup
+          if (fetchedData) {
+            sellersJsonData = fetchedData;
+            domainSellersJsonCache.set(record.domain, fetchedData);
+            console.log(
+              `Using sellers.json for ${record.domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`
+            );
+          } else {
+            console.log(
+              `No valid sellers.json data available for ${record.domain} (status: ${cacheInfo.status})`
+            );
           }
         }
 
