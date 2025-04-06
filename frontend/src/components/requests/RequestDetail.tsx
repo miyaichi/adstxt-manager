@@ -200,7 +200,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     if (userRole) {
       return;
     }
-    
+
     // If API returned a role, use it
     if (request && request.role) {
       setUserRole(request.role);
@@ -219,7 +219,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
           return;
         }
       }
-      
+
       // Default to publisher if we can't determine
       // This is a safe default since most actions require explicit permission
       setUserRole('publisher');
@@ -231,7 +231,6 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     const roleParam = userRole ? `&role=${userRole}` : '';
     navigate(`/request/${requestId}/edit?token=${token}${roleParam}`);
   };
-
 
   // Fetch request details when the component mounts
   useEffect(() => {
@@ -299,7 +298,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
           <Flex gap="1rem" alignItems="center">
             {userRole && (
               <Badge variation="info">
-                {userRole === 'publisher' 
+                {userRole === 'publisher'
                   ? t('common.roles.publisher', language)
                   : t('common.roles.requester', language)}
               </Badge>

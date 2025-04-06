@@ -14,14 +14,14 @@ const options = {
       description: 'External integration API for Ads.txt Manager',
       contact: {
         name: 'API Support',
-        email: 'support@example.com'
-      }
+        email: 'support@example.com',
+      },
     },
     servers: [
       {
         url: '/api/v1',
-        description: 'Development server'
-      }
+        description: 'Development server',
+      },
     ],
     tags,
     components: {
@@ -29,16 +29,16 @@ const options = {
         ApiKeyAuth: {
           type: 'apiKey',
           in: 'header',
-          name: 'X-API-Key'
-        }
+          name: 'X-API-Key',
+        },
       },
-      schemas: definitions
+      schemas: definitions,
     },
     security: [
       {
-        ApiKeyAuth: []
-      }
-    ]
+        ApiKeyAuth: [],
+      },
+    ],
   },
   apis: ['./src/api/v1/routes/*.ts'],
 };

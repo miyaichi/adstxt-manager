@@ -116,6 +116,10 @@ export interface AdsTxtCacheResponse {
   updated_at: string;
 }
 
+export interface OptimizeAdsTxtResponse {
+  optimized_content: string;
+}
+
 // Sellers.json Models
 export interface SellersJsonSeller {
   seller_id: string;

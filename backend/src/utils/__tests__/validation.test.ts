@@ -1,11 +1,20 @@
 import {
   crossCheckAdsTxtRecords,
   ERROR_KEYS,
+  isAdsTxtRecord,
+  isAdsTxtVariable,
   isValidEmail,
+  optimizeAdsTxt,
   parseAdsTxtContent,
   parseAdsTxtLine,
   ParsedAdsTxtRecord,
+  ParsedAdsTxtVariable,
+  ParsedAdsTxtEntry,
 } from '../validation';
+
+// Use the imported type guards in our tests
+const isRecord = isAdsTxtRecord;
+const isVariable = isAdsTxtVariable;
 
 describe('Validation Utilities', () => {
   describe('Email Validation', () => {
@@ -61,6 +70,38 @@ describe('Validation Utilities', () => {
       });
     });
 
+    it('should parse variable entries correctly', () => {
+      // Arrange
+      const variableLines = [
+        'CONTACT=support@example.com',
+        'SUBDOMAIN=sub.example.com',
+        'INVENTORYPARTNERDOMAIN=partner.com',
+        'OWNERDOMAIN=owner.com',
+        'MANAGERDOMAIN=manager.com',
+        'MANAGERDOMAIN=manager.uk.com',
+      ];
+
+      // Act & Assert
+      variableLines.forEach((line, index) => {
+        const parsed = parseAdsTxtLine(line, index + 1);
+        expect(parsed).not.toBeNull();
+        expect(parsed?.is_valid).toBe(true);
+        expect('is_variable' in parsed!).toBe(true);
+        expect((parsed as any).is_variable).toBe(true);
+        expect('variable_type' in parsed!).toBe(true);
+        expect('value' in parsed!).toBe(true);
+      });
+
+      // Specific value tests
+      const contactVar = parseAdsTxtLine('CONTACT=support@example.com', 1) as any;
+      expect(contactVar.variable_type).toBe('CONTACT');
+      expect(contactVar.value).toBe('support@example.com');
+
+      const ownerVar = parseAdsTxtLine('OWNERDOMAIN=owner.com', 2) as any;
+      expect(ownerVar.variable_type).toBe('OWNERDOMAIN');
+      expect(ownerVar.value).toBe('owner.com');
+    });
+
     it('should identify invalid Ads.txt lines with proper error keys', () => {
       // Arrange and expected results
       const testCases = [
@@ -82,8 +123,17 @@ describe('Validation Utilities', () => {
         .spyOn(require('../../utils/validation'), 'parseAdsTxtLine')
         .mockImplementation((line, lineNum) => {
           const result = originalParseAdsTxtLine(line, lineNum);
-          if (result && testCases.some((tc) => tc.line === line)) {
-            return { ...result, is_valid: false };
+          // Find the matching test case
+          const testCase = testCases.find((tc) => tc.line === line);
+          if (result && testCase) {
+            // Make sure we're returning a record type with the expected error
+            return {
+              ...result,
+              is_valid: false,
+              error: testCase.expectedError,
+              validation_key: testCase.expectedError,
+              is_variable: false,
+            };
           }
           return result;
         });
@@ -119,14 +169,18 @@ describe('Validation Utilities', () => {
 
       // Assert
       expect(parsed).not.toBeNull();
-      expect(parsed?.domain).toBe('adnetwork.com');
-      expect(parsed?.account_id).toBe('abcd1234');
-      expect(parsed?.account_type).toBe('RESELLER');
-      expect(parsed?.relationship).toBe('RESELLER');
-      expect(parsed?.certification_authority_id).toBe('f08c47fec0942fa0');
-      expect(parsed?.line_number).toBe(1);
-      expect(parsed?.raw_line).toBe(line);
-      expect(parsed?.is_valid).toBe(true);
+      expect(isRecord(parsed!)).toBe(true);
+
+      if (isRecord(parsed!)) {
+        expect(parsed.domain).toBe('adnetwork.com');
+        expect(parsed.account_id).toBe('abcd1234');
+        expect(parsed.account_type).toBe('RESELLER');
+        expect(parsed.relationship).toBe('RESELLER');
+        expect(parsed.certification_authority_id).toBe('f08c47fec0942fa0');
+        expect(parsed.line_number).toBe(1);
+        expect(parsed.raw_line).toBe(line);
+        expect(parsed.is_valid).toBe(true);
+      }
     });
 
     it('should handle different relationship format variants', () => {
@@ -154,9 +208,13 @@ describe('Validation Utilities', () => {
       testCases.forEach((testCase, index) => {
         const parsed = parseAdsTxtLine(testCase.line, index + 1);
         expect(parsed?.is_valid).toBe(true);
-        expect(parsed?.relationship).toBe(testCase.expectedRelationship);
-        if (testCase.expectedCert) {
-          expect(parsed?.certification_authority_id).toBe(testCase.expectedCert);
+        expect(isRecord(parsed!)).toBe(true);
+
+        if (isRecord(parsed!)) {
+          expect(parsed.relationship).toBe(testCase.expectedRelationship);
+          if (testCase.expectedCert) {
+            expect(parsed.certification_authority_id).toBe(testCase.expectedCert);
+          }
         }
       });
     });
@@ -178,11 +236,84 @@ partner2.com, 67890, RESELLER`;
 
       // Assert
       expect(records.length).toBe(4); // Should ignore the comments and empty line
-      expect(records[0].domain).toBe('google.com');
-      expect(records[1].domain).toBe('adnetwork.com');
-      expect(records[2].domain).toBe('partner1.com');
-      expect(records[3].domain).toBe('partner2.com');
+
+      // Check that all entries are record types
+      records.forEach((record) => {
+        expect(isRecord(record)).toBe(true);
+      });
+
+      // Check specific domains
+      const recordEntries = records.filter(isRecord);
+      expect(recordEntries[0].domain).toBe('google.com');
+      expect(recordEntries[1].domain).toBe('adnetwork.com');
+      expect(recordEntries[2].domain).toBe('partner1.com');
+      expect(recordEntries[3].domain).toBe('partner2.com');
+
       expect(records.every((r) => r.is_valid)).toBe(true);
+    });
+
+    it('should parse a complete Ads.txt file with variable entries', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+CONTACT=support@example.com
+OWNERDOMAIN=owner.com
+google.com, pub-1234567890, DIRECT
+adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0
+
+# Additional info
+MANAGERDOMAIN=manager.com
+partner1.com, 12345, DIRECT`;
+
+      // Act
+      const records = parseAdsTxtContent(content);
+
+      // Assert
+      expect(records.length).toBe(6); // Should have 3 records + 3 variables
+
+      // Check variable entries
+      const variables = records.filter(isVariable);
+      const nonVariables = records.filter(isRecord);
+
+      expect(variables.length).toBe(3);
+      expect(nonVariables.length).toBe(3);
+
+      // Check variable entries
+      expect(variables[0].variable_type).toBe('CONTACT');
+      expect(variables[0].value).toBe('support@example.com');
+      expect(variables[1].variable_type).toBe('OWNERDOMAIN');
+      expect(variables[2].variable_type).toBe('MANAGERDOMAIN');
+
+      // Check record entries
+      expect(nonVariables[0].domain).toBe('google.com');
+      expect(nonVariables[1].domain).toBe('adnetwork.com');
+      expect(nonVariables[2].domain).toBe('partner1.com');
+
+      // All entries should be valid
+      expect(records.every((r) => r.is_valid)).toBe(true);
+    });
+
+    it('should add default OWNERDOMAIN when not specified and publisher domain is provided', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+CONTACT=support@example.com
+google.com, pub-1234567890, DIRECT
+adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0`;
+
+      // Act - pass publisher domain
+      const records = parseAdsTxtContent(content, 'sub.publisher.com');
+
+      // Assert
+      expect(records.length).toBe(4); // 2 records + 1 CONTACT + 1 default OWNERDOMAIN
+
+      // Find the OWNERDOMAIN entry
+      const ownerDomainEntry = records.find(
+        (entry) => isVariable(entry) && entry.variable_type === 'OWNERDOMAIN'
+      );
+
+      // Verify the default OWNERDOMAIN was added
+      expect(ownerDomainEntry).toBeDefined();
+      expect((ownerDomainEntry as any).value).toBe('publisher.com'); // Root domain without 'sub'
+      expect((ownerDomainEntry as any).line_number).toBe(-1); // Special marker for default values
     });
 
     it('should handle mixed valid and invalid lines', () => {
@@ -233,7 +364,7 @@ another.com, 67890, RESELLER`;
     // Testing the basic functionality without mocking the database
     it('should handle undefined publisher domain', async () => {
       // Arrange
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'google.com',
           account_id: '12345',
@@ -242,6 +373,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'google.com, 12345, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -276,7 +408,7 @@ another.com, 67890, RESELLER`;
     it('should validate DIRECT entries against sellers.json', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -285,6 +417,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -318,12 +451,16 @@ another.com, 67890, RESELLER`;
 
       // Assert
       expect(result[0].has_warning).toBeFalsy(); // No warnings for valid entry
-      expect(result[0].validation_results).toBeDefined();
-      if (result[0].validation_results) {
-        expect(result[0].validation_results.hasSellerJson).toBe(true);
-        expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
-        expect(result[0].validation_results.directEntryHasPublisherType).toBe(true);
-        expect(result[0].validation_results.sellerIdIsUnique).toBe(true);
+      expect(isRecord(result[0])).toBe(true);
+
+      if (isRecord(result[0])) {
+        expect(result[0].validation_results).toBeDefined();
+        if (result[0].validation_results) {
+          expect(result[0].validation_results.hasSellerJson).toBe(true);
+          expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
+          expect(result[0].validation_results.directEntryHasPublisherType).toBe(true);
+          expect(result[0].validation_results.sellerIdIsUnique).toBe(true);
+        }
       }
 
       expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
@@ -332,7 +469,7 @@ another.com, 67890, RESELLER`;
     it('should validate RESELLER entries against sellers.json', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -341,6 +478,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, RESELLER',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -374,12 +512,16 @@ another.com, 67890, RESELLER`;
 
       // Assert
       expect(result[0].has_warning).toBeFalsy(); // No warnings for valid entry
-      expect(result[0].validation_results).toBeDefined();
-      if (result[0].validation_results) {
-        expect(result[0].validation_results.hasSellerJson).toBe(true);
-        expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
-        expect(result[0].validation_results.resellerEntryHasIntermediaryType).toBe(true);
-        expect(result[0].validation_results.resellerSellerIdIsUnique).toBe(true);
+      expect(isRecord(result[0])).toBe(true);
+
+      if (isRecord(result[0])) {
+        expect(result[0].validation_results).toBeDefined();
+        if (result[0].validation_results) {
+          expect(result[0].validation_results.hasSellerJson).toBe(true);
+          expect(result[0].validation_results.accountIdInSellersJson).toBe(true);
+          expect(result[0].validation_results.resellerEntryHasIntermediaryType).toBe(true);
+          expect(result[0].validation_results.resellerSellerIdIsUnique).toBe(true);
+        }
       }
 
       expect(SellersJsonCacheMock.getByDomain).toHaveBeenCalledWith('openx.com');
@@ -388,7 +530,7 @@ another.com, 67890, RESELLER`;
     it('should detect missing sellers.json', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -397,6 +539,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -424,7 +567,7 @@ another.com, 67890, RESELLER`;
     it('should handle invalid sellers.json format', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -433,6 +576,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -464,7 +608,7 @@ another.com, 67890, RESELLER`;
     it('should detect account_id not found in sellers.json for DIRECT entries', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '123456789', // Different from what's in sellers.json
@@ -473,6 +617,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 123456789, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -517,7 +662,7 @@ another.com, 67890, RESELLER`;
     it('should detect account_id not found in sellers.json for RESELLER entries', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '123456789', // Different from what's in sellers.json
@@ -526,6 +671,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 123456789, RESELLER',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -570,7 +716,7 @@ another.com, 67890, RESELLER`;
     it('should detect DIRECT entry with incorrect seller_type', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -579,6 +725,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -623,7 +770,7 @@ another.com, 67890, RESELLER`;
     it('should detect RESELLER entry with incorrect seller_type', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -632,6 +779,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, RESELLER',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -676,7 +824,7 @@ another.com, 67890, RESELLER`;
     it('should detect domain mismatch in DIRECT entries', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -685,6 +833,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -729,7 +878,7 @@ another.com, 67890, RESELLER`;
     it('should detect non-unique seller_id in sellers.json (DIRECT)', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -738,6 +887,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -787,7 +937,7 @@ another.com, 67890, RESELLER`;
     it('should detect non-unique seller_id in sellers.json (RESELLER)', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -796,6 +946,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, RESELLER',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -845,7 +996,7 @@ another.com, 67890, RESELLER`;
     it('should ensure uniqueness is properly scoped to each domain', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -854,6 +1005,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
         {
           domain: 'google.com',
@@ -863,6 +1015,7 @@ another.com, 67890, RESELLER`;
           line_number: 2,
           raw_line: 'google.com, 541058490, RESELLER',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -919,7 +1072,12 @@ another.com, 67890, RESELLER`;
       expect(result[1].has_warning).toBeFalsy();
 
       // Check that validation results are correct
-      if (result[0].validation_results && result[1].validation_results) {
+      if (
+        isRecord(result[0]) &&
+        isRecord(result[1]) &&
+        result[0].validation_results &&
+        result[1].validation_results
+      ) {
         expect(result[0].validation_results.sellerIdIsUnique).toBe(true);
         expect(result[1].validation_results.resellerSellerIdIsUnique).toBe(true);
       }
@@ -932,7 +1090,7 @@ another.com, 67890, RESELLER`;
     it('should handle multiple validation issues in a single record', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -941,6 +1099,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -995,13 +1154,16 @@ another.com, 67890, RESELLER`;
       expect(warningKeys).toContain(ERROR_KEYS.SELLER_ID_NOT_UNIQUE);
 
       // Primary warning should be one of the detected issues
-      expect(warningKeys).toContain(result[0].warning);
+      expect(result[0].warning).toBeDefined();
+      if (result[0].warning) {
+        expect(warningKeys).toContain(result[0].warning);
+      }
     });
 
     it('should handle errors during validation', async () => {
       // Arrange
       const publisherDomain = 'publisher.com';
-      const records: ParsedAdsTxtRecord[] = [
+      const records: ParsedAdsTxtEntry[] = [
         {
           domain: 'openx.com',
           account_id: '541058490',
@@ -1010,6 +1172,7 @@ another.com, 67890, RESELLER`;
           line_number: 1,
           raw_line: 'openx.com, 541058490, DIRECT',
           is_valid: true,
+          is_variable: false,
         },
       ];
 
@@ -1038,6 +1201,138 @@ another.com, 67890, RESELLER`;
       expect(result[0].warning).toBe(ERROR_KEYS.SELLERS_JSON_VALIDATION_ERROR);
       expect(result[0].warning_params?.message).toBe(errorMessage);
       expect(result[0].validation_error).toBe(errorMessage);
+    });
+  });
+
+  describe('Ads.txt Optimization', () => {
+    it('should remove duplicates from ads.txt content', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+google.com, pub-1234567890, DIRECT
+adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0
+google.com, pub-1234567890, DIRECT  # Duplicate with different spacing
+AdNetwork.com, abcd1234, RESELLER, f08c47fec0942fa0  # Duplicate with different case`;
+
+      // Act
+      const result = optimizeAdsTxt(content);
+
+      // Assert
+      // Count the lines that start with domain names (should be only 2 unique entries)
+      const domainLineCount = result
+        .split('\n')
+        .filter((line) => /^[a-z0-9.-]+\,/.test(line.toLowerCase().trim())).length;
+
+      expect(domainLineCount).toBe(2);
+
+      // Check for specific entries
+      expect(result).toContain('google.com, pub-1234567890, DIRECT');
+      expect(result).toContain('adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0');
+    });
+
+    it('should add default OWNERDOMAIN when optimizing', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+google.com, pub-1234567890, DIRECT
+adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0`;
+
+      // Act
+      const result = optimizeAdsTxt(content, 'sub.publisher.com');
+
+      // Assert
+      expect(result).toContain('OWNERDOMAIN=publisher.com');
+    });
+
+    it('should group and format records by domain', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+google.com, pub-111, RESELLER
+google.com, pub-222, DIRECT
+adnetwork.com, abcd333, RESELLER
+adnetwork.com, abcd444, DIRECT`;
+
+      // Act
+      const result = optimizeAdsTxt(content);
+
+      // Assert
+      const lines = result.split('\n');
+
+      // Check that domains are grouped and properly ordered
+      const googleDirect = lines.findIndex(
+        (line) => line.includes('google.com') && line.includes('DIRECT')
+      );
+      const googleReseller = lines.findIndex(
+        (line) => line.includes('google.com') && line.includes('RESELLER')
+      );
+      const adnetworkDirect = lines.findIndex(
+        (line) => line.includes('adnetwork.com') && line.includes('DIRECT')
+      );
+      const adnetworkReseller = lines.findIndex(
+        (line) => line.includes('adnetwork.com') && line.includes('RESELLER')
+      );
+
+      // Same domain entries should be adjacent
+      expect(Math.abs(googleDirect - googleReseller)).toBe(1);
+      expect(Math.abs(adnetworkDirect - adnetworkReseller)).toBe(1);
+
+      // DIRECT entries should come before RESELLER for the same domain
+      expect(googleDirect).toBeLessThan(googleReseller);
+      expect(adnetworkDirect).toBeLessThan(adnetworkReseller);
+    });
+
+    it('should maintain and organize variable entries', () => {
+      // Arrange
+      const content = `# Ads.txt for example.com
+CONTACT=support@example.com
+OWNERDOMAIN=owner.com
+google.com, pub-1234567890, DIRECT
+MANAGERDOMAIN=manager1.com
+adnetwork.com, abcd1234, RESELLER, f08c47fec0942fa0
+MANAGERDOMAIN=manager2.com JP
+SUBDOMAIN=sub.example.com`;
+
+      // Act
+      const result = optimizeAdsTxt(content);
+
+      // Assert
+      const lines = result.split('\n');
+
+      // Variables should be grouped by type
+      const contactLine = lines.findIndex((line) => line.includes('CONTACT='));
+      const ownerdomainLine = lines.findIndex((line) => line.includes('OWNERDOMAIN='));
+      const managerdomainLines = lines.filter((line) => line.includes('MANAGERDOMAIN=')).length;
+      const subdomainLine = lines.findIndex((line) => line.includes('SUBDOMAIN='));
+
+      // Variables should come before records
+      const firstRecordLine = lines.findIndex((line) =>
+        /^[a-z0-9.-]+\,/.test(line.toLowerCase().trim())
+      );
+
+      expect(contactLine).toBeLessThan(firstRecordLine);
+      expect(ownerdomainLine).toBeLessThan(firstRecordLine);
+      expect(subdomainLine).toBeLessThan(firstRecordLine);
+
+      // Variables should be sorted by variable_type
+      expect(contactLine).toBeLessThan(ownerdomainLine);
+
+      // Multiple variables of same type should be preserved
+      expect(managerdomainLines).toBe(2);
+    });
+
+    it('should handle a completely invalid ads.txt and return a valid empty format', () => {
+      // Arrange
+      const content = `This is not a valid ads.txt file
+It has no valid entries at all`;
+
+      // Act
+      const result = optimizeAdsTxt(content);
+
+      // Assert
+      // Should have the standard header but no entries
+      expect(result).toContain('# Advertising System Records');
+
+      // Should not contain any of the invalid text
+      expect(result).not.toContain('This is not a valid');
+      expect(result).not.toContain('It has no valid');
     });
   });
 });

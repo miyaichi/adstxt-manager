@@ -7,18 +7,18 @@ export const definitions = {
     properties: {
       success: {
         type: 'boolean',
-        example: false
+        example: false,
       },
       error: {
         type: 'object',
         properties: {
           code: {
             type: 'string',
-            example: 'VALIDATION_ERROR'
+            example: 'VALIDATION_ERROR',
           },
           message: {
             type: 'string',
-            example: 'Validation failed'
+            example: 'Validation failed',
           },
           details: {
             type: 'array',
@@ -27,18 +27,18 @@ export const definitions = {
               properties: {
                 param: {
                   type: 'string',
-                  example: 'domain'
+                  example: 'domain',
                 },
                 msg: {
                   type: 'string',
-                  example: 'Domain is required'
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  example: 'Domain is required',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   Request: {
     type: 'object',
@@ -46,72 +46,72 @@ export const definitions = {
       id: {
         type: 'string',
         format: 'uuid',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        example: '123e4567-e89b-12d3-a456-426614174000',
       },
       domain: {
         type: 'string',
-        example: 'example.com'
+        example: 'example.com',
       },
       email: {
         type: 'string',
         format: 'email',
-        example: 'user@example.com'
+        example: 'user@example.com',
       },
       changes: {
         type: 'string',
-        example: 'Added new partner: google.com, pub-1234, DIRECT, f08c47fec0942fa0'
+        example: 'Added new partner: google.com, pub-1234, DIRECT, f08c47fec0942fa0',
       },
       status: {
         type: 'string',
         enum: ['pending', 'approved', 'rejected'],
-        example: 'pending'
+        example: 'pending',
       },
       createdAt: {
         type: 'string',
         format: 'date-time',
-        example: '2023-01-01T00:00:00Z'
+        example: '2023-01-01T00:00:00Z',
       },
       updatedAt: {
         type: 'string',
         format: 'date-time',
-        example: '2023-01-01T00:00:00Z'
-      }
-    }
+        example: '2023-01-01T00:00:00Z',
+      },
+    },
   },
   PaginatedResponse: {
     type: 'object',
     properties: {
       success: {
         type: 'boolean',
-        example: true
+        example: true,
       },
       data: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/Request'
-        }
+          $ref: '#/components/schemas/Request',
+        },
       },
       pagination: {
         type: 'object',
         properties: {
           total: {
             type: 'integer',
-            example: 100
+            example: 100,
           },
           limit: {
             type: 'integer',
-            example: 10
+            example: 10,
           },
           offset: {
             type: 'integer',
-            example: 0
+            example: 0,
           },
           hasMore: {
             type: 'boolean',
-            example: true
-          }
-        }
-      }
-    }
-  }
+            example: true,
+          },
+        },
+      },
+    },
+  },
 };

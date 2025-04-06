@@ -6,6 +6,7 @@ import {
   CreateMessageData,
   CreateRequestData,
   Message,
+  OptimizeAdsTxtResponse,
   ProcessAdsTxtResponse,
   Request,
   RequestResponse,
@@ -271,6 +272,24 @@ export const adsTxtApi = {
     const url = `/adsTxtCache/domain/${encodeURIComponent(domain)}${force ? '?force=true' : ''}`;
     const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(url);
     console.log('Response received:', response.data);
+    return response.data;
+  },
+
+  // Optimize Ads.txt content
+  async optimizeAdsTxtContent(
+    content: string,
+    publisherDomain?: string
+  ): Promise<ApiResponse<OptimizeAdsTxtResponse>> {
+    const data: any = {
+      content: content,
+    };
+
+    // Add publisher domain if provided
+    if (publisherDomain) {
+      data.publisher_domain = publisherDomain;
+    }
+
+    const response = await api.post<ApiResponse<OptimizeAdsTxtResponse>>('/adsTxt/optimize', data);
     return response.data;
   },
 };

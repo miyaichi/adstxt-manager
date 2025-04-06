@@ -19,8 +19,8 @@ export const requestController = {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Validation failed',
-          details: errors.array()
-        }
+          details: errors.array(),
+        },
       });
     }
 
@@ -41,13 +41,13 @@ export const requestController = {
         changes,
         status: 'pending',
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
       };
 
       // Return successful response with mock data
       return res.status(201).json({
         success: true,
-        data: mockRequest
+        data: mockRequest,
       });
     } catch (error) {
       console.error('Error creating request:', error);
@@ -55,8 +55,8 @@ export const requestController = {
         success: false,
         error: {
           code: 'SERVER_ERROR',
-          message: 'An unexpected error occurred'
-        }
+          message: 'An unexpected error occurred',
+        },
       });
     }
   },
@@ -73,8 +73,8 @@ export const requestController = {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Validation failed',
-          details: errors.array()
-        }
+          details: errors.array(),
+        },
       });
     }
 
@@ -83,15 +83,15 @@ export const requestController = {
 
       // In a real implementation, this would query the database
       // For the stub, we'll just return a mock response or 404
-      
+
       // Simulate not found for specific test ID
       if (id === '00000000-0000-0000-0000-000000000000') {
         return res.status(404).json({
           success: false,
           error: {
             code: 'NOT_FOUND',
-            message: 'Request not found'
-          }
+            message: 'Request not found',
+          },
         });
       }
 
@@ -103,12 +103,12 @@ export const requestController = {
         changes: 'Added new partner: google.com, pub-1234, DIRECT, f08c47fec0942fa0',
         status: 'pending',
         createdAt: '2023-01-01T00:00:00Z',
-        updatedAt: '2023-01-01T00:00:00Z'
+        updatedAt: '2023-01-01T00:00:00Z',
       };
 
       return res.status(200).json({
         success: true,
-        data: mockRequest
+        data: mockRequest,
       });
     } catch (error) {
       console.error('Error fetching request:', error);
@@ -116,8 +116,8 @@ export const requestController = {
         success: false,
         error: {
           code: 'SERVER_ERROR',
-          message: 'An unexpected error occurred'
-        }
+          message: 'An unexpected error occurred',
+        },
       });
     }
   },
@@ -134,8 +134,8 @@ export const requestController = {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Validation failed',
-          details: errors.array()
-        }
+          details: errors.array(),
+        },
       });
     }
 
@@ -149,22 +149,26 @@ export const requestController = {
       // Generate mock data for demonstration
       const mockRequests: ApiRequest[] = [];
       const total = 23; // Mock total count
-      
+
       // Generate some sample data based on the limit
       for (let i = 0; i < Math.min(limit, total - offset); i++) {
         if (offset + i >= total) break;
-        
-        const statusOptions: ('pending' | 'approved' | 'rejected')[] = ['pending', 'approved', 'rejected'];
+
+        const statusOptions: ('pending' | 'approved' | 'rejected')[] = [
+          'pending',
+          'approved',
+          'rejected',
+        ];
         const mockRequest: ApiRequest = {
           id: uuidv4(),
           domain: domain || `domain-${i + offset}.com`,
           email: `user-${i + offset}@example.com`,
           changes: `Sample changes for request ${i + offset}`,
-          status: status as ('pending' | 'approved' | 'rejected') || statusOptions[i % 3],
-          createdAt: new Date(Date.now() - (i * 86400000)).toISOString(),
-          updatedAt: new Date(Date.now() - (i * 86400000)).toISOString()
+          status: (status as 'pending' | 'approved' | 'rejected') || statusOptions[i % 3],
+          createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - i * 86400000).toISOString(),
         };
-        
+
         mockRequests.push(mockRequest);
       }
 
@@ -176,8 +180,8 @@ export const requestController = {
           total,
           limit,
           offset,
-          hasMore: offset + limit < total
-        }
+          hasMore: offset + limit < total,
+        },
       });
     } catch (error) {
       console.error('Error listing requests:', error);
@@ -185,9 +189,9 @@ export const requestController = {
         success: false,
         error: {
           code: 'SERVER_ERROR',
-          message: 'An unexpected error occurred'
-        }
+          message: 'An unexpected error occurred',
+        },
       });
     }
-  }
+  },
 };

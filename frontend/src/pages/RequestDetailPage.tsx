@@ -40,7 +40,11 @@ const RequestDetailPage: React.FC = () => {
         ]}
       />
 
-      <RequestDetail requestId={id} token={token} initialRole={role as 'publisher' | 'requester' | undefined} />
+      <RequestDetail
+        requestId={id}
+        token={token}
+        initialRole={role as 'publisher' | 'requester' | undefined}
+      />
     </Flex>
   );
 };

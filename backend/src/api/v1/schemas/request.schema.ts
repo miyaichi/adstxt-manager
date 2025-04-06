@@ -13,10 +13,7 @@ export const requestValidation = {
       .withMessage('Domain is required')
       .matches(/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/)
       .withMessage('Invalid domain format'),
-    body('email')
-      .isEmail()
-      .normalizeEmail()
-      .withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('changes')
       .isString()
       .trim()
@@ -27,11 +24,7 @@ export const requestValidation = {
   ],
 
   // Get request by ID validation
-  getById: [
-    param('id')
-      .isUUID()
-      .withMessage('Valid request ID is required'),
-  ],
+  getById: [param('id').isUUID().withMessage('Valid request ID is required')],
 
   // List requests validation
   list: [
@@ -45,10 +38,7 @@ export const requestValidation = {
       .isInt({ min: 0 })
       .withMessage('Offset must be a positive integer')
       .toInt(),
-    query('domain')
-      .optional()
-      .isString()
-      .trim(),
+    query('domain').optional().isString().trim(),
     query('status')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])

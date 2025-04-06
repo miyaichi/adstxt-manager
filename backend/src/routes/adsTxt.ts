@@ -3,6 +3,7 @@ import multer from 'multer';
 import {
   generateAdsTxtContent,
   getRecordsByRequestId,
+  optimizeAdsTxtContent,
   processAdsTxtFile,
   updateRecordStatus,
 } from '../controllers/adsTxtController';
@@ -34,5 +35,6 @@ router.post(
 );
 router.get('/request/:requestId', getRecordsByRequestId);
 router.get('/generate/:requestId', generateAdsTxtContent);
+router.post('/optimize', optimizeAdsTxtContent);
 
 export default router;

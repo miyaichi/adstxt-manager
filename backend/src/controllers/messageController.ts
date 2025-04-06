@@ -60,10 +60,10 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
 
     // Determine recipient role and token
     const recipientRole = sender_email === request.publisher_email ? 'requester' : 'publisher';
-    const recipientToken = 
-      recipientRole === 'publisher' 
-        ? (request.publisher_token || request.token || '')
-        : (request.requester_token || request.token || '');
+    const recipientToken =
+      recipientRole === 'publisher'
+        ? request.publisher_token || request.token || ''
+        : request.requester_token || request.token || '';
 
     await emailService.sendMessageNotification(
       recipientEmail,

@@ -54,8 +54,8 @@ class TokenService {
    * @returns Object containing both tokens
    */
   generateRequestTokens(
-    requestId: string, 
-    publisherEmail: string, 
+    requestId: string,
+    publisherEmail: string,
     requesterEmail: string
   ): {
     publisherToken: string;
@@ -63,10 +63,10 @@ class TokenService {
   } {
     const publisherToken = this.generateRoleToken(requestId, publisherEmail, 'publisher');
     const requesterToken = this.generateRoleToken(requestId, requesterEmail, 'requester');
-    
+
     return {
       publisherToken,
-      requesterToken
+      requesterToken,
     };
   }
 
@@ -77,27 +77,27 @@ class TokenService {
    * @returns Object with validity and role if valid
    */
   verifyToken(
-    token: string, 
+    token: string,
     storedTokens: { publisherToken?: string; requesterToken?: string; token?: string }
-  ): { 
-    isValid: boolean; 
-    role?: TokenRole 
+  ): {
+    isValid: boolean;
+    role?: TokenRole;
   } {
     // Check for legacy token (backward compatibility)
     if (storedTokens.token && token === storedTokens.token) {
       return { isValid: true };
     }
-    
+
     // Check publisher token
     if (storedTokens.publisherToken && token === storedTokens.publisherToken) {
       return { isValid: true, role: 'publisher' };
     }
-    
+
     // Check requester token
     if (storedTokens.requesterToken && token === storedTokens.requesterToken) {
       return { isValid: true, role: 'requester' };
     }
-    
+
     // No match found
     return { isValid: false };
   }

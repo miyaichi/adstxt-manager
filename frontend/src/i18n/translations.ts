@@ -231,6 +231,10 @@ export const translations = {
       en: 'Please enter some content',
       ja: 'コンテンツを入力してください',
     },
+    optimizeError: {
+      en: 'An error occurred while optimizing the content',
+      ja: 'コンテンツの最適化中にエラーが発生しました',
+    },
     cancel: {
       en: 'Cancel',
       ja: 'キャンセル',
@@ -813,6 +817,20 @@ export const translations = {
         ja: 'リクエストを検索',
       },
     },
+    optimizeAdsTxt: {
+      title: {
+        en: 'Optimize Ads.txt',
+        ja: 'Ads.txtを最適化',
+      },
+      description: {
+        en: 'Clean up and optimize your Ads.txt file. Remove duplicates, standardize format, and ensure compliance with the Ads.txt specification.',
+        ja: 'Ads.txtファイルをクリーンアップして最適化します。重複を削除し、フォーマットを標準化し、Ads.txt仕様への準拠を確保します。',
+      },
+      button: {
+        en: 'Go to Optimizer',
+        ja: '最適化ツールへ',
+      },
+    },
     errors: {
       emailRequired: {
         en: 'Please enter an email address',
@@ -1014,6 +1032,176 @@ export const translations = {
       },
     },
   },
+  optimizerPage: {
+    breadcrumb: {
+      en: 'Ads.txt Optimizer',
+      ja: 'Ads.txt 最適化ツール',
+    },
+    title: {
+      en: 'Ads.txt Optimizer',
+      ja: 'Ads.txt 最適化ツール',
+    },
+    description: {
+      en: 'Optimize your Ads.txt file by removing duplicates, standardizing format, and ensuring compliance with the specification.',
+      ja: '重複を削除し、フォーマットを標準化し、仕様への準拠を確保することで、Ads.txtファイルを最適化します。',
+    },
+    inputSection: {
+      title: {
+        en: 'Input',
+        ja: '入力',
+      },
+      tabs: {
+        text: {
+          en: 'Enter Text',
+          ja: 'テキスト入力',
+        },
+        url: {
+          en: 'Fetch from URL',
+          ja: 'URLから取得',
+        },
+        file: {
+          en: 'Upload File',
+          ja: 'ファイルをアップロード',
+        },
+      },
+      textLabel: {
+        en: 'Ads.txt Content',
+        ja: 'Ads.txtの内容',
+      },
+      textPlaceholder: {
+        en: 'Paste your Ads.txt content here...',
+        ja: 'Ads.txtの内容をここに貼り付けてください...',
+      },
+      urlLabel: {
+        en: 'Publisher Domain',
+        ja: 'パブリッシャードメイン',
+      },
+      urlPlaceholder: {
+        en: 'example.com',
+        ja: 'example.com',
+      },
+      urlHelperText: {
+        en: 'We will fetch ads.txt from this domain',
+        ja: 'このドメインからads.txtを取得します',
+      },
+      fileLabel: {
+        en: 'Ads.txt File',
+        ja: 'Ads.txtファイル',
+      },
+      filePlaceholder: {
+        en: 'Choose file...',
+        ja: 'ファイルを選択...',
+      },
+      optimizeButton: {
+        en: 'Optimize',
+        ja: '最適化',
+      },
+      downloadButton: {
+        en: 'Download Optimized File',
+        ja: '最適化ファイルをダウンロード',
+      },
+      copyButton: {
+        en: 'Copy to Clipboard',
+        ja: 'クリップボードにコピー',
+      },
+    },
+    optimizationLevels: {
+      label: {
+        en: 'Optimization Level',
+        ja: '最適化レベル',
+      },
+      level1: {
+        title: {
+          en: 'Level 1: Basic',
+          ja: 'レベル1: 基本',
+        },
+        description: {
+          en: 'Remove duplicates, standardize format, group records by domain',
+          ja: '重複を削除、フォーマットを標準化、ドメインごとにレコードをグループ化',
+        },
+      },
+      level2: {
+        title: {
+          en: 'Level 2: Advanced',
+          ja: 'レベル2: 高度',
+        },
+        description: {
+          en: 'Level 1 + fix warnings, sort by importance',
+          ja: 'レベル1 + 警告の修正、重要度による並べ替え',
+        },
+        comingSoon: {
+          en: 'Coming soon',
+          ja: '近日公開',
+        },
+      },
+    },
+    resultSection: {
+      title: {
+        en: 'Optimized Result',
+        ja: '最適化結果',
+      },
+      beforeLabel: {
+        en: 'Before',
+        ja: '最適化前',
+      },
+      afterLabel: {
+        en: 'After',
+        ja: '最適化後',
+      },
+      statsLabel: {
+        en: 'Optimization Statistics',
+        ja: '最適化統計',
+      },
+      recordsBefore: {
+        en: 'Records before: {{count}}',
+        ja: '最適化前のレコード数: {{count}}',
+      },
+      recordsAfter: {
+        en: 'Records after: {{count}}',
+        ja: '最適化後のレコード数: {{count}}',
+      },
+      duplicatesRemoved: {
+        en: 'Duplicates removed: {{count}}',
+        ja: '削除された重複: {{count}}',
+      },
+      variablesOrganized: {
+        en: 'Variables organized: {{count}}',
+        ja: '整理された変数: {{count}}',
+      },
+    },
+    errors: {
+      emptyContent: {
+        en: 'Please enter some Ads.txt content',
+        ja: 'Ads.txtの内容を入力してください',
+      },
+      invalidDomain: {
+        en: 'Please enter a valid domain',
+        ja: '有効なドメインを入力してください',
+      },
+      fetchFailed: {
+        en: 'Failed to fetch Ads.txt from the domain',
+        ja: 'ドメインからのAds.txt取得に失敗しました',
+      },
+      optimizeFailed: {
+        en: 'Failed to optimize Ads.txt content',
+        ja: 'Ads.txt内容の最適化に失敗しました',
+      },
+      invalidFile: {
+        en: 'Please select a valid Ads.txt file',
+        ja: '有効なAds.txtファイルを選択してください',
+      },
+    },
+    success: {
+      copySuccess: {
+        en: 'Copied to clipboard!',
+        ja: 'クリップボードにコピーしました！',
+      },
+      optimizeSuccess: {
+        en: 'Ads.txt successfully optimized!',
+        ja: 'Ads.txtの最適化に成功しました！',
+      },
+    },
+  },
   statusPage: {
     title: {
       en: 'System Status',
@@ -1093,6 +1281,10 @@ export const translations = {
       example: {
         en: 'Example',
         ja: '例',
+      },
+      optimize: {
+        en: 'Optimize',
+        ja: '最適化',
       },
     },
     textInput: {

@@ -1,4 +1,4 @@
-import { crossCheckAdsTxtRecords, parseAdsTxtLine } from './validation';
+import { crossCheckAdsTxtRecords, parseAdsTxtLine, isAdsTxtRecord } from './validation';
 
 // Test function to validate a fixed record
 async function testFixedValidation() {
@@ -17,8 +17,8 @@ async function testFixedValidation() {
     console.log(`Has warning: ${validatedRecords[0].has_warning}`);
     console.log(`Warning: ${validatedRecords[0].warning}`);
 
-    // Display detailed validation results
-    if (validatedRecords[0].validation_results) {
+    // Check if this is a record (not a variable) and has validation results
+    if (isAdsTxtRecord(validatedRecords[0]) && validatedRecords[0].validation_results) {
       console.log('\nDetailed validation results:');
       console.log(`- hasSellerJson: ${validatedRecords[0].validation_results.hasSellerJson}`);
       console.log(

@@ -4,10 +4,10 @@
 export const tags = [
   {
     name: 'Requests',
-    description: 'Operations related to ad.txt change requests'
+    description: 'Operations related to ad.txt change requests',
   },
   {
     name: 'Status',
-    description: 'API status and health information'
-  }
+    description: 'API status and health information',
+  },
 ];

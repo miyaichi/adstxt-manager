@@ -10,12 +10,12 @@ async function runMigration() {
     // Get SQL file content
     const sqlPath = path.join(__dirname, 'add_token_fields.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
-    
+
     // Execute the SQL
     await db.execute(sql);
-    
+
     console.log('✅ Successfully added token fields to requests table');
-    
+
     // Exit process
     process.exit(0);
   } catch (error) {

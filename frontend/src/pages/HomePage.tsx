@@ -63,44 +63,51 @@ const HomePage: React.FC = () => {
           {t('homePage.description', language)}
         </Text>
 
-        <Flex
-          direction={{ base: 'column', medium: 'row' }}
-          gap="2rem"
-          width="100%"
-          maxWidth="1000px"
-          padding="1rem"
-        >
-          <Card variation="outlined" flex="1">
-            <Heading level={3}>{t('homePage.createRequest.title', language)}</Heading>
+        <Flex direction="column" gap="2rem" width="100%" maxWidth="1000px" padding="1rem">
+          {/* First row: Two original cards side by side */}
+          <Flex direction={{ base: 'column', medium: 'row' }} gap="2rem" width="100%">
+            <Card variation="outlined" flex="1">
+              <Heading level={3}>{t('homePage.createRequest.title', language)}</Heading>
+              <Divider marginBlock="1rem" />
+              <Text>{t('homePage.createRequest.description', language)}</Text>
+              <Button as={Link} to="/new-request" variation="primary" width="100%" marginTop="1rem">
+                {t('homePage.createRequest.button', language)}
+              </Button>
+            </Card>
+
+            <Card variation="outlined" flex="1">
+              <Heading level={3}>{t('homePage.checkRequest.title', language)}</Heading>
+              <Divider marginBlock="1rem" />
+              <Text marginBottom="1rem">{t('homePage.checkRequest.description', language)}</Text>
+
+              <form onSubmit={handleEmailSubmit}>
+                <Flex direction="column" gap="0.5rem">
+                  <TextField
+                    label={t('common.email', language)}
+                    name="email"
+                    placeholder="example@domain.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    required
+                  />
+                  {error && <Alert variation="error">{error}</Alert>}
+                  <Button type="submit" variation="primary" width="100%" isLoading={isLoading}>
+                    {t('homePage.checkRequest.button', language)}
+                  </Button>
+                </Flex>
+              </form>
+            </Card>
+          </Flex>
+
+          {/* Second row: Optimization card full width */}
+          <Card variation="outlined" width="100%">
+            <Heading level={3}>{t('homePage.optimizeAdsTxt.title', language)}</Heading>
             <Divider marginBlock="1rem" />
-            <Text>{t('homePage.createRequest.description', language)}</Text>
-            <Button as={Link} to="/new-request" variation="primary" width="100%" marginTop="1rem">
-              {t('homePage.createRequest.button', language)}
+            <Text marginBottom="1rem">{t('homePage.optimizeAdsTxt.description', language)}</Text>
+            <Button as={Link} to="/optimizer" variation="primary" width="auto">
+              {t('homePage.optimizeAdsTxt.button', language)}
             </Button>
-          </Card>
-
-          <Card variation="outlined" flex="1">
-            <Heading level={3}>{t('homePage.checkRequest.title', language)}</Heading>
-            <Divider marginBlock="1rem" />
-            <Text marginBottom="1rem">{t('homePage.checkRequest.description', language)}</Text>
-
-            <form onSubmit={handleEmailSubmit}>
-              <Flex direction="column" gap="0.5rem">
-                <TextField
-                  label={t('common.email', language)}
-                  name="email"
-                  placeholder="example@domain.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  required
-                />
-                {error && <Alert variation="error">{error}</Alert>}
-                <Button type="submit" variation="primary" width="100%" isLoading={isLoading}>
-                  {t('homePage.checkRequest.button', language)}
-                </Button>
-              </Flex>
-            </form>
           </Card>
         </Flex>
       </Flex>

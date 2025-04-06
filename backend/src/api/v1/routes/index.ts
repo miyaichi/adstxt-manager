@@ -56,8 +56,8 @@ router.get('/status', validateApiKey, (req, res) => {
     data: {
       status: 'online',
       version: '1.0.0',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 });
 

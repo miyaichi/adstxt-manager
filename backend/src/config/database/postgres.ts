@@ -51,7 +51,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
     // Setup connection validation
     this.setupConnectionValidation();
   }
-  
+
   /**
    * Configure SSL settings based on environment
    */
@@ -72,35 +72,36 @@ export class PostgresDatabase implements IDatabaseAdapter {
     }
 
     // If running in a cloud environment, default to requiring SSL with self-signed certs
-    const isCloudEnv = process.env.NODE_ENV === 'production' || 
-                       process.env.IS_CLOUD === 'true' || 
-                       !!process.env.DATABASE_URL;
-    
+    const isCloudEnv =
+      process.env.NODE_ENV === 'production' ||
+      process.env.IS_CLOUD === 'true' ||
+      !!process.env.DATABASE_URL;
+
     if (isCloudEnv) {
       return {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
       };
     }
 
     // Local development default
     return false;
   }
-  
+
   /**
    * Set up periodic validation of connections
    */
   private setupConnectionValidation() {
     // Only set up validation in production
     if (process.env.NODE_ENV !== 'production') return;
-    
+
     const checkInterval = parseInt(process.env.PG_HEALTH_CHECK_INTERVAL || '30000');
-    
+
     setInterval(async () => {
       try {
         const client = await this.pool.connect();
         const result = await client.query('SELECT 1');
         client.release();
-        
+
         if (result.rowCount !== 1) {
           console.warn('PostgreSQL health check returned unexpected result');
         }

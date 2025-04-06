@@ -40,11 +40,11 @@ class RequestModel {
   async create(requestData: CreateRequestDTO): Promise<Request> {
     const id = uuidv4();
     const tokens = tokenService.generateRequestTokens(
-      id, 
-      requestData.publisher_email, 
+      id,
+      requestData.publisher_email,
       requestData.requester_email
     );
-    
+
     // Also generate legacy token for backward compatibility
     const legacyToken = tokenService.generateToken(id, requestData.publisher_email);
     const now = new Date().toISOString();
@@ -74,7 +74,7 @@ class RequestModel {
    * @returns Promise with the request and role info if found/valid token
    */
   async getByIdWithToken(
-    id: string, 
+    id: string,
     token: string
   ): Promise<{ request: Request; role?: 'publisher' | 'requester' } | null> {
     const request = await db.getById<Request>(this.tableName, id);
@@ -87,16 +87,16 @@ class RequestModel {
     const tokenVerification = tokenService.verifyToken(token, {
       token: request.token,
       publisherToken: request.publisher_token,
-      requesterToken: request.requester_token
+      requesterToken: request.requester_token,
     });
 
     if (!tokenVerification.isValid) {
       return null;
     }
 
-    return { 
+    return {
       request,
-      role: tokenVerification.role
+      role: tokenVerification.role,
     };
   }
 

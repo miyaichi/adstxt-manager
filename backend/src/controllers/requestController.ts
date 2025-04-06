@@ -3,7 +3,13 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel, { CreateAdsTxtRecordDTO } from '../models/AdsTxtRecord';
 import RequestModel, { CreateRequestDTO } from '../models/Request';
 import emailService from '../services/emailService';
-import { isValidEmail, parseAdsTxtContent, crossCheckAdsTxtRecords } from '../utils/validation';
+import {
+  isValidEmail,
+  parseAdsTxtContent,
+  crossCheckAdsTxtRecords,
+  isAdsTxtRecord,
+  isAdsTxtVariable,
+} from '../utils/validation';
 
 /**
  * Create a new request
@@ -70,11 +76,14 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       const fileBuffer = req.file.buffer;
       const fileContent = fileBuffer.toString('utf8');
 
-      // Parse the content
-      const parsedRecords = parseAdsTxtContent(fileContent);
+      // Parse the content (pass the publisher domain for default OWNERDOMAIN)
+      const parsedRecords = parseAdsTxtContent(fileContent, publisher_domain);
       // Cross-check records against publisher domain
       const crossCheckedRecords = await crossCheckAdsTxtRecords(publisher_domain, parsedRecords);
-      const validRecords = crossCheckedRecords.filter((record) => record.is_valid);
+      // Filter for valid records and only non-variable entries (standard records)
+      const validRecords = crossCheckedRecords
+        .filter((record) => record.is_valid)
+        .filter(isAdsTxtRecord);
 
       if (validRecords.length === 0) {
         throw new ApiError(
@@ -84,7 +93,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         );
       }
 
-      // Convert to DTOs
+      // Convert to DTOs (we know these are all record types now)
       adsTxtRecords = validRecords.map((record) => ({
         request_id: request.id,
         domain: record.domain,
@@ -226,13 +235,17 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
   if (!result) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
-  
+
   const { request, role } = result;
-  
+
   // Only publishers should be able to approve/reject requests
   if (status === 'approved' || status === 'rejected') {
     if (role && role !== 'publisher') {
-      throw new ApiError(403, 'Only publishers can approve or reject requests', 'errors:unauthorized');
+      throw new ApiError(
+        403,
+        'Only publishers can approve or reject requests',
+        'errors:unauthorized'
+      );
     }
   }
 
@@ -307,12 +320,16 @@ export const updatePublisherInfo = asyncHandler(async (req: Request, res: Respon
   if (!result) {
     throw new ApiError(404, 'Request not found or invalid token', 'errors:notFoundOrInvalidToken');
   }
-  
+
   const { request, role } = result;
-  
+
   // Only publishers should be able to update publisher info
   if (role && role !== 'publisher') {
-    throw new ApiError(403, 'Only publishers can update publisher information', 'errors:unauthorized');
+    throw new ApiError(
+      403,
+      'Only publishers can update publisher information',
+      'errors:unauthorized'
+    );
   }
 
   // Update publisher info
@@ -485,7 +502,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
 
   // Get the updated request with the new tokens
   const updatedRequest = await RequestModel.getById(id);
-  
+
   res.status(200).json({
     success: true,
     data: {
@@ -494,7 +511,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       publisher_token: updatedRequest?.publisher_token,
       requester_token: updatedRequest?.requester_token,
       status: 'updated',
-      role: role // Include role in response
+      role: role, // Include role in response
     },
   });
 });

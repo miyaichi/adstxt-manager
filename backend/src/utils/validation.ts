@@ -32,25 +32,62 @@ export const VALIDATION_KEYS = {
 // For backward compatibility
 export const ERROR_KEYS = VALIDATION_KEYS;
 
-export interface ParsedAdsTxtRecord {
+// Common base interface for both record and variable entries
+export interface ParsedAdsTxtEntryBase {
+  line_number: number;
+  raw_line: string;
+  is_valid: boolean;
+  error?: string;
+  has_warning?: boolean;
+  warning?: string;
+  validation_key?: string;
+  severity?: Severity;
+  warning_params?: Record<string, any>;
+  all_warnings?: Array<{ key: string; params?: Record<string, any>; severity?: Severity }>;
+  validation_error?: string;
+}
+
+export interface ParsedAdsTxtVariable extends ParsedAdsTxtEntryBase {
+  variable_type:
+    | 'CONTACT'
+    | 'SUBDOMAIN'
+    | 'INVENTORYPARTNERDOMAIN'
+    | 'OWNERDOMAIN'
+    | 'MANAGERDOMAIN';
+  value: string;
+  is_variable: true;
+}
+
+export type ParsedAdsTxtEntry = ParsedAdsTxtRecord | ParsedAdsTxtVariable;
+
+/**
+ * Type guard to check if an entry is a record
+ */
+export function isAdsTxtRecord(entry: ParsedAdsTxtEntry): entry is ParsedAdsTxtRecord {
+  return 'domain' in entry && 'account_id' in entry && 'account_type' in entry;
+}
+
+/**
+ * Type guard to check if an entry is a variable
+ */
+export function isAdsTxtVariable(entry: ParsedAdsTxtEntry): entry is ParsedAdsTxtVariable {
+  return (
+    'variable_type' in entry &&
+    'value' in entry &&
+    'is_variable' in entry &&
+    entry.is_variable === true
+  );
+}
+
+export interface ParsedAdsTxtRecord extends ParsedAdsTxtEntryBase {
   domain: string;
   account_id: string;
   account_type: string;
   certification_authority_id?: string;
   relationship: 'DIRECT' | 'RESELLER';
-  line_number: number;
-  raw_line: string;
-  is_valid: boolean;
-  error?: string; // Legacy field
-  has_warning?: boolean;
-  warning?: string; // Legacy field
-  validation_key?: string; // New field: key identifying the type of validation issue
-  severity?: Severity; // New field: importance level of the validation issue
-  warning_params?: Record<string, any>; // Parameters for the warning/error message
+  is_variable?: false; // Mark this as not a variable record
   duplicate_domain?: string; // Store duplicate domain without overwriting original domain
-  all_warnings?: Array<{ key: string; params?: Record<string, any> }>; // To store multiple warnings
   validation_results?: CrossCheckValidationResult; // Store detailed validation results
-  validation_error?: string; // Store any error during validation
 }
 
 /**
@@ -72,21 +109,65 @@ function createInvalidRecord(
     error: validationKey, // For backward compatibility
     validation_key: validationKey, // New field
     severity: severity, // New field
+    is_variable: false,
     ...partialRecord, // Allow overriding defaults
   };
+}
+
+/**
+ * Parse an ads.txt variable line
+ * @param line - The raw line from the file
+ * @param lineNumber - The line number in the file (for error reporting)
+ * @returns A parsed variable if recognized, null otherwise
+ */
+export function parseAdsTxtVariable(line: string, lineNumber: number): ParsedAdsTxtVariable | null {
+  const trimmedLine = line.trim();
+
+  // Check if the line contains a variable definition
+  // Variables should be in the format: VARIABLE=value
+  const variableMatch = trimmedLine.match(
+    /^(CONTACT|SUBDOMAIN|INVENTORYPARTNERDOMAIN|OWNERDOMAIN|MANAGERDOMAIN)=(.+)$/i
+  );
+
+  if (variableMatch) {
+    const variableType = variableMatch[1].toUpperCase() as
+      | 'CONTACT'
+      | 'SUBDOMAIN'
+      | 'INVENTORYPARTNERDOMAIN'
+      | 'OWNERDOMAIN'
+      | 'MANAGERDOMAIN';
+    const value = variableMatch[2].trim();
+
+    return {
+      variable_type: variableType,
+      value,
+      line_number: lineNumber,
+      raw_line: line,
+      is_variable: true,
+      is_valid: true, // Variable entries are always considered valid
+    };
+  }
+
+  return null;
 }
 
 /**
  * Parse and validate a line from an Ads.txt file
  * @param line - The raw line from the file
  * @param lineNumber - The line number in the file (for error reporting)
- * @returns A parsed record with validation status
+ * @returns A parsed record or variable, or null for comments and empty lines
  */
-export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtRecord | null {
+export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtEntry | null {
   // Trim whitespace and ignore empty lines or comments
   const trimmedLine = line.trim();
   if (!trimmedLine || trimmedLine.startsWith('#')) {
     return null;
+  }
+
+  // Check if this is a variable definition
+  const variableRecord = parseAdsTxtVariable(line, lineNumber);
+  if (variableRecord) {
+    return variableRecord;
   }
 
   // Split the line into its components
@@ -241,20 +322,55 @@ function processRelationship(
 /**
  * Parse and validate a complete Ads.txt file
  * @param content - The full content of the Ads.txt file
- * @returns Array of parsed records with validation status
+ * @param publisherDomain - Optional publisher domain for creating default OWNERDOMAIN if missing
+ * @returns Array of parsed records and variables with validation status
  */
-export function parseAdsTxtContent(content: string): ParsedAdsTxtRecord[] {
+export function parseAdsTxtContent(content: string, publisherDomain?: string): ParsedAdsTxtEntry[] {
   const lines = content.split('\n');
-  const records: ParsedAdsTxtRecord[] = [];
+  const entries: ParsedAdsTxtEntry[] = [];
 
   lines.forEach((line, index) => {
-    const parsedRecord = parseAdsTxtLine(line, index + 1);
-    if (parsedRecord) {
-      records.push(parsedRecord);
+    const parsedEntry = parseAdsTxtLine(line, index + 1);
+    if (parsedEntry) {
+      entries.push(parsedEntry);
     }
   });
 
-  return records;
+  // If publisherDomain is provided, check if OWNERDOMAIN is missing and add default value
+  if (publisherDomain) {
+    // Check if OWNERDOMAIN already exists
+    const hasOwnerDomain = entries.some(
+      (entry) => isAdsTxtVariable(entry) && entry.variable_type === 'OWNERDOMAIN'
+    );
+
+    // If no OWNERDOMAIN specified, add the root domain as default value
+    if (!hasOwnerDomain) {
+      try {
+        // Parse with psl to get the root domain (Public Suffix List + 1)
+        const parsed = psl.parse(publisherDomain);
+        const rootDomain = typeof parsed === 'object' && 'domain' in parsed ? parsed.domain : null;
+
+        if (rootDomain) {
+          // Create a default OWNERDOMAIN variable entry
+          const defaultOwnerDomain: ParsedAdsTxtVariable = {
+            variable_type: 'OWNERDOMAIN',
+            value: rootDomain,
+            line_number: -1, // Use -1 to indicate it's a default/generated value
+            raw_line: `OWNERDOMAIN=${rootDomain}`,
+            is_variable: true,
+            is_valid: true,
+          };
+
+          entries.push(defaultOwnerDomain);
+        }
+      } catch (error) {
+        // If we can't parse the domain, just skip adding the default
+        console.error(`Could not parse domain for default OWNERDOMAIN: ${publisherDomain}`, error);
+      }
+    }
+  }
+
+  return entries;
 }
 
 /**
@@ -275,6 +391,7 @@ function createWarningRecord(
     validation_key: validationKey, // New field
     severity: severity, // New field
     warning_params: params,
+    is_variable: false, // Explicitly mark as not a variable
     ...additionalProps,
   };
 }
@@ -359,23 +476,23 @@ export interface CrossCheckValidationResult {
  * existing ads.txt records, and also validates against sellers.json specifications
  *
  * @param publisherDomain - The publisher's domain for cross-checking
- * @param parsedRecords - The parsed Ads.txt records to check
- * @returns The validated/filtered records with duplicate entries and sellers.json validation results
+ * @param parsedEntries - The parsed Ads.txt entries to check
+ * @returns The validated/filtered entries with duplicate entries and sellers.json validation results
  */
 export async function crossCheckAdsTxtRecords(
   publisherDomain: string | undefined,
-  parsedRecords: ParsedAdsTxtRecord[]
-): Promise<ParsedAdsTxtRecord[]> {
+  parsedEntries: ParsedAdsTxtEntry[]
+): Promise<ParsedAdsTxtEntry[]> {
   const logger = createLogger();
 
   logger.info('=== crossCheckAdsTxtRecords called with ===');
   logger.info(`publisherDomain: ${publisherDomain}`);
-  logger.info(`parsedRecords: ${parsedRecords.length}`);
+  logger.info(`parsedEntries: ${parsedEntries.length}`);
 
   // If no publisher domain provided, can't do cross-check
   if (!publisherDomain) {
     logger.info('No publisher domain provided, skipping cross-check');
-    return parsedRecords;
+    return parsedEntries;
   }
 
   try {
@@ -383,25 +500,32 @@ export async function crossCheckAdsTxtRecords(
     const { default: AdsTxtCacheModel } = await import('../models/AdsTxtCache');
     const { default: SellersJsonCacheModel } = await import('../models/SellersJsonCache');
 
-    // Step 1: Check for duplicates with existing ads.txt records
+    // Separate variable entries from record entries using the type guards
+    const variableEntries = parsedEntries.filter(isAdsTxtVariable);
+    const recordEntries = parsedEntries.filter(isAdsTxtRecord);
+
+    // Step 1: Check for duplicates with existing ads.txt records (only for non-variable records)
     let resultRecords = await checkForDuplicates(
       publisherDomain,
-      parsedRecords,
+      recordEntries,
       AdsTxtCacheModel,
       logger
     );
 
-    // Step 2: Validate against sellers.json data
-    return await validateAgainstSellersJson(
+    // Step 2: Validate against sellers.json data (only for non-variable records)
+    const validatedRecords = await validateAgainstSellersJson(
       publisherDomain,
       resultRecords,
       SellersJsonCacheModel,
       logger
     );
+
+    // Combine variable entries with validated record entries
+    return [...variableEntries, ...validatedRecords];
   } catch (error) {
-    // If there's any error during cross-check, log it but return records as-is
+    // If there's any error during cross-check, log it but return entries as-is
     logger.error('Error during ads.txt cross-check:', error);
-    return parsedRecords;
+    return parsedEntries;
   }
 }
 
@@ -410,7 +534,7 @@ export async function crossCheckAdsTxtRecords(
  */
 export async function checkForDuplicates(
   publisherDomain: string,
-  parsedRecords: ParsedAdsTxtRecord[],
+  parsedRecords: ParsedAdsTxtRecord[], // Note: This expects only record entries, not variables
   AdsTxtCacheModel: any,
   logger: Logger
 ): Promise<ParsedAdsTxtRecord[]> {
@@ -437,13 +561,20 @@ export async function checkForDuplicates(
     // Log sample of existing records
     logger.info("Sample of records from publisher's ads.txt:");
     existingRecords.slice(0, 3).forEach((record, i) => {
-      logger.info(
-        `  ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}, valid=${record.is_valid}`
-      );
+      if (isAdsTxtRecord(record)) {
+        logger.info(
+          `  ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}, valid=${record.is_valid}`
+        );
+      } else if (isAdsTxtVariable(record)) {
+        logger.info(
+          `  ${i + 1}: variable_type=${record.variable_type}, value=${record.value}, valid=${record.is_valid}`
+        );
+      }
     });
 
-    // Create lookup map from existing records
-    const existingRecordMap = createExistingRecordsMap(existingRecords);
+    // Create lookup map from existing records (filter out variables)
+    const recordEntries = existingRecords.filter(isAdsTxtRecord);
+    const existingRecordMap = createExistingRecordsMap(recordEntries);
     logger.info(`Created lookup map with ${existingRecordMap.size} entries`);
 
     // Check for duplicates in input records
@@ -460,16 +591,21 @@ export async function checkForDuplicates(
 /**
  * Log a sample of records for debugging
  */
-function logSampleRecords(records: ParsedAdsTxtRecord[], logger: Logger) {
+function logSampleRecords(records: ParsedAdsTxtEntry[], logger: Logger) {
   records.slice(0, 5).forEach((record, i) => {
-    logger.info(
-      `Input record ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}`
-    );
+    if (isAdsTxtRecord(record)) {
+      logger.info(
+        `Input record ${i + 1}: domain=${record.domain}, account_id=${record.account_id}, type=${record.account_type}, relationship=${record.relationship}`
+      );
+    } else if (isAdsTxtVariable(record)) {
+      logger.info(`Input variable ${i + 1}: type=${record.variable_type}, value=${record.value}`);
+    }
   });
 }
 
 /**
  * Create a map of existing records for faster lookup
+ * Note: This function only works with ParsedAdsTxtRecord entries, not variables
  */
 function createExistingRecordsMap(
   existingRecords: ParsedAdsTxtRecord[]
@@ -986,6 +1122,243 @@ function generateWarnings(
   }
 
   return warnings;
+}
+
+/**
+ * Ads.txt Level 1 Optimization
+ * Optimizes ads.txt content by:
+ * 1. Removing duplicates
+ * 2. Standardizing format
+ * 3. Preserving comments and variables
+ *
+ * @param content - The original ads.txt content
+ * @param publisherDomain - Optional publisher domain for OWNERDOMAIN default
+ * @returns Optimized ads.txt content as a string
+ */
+export function optimizeAdsTxt(content: string, publisherDomain?: string): string {
+  // キャパシティの大きいファイルも処理できるよう、ストリーム的に処理
+  const lines = content.split('\n');
+
+  // 重複検出のためのマップを準備
+  const uniqueRecordMap = new Map<string, ParsedAdsTxtRecord>();
+  const uniqueVariableMap = new Map<string, ParsedAdsTxtVariable>();
+  const comments: { index: number; text: string }[] = [];
+  const parsedEntries: ParsedAdsTxtEntry[] = []; // 一時的なストレージ
+  let hasOwnerDomain = false;
+
+  // ストリーム的に処理しながら重複を検出して除外
+  lines.forEach((line, index) => {
+    try {
+      const trimmedLine = line.trim();
+
+      // コメント行を記録
+      if (trimmedLine.startsWith('#')) {
+        comments.push({ index, text: line });
+        return;
+      }
+
+      // 空行は無視
+      if (!trimmedLine) {
+        return;
+      }
+
+      // エントリを解析
+      const parsedEntry = parseAdsTxtLine(line, index + 1);
+      if (!parsedEntry) return; // 解析できない行は無視
+      if (!parsedEntry.is_valid) return; // 無効なエントリは無視
+
+      // 変数エントリの場合
+      if (isAdsTxtVariable(parsedEntry)) {
+        // OWNERDOMAINの有無を確認
+        if (parsedEntry.variable_type === 'OWNERDOMAIN') {
+          hasOwnerDomain = true;
+        }
+
+        // 変数の重複を検出（同じタイプと値の組み合わせ）
+        const key = `${parsedEntry.variable_type}|${parsedEntry.value.toLowerCase()}`;
+
+        // まだ見たことがない変数なら追加
+        if (!uniqueVariableMap.has(key)) {
+          uniqueVariableMap.set(key, parsedEntry);
+          parsedEntries.push(parsedEntry);
+        }
+      }
+      // レコードエントリの場合
+      else if (isAdsTxtRecord(parsedEntry)) {
+        // レコードの重複を検出（ドメイン、アカウントID、関係の組み合わせ）
+        try {
+          const key = `${parsedEntry.domain.toLowerCase()}|${parsedEntry.account_id}|${parsedEntry.relationship}`;
+
+          // まだ見たことがないレコードなら追加
+          if (!uniqueRecordMap.has(key)) {
+            uniqueRecordMap.set(key, parsedEntry);
+            parsedEntries.push(parsedEntry);
+          }
+        } catch (error: unknown) {
+          // エラーが発生したエントリは無視して続行
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`Error processing record at line ${index + 1}: ${errorMsg}`);
+        }
+      }
+    } catch (error: unknown) {
+      // 行単位の処理中にエラーが発生しても、次の行の処理を続行
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`Error at line ${index + 1}: ${errorMsg}`);
+    }
+  });
+
+  // パブリッシャードメインが提供されていて、OWNERDOMAINが指定されていない場合はデフォルト値を追加
+  if (publisherDomain && !hasOwnerDomain) {
+    try {
+      const parsed = psl.parse(publisherDomain);
+      const rootDomain = typeof parsed === 'object' && 'domain' in parsed ? parsed.domain : null;
+
+      if (rootDomain) {
+        // OWNERDOMAINのデフォルト値を作成
+        const defaultOwnerDomain: ParsedAdsTxtVariable = {
+          variable_type: 'OWNERDOMAIN',
+          value: rootDomain,
+          line_number: -1, // Use -1 to indicate it's a default/generated value
+          raw_line: `OWNERDOMAIN=${rootDomain}`,
+          is_variable: true,
+          is_valid: true,
+        };
+
+        parsedEntries.push(defaultOwnerDomain);
+      }
+    } catch (error) {
+      console.error(`Could not parse domain for default OWNERDOMAIN: ${publisherDomain}`, error);
+    }
+  }
+
+  // Sort entries:
+  // 1. Variables first (sorted by variable_type)
+  // 2. Records after (sorted by domain)
+  parsedEntries.sort((a, b) => {
+    // If both are variables, sort by variable_type
+    if (isAdsTxtVariable(a) && isAdsTxtVariable(b)) {
+      return a.variable_type.localeCompare(b.variable_type);
+    }
+
+    // Variables come before records
+    if (isAdsTxtVariable(a) && isAdsTxtRecord(b)) {
+      return -1;
+    }
+
+    // Records come after variables
+    if (isAdsTxtRecord(a) && isAdsTxtVariable(b)) {
+      return 1;
+    }
+
+    // If both are records, sort by domain
+    if (isAdsTxtRecord(a) && isAdsTxtRecord(b)) {
+      return a.domain.localeCompare(b.domain);
+    }
+
+    return 0;
+  });
+
+  // Generate optimized output
+  const optimizedLines: string[] = [];
+
+  // Add initial comment if one exists
+  if (comments.length > 0 && comments[0].index === 0) {
+    optimizedLines.push(comments[0].text);
+    comments.shift(); // Remove the first comment as it's been added
+  }
+
+  // Add empty line after header comment if there was one
+  if (optimizedLines.length > 0) {
+    optimizedLines.push('');
+  }
+
+  // Add variables in standardized format
+  const variableEntries = parsedEntries.filter(isAdsTxtVariable);
+  if (variableEntries.length > 0) {
+    // Group variables by type and sort them
+    const groupedVariables = new Map<string, ParsedAdsTxtVariable[]>();
+
+    variableEntries.forEach((variable) => {
+      const group = groupedVariables.get(variable.variable_type) || [];
+      group.push(variable);
+      groupedVariables.set(variable.variable_type, group);
+    });
+
+    // Process each variable type group
+    Array.from(groupedVariables.keys())
+      .sort()
+      .forEach((variableType) => {
+        const variables = groupedVariables.get(variableType)!;
+
+        // Add a comment header for each variable type group
+        optimizedLines.push(`# ${variableType} Variables`);
+
+        // Add the variables in standardized format
+        variables.forEach((variable) => {
+          optimizedLines.push(`${variable.variable_type}=${variable.value}`);
+        });
+
+        // Add an empty line after each variable type group
+        optimizedLines.push('');
+      });
+  }
+
+  // Add record entries in standardized format
+  const recordEntries = parsedEntries.filter(isAdsTxtRecord);
+
+  // Always add a header for records section, even if there are no records
+  optimizedLines.push('# Advertising System Records');
+
+  if (recordEntries.length > 0) {
+    // Group records by domain and sort them
+    const groupedRecords = new Map<string, ParsedAdsTxtRecord[]>();
+
+    recordEntries.forEach((record) => {
+      const domainLower = record.domain.toLowerCase();
+      const group = groupedRecords.get(domainLower) || [];
+      group.push(record);
+      groupedRecords.set(domainLower, group);
+    });
+
+    // Process each domain group
+    Array.from(groupedRecords.keys())
+      .sort()
+      .forEach((domain) => {
+        const records = groupedRecords.get(domain)!;
+
+        // Sort records within the same domain by relationship (DIRECT first)
+        records.sort((a, b) => {
+          if (a.relationship === 'DIRECT' && b.relationship === 'RESELLER') {
+            return -1;
+          }
+          if (a.relationship === 'RESELLER' && b.relationship === 'DIRECT') {
+            return 1;
+          }
+          return a.account_id.localeCompare(b.account_id);
+        });
+
+        // Add the records in standardized format
+        records.forEach((record) => {
+          try {
+            let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+            if (record.certification_authority_id) {
+              line += `, ${record.certification_authority_id}`;
+            }
+            // 注意: certification_authority_id の補完機能は同期関数では実装が難しいため、
+            // この関数ではレコードに既に含まれている certification_authority_id のみ処理します。
+            // TAG-ID の補完処理はコントローラーの generateAdsTxtContent で行われるべきです。
+            optimizedLines.push(line);
+          } catch (error: unknown) {
+            // エラーが発生したレコードは無視して続行
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error(`Error formatting record: ${errorMsg}`);
+          }
+        });
+      });
+  }
+
+  // Join all lines and return the optimized content
+  return optimizedLines.join('\n');
 }
 
 /**

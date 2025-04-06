@@ -2,7 +2,173 @@ import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel from '../models/AdsTxtRecord';
 import RequestModel from '../models/Request';
-import { crossCheckAdsTxtRecords, parseAdsTxtContent } from '../utils/validation';
+import { crossCheckAdsTxtRecords, optimizeAdsTxt, parseAdsTxtContent } from '../utils/validation';
+
+/**
+ * Update the status of an Ads.txt record
+ * @route PATCH /api/adstxt/:id/status
+ */
+/**
+ * Optimize the ads.txt content to remove duplicates and standardize format
+ * @route POST /api/adstxt/optimize
+ */
+export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Response) => {
+  const { content, publisher_domain } = req.body;
+
+  if (!content) {
+    throw new ApiError(400, 'Ads.txt content is required', 'errors:missingFields.adsTxtContent');
+  }
+
+  try {
+    // ファイルサイズのチェック - 巨大なファイルも処理できるようになったが、一応リミットを設定
+    if (content.length > 5000000) {
+      // 5MB以上は拒否
+      throw new ApiError(400, 'File too large (max 5MB)', 'errors:fileTooLarge');
+    }
+
+    console.log(`Optimizing ads.txt content with length: ${content.length} characters`);
+
+    // 最適化処理を実行（重複の除去とフォーマット標準化）
+    let optimizedContent = optimizeAdsTxt(content, publisher_domain);
+
+    // certification_authority_id の補完を行う
+    // 1. 最適化されたコンテンツを解析
+    const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
+
+    // 2. レコードエントリのみを処理
+    const recordEntries = parsedEntries.filter(
+      (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
+    );
+
+    // 3. sellers.json キャッシュを用意
+    const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+    const domainSellersJsonCache: Map<string, any> = new Map();
+
+    // 4. 補完済み content を作成
+    let enhancedContent = '';
+    const lines = optimizedContent.split('\n');
+    let recordIndex = 0;
+
+    for (const line of lines) {
+      if (line.trim() === '' || line.trim().startsWith('#') || line.includes('=')) {
+        // コメント行、空行、変数行はそのまま追加
+        enhancedContent += line + '\n';
+      } else {
+        // レコード行の場合、certification_authority_id の有無を確認
+        const record = recordEntries[recordIndex++];
+
+        if (!record || !('domain' in record)) {
+          // レコードが見つからない場合はそのまま追加
+          enhancedContent += line + '\n';
+          continue;
+        }
+
+        // 既に certification_authority_id が含まれているかチェック
+        const parts = line.split(',').map((p) => p.trim());
+
+        if (parts.length >= 4 && parts[3] && !parts[3].startsWith('#')) {
+          // 既に certification_authority_id が含まれている場合はそのまま追加
+          enhancedContent += line + '\n';
+        } else {
+          // ドメイン内の同じタイプの他のエントリから certification_authority_id を探す
+          // 例: 同じドメインの他のエントリに certification_authority_id があれば使用する
+          let foundCertId = null;
+
+          // 1. 現在のドメインの他のレコードで同じドメインのものを探す
+          for (const otherRecord of recordEntries) {
+            if (
+              'domain' in otherRecord &&
+              otherRecord.domain === record.domain &&
+              otherRecord.certification_authority_id
+            ) {
+              foundCertId = otherRecord.certification_authority_id;
+              break;
+            }
+          }
+
+          if (foundCertId) {
+            // 同じドメインの他のレコードから certification_authority_id を見つけた場合
+            enhancedContent += `${line}, ${foundCertId}\n`;
+            console.log(
+              `Added certification_authority_id ${foundCertId} from other entries for domain ${record.domain}`
+            );
+          } else {
+            // 同じドメインの他のレコードから見つからない場合は sellers.json から探す
+            try {
+              // Get sellers.json for the domain
+              const domain = record.domain;
+              let sellersJsonData;
+
+              if (domainSellersJsonCache.has(domain)) {
+                sellersJsonData = domainSellersJsonCache.get(domain);
+              } else {
+                const cachedSellersJson = await SellersJsonCacheModel.getByDomain(domain);
+                if (
+                  cachedSellersJson &&
+                  cachedSellersJson.status === 'success' &&
+                  cachedSellersJson.content
+                ) {
+                  sellersJsonData = SellersJsonCacheModel.parseContent(cachedSellersJson.content);
+                  domainSellersJsonCache.set(domain, sellersJsonData);
+                }
+              }
+
+              // If we have valid sellers.json data and identifiers
+              if (
+                sellersJsonData &&
+                sellersJsonData.identifiers &&
+                Array.isArray(sellersJsonData.identifiers)
+              ) {
+                // Look for TAG-ID
+                const tagIdEntry = sellersJsonData.identifiers.find(
+                  (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
+                );
+
+                if (tagIdEntry && tagIdEntry.value) {
+                  enhancedContent += `${line}, ${tagIdEntry.value}\n`;
+                  console.log(`Added TAG-ID ${tagIdEntry.value} for domain ${domain}`);
+                } else {
+                  enhancedContent += line + '\n';
+                }
+              } else {
+                enhancedContent += line + '\n';
+              }
+            } catch (error) {
+              console.error(`Error getting TAG-ID for ${record.domain}:`, error);
+              enhancedContent += line + '\n';
+            }
+          }
+        }
+      }
+    }
+
+    console.log(`Optimization complete. Result length: ${enhancedContent.length} characters`);
+
+    // 結果を返す
+    res.status(200).json({
+      success: true,
+      data: {
+        optimized_content: enhancedContent,
+        original_length: content.length,
+        optimized_length: enhancedContent.length,
+      },
+    });
+  } catch (error) {
+    console.error('Error optimizing ads.txt content:', error);
+
+    // エラーハンドリング - APIエラーとしてフォーマットして返す
+    if (error instanceof ApiError) {
+      throw error;
+    } else {
+      throw new ApiError(
+        500,
+        `Error optimizing ads.txt content: ${error.message || 'Unknown error'}`,
+        'errors:optimizationFailed',
+        { message: error.message }
+      );
+    }
+  }
+});
 
 /**
  * Update the status of an Ads.txt record
