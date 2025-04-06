@@ -145,13 +145,12 @@ const OptimizerPage: React.FC = () => {
 
   const handleCopyToClipboard = () => {
     if (optimizedContent) {
-      // モダンなClipboard APIを使用
       navigator.clipboard
         .writeText(optimizedContent)
         .then(() => {
           setSuccess(t('optimizerPage.success.copySuccess', language));
 
-          // 3秒後に成功メッセージを非表示
+          // Disable the success message after 3 seconds
           setTimeout(() => {
             setSuccess(null);
           }, 3000);
@@ -193,6 +192,8 @@ const OptimizerPage: React.FC = () => {
               onChange={(e) => handleDomainChange(e)}
               marginBottom="1rem"
               descriptiveText={t('optimizerPage.inputSection.urlHelperText', language)}
+              isDisabled={isLoading} // Input field is disabled while loading
+              isRequired={true}
             />
 
             <RadioGroupField
@@ -200,6 +201,7 @@ const OptimizerPage: React.FC = () => {
               name="optimizationLevel"
               value={optimizationLevel}
               onChange={handleLevelChange}
+              isDisabled={isLoading} // Radio group is disabled while loading
             >
               <Radio value="level1">
                 <Flex direction="column">
@@ -232,14 +234,23 @@ const OptimizerPage: React.FC = () => {
 
             {success && <Alert variation="success">{success}</Alert>}
 
-            <Button
-              variation="primary"
-              onClick={handleOptimize}
-              isLoading={isLoading}
-              loadingText={t('common.loading', language)}
-            >
-              {t('optimizerPage.inputSection.optimizeButton', language)}
-            </Button>
+            <Flex direction="column" gap="1rem">
+              <Button
+                variation="primary"
+                onClick={handleOptimize}
+                isLoading={isLoading}
+                loadingText={t('common.loading', language)}
+                isDisabled={isLoading || !domain} // Disable button if loading or domain is empty
+              >
+                {t('optimizerPage.inputSection.optimizeButton', language)}
+              </Button>
+              
+              {isLoading && (
+                <Text fontSize="small" color="grey">
+                  {t('optimizerPage.loadingMessage', language, { defaultValue: 'Optimizing ads.txt content and fetching sellers.json data. This may take a moment...' })}
+                </Text>
+              )}
+            </Flex>
           </Flex>
         </Card>
 
@@ -310,10 +321,17 @@ const OptimizerPage: React.FC = () => {
               </Flex>
 
               <Flex gap="1rem">
-                <Button onClick={handleCopyToClipboard}>
+                <Button 
+                  onClick={handleCopyToClipboard}
+                  isDisabled={isLoading}
+                >
                   {t('optimizerPage.inputSection.copyButton', language)}
                 </Button>
-                <Button variation="primary" onClick={handleDownload}>
+                <Button 
+                  variation="primary" 
+                  onClick={handleDownload}
+                  isDisabled={isLoading}
+                >
                   {t('optimizerPage.inputSection.downloadButton', language)}
                 </Button>
               </Flex>

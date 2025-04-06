@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel from '../models/AdsTxtRecord';
@@ -24,15 +23,15 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
   }
 
   try {
-    // ファイルサイズのチェック - 巨大なファイルも処理できるようになったが、一応リミットを設定
+    // Check the content length - allow large files but set a limit
     if (content.length > 5000000) {
-      // 5MB以上は拒否
+      // Refuse files larger than 5MB
       throw new ApiError(400, 'File too large (max 5MB)', 'errors:fileTooLarge');
     }
 
     console.log(`Optimizing ads.txt content with length: ${content.length} characters`);
 
-    // 最適化処理を実行（重複の除去とフォーマット標準化）
+    // Process the content to remove duplicates and standardize format
     let optimizedContent = optimizeAdsTxt(content, publisher_domain);
 
     // certification_authority_id の補完を行う
@@ -44,10 +43,45 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
     );
 
-    // 3. sellers.json キャッシュを用意
+    // 3. ドメインを抽出し、sellers.json を並列取得
     const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
     const domainSellersJsonCache: Map<string, any> = new Map();
-
+    
+    // レコードからユニークなドメインを抽出
+    const uniqueDomains = new Set<string>();
+    for (const record of recordEntries) {
+      if ('domain' in record && record.domain) {
+        uniqueDomains.add(record.domain);
+      }
+    }
+    
+    console.log(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
+    
+    // ドメインごとに並列でsellers.jsonを取得
+    const fetchPromises = Array.from(uniqueDomains).map(async (domain) => {
+      try {
+        console.log(`Pre-fetching sellers.json for domain: ${domain}`);
+        const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(domain, false);
+        
+        if (fetchedData) {
+          domainSellersJsonCache.set(domain, fetchedData);
+          console.log(`Pre-fetched sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`);
+        } else {
+          console.log(`No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`);
+        }
+        
+        return { domain, success: true };
+      } catch (error) {
+        console.error(`Error pre-fetching sellers.json for ${domain}:`, error);
+        return { domain, success: false, error };
+      }
+    });
+    
+    // 並列取得の完了を待つ
+    const fetchResults = await Promise.all(fetchPromises);
+    console.log(`Completed pre-fetching sellers.json for ${fetchResults.length} domains`);
+    console.log(`Successfully pre-fetched: ${fetchResults.filter(r => r.success).length} domains`);
+    
     // 4. 補完済み content を作成
     let enhancedContent = '';
     const lines = optimizedContent.split('\n');
@@ -97,34 +131,11 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               `Added certification_authority_id ${foundCertId} from other entries for domain ${record.domain}`
             );
           } else {
-            // 同じドメインの他のレコードから見つからない場合は sellers.json から探す
+            // 同じドメインの他のレコードから見つからない場合は事前取得したsellers.jsonから探す
             try {
               // Get sellers.json for the domain
               const domain = record.domain;
-              let sellersJsonData;
-
-              if (domainSellersJsonCache.has(domain)) {
-                sellersJsonData = domainSellersJsonCache.get(domain);
-              } else {
-                // Use the shared fetch function
-                const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
-                  domain,
-                  false
-                );
-
-                // Store results for TAG-ID lookup
-                if (fetchedData) {
-                  sellersJsonData = fetchedData;
-                  domainSellersJsonCache.set(domain, fetchedData);
-                  console.log(
-                    `Using sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`
-                  );
-                } else {
-                  console.log(
-                    `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
-                  );
-                }
-              }
+              const sellersJsonData = domainSellersJsonCache.get(domain);
 
               // If we have valid sellers.json data and identifiers
               if (
