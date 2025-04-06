@@ -27,7 +27,6 @@ const OptimizerPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [originalContent, setOriginalContent] = useState<string>('');
   const [optimizedContent, setOptimizedContent] = useState<string>('');
-  const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [stats, setStats] = useState<{
     beforeCount: number;
     afterCount: number;
@@ -40,7 +39,13 @@ const OptimizerPage: React.FC = () => {
   };
 
   const handleLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setOptimizationLevel(e.target.value);
+    // Extract the domain when the URL in entered
+    const url =
+      e.target.value.startsWith('http') || e.target.value.startsWith('https')
+        ? new URL(e.target.value)
+        : new URL(`https://${e.target.value}`);
+    const domain = url.hostname;
+    setDomain(domain);
     resetMessages();
   };
 
@@ -87,10 +92,6 @@ const OptimizerPage: React.FC = () => {
       .filter((line) => line.trim() && !line.trim().startsWith('#'));
 
     // Count variables
-    const beforeVars = beforeLines.filter((line) =>
-      /^(CONTACT|SUBDOMAIN|INVENTORYPARTNERDOMAIN|OWNERDOMAIN|MANAGERDOMAIN)=/i.test(line.trim())
-    ).length;
-
     const afterVars = afterLines.filter((line) =>
       /^(CONTACT|SUBDOMAIN|INVENTORYPARTNERDOMAIN|OWNERDOMAIN|MANAGERDOMAIN)=/i.test(line.trim())
     ).length;
