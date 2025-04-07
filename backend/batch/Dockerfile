@@ -1,14 +1,16 @@
-FROM node:18-alpine
+FROM node:16-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install build dependencies (for pg native binding)
-RUN apk add --no-cache python3 make g++
+# Install build dependencies for PostgreSQL client
+RUN apk add --no-cache python3 make g++ postgresql-dev
 
-# Install production dependencies
+# Install production dependencies with debugging
 COPY package*.json ./
-RUN npm ci --only=production
+RUN echo "Node version: $(node --version)" && \
+    echo "NPM version: $(npm --version)" && \
+    npm install --only=production
 
 # Copy .env file if it exists
 COPY .env* ./
