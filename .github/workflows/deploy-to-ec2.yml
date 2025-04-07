@@ -46,14 +46,6 @@ jobs:
           echo "NODE_ENV=production" > backend/.env
           echo "PORT=${{ vars.PORT || '3001' }}" >> backend/.env
 
-          # Debugging information
-          echo "DB_PROVIDER="{{ vars.DB_PROVIDER }}
-          echo "DB_HOST=${{ secrets.DB_HOST }}"
-          echo "DB_PORT=${{ secrets.DB_PORT }}"
-          echo "DB_NAME=${{ secrets.DB_NAME }}"
-          echo "DB_USER=${{ secrets.DB_USER }}"
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
-
           # Database configuration
           echo "DB_PROVIDER=${{ vars.DB_PROVIDER || 'postgres' }}" >> backend/.env
 
@@ -165,6 +157,10 @@ jobs:
               echo "PG_SSL_KEY=${{ secrets.PG_SSL_KEY }}" >> backend/.env
             fi
           fi
+
+          # Debugging and logging
+          echo "geneted .env file:"
+          cat backend/.env
 
           # Additional configurations
           echo "CORS_ORIGIN=${{ vars.CORS_ORIGIN || vars.REACT_APP_API_URL }}" >> backend/.env
