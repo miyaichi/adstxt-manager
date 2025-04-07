@@ -20,6 +20,18 @@
           "iam:PassedToService": "ecs-tasks.amazonaws.com"
         }
       }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:DescribeRule",
+        "events:ListRules",
+        "events:PutTargets",
+        "events:ListTargetsByRule",
+        "events:RemoveTargets"
+      ],
+      "Resource": "*"
     }
   ]
 }

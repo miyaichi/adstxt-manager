@@ -100,8 +100,23 @@ jobs:
         run: |
           TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query 'taskDefinition.taskDefinitionArn' --output text)
           
-          # Update the CloudWatch Events rule target
+          # CloudWatch Events rule name and target ID
           RULE_NAME="adstxt-manager-batch-daily"
           TARGET_ID="adstxt-manager-batch-task"
           
-          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={AwsvpcConfiguration={Subnets=[${{ secrets.AWS_SUBNET_ID }}],SecurityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],AssignPublicIp=ENABLED}}}"
+          # Check if rule exists, create if it doesn't
+          if ! aws events describe-rule --name $RULE_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating CloudWatch Events rule $RULE_NAME..."
+            aws events put-rule \
+              --name $RULE_NAME \
+              --schedule-expression "cron(0 1 * * ? *)" \
+              --state ENABLED \
+              --description "Daily execution of adstxt-manager-batch task" \
+              --region ${{ env.AWS_REGION }}
+          else
+            echo "CloudWatch Events rule $RULE_NAME already exists"
+          fi
+          
+          # Update/set the rule target
+          echo "Setting target for rule $RULE_NAME..."
+          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={awsvpcConfiguration={subnets=[${{ secrets.AWS_SUBNET_ID }}],securityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}}}" --region ${{ env.AWS_REGION }}

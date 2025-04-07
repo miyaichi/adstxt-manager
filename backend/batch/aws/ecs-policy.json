@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeTaskDefinition",
+        "ecs:RegisterTaskDefinition",
+        "ecs:ListTaskDefinitions",
+        "ecs:DescribeServices",
+        "ecs:UpdateService",
+        "ecs:DescribeClusters",
+        "ecs:ListClusters",
+        "ecs:RunTask",
+        "ecs:ListTasks",
+        "ecs:DescribeTasks",
+        "iam:PassRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
