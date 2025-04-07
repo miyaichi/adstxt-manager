@@ -3,6 +3,14 @@ set -e
 
 echo "Preparing for installation..."
 
+# Backup existing .env file if it exists
+if [ -f /home/ec2-user/adstxt-manager/.env ]; then
+  echo "Backing up existing .env file..."
+  cp /home/ec2-user/adstxt-manager/.env /home/ec2-user/adstxt-manager/.env.backup
+  echo "Removing existing .env file to prevent deployment errors..."
+  rm /home/ec2-user/adstxt-manager/.env
+fi
+
 # Install Node.js if not already installed
 if ! command -v node &> /dev/null; then
     echo "Installing Node.js 18.x..."

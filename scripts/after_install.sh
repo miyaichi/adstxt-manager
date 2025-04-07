@@ -29,18 +29,76 @@ elif [[ "$ARCH" == "x86_64" ]] && ! node -e "require('sqlite3')" 2>/dev/null; th
 fi
 
 # Setup .env file
-if [ -f ".env" ]; then
-    echo "Found .env file, backing up to .env.bak..."
-    cp .env .env.bak
+ENV_FILE=".env"
+ENV_BACKUP=".env.backup"
+
+if [ -f "$ENV_FILE" ]; then
+    echo "Found new .env file from deployment..."
+    
+    # Check if we have a backup from before_install.sh
+    if [ -f "$ENV_BACKUP" ]; then
+        echo "Found backup .env file, merging configurations..."
+        
+        # Temporary file for the merged env
+        MERGED_ENV=".env.merged"
+        
+        # Copy the new .env as a base
+        cp "$ENV_FILE" "$MERGED_ENV"
+        
+        # Extract API keys from the backup if they exist
+        if grep -q "API_VALID_KEYS" "$ENV_BACKUP"; then
+            echo "Preserving API keys from previous configuration..."
+            grep "API_VALID_KEYS" "$ENV_BACKUP" >> "$MERGED_ENV"
+        fi
+        
+        # Extract any custom configuration that might be environment-specific
+        if grep -q "SQLITE_PATH" "$ENV_BACKUP" && ! grep -q "SQLITE_PATH" "$ENV_FILE"; then
+            echo "Preserving SQLite path from previous configuration..."
+            grep "SQLITE_PATH" "$ENV_BACKUP" >> "$MERGED_ENV"
+        fi
+        
+        # Move merged file to .env
+        mv "$MERGED_ENV" "$ENV_FILE"
+        
+        # Keep the backup just in case
+        mv "$ENV_BACKUP" ".env.previous"
+        echo "Environment files merged successfully"
+    else
+        echo "No backup .env found, using the deployed version"
+    fi
 else
-    echo "Creating default .env file..."
-    cat > .env << 'EOF'
+    echo "No .env file found in deployment, checking for backup..."
+    
+    if [ -f "$ENV_BACKUP" ]; then
+        echo "Restoring .env from backup..."
+        cp "$ENV_BACKUP" "$ENV_FILE"
+        mv "$ENV_BACKUP" ".env.previous"
+    else
+        echo "Creating default .env file..."
+        cat > "$ENV_FILE" << 'EOF'
 NODE_ENV=production
 PORT=3001
 DB_PROVIDER=sqlite
 SQLITE_PATH=/home/ec2-user/adstxt-manager/data/adstxt-manager.db
+# API Integration Settings
+API_INTEGRATION_ENABLED=true
+API_VALID_KEYS=test-api-key-1,test-api-key-2
 EOF
+    fi
 fi
+
+# Ensure API integration settings exist
+if ! grep -q "API_INTEGRATION_ENABLED" "$ENV_FILE"; then
+    echo "Adding missing API integration settings..."
+    echo "" >> "$ENV_FILE"
+    echo "# API Integration Settings" >> "$ENV_FILE"
+    echo "API_INTEGRATION_ENABLED=true" >> "$ENV_FILE"
+    echo "API_VALID_KEYS=test-api-key-1,test-api-key-2" >> "$ENV_FILE"
+fi
+
+# Display a sanitized version of the final .env for debugging
+echo "Final .env configuration (sensitive values hidden):"
+grep -v "PASSWORD\|SECRET\|KEY" "$ENV_FILE" || echo "No basic config found!"
 
 # Setup database directories
 echo "Setting up database directories..."
