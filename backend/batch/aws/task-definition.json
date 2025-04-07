@@ -1,0 +1,23 @@
+{
+  "family": "adstxt-manager-batch",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::340305476423:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "adstxt-manager-batch",
+      "image": "340305476423.dkr.ecr.ap-northeast-1.amazonaws.com/adstxt-manager-batch:latest",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/adstxt-manager-batch",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

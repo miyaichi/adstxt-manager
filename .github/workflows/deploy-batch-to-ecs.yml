@@ -1,0 +1,98 @@
+name: Deploy Batch Process to Amazon ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/batch/**'
+      - '.github/workflows/deploy-batch-to-ecs.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1  # Change to your AWS region
+  ECR_REPOSITORY: adstxt-manager-batch
+  ECS_CLUSTER: adstxt-manager
+  ECS_TASK_DEFINITION: adstxt-manager-batch
+  ECS_SERVICE: adstxt-manager-batch
+
+jobs:
+  deploy:
+    name: Deploy Batch Process
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Create .env file
+        run: |
+          echo "DATABASE_TYPE=${{ secrets.DATABASE_TYPE }}" > backend/.env
+          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> backend/.env
+          echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> backend/.env
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> backend/.env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> backend/.env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> backend/.env
+          echo "NODE_ENV=production" >> backend/.env
+          
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend/batch
+          # Copy .env file to batch directory
+          cp ../.env .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          
+          # Remove .env file
+          rm .env
+      
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+          --query taskDefinition > task-definition.json
+      
+      - name: Update ECS task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: adstxt-manager-batch
+          image: ${{ steps.build-image.outputs.image }}
+      
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          wait-for-service-stability: true
+      
+      - name: Update ECS scheduled task
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query 'taskDefinition.taskDefinitionArn' --output text)
+          
+          # Update the CloudWatch Events rule target
+          RULE_NAME="adstxt-manager-batch-daily"
+          TARGET_ID="adstxt-manager-batch-task"
+          
+          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={AwsvpcConfiguration={Subnets=[${{ secrets.AWS_SUBNET_ID }}],SecurityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],AssignPublicIp=ENABLED}}}"

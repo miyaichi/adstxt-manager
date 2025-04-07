@@ -1,0 +1,33 @@
+{
+  "name": "adstxt-manager-batch",
+  "version": "1.0.0",
+  "description": "Batch processing system for Ads.txt Manager",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "ads.txt",
+    "batch",
+    "maintenance"
+  ],
+  "author": "Yoshihiko Miyaichi",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "commander": "^11.1.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.14.1",
+    "psl": "^1.15.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "stream-json": "^1.9.1",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  }
+}
