@@ -32,10 +32,7 @@ async function run(options = {}) {
     }
 
     // 1. Find old requests
-    const oldRequestsQuery =
-      process.env.DATABASE_TYPE === 'postgres'
-        ? 'SELECT id FROM requests WHERE created_at < $1'
-        : 'SELECT id FROM requests WHERE created_at < ?';
+    const oldRequestsQuery = 'SELECT id FROM requests WHERE created_at < $1';
 
     const oldRequests = await db.executeQuery(oldRequestsQuery, [cutoffTimestamp]);
     results.requests.identified = oldRequests.length;
@@ -46,19 +43,8 @@ async function run(options = {}) {
     if (oldRequests.length > 0) {
       const requestIds = oldRequests.map((r) => r.id);
 
-      // SQLite and PostgreSQL handle array parameters differently
-      let messagesQuery, messagesParams;
-
-      if (process.env.DATABASE_TYPE === 'postgres') {
-        messagesQuery = 'SELECT id FROM messages WHERE request_id = ANY($1)';
-        messagesParams = [requestIds];
-      } else {
-        // For SQLite, we need to use IN with individual parameters
-        messagesQuery = `SELECT id FROM messages WHERE request_id IN (${requestIds
-          .map(() => '?')
-          .join(',')})`;
-        messagesParams = requestIds;
-      }
+      const messagesQuery = 'SELECT id FROM messages WHERE request_id = ANY($1)';
+      const messagesParams = [requestIds];
 
       const relatedMessages = await db.executeQuery(messagesQuery, messagesParams);
       results.messages.identified = relatedMessages.length;
@@ -67,50 +53,28 @@ async function run(options = {}) {
 
       // 3. Delete messages first (due to foreign key constraints)
       if (!dryRun && relatedMessages.length > 0) {
-        let deleteMessagesQuery, deleteMessagesParams;
+        const deleteMessagesQuery = 'DELETE FROM messages WHERE request_id = ANY($1)';
+        const deleteMessagesParams = [requestIds];
 
-        if (process.env.DATABASE_TYPE === 'postgres') {
-          deleteMessagesQuery = 'DELETE FROM messages WHERE request_id = ANY($1)';
-          deleteMessagesParams = [requestIds];
-        } else {
-          deleteMessagesQuery = `DELETE FROM messages WHERE request_id IN (${requestIds
-            .map(() => '?')
-            .join(',')})`;
-          deleteMessagesParams = requestIds;
-        }
-
-        const deleteMessagesResult = await (process.env.DATABASE_TYPE === 'postgres'
-          ? transaction.query(deleteMessagesQuery, deleteMessagesParams)
-          : transaction.run(deleteMessagesQuery, deleteMessagesParams));
-
-        results.messages.deleted =
-          process.env.DATABASE_TYPE === 'postgres'
-            ? deleteMessagesResult.rowCount
-            : deleteMessagesResult.changes;
+        const deleteMessagesResult = await transaction.query(
+          deleteMessagesQuery,
+          deleteMessagesParams
+        );
+        results.messages.deleted = deleteMessagesResult.rowCount;
 
         logger.info(`Deleted ${results.messages.deleted} messages`);
       }
 
       // 4. Delete the requests
       if (!dryRun) {
-        let deleteRequestsQuery, deleteRequestsParams;
+        const deleteRequestsQuery = 'DELETE FROM requests WHERE created_at < $1';
+        const deleteRequestsParams = [cutoffTimestamp];
 
-        if (process.env.DATABASE_TYPE === 'postgres') {
-          deleteRequestsQuery = 'DELETE FROM requests WHERE created_at < $1';
-          deleteRequestsParams = [cutoffTimestamp];
-        } else {
-          deleteRequestsQuery = 'DELETE FROM requests WHERE created_at < ?';
-          deleteRequestsParams = [cutoffTimestamp];
-        }
-
-        const deleteRequestsResult = await (process.env.DATABASE_TYPE === 'postgres'
-          ? transaction.query(deleteRequestsQuery, deleteRequestsParams)
-          : transaction.run(deleteRequestsQuery, deleteRequestsParams));
-
-        results.requests.deleted =
-          process.env.DATABASE_TYPE === 'postgres'
-            ? deleteRequestsResult.rowCount
-            : deleteRequestsResult.changes;
+        const deleteRequestsResult = await transaction.query(
+          deleteRequestsQuery,
+          deleteRequestsParams
+        );
+        results.requests.deleted = deleteRequestsResult.rowCount;
 
         logger.info(`Deleted ${results.requests.deleted} requests`);
       }
@@ -118,12 +82,8 @@ async function run(options = {}) {
 
     // 5. Clean up error-status cache entries older than retention period
     // For ads.txt cache
-    const adsTxtCacheQuery =
-      process.env.DATABASE_TYPE === 'postgres'
-        ? `SELECT id FROM ads_txt_cache 
-         WHERE status != 'success' AND updated_at < $1`
-        : `SELECT id FROM ads_txt_cache 
-         WHERE status != 'success' AND updated_at < ?`;
+    const adsTxtCacheQuery = `SELECT id FROM ads_txt_cache 
+                             WHERE status != 'success' AND updated_at < $1`;
 
     const oldAdsTxtCache = await db.executeQuery(adsTxtCacheQuery, [cutoffTimestamp]);
     results.adsTxtCache.identified = oldAdsTxtCache.length;
@@ -133,32 +93,20 @@ async function run(options = {}) {
     });
 
     if (!dryRun && oldAdsTxtCache.length > 0) {
-      const deleteAdsTxtCacheQuery =
-        process.env.DATABASE_TYPE === 'postgres'
-          ? `DELETE FROM ads_txt_cache 
-           WHERE status != 'success' AND updated_at < $1`
-          : `DELETE FROM ads_txt_cache 
-           WHERE status != 'success' AND updated_at < ?`;
+      const deleteAdsTxtCacheQuery = `DELETE FROM ads_txt_cache 
+                                      WHERE status != 'success' AND updated_at < $1`;
 
-      const deleteAdsTxtCacheResult = await (process.env.DATABASE_TYPE === 'postgres'
-        ? transaction.query(deleteAdsTxtCacheQuery, [cutoffTimestamp])
-        : transaction.run(deleteAdsTxtCacheQuery, [cutoffTimestamp]));
-
-      results.adsTxtCache.deleted =
-        process.env.DATABASE_TYPE === 'postgres'
-          ? deleteAdsTxtCacheResult.rowCount
-          : deleteAdsTxtCacheResult.changes;
+      const deleteAdsTxtCacheResult = await transaction.query(deleteAdsTxtCacheQuery, [
+        cutoffTimestamp,
+      ]);
+      results.adsTxtCache.deleted = deleteAdsTxtCacheResult.rowCount;
 
       logger.info(`Deleted ${results.adsTxtCache.deleted} ads.txt cache entries with errors`);
     }
 
     // For sellers.json cache
-    const sellersJsonCacheQuery =
-      process.env.DATABASE_TYPE === 'postgres'
-        ? `SELECT id FROM sellers_json_cache 
-         WHERE status != 'success' AND updated_at < $1`
-        : `SELECT id FROM sellers_json_cache 
-         WHERE status != 'success' AND updated_at < ?`;
+    const sellersJsonCacheQuery = `SELECT id FROM sellers_json_cache 
+                                  WHERE status != 'success' AND updated_at < $1`;
 
     const oldSellersJsonCache = await db.executeQuery(sellersJsonCacheQuery, [cutoffTimestamp]);
     results.sellersJsonCache.identified = oldSellersJsonCache.length;
@@ -169,21 +117,13 @@ async function run(options = {}) {
     );
 
     if (!dryRun && oldSellersJsonCache.length > 0) {
-      const deleteSellersJsonCacheQuery =
-        process.env.DATABASE_TYPE === 'postgres'
-          ? `DELETE FROM sellers_json_cache 
-           WHERE status != 'success' AND updated_at < $1`
-          : `DELETE FROM sellers_json_cache 
-           WHERE status != 'success' AND updated_at < ?`;
+      const deleteSellersJsonCacheQuery = `DELETE FROM sellers_json_cache 
+                                          WHERE status != 'success' AND updated_at < $1`;
 
-      const deleteSellersJsonCacheResult = await (process.env.DATABASE_TYPE === 'postgres'
-        ? transaction.query(deleteSellersJsonCacheQuery, [cutoffTimestamp])
-        : transaction.run(deleteSellersJsonCacheQuery, [cutoffTimestamp]));
-
-      results.sellersJsonCache.deleted =
-        process.env.DATABASE_TYPE === 'postgres'
-          ? deleteSellersJsonCacheResult.rowCount
-          : deleteSellersJsonCacheResult.changes;
+      const deleteSellersJsonCacheResult = await transaction.query(deleteSellersJsonCacheQuery, [
+        cutoffTimestamp,
+      ]);
+      results.sellersJsonCache.deleted = deleteSellersJsonCacheResult.rowCount;
 
       logger.info(
         `Deleted ${results.sellersJsonCache.deleted} sellers.json cache entries with errors`

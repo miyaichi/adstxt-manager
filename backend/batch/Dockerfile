@@ -3,6 +3,9 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
+# Install build dependencies (for pg native binding)
+RUN apk add --no-cache python3 make g++
+
 # Install production dependencies
 COPY package*.json ./
 RUN npm ci --only=production

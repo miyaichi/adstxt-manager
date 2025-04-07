@@ -2,12 +2,19 @@
 
 const { program } = require('commander');
 const path = require('path');
+const fs = require('fs');
 const logger = require('./utils/logger');
 
-// Load environment variables
-require('dotenv').config({
-  path: path.resolve(__dirname, '../.env'),
-});
+// Load environment variables from current directory first, then parent
+if (fs.existsSync(path.resolve(__dirname, '.env'))) {
+  require('dotenv').config({
+    path: path.resolve(__dirname, '.env'),
+  });
+} else {
+  require('dotenv').config({
+    path: path.resolve(__dirname, '../.env'),
+  });
+}
 
 // Task modules
 const refreshAdsTxt = require('./tasks/refresh-ads-txt');

@@ -34,16 +34,10 @@ async function run(options = {}) {
     const cutoffTimestamp = cutoffDate.toISOString();
 
     // Find expired sellers.json cache entries
-    const query =
-      process.env.DATABASE_TYPE === 'postgres'
-        ? `SELECT * FROM sellers_json_cache 
-         WHERE updated_at < $1 
-         ORDER BY updated_at ASC 
-         LIMIT $2`
-        : `SELECT * FROM sellers_json_cache 
-         WHERE updated_at < ? 
-         ORDER BY updated_at ASC 
-         LIMIT ?`;
+    const query = `SELECT * FROM sellers_json_cache 
+                  WHERE updated_at < $1 
+                  ORDER BY updated_at ASC 
+                  LIMIT $2`;
 
     const params = [cutoffTimestamp, limit];
     const expiredRecords = await db.executeQuery(query, params);
@@ -75,16 +69,10 @@ async function run(options = {}) {
         ) {
           // Update the cache entry with new content
           const content = JSON.stringify(response.data);
-          const updateQuery =
-            process.env.DATABASE_TYPE === 'postgres'
-              ? `UPDATE sellers_json_cache 
-               SET content = $1, status = 'success', 
-                   updated_at = CURRENT_TIMESTAMP 
-               WHERE domain = $2`
-              : `UPDATE sellers_json_cache 
-               SET content = ?, status = 'success', 
-                   updated_at = CURRENT_TIMESTAMP 
-               WHERE domain = ?`;
+          const updateQuery = `UPDATE sellers_json_cache 
+                              SET content = $1, status = 'success', 
+                                  updated_at = CURRENT_TIMESTAMP 
+                              WHERE domain = $2`;
 
           await db.executeQuery(updateQuery, [content, domain]);
 
@@ -98,16 +86,10 @@ async function run(options = {}) {
         // Update the cache entry with error status
         const errorStatus = error.response?.status ? error.response.status : 'network-error';
 
-        const updateQuery =
-          process.env.DATABASE_TYPE === 'postgres'
-            ? `UPDATE sellers_json_cache 
-             SET status = $1, content = '', 
-                 updated_at = CURRENT_TIMESTAMP 
-             WHERE domain = $2`
-            : `UPDATE sellers_json_cache 
-             SET status = ?, content = '', 
-                 updated_at = CURRENT_TIMESTAMP 
-             WHERE domain = ?`;
+        const updateQuery = `UPDATE sellers_json_cache 
+                            SET status = $1, content = '', 
+                                updated_at = CURRENT_TIMESTAMP 
+                            WHERE domain = $2`;
 
         await db.executeQuery(updateQuery, [errorStatus.toString(), domain]);
 

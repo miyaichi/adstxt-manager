@@ -28,15 +28,18 @@ if [ -z "$DATABASE_TYPE" ]; then
   exit 1
 fi
 
-if [ "$DATABASE_TYPE" = "postgres" ]; then
-  if [ -z "$POSTGRES_HOST" ] || [ -z "$POSTGRES_DB" ] || [ -z "$POSTGRES_USER" ]; then
-    echo "ERROR: Missing PostgreSQL configuration. Please set POSTGRES_HOST, POSTGRES_DB, and POSTGRES_USER."
-    exit 1
-  fi
-  echo "Using PostgreSQL database: $POSTGRES_DB on $POSTGRES_HOST"
-else
-  echo "Using SQLite database"
+# Only PostgreSQL is supported
+if [ "$DATABASE_TYPE" != "postgres" ]; then
+  echo "ERROR: Only PostgreSQL is supported for batch processing. Please set DATABASE_TYPE=postgres."
+  exit 1
 fi
+
+# Check PostgreSQL configuration
+if [ -z "$POSTGRES_HOST" ] || [ -z "$POSTGRES_DB" ] || [ -z "$POSTGRES_USER" ]; then
+  echo "ERROR: Missing PostgreSQL configuration. Please set POSTGRES_HOST, POSTGRES_DB, and POSTGRES_USER."
+  exit 1
+fi
+echo "Using PostgreSQL database: $POSTGRES_DB on $POSTGRES_HOST"
 
 # Check for required command
 if [ $# -eq 0 ]; then
