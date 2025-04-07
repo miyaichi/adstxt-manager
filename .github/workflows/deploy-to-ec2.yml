@@ -45,7 +45,7 @@ jobs:
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
           echo "PORT=${{ vars.PORT || '3001' }}" >> backend/.env
-          
+
           # Save a backup copy of the environment file
           cp backend/.env .env-created-during-workflow
 
@@ -61,6 +61,7 @@ jobs:
             if [ -n "${{ secrets.DB_HOST }}" ]; then
               echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
               DB_HOST="${{ secrets.DB_HOST }}"
+              PGHOST="${{ secrets.DB_HOST }}"
             else
               echo "Warning: No database host specified (DB_HOST)"
               echo "DB_HOST=localhost" >> backend/.env
@@ -82,6 +83,7 @@ jobs:
             if [ -n "${{ secrets.DB_NAME }}" ]; then
               echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
               DB_NAME="${{ secrets.DB_NAME }}"
+              PGDATABASE="${{ secrets.DB_NAME }}"
             else
               echo "Warning: No database name specified (DB_NAME)"
               echo "DB_NAME=adstxt_manager" >> backend/.env
@@ -93,6 +95,7 @@ jobs:
             if [ -n "${{ secrets.DB_USER }}" ]; then
               echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
               DB_USER="${{ secrets.DB_USER }}"
+              PGUSER="${{ secrets.DB_USER }}"
             else
               echo "Warning: No database user specified (DB_USER)"
               echo "DB_USER=postgres" >> backend/.env
@@ -104,6 +107,7 @@ jobs:
             if [ -n "${{ secrets.DB_PASSWORD }}" ]; then
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
               DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+              PGPASSWORD="${{ secrets.DB_PASSWORD }}"
             else
               echo "Warning: No database password specified (DB_PASSWORD)"
               echo "DB_PASSWORD=" >> backend/.env
@@ -180,22 +184,22 @@ jobs:
           cp backend/package.json deploy/
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
-          
+
           # Add API integration settings to .env file
           echo "" >> backend/.env
           echo "# API Integration Settings" >> backend/.env
           echo "API_INTEGRATION_ENABLED=${{ vars.API_INTEGRATION_ENABLED || 'true' }}" >> backend/.env
           echo "API_VALID_KEYS=${{ secrets.API_VALID_KEYS || 'test-api-key-1,test-api-key-2' }}" >> backend/.env
-          
+
           # Copy the .env file we created above, NOT the local one
           echo "Copying environment file to deployment package..."
           ls -la backend/.env
           cp -v backend/.env deploy/
-          
+
           # Verify .env contents (excluding sensitive values)
           echo "Verifying .env file contents:"
           grep -v "PASSWORD\|SECRET\|KEY" deploy/.env || echo "No basic config found in .env!"
-          
+
           # Ensure .env exists in deploy directory
           if [ ! -f deploy/.env ]; then
             echo "ERROR: .env file is missing in deploy directory! Creating from backup."
@@ -207,7 +211,7 @@ jobs:
             echo "API_INTEGRATION_ENABLED=${{ vars.API_INTEGRATION_ENABLED || 'true' }}" >> deploy/.env
             echo "API_VALID_KEYS=${{ secrets.API_VALID_KEYS || 'test-api-key-1,test-api-key-2' }}" >> deploy/.env
           fi
-          
+
           # Final verification
           echo "Final .env file size: $(wc -c < deploy/.env) bytes"
 
@@ -234,14 +238,14 @@ jobs:
           else
             echo ".env file confirmed in deployment structure: $(wc -c < temp_deploy/deploy/.env) bytes"
           fi
-          
+
           # Create zip file
           cd temp_deploy
           echo "Creating zip with the following files:"
           find . -type f | sort
           zip -r ../adstxt-manager.zip .
           cd ..
-          
+
           # Verify zip contents
           echo "Verifying zip contents..."
           unzip -l adstxt-manager.zip | grep -i .env || echo "WARNING: No .env found in final zip!"
