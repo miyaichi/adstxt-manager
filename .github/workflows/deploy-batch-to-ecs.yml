@@ -119,4 +119,4 @@ jobs:
           
           # Update/set the rule target
           echo "Setting target for rule $RULE_NAME..."
-          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={awsvpcConfiguration={subnets=[${{ secrets.AWS_SUBNET_ID }}],securityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}}}" --region ${{ env.AWS_REGION }}
+          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={awsvpcConfiguration={Subnets=[${{ secrets.AWS_SUBNET_ID }}],SecurityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],AssignPublicIp=ENABLED}}}" --region ${{ env.AWS_REGION }}
