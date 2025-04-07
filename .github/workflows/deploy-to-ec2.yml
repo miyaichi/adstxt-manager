@@ -60,8 +60,8 @@ jobs:
             # Set database host/endpoint
             if [ -n "${{ secrets.DB_HOST }}" ]; then
               echo "DB_HOST=${{ secrets.DB_HOST }}" >> backend/.env
+              echo "PGHOST=${{ secrets.DB_HOST }}" >> backend/.env
               DB_HOST="${{ secrets.DB_HOST }}"
-              PGHOST="${{ secrets.DB_HOST }}"
             else
               echo "Warning: No database host specified (DB_HOST)"
               echo "DB_HOST=localhost" >> backend/.env
@@ -72,6 +72,7 @@ jobs:
             # Set database port
             if [ -n "${{ secrets.DB_PORT }}" ]; then
               echo "DB_PORT=${{ secrets.DB_PORT }}" >> backend/.env
+              echo "PGPORT=${{ secrets.DB_PORT }}" >> backend/.env
               DB_PORT="${{ secrets.DB_PORT }}"
             else
               echo "DB_PORT=5432" >> backend/.env
@@ -82,8 +83,8 @@ jobs:
             # Set database name
             if [ -n "${{ secrets.DB_NAME }}" ]; then
               echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
+              echo "PGDATABASE=${{ secrets.DB_NAME }}" >> backend/.env
               DB_NAME="${{ secrets.DB_NAME }}"
-              PGDATABASE="${{ secrets.DB_NAME }}"
             else
               echo "Warning: No database name specified (DB_NAME)"
               echo "DB_NAME=adstxt_manager" >> backend/.env
@@ -94,8 +95,8 @@ jobs:
             # Set database user
             if [ -n "${{ secrets.DB_USER }}" ]; then
               echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
+              echo "PGUSER=${{ secrets.DB_USER }}" >> backend/.env
               DB_USER="${{ secrets.DB_USER }}"
-              PGUSER="${{ secrets.DB_USER }}"
             else
               echo "Warning: No database user specified (DB_USER)"
               echo "DB_USER=postgres" >> backend/.env
@@ -106,8 +107,8 @@ jobs:
             # Set database password
             if [ -n "${{ secrets.DB_PASSWORD }}" ]; then
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
+              echo "PGPASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
               DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-              PGPASSWORD="${{ secrets.DB_PASSWORD }}"
             else
               echo "Warning: No database password specified (DB_PASSWORD)"
               echo "DB_PASSWORD=" >> backend/.env
