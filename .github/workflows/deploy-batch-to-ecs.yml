@@ -10,11 +10,13 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1  # Change to your AWS region
-  ECR_REPOSITORY: adstxt-manager-batch
-  ECS_CLUSTER: adstxt-manager
-  ECS_TASK_DEFINITION: adstxt-manager-batch
-  ECS_SERVICE: adstxt-manager-batch
+  # Use GitHub Repository Variables
+  # These can be set in the repository settings under Secrets and Variables > Actions > Variables
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'adstxt-manager-batch' }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'adstxt-manager' }}
+  ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION || 'adstxt-manager-batch' }}
+  ECS_SERVICE: ${{ vars.ECS_SERVICE || 'adstxt-manager-batch' }}
 
 jobs:
   deploy:
@@ -35,6 +37,13 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Create ECR Repository if not exists
+        run: |
+          # Check if repository exists
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+          # Create repository if it doesn't exist
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2

@@ -173,7 +173,7 @@ jobs:
           echo "EMAIL_PORT=${{ vars.EMAIL_PORT || '587' }}" >> backend/.env
           echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> backend/.env
           echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> backend/.env
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> backend/.env
+          echo "AWS_REGION=${{ vars.AWS_REGION }}" >> backend/.env
           echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
 
       - name: Create deployment package
@@ -256,7 +256,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           # Check required secrets
           if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ] || [ -z "${{ secrets.S3_BUCKET }}" ]; then
@@ -290,7 +290,7 @@ jobs:
               echo "Current status: $STATUS"
               
               # Show console link
-              echo "📝 Monitor deployment at: https://${{ secrets.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/deployments/${DEPLOYMENT_ID}?region=${{ secrets.AWS_REGION }}"
+              echo "📝 Monitor deployment at: https://${{ vars.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/deployments/${DEPLOYMENT_ID}?region=${{ vars.AWS_REGION }}"
               
               # Exit with error only if deployment immediately failed
               if [ "$STATUS" == "FAILED" ]; then
