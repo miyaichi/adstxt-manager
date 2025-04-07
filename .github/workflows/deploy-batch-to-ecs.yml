@@ -96,15 +96,70 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
       
-      - name: Update ECS scheduled task
+      - name: Setup ECS roles and scheduled task
         run: |
           TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query 'taskDefinition.taskDefinitionArn' --output text)
           
-          # CloudWatch Events rule name and target ID
+          # Check if ecsEventsRole exists, create if it doesn't
+          ROLE_NAME="ecsEventsRole"
+          if ! aws iam get-role --role-name $ROLE_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating IAM role $ROLE_NAME..."
+            
+            # Create trust policy file
+            cat > trust-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+            
+            # Create role policy file
+            cat > role-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ecs:RunTask",
+      "Resource": "*",
+      "Condition": {
+        "ArnLike": {
+          "ecs:cluster": "arn:aws:ecs:*:*:cluster/${{ env.ECS_CLUSTER }}"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+            
+            # Create role
+            aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust-policy.json --region ${{ env.AWS_REGION }}
+            
+            # Attach policy to role
+            aws iam put-role-policy --role-name $ROLE_NAME --policy-name EcsEventsPolicy --policy-document file://role-policy.json --region ${{ env.AWS_REGION }}
+            
+            echo "IAM role $ROLE_NAME created"
+          else
+            echo "IAM role $ROLE_NAME already exists"
+          fi
+          
+          # Check if rule exists, create if it doesn't
           RULE_NAME="adstxt-manager-batch-daily"
           TARGET_ID="adstxt-manager-batch-task"
           
-          # Check if rule exists, create if it doesn't
           if ! aws events describe-rule --name $RULE_NAME --region ${{ env.AWS_REGION }} 2>/dev/null; then
             echo "Creating CloudWatch Events rule $RULE_NAME..."
             aws events put-rule \
@@ -117,6 +172,33 @@ jobs:
             echo "CloudWatch Events rule $RULE_NAME already exists"
           fi
           
-          # Update/set the rule target
+          # Build the target JSON with proper escaping and explicit ARNs
+          cat > target.json << EOF
+[
+  {
+    "Id": "$TARGET_ID",
+    "Arn": "arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }}",
+    "RoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole",
+    "EcsParameters": {
+      "TaskDefinitionArn": "$TASK_DEF_ARN",
+      "TaskCount": 1,
+      "LaunchType": "FARGATE",
+      "NetworkConfiguration": {
+        "awsvpcConfiguration": {
+          "Subnets": ["${{ secrets.AWS_SUBNET_ID }}"],
+          "SecurityGroups": ["${{ secrets.AWS_SECURITY_GROUP_ID }}"],
+          "AssignPublicIp": "ENABLED"
+        }
+      }
+    }
+  }
+]
+EOF
+          
+          # Check the generated JSON file for debugging
+          echo "Generated target JSON:"
+          cat target.json
+          
+          # Use the JSON file for the targets parameter
           echo "Setting target for rule $RULE_NAME..."
-          aws events put-targets --rule $RULE_NAME --targets "Id=$TARGET_ID,Arn=arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }},RoleArn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsEventsRole,EcsParameters={TaskDefinitionArn=$TASK_DEF_ARN,TaskCount=1,LaunchType=FARGATE,NetworkConfiguration={awsvpcConfiguration={Subnets=[${{ secrets.AWS_SUBNET_ID }}],SecurityGroups=[${{ secrets.AWS_SECURITY_GROUP_ID }}],AssignPublicIp=ENABLED}}}" --region ${{ env.AWS_REGION }}
+          aws events put-targets --rule $RULE_NAME --targets file://target.json --region ${{ env.AWS_REGION }}
