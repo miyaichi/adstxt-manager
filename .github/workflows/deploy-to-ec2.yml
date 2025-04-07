@@ -45,6 +45,9 @@ jobs:
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
           echo "PORT=${{ vars.PORT || '3001' }}" >> backend/.env
+          
+          # Save a backup copy of the environment file
+          cp backend/.env .env-created-during-workflow
 
           # Database configuration
           echo "DB_PROVIDER=${{ vars.DB_PROVIDER || 'postgres' }}" >> backend/.env
@@ -158,10 +161,6 @@ jobs:
             fi
           fi
 
-          # Debugging and logging
-          echo "geneted .env file:"
-          cat backend/.env
-
           # Additional configurations
           echo "CORS_ORIGIN=${{ vars.CORS_ORIGIN || vars.REACT_APP_API_URL }}" >> backend/.env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
@@ -181,7 +180,36 @@ jobs:
           cp backend/package.json deploy/
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
-          cp backend/.env deploy/
+          
+          # Add API integration settings to .env file
+          echo "" >> backend/.env
+          echo "# API Integration Settings" >> backend/.env
+          echo "API_INTEGRATION_ENABLED=${{ vars.API_INTEGRATION_ENABLED || 'true' }}" >> backend/.env
+          echo "API_VALID_KEYS=${{ secrets.API_VALID_KEYS || 'test-api-key-1,test-api-key-2' }}" >> backend/.env
+          
+          # Copy the .env file we created above, NOT the local one
+          echo "Copying environment file to deployment package..."
+          ls -la backend/.env
+          cp -v backend/.env deploy/
+          
+          # Verify .env contents (excluding sensitive values)
+          echo "Verifying .env file contents:"
+          grep -v "PASSWORD\|SECRET\|KEY" deploy/.env || echo "No basic config found in .env!"
+          
+          # Ensure .env exists in deploy directory
+          if [ ! -f deploy/.env ]; then
+            echo "ERROR: .env file is missing in deploy directory! Creating from backup."
+            cp -v .env-created-during-workflow deploy/.env
+            
+            # Add API keys to the emergency copy
+            echo "" >> deploy/.env
+            echo "# API Integration Settings" >> deploy/.env
+            echo "API_INTEGRATION_ENABLED=${{ vars.API_INTEGRATION_ENABLED || 'true' }}" >> deploy/.env
+            echo "API_VALID_KEYS=${{ secrets.API_VALID_KEYS || 'test-api-key-1,test-api-key-2' }}" >> deploy/.env
+          fi
+          
+          # Final verification
+          echo "Final .env file size: $(wc -c < deploy/.env) bytes"
 
           # Copy SQL migration files
           mkdir -p deploy/src/db/migrations
@@ -199,10 +227,24 @@ jobs:
           cp -r deploy/* temp_deploy/deploy/
           chmod +x temp_deploy/scripts/*.sh
 
+          # Ensure .env is included in the final deployment structure
+          if [ ! -f temp_deploy/deploy/.env ]; then
+            echo "ERROR: .env still missing from deployment structure! Copying directly..."
+            cp -v backend/.env temp_deploy/deploy/.env
+          else
+            echo ".env file confirmed in deployment structure: $(wc -c < temp_deploy/deploy/.env) bytes"
+          fi
+          
           # Create zip file
           cd temp_deploy
+          echo "Creating zip with the following files:"
+          find . -type f | sort
           zip -r ../adstxt-manager.zip .
           cd ..
+          
+          # Verify zip contents
+          echo "Verifying zip contents..."
+          unzip -l adstxt-manager.zip | grep -i .env || echo "WARNING: No .env found in final zip!"
 
       - name: Deploy to AWS
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
