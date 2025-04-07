@@ -39,18 +39,18 @@ const OptimizerPage: React.FC = () => {
   };
 
   const handleLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Extract the domain when the URL in entered
-    const url =
-      e.target.value.startsWith('http') || e.target.value.startsWith('https')
-        ? new URL(e.target.value)
-        : new URL(`https://${e.target.value}`);
-    const domain = url.hostname;
-    setDomain(domain);
+    setOptimizationLevel(e.target.value);
     resetMessages();
   };
 
   const handleDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDomain(e.target.value);
+    // Extract the domain when the URL in entered
+    const url =
+    e.target.value.startsWith('http') || e.target.value.startsWith('https')
+      ? new URL(e.target.value)
+      : new URL(`https://${e.target.value}`);
+    const domain = url.hostname;
+    setDomain(domain);
     resetMessages();
   };
 
