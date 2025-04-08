@@ -311,7 +311,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         {showValidation && (
           <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
-            {(record.is_valid !== false) ? (
+            {record.is_valid !== false ? (
               <Flex direction="column" width="100%">
                 <Badge variation="success">{t('common.valid', language)}</Badge>
 

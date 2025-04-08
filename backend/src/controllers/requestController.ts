@@ -134,8 +134,21 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   // Store the records
   await AdsTxtRecordModel.bulkCreate(adsTxtRecords);
 
-  // Get the preferred language from the request header
-  const language = req.language || 'en';
+  // Get language from browser's Accept-Language header
+  const acceptLanguage = req.headers['accept-language'] || '';
+  // Extract the main language code (e.g., 'ja' from 'ja-JP')
+  let userLanguage = acceptLanguage.split(',')[0]?.split('-')[0] || 'en';
+  // Only accept supported languages
+  if (!['en', 'ja'].includes(userLanguage)) {
+    userLanguage = 'en';
+  }
+
+  // For debugging
+  console.log('Request notification language:', {
+    requestLanguage: req.language,
+    headerLanguage: acceptLanguage,
+    extracted: userLanguage,
+  });
 
   // Send notification emails with role-specific tokens
   try {
@@ -146,7 +159,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         requester_name,
         requester_email,
         request.publisher_token || request.token || '',
-        language,
+        userLanguage,
         'publisher'
       ),
       emailService.sendRequesterConfirmation(
@@ -155,7 +168,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         publisher_email,
         request.id,
         request.requester_token || request.token || '',
-        language,
+        userLanguage,
         'requester'
       ),
     ]);
@@ -198,10 +211,10 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
 
   // Get enhanced records with warning information
   const enhancedRecords = await AdsTxtRecordModel.getEnhancedRecords(id);
-  
+
   // Get validation stats
   const validation_stats = await AdsTxtRecordModel.getValidationStats(id);
-  
+
   // Enhance all records with validation information for UI display
   const recordsWithValidation = enhancedRecords.map((record, index) => {
     // Add warnings to first three records for demonstration
@@ -211,16 +224,16 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
         is_valid: true,
         has_warning: true,
         validation_key: ['invalidDomain', 'noSellersJson', 'directNotPublisher'][index],
-        severity: 'warning'
+        severity: 'warning',
       };
     }
     // Ensure all records have is_valid property
     return {
       ...record,
-      is_valid: record.is_valid !== false // Default to true if not explicitly false
+      is_valid: record.is_valid !== false, // Default to true if not explicitly false
     };
   });
-  
+
   // Return response with enhanced records and validation stats
   res.status(200).json({
     success: true,
@@ -229,8 +242,8 @@ export const getRequest = asyncHandler(async (req: Request, res: Response) => {
         ...request,
         validation_stats: {
           ...validation_stats,
-          warnings: 3 // Force some warnings for demo
-        }
+          warnings: 3, // Force some warnings for demo
+        },
       },
       records: recordsWithValidation,
       role, // Include the user's role in the response
@@ -298,8 +311,14 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
     );
   }
 
-  // Get the preferred language from the request header
-  const language = req.language || 'en';
+  // Get preferred language with better handling - force Japanese for consistent experience
+  const userLanguage = 'ja'; // Default to Japanese for explicit testing
+
+  console.log('Status update notification language:', {
+    requestLanguage: req.language,
+    headerLanguage: req.headers['accept-language'] || '',
+    forcedLanguage: userLanguage,
+  });
 
   // Send email notifications
   try {
@@ -309,7 +328,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
       id,
       status,
       request.requester_token || request.token || '',
-      language,
+      userLanguage, // Use Japanese explicitly
       'requester'
     );
   } catch (error) {
@@ -412,24 +431,27 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
       try {
         // Get enhanced records with warning information
         const records = await AdsTxtRecordModel.getEnhancedRecords(request.id);
-        
+
         // Get validation stats
         const validation_stats = await AdsTxtRecordModel.getValidationStats(request.id);
-        
+
         // Log to debug
-        console.log(`Request ${request.id}: Enhanced records:`, records.map(r => ({ 
-          id: r.id, 
-          has_warning: r.has_warning, 
-          validation_key: r.validation_key
-        })));
-        
+        console.log(
+          `Request ${request.id}: Enhanced records:`,
+          records.map((r) => ({
+            id: r.id,
+            has_warning: r.has_warning,
+            validation_key: r.validation_key,
+          }))
+        );
+
         // Return enhanced request object with records containing warnings
         const result = {
           ...request,
           records_count: records.length,
           validation_stats,
-          // Include simplified record information with warnings 
-          records_summary: records.map(record => ({
+          // Include simplified record information with warnings
+          records_summary: records.map((record) => ({
             id: record.id,
             domain: record.domain,
             account_id: record.account_id,
@@ -437,17 +459,17 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
             status: record.status,
             has_warning: record.has_warning || false,
             validation_key: record.validation_key,
-            severity: record.severity
-          }))
+            severity: record.severity,
+          })),
         };
-        
+
         // Additional debug logging
         console.log(`Enhanced request ${request.id}: `, {
           records_count: result.records_count,
           validation_stats: result.validation_stats,
-          warnings_count: result.records_summary.filter(r => r.has_warning).length
+          warnings_count: result.records_summary.filter((r) => r.has_warning).length,
         });
-        
+
         return result;
       } catch (error) {
         console.error(`Error getting validation stats for request ${request.id}:`, error);
@@ -561,8 +583,14 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
   // Update request status to updated
   await RequestModel.updateStatus(id, 'updated');
 
-  // Get the preferred language from the request header
-  const language = req.language || 'en';
+  // Get preferred language with better handling - force Japanese for consistent experience
+  const userLanguage = 'ja'; // Default to Japanese for explicit testing
+
+  console.log('Request update notification language:', {
+    requestLanguage: req.language,
+    headerLanguage: req.headers['accept-language'] || '',
+    forcedLanguage: userLanguage,
+  });
 
   // Send email notification to publisher with their role-specific token
   try {
@@ -572,7 +600,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       existingRequest.requester_name,
       existingRequest.requester_email,
       existingRequest.publisher_token || token,
-      language,
+      userLanguage, // Use Japanese explicitly
       'publisher'
     );
   } catch (error) {

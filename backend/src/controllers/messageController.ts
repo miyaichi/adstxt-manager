@@ -55,8 +55,22 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
         ? request.publisher_name || 'Publisher'
         : request.requester_name;
 
-    // Get the preferred language from the request header
-    const language = req.language || 'en';
+    // Get language from browser's Accept-Language header
+    const acceptLanguage = req.headers['accept-language'] || '';
+    // Extract the main language code (e.g., 'ja' from 'ja-JP')
+    let userLanguage = acceptLanguage.split(',')[0]?.split('-')[0] || 'en';
+    // Only accept supported languages
+    if (!['en', 'ja'].includes(userLanguage)) {
+      userLanguage = 'en';
+    }
+
+    console.log('Message notification language detection:', {
+      requestLanguage: req.language,
+      headerLanguage: acceptLanguage,
+      extracted: userLanguage,
+      senderEmail: sender_email,
+      recipientEmail,
+    });
 
     // Determine recipient role and token
     const recipientRole = sender_email === request.publisher_email ? 'requester' : 'publisher';
@@ -70,7 +84,7 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
       request_id,
       senderName,
       recipientToken,
-      language,
+      userLanguage,
       recipientRole
     );
   } catch (error) {

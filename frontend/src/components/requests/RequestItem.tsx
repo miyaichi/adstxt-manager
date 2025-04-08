@@ -14,12 +14,15 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const createdDate = new Date(request.created_at).toLocaleString(
     language === 'ja' ? 'ja-JP' : 'en-US'
   );
-  
+
   // Debug: Log request object to see if records_summary is present
   useEffect(() => {
     console.log('Request object:', request);
     console.log('Records summary:', request.records_summary);
-    console.log('Has warnings:', request.records_summary?.some(record => record.has_warning));
+    console.log(
+      'Has warnings:',
+      request.records_summary?.some((record) => record.has_warning)
+    );
   }, [request]);
 
   const getStatusBadge = (status: string) => {
@@ -84,30 +87,40 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
                 )}
               </Flex>
             )}
-            
+
             {/* Display record warnings if available */}
-            {request.records_summary && request.records_summary.some(record => record.has_warning) && (
-              <Flex direction="column" gap="0.25rem" marginTop="0.5rem">
-                <Text fontWeight="semibold">{t('common.warning', language)} {t('common.details', language)}:</Text>
-                {request.records_summary
-                  .filter(record => record.has_warning)
-                  .slice(0, 3) // Show only the first 3 warnings to avoid cluttering
-                  .map((record, index) => (
-                    <Text key={index} fontSize="xs">
-                      • {record.domain}, {record.account_id}: 
-                      {` ${record.validation_key ? 
-                        t(`warnings.${record.validation_key}.title`, language) || 
-                        t(`errors.adsTxtValidation.${record.validation_key}`, language) || 
-                        'Warning' : 'Warning'}`}
-                    </Text>
-                  ))}
-                {request.records_summary.filter(record => record.has_warning).length > 3 && (
-                  <Text fontSize="xs">
-                    • {t('common.andMore', language, { count: request.records_summary.filter(record => record.has_warning).length - 3 })}
+            {request.records_summary &&
+              request.records_summary.some((record) => record.has_warning) && (
+                <Flex direction="column" gap="0.25rem" marginTop="0.5rem">
+                  <Text fontWeight="semibold">
+                    {t('common.warning', language)} {t('common.details', language)}:
                   </Text>
-                )}
-              </Flex>
-            )}
+                  {request.records_summary
+                    .filter((record) => record.has_warning)
+                    .slice(0, 3) // Show only the first 3 warnings to avoid cluttering
+                    .map((record, index) => (
+                      <Text key={index} fontSize="xs">
+                        • {record.domain}, {record.account_id}:
+                        {` ${
+                          record.validation_key
+                            ? t(`warnings.${record.validation_key}.title`, language) ||
+                              t(`errors.adsTxtValidation.${record.validation_key}`, language) ||
+                              'Warning'
+                            : 'Warning'
+                        }`}
+                      </Text>
+                    ))}
+                  {request.records_summary.filter((record) => record.has_warning).length > 3 && (
+                    <Text fontSize="xs">
+                      •{' '}
+                      {t('common.andMore', language, {
+                        count:
+                          request.records_summary.filter((record) => record.has_warning).length - 3,
+                      })}
+                    </Text>
+                  )}
+                </Flex>
+              )}
           </Flex>
 
           <Flex direction="column" flex="1" minWidth="200px">

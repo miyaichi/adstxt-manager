@@ -46,7 +46,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
     // 3. ドメインを抽出し、sellers.json を並列取得
     const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
     const domainSellersJsonCache: Map<string, any> = new Map();
-    
+
     // レコードからユニークなドメインを抽出
     const uniqueDomains = new Set<string>();
     for (const record of recordEntries) {
@@ -54,34 +54,43 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         uniqueDomains.add(record.domain);
       }
     }
-    
+
     console.log(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
-    
+
     // ドメインごとに並列でsellers.jsonを取得
     const fetchPromises = Array.from(uniqueDomains).map(async (domain) => {
       try {
         console.log(`Pre-fetching sellers.json for domain: ${domain}`);
-        const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(domain, false);
-        
+        const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
+          domain,
+          false
+        );
+
         if (fetchedData) {
           domainSellersJsonCache.set(domain, fetchedData);
-          console.log(`Pre-fetched sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`);
+          console.log(
+            `Pre-fetched sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`
+          );
         } else {
-          console.log(`No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`);
+          console.log(
+            `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
+          );
         }
-        
+
         return { domain, success: true };
       } catch (error) {
         console.error(`Error pre-fetching sellers.json for ${domain}:`, error);
         return { domain, success: false, error };
       }
     });
-    
+
     // 並列取得の完了を待つ
     const fetchResults = await Promise.all(fetchPromises);
     console.log(`Completed pre-fetching sellers.json for ${fetchResults.length} domains`);
-    console.log(`Successfully pre-fetched: ${fetchResults.filter(r => r.success).length} domains`);
-    
+    console.log(
+      `Successfully pre-fetched: ${fetchResults.filter((r) => r.success).length} domains`
+    );
+
     // 4. 補完済み content を作成
     let enhancedContent = '';
     const lines = optimizedContent.split('\n');

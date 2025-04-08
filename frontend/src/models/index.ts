@@ -2,7 +2,7 @@
 export interface RecordSummary {
   id: string;
   domain: string;
-  account_id: string; 
+  account_id: string;
   relationship: 'DIRECT' | 'RESELLER';
   status: 'pending' | 'approved' | 'rejected';
   has_warning?: boolean;
@@ -86,7 +86,7 @@ export interface AdsTxtRecord {
   updated_at: string;
   // Add warning-related fields
   is_valid?: boolean; // Whether the record is valid (used by AdsTxtRecordItem)
-  has_warning?: boolean; // Whether the record has warnings 
+  has_warning?: boolean; // Whether the record has warnings
   warning?: string; // Legacy warning message
   validation_key?: string; // Validation key for identifying the issue type
   severity?: Severity; // Severity level of the warning

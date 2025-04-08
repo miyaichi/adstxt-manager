@@ -29,15 +29,23 @@ const logger = createLogger('API');
 
 // Get current language preference
 const getLanguage = (): string => {
-  // Try to get from localStorage first
+  // Check if system language preference is enabled
+  const useSystemLanguage = localStorage.getItem('useSystemLanguage') === 'true';
+
+  if (useSystemLanguage) {
+    // Use browser language when system preference is enabled
+    const browserLanguage = navigator.language.split('-')[0];
+    return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
+  }
+
+  // Otherwise, try to get from localStorage
   const savedLanguage = localStorage.getItem('userLanguage');
-  if (savedLanguage) {
+  if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
     return savedLanguage;
   }
 
-  // Otherwise, use browser language or default to English
-  const browserLanguage = navigator.language.split('-')[0];
-  return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
+  // Default to English if no preference found
+  return 'en';
 };
 
 // Configure axios

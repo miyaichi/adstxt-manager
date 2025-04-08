@@ -46,9 +46,9 @@ const OptimizerPage: React.FC = () => {
   const handleDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Extract the domain when the URL in entered
     const url =
-    e.target.value.startsWith('http') || e.target.value.startsWith('https')
-      ? new URL(e.target.value)
-      : new URL(`https://${e.target.value}`);
+      e.target.value.startsWith('http') || e.target.value.startsWith('https')
+        ? new URL(e.target.value)
+        : new URL(`https://${e.target.value}`);
     const domain = url.hostname;
     setDomain(domain);
     resetMessages();
@@ -244,10 +244,13 @@ const OptimizerPage: React.FC = () => {
               >
                 {t('optimizerPage.inputSection.optimizeButton', language)}
               </Button>
-              
+
               {isLoading && (
                 <Text fontSize="small" color="grey">
-                  {t('optimizerPage.loadingMessage', language, { defaultValue: 'Optimizing ads.txt content and fetching sellers.json data. This may take a moment...' })}
+                  {t('optimizerPage.loadingMessage', language, {
+                    defaultValue:
+                      'Optimizing ads.txt content and fetching sellers.json data. This may take a moment...',
+                  })}
                 </Text>
               )}
             </Flex>
@@ -321,17 +324,10 @@ const OptimizerPage: React.FC = () => {
               </Flex>
 
               <Flex gap="1rem">
-                <Button 
-                  onClick={handleCopyToClipboard}
-                  isDisabled={isLoading}
-                >
+                <Button onClick={handleCopyToClipboard} isDisabled={isLoading}>
                   {t('optimizerPage.inputSection.copyButton', language)}
                 </Button>
-                <Button 
-                  variation="primary" 
-                  onClick={handleDownload}
-                  isDisabled={isLoading}
-                >
+                <Button variation="primary" onClick={handleDownload} isDisabled={isLoading}>
                   {t('optimizerPage.inputSection.downloadButton', language)}
                 </Button>
               </Flex>
