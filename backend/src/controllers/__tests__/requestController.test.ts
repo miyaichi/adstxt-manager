@@ -71,7 +71,7 @@ describe('Request Controller Tests', () => {
     (AdsTxtRecordModel.bulkCreate as jest.Mock).mockResolvedValue([]);
     (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
       request: mockRequest,
-      role: 'publisher'
+      role: 'publisher',
     });
     (AdsTxtRecordModel.getByRequestId as jest.Mock).mockResolvedValue([]);
 
@@ -79,7 +79,7 @@ describe('Request Controller Tests', () => {
     (tokenService.generateRoleToken as jest.Mock).mockReturnValue(mockToken);
     (tokenService.generateRequestTokens as jest.Mock).mockReturnValue({
       publisherToken: mockToken,
-      requesterToken: mockToken
+      requesterToken: mockToken,
     });
     (tokenService.verifyToken as jest.Mock).mockReturnValue({ isValid: true });
 
@@ -356,9 +356,9 @@ describe('Request Controller Tests', () => {
       req.query = { token: mockToken };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (AdsTxtRecordModel.getByRequestId as jest.Mock).mockResolvedValue([
         {
           id: 'record-123',
@@ -456,9 +456,9 @@ describe('Request Controller Tests', () => {
       req.body = { status: 'approved', token: mockToken };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updateStatus as jest.Mock).mockResolvedValue({
         ...mockRequest,
         status: 'approved',
@@ -511,9 +511,9 @@ describe('Request Controller Tests', () => {
       req.body = { status: 'rejected', token: mockToken };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updateStatus as jest.Mock).mockResolvedValue({
         ...mockRequest,
         status: 'rejected',
@@ -599,9 +599,9 @@ describe('Request Controller Tests', () => {
       req.body = { status: 'approved', token: mockToken };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updateStatus as jest.Mock).mockResolvedValue({
         ...mockRequest,
         status: 'approved',
@@ -634,9 +634,9 @@ describe('Request Controller Tests', () => {
       req.body = { status: 'approved', token: mockToken };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updateStatus as jest.Mock).mockResolvedValue(null); // Update failed
 
       // Act
@@ -665,9 +665,9 @@ describe('Request Controller Tests', () => {
       };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updatePublisherInfo as jest.Mock).mockResolvedValue({
         ...mockRequest,
         publisher_name: 'Updated Publisher',
@@ -778,9 +778,9 @@ describe('Request Controller Tests', () => {
       };
 
       (RequestModel.getByIdWithToken as jest.Mock).mockResolvedValue({
-      request: mockRequest,
-      role: 'publisher'
-    });
+        request: mockRequest,
+        role: 'publisher',
+      });
       (RequestModel.updatePublisherInfo as jest.Mock).mockResolvedValue(null); // Update failed
 
       // Act

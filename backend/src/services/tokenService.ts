@@ -18,7 +18,6 @@ export interface TokenInfo {
  * Service to generate and validate tokens
  */
 class TokenService {
-  
   /**
    * Generate a token for a specific role
    * @param requestId - The request ID to encode in the token

@@ -1,9 +1,9 @@
 import { renderHook, act } from '@testing-library/react';
-import { useLocalStorage } from '../../hooks';
+import { useSessionStorage } from '../../hooks';
 
-describe('useLocalStorage hook', () => {
-  // Mock localStorage
-  const localStorageMock = (() => {
+describe('useSessionStorage hook', () => {
+  // Mock sessionStorage
+  const sessionStorageMock = (() => {
     let store: Record<string, string> = {};
     return {
       getItem: jest.fn((key: string) => store[key] || null),
@@ -20,39 +20,39 @@ describe('useLocalStorage hook', () => {
   })();
 
   beforeEach(() => {
-    // Setup localStorage mock
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
+    // Setup sessionStorage mock
+    Object.defineProperty(window, 'sessionStorage', {
+      value: sessionStorageMock,
       writable: true,
     });
 
     // Clear the mock before each test
-    localStorageMock.clear();
+    sessionStorageMock.clear();
     jest.clearAllMocks();
   });
 
-  test('should initialize with default value if localStorage is empty', () => {
+  test('should initialize with default value if sessionStorage is empty', () => {
     const initialValue = { name: 'John', age: 30 };
-    const { result } = renderHook(() => useLocalStorage('user', initialValue));
+    const { result } = renderHook(() => useSessionStorage('user', initialValue));
 
     expect(result.current[0]).toEqual(initialValue);
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('user');
+    expect(sessionStorageMock.getItem).toHaveBeenCalledWith('user');
   });
 
-  test('should initialize with value from localStorage if it exists', () => {
+  test('should initialize with value from sessionStorage if it exists', () => {
     const storedValue = { name: 'Jane', age: 25 };
-    localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(storedValue));
+    sessionStorageMock.getItem.mockReturnValueOnce(JSON.stringify(storedValue));
 
     const initialValue = { name: 'John', age: 30 };
-    const { result } = renderHook(() => useLocalStorage('user', initialValue));
+    const { result } = renderHook(() => useSessionStorage('user', initialValue));
 
     expect(result.current[0]).toEqual(storedValue);
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('user');
+    expect(sessionStorageMock.getItem).toHaveBeenCalledWith('user');
   });
 
-  test('should update localStorage when setValue is called', () => {
+  test('should update sessionStorage when setValue is called', () => {
     const initialValue = { name: 'John', age: 30 };
-    const { result } = renderHook(() => useLocalStorage('user', initialValue));
+    const { result } = renderHook(() => useSessionStorage('user', initialValue));
 
     const newValue = { name: 'Jane', age: 25 };
     act(() => {
@@ -60,12 +60,12 @@ describe('useLocalStorage hook', () => {
     });
 
     expect(result.current[0]).toEqual(newValue);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(newValue));
+    expect(sessionStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(newValue));
   });
 
   test('should handle function updates correctly', () => {
     const initialValue = { name: 'John', age: 30 };
-    const { result } = renderHook(() => useLocalStorage('user', initialValue));
+    const { result } = renderHook(() => useSessionStorage('user', initialValue));
 
     act(() => {
       result.current[1]((prev) => ({ ...prev, age: prev.age + 1 }));
@@ -73,25 +73,25 @@ describe('useLocalStorage hook', () => {
 
     const expectedValue = { name: 'John', age: 31 };
     expect(result.current[0]).toEqual(expectedValue);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(expectedValue));
+    expect(sessionStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(expectedValue));
   });
 
-  test('should handle localStorage errors gracefully', () => {
+  test('should handle sessionStorage errors gracefully', () => {
     // Mock an error when setting an item
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    localStorageMock.setItem.mockImplementation(() => {
-      throw new Error('localStorage is full');
+    sessionStorageMock.setItem.mockImplementation(() => {
+      throw new Error('sessionStorage is full');
     });
 
     const initialValue = { name: 'John', age: 30 };
-    const { result } = renderHook(() => useLocalStorage('user', initialValue));
+    const { result } = renderHook(() => useSessionStorage('user', initialValue));
 
     const newValue = { name: 'Jane', age: 25 };
     act(() => {
       result.current[1](newValue);
     });
 
-    // Value should be updated in the hook state even if localStorage fails
+    // Value should be updated in the hook state even if sessionStorage fails
     expect(result.current[0]).toEqual(newValue);
     expect(errorSpy).toHaveBeenCalled();
 

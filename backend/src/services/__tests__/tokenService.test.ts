@@ -25,7 +25,7 @@ describe('TokenService', () => {
       const token = 'valid-publisher-token';
       const storedTokens = {
         publisherToken: 'valid-publisher-token',
-        requesterToken: 'requester-token'
+        requesterToken: 'requester-token',
       };
 
       // Act
@@ -40,7 +40,7 @@ describe('TokenService', () => {
       const token = 'valid-requester-token';
       const storedTokens = {
         publisherToken: 'publisher-token',
-        requesterToken: 'valid-requester-token'
+        requesterToken: 'valid-requester-token',
       };
 
       // Act
@@ -55,7 +55,7 @@ describe('TokenService', () => {
       const token = 'invalid-token';
       const storedTokens = {
         publisherToken: 'publisher-token',
-        requesterToken: 'requester-token'
+        requesterToken: 'requester-token',
       };
 
       // Act

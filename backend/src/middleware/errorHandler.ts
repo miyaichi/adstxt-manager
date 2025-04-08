@@ -68,11 +68,12 @@ export function errorHandler(
   }
 
   // For non-API requests in production that accept HTML, we might want to show a nice error page
-  if (process.env.NODE_ENV === 'production' && 
-      !req.path.startsWith('/api/') && 
-      !req.xhr && 
-      req.accepts('html')) {
-    
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !req.path.startsWith('/api/') &&
+    !req.xhr &&
+    req.accepts('html')
+  ) {
     // For static file errors in production, send a basic HTML error page
     if (statusCode === 404) {
       res.status(404).send(`
