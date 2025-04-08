@@ -11,7 +11,15 @@ const RequestDetailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const role = searchParams.get('role');
-  const { language } = useApp();
+  const langParam = searchParams.get('lang');
+  const { language, setLanguage } = useApp();
+  
+  // If there's a lang parameter in the URL, use it to update the app language
+  React.useEffect(() => {
+    if (langParam && ['en', 'ja'].includes(langParam) && langParam !== language) {
+      setLanguage(langParam);
+    }
+  }, [langParam, language, setLanguage]);
 
   if (!id) {
     return (

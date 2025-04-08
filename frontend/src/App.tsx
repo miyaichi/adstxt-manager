@@ -3,6 +3,7 @@ import '@aws-amplify/ui-react/styles.css';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 // Import components
 import Layout from './components/common/Layout';
+import { AppProvider } from './context/AppContext';
 
 // Import pages
 import HomePage from './pages/HomePage';
@@ -22,19 +23,21 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/new-request" element={<NewRequestPage />} />
-            <Route path="/request/:id" element={<RequestDetailPage />} />
-            <Route path="/request/:id/edit" element={<EditRequestPage />} />
-            <Route path="/requests" element={<RequestListPage />} />
-            <Route path="/optimizer" element={<OptimizerPage />} />
-            <Route path="/status" element={<StatusPage />} />
-            <Route path="/help" element={<HelpPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Layout>
+        <AppProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/new-request" element={<NewRequestPage />} />
+              <Route path="/request/:id" element={<RequestDetailPage />} />
+              <Route path="/request/:id/edit" element={<EditRequestPage />} />
+              <Route path="/requests" element={<RequestListPage />} />
+              <Route path="/optimizer" element={<OptimizerPage />} />
+              <Route path="/status" element={<StatusPage />} />
+              <Route path="/help" element={<HelpPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Layout>
+        </AppProvider>
       </Router>
     </ThemeProvider>
   );

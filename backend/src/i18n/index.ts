@@ -18,9 +18,10 @@ i18next
     preload: ['en', 'ja'],
     detection: {
       // Order of lookup for language
-      order: ['header'], // Look for language in HTTP header (Accept-Language)
-      // Options for language lookup in header
-      lookupHeader: 'accept-language',
+      order: ['query', 'header'], // First check URL query parameter, then HTTP header
+      // Options for language lookup
+      lookupQuerystring: 'lang', // Check lang parameter in URL query string
+      lookupHeader: 'accept-language', // Also check Accept-Language header
       // Cache user language
       caches: ['cookie'],
       // Set cookie configuration

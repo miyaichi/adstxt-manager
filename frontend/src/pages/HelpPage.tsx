@@ -10,9 +10,17 @@ export const HelpPage: React.FC = () => {
   const [markdown, setMarkdown] = useState('');
   const [searchParams] = useSearchParams();
   const warningId = searchParams.get('warning');
-  const { language } = useApp();
+  const langParam = searchParams.get('lang');
+  const { language, setLanguage } = useApp();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // If there's a lang parameter in the URL, use it to update the app language
+  useEffect(() => {
+    if (langParam && ['en', 'ja'].includes(langParam) && langParam !== language) {
+      setLanguage(langParam);
+    }
+  }, [langParam, language, setLanguage]);
 
   useEffect(() => {
     // Determine the language to use, fall back to English if needed

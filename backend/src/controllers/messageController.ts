@@ -11,20 +11,15 @@ import { isValidEmail } from '../utils/validation';
  * @route POST /api/messages
  */
 export const createMessage = asyncHandler(async (req: Request, res: Response) => {
-  const { request_id, sender_email, content, token } = req.body;
+  const { request_id, content, token } = req.body;
 
   // Validate required fields
-  if (!request_id || !sender_email || !content || !token) {
+  if (!request_id || !content || !token) {
     throw new ApiError(
       400,
-      'Request ID, sender email, content, and token are required',
+      'Request ID, content, and token are required',
       'errors:missingFields.message'
     );
-  }
-
-  // Validate email address
-  if (!isValidEmail(sender_email)) {
-    throw new ApiError(400, 'Invalid sender email address', 'errors:invalidSenderEmail');
   }
 
   // Verify the token and request
@@ -35,6 +30,17 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const { request, role } = requestResult;
+  
+  // Determine sender email based on token/role
+  let sender_email: string;
+  
+  if (role === 'publisher') {
+    sender_email = request.publisher_email;
+  } else if (role === 'requester') {
+    sender_email = request.requester_email;
+  } else {
+    throw new ApiError(400, 'Could not determine sender from token', 'errors:invalidToken');
+  }
 
   // Create the message
   const messageData: CreateMessageDTO = {
@@ -55,22 +61,39 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
         ? request.publisher_name || 'Publisher'
         : request.requester_name;
 
-    // Get language from browser's Accept-Language header
+    // Check URL query parameter first (highest priority)
+    const langParam = req.query.lang as string | undefined;
+    // Then check i18next detected language
+    const i18nextLang = req.language;
+    // Then check Accept-Language header
     const acceptLanguage = req.headers['accept-language'] || '';
-    // Extract the main language code (e.g., 'ja' from 'ja-JP')
-    let userLanguage = acceptLanguage.split(',')[0]?.split('-')[0] || 'en';
-    // Only accept supported languages
-    if (!['en', 'ja'].includes(userLanguage)) {
-      userLanguage = 'en';
+    const acceptLangCode = acceptLanguage.split(',')[0]?.split('-')[0];
+    
+    // Determine final language with priority order
+    let userLanguage: string;
+    if (langParam && ['en', 'ja'].includes(langParam)) {
+      userLanguage = langParam;
+    } else if (i18nextLang && ['en', 'ja'].includes(i18nextLang)) {
+      userLanguage = i18nextLang;
+    } else if (acceptLangCode && ['en', 'ja'].includes(acceptLangCode)) {
+      userLanguage = acceptLangCode;
+    } else {
+      userLanguage = 'en'; // Default fallback
     }
-
-    console.log('Message notification language detection:', {
-      requestLanguage: req.language,
-      headerLanguage: acceptLanguage,
-      extracted: userLanguage,
+    
+    console.log('Message notification language detection (detailed):', {
+      urlParam: langParam,
+      i18nextLang: i18nextLang,
+      acceptLanguageHeader: acceptLanguage,
+      extractedAcceptLang: acceptLangCode,
+      finalLanguage: userLanguage,
+      queryParams: req.query,
       senderEmail: sender_email,
       recipientEmail,
     });
+    
+    // Force lang parameter to request object to ensure i18next detects it correctly
+    req.query.lang = userLanguage;
 
     // Determine recipient role and token
     const recipientRole = sender_email === request.publisher_email ? 'requester' : 'publisher';

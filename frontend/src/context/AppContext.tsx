@@ -1,12 +1,11 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 interface AppContextType {
   userEmail: string | null;
   setUserEmail: (email: string | null) => void;
   language: string;
   setLanguage: (language: string) => void;
-  useSystemLanguage: boolean;
-  setUseSystemLanguage: (useSystemLanguage: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -21,77 +20,61 @@ const getBrowserLanguage = (): string => {
   return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
 };
 
-// Get initial language - from localStorage or browser
-const getInitialLanguage = (): { language: string; useSystemLanguage: boolean } => {
-  const useSystemLanguage = localStorage.getItem('useSystemLanguage') === 'true';
-
-  if (useSystemLanguage) {
-    return { language: getBrowserLanguage(), useSystemLanguage: true };
+// Get initial language based on URL param, localStorage, or browser
+const getInitialLanguage = (urlLang?: string | null): string => {
+  // First priority: URL parameter
+  if (urlLang && ['en', 'ja'].includes(urlLang)) {
+    localStorage.setItem('userLanguage', urlLang); // Save URL language to localStorage
+    return urlLang;
   }
-
+  
+  // Second priority: localStorage
   const savedLanguage = localStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
-    return { language: savedLanguage, useSystemLanguage: false };
+    return savedLanguage;
   }
 
-  // Default: use browser language
-  return { language: getBrowserLanguage(), useSystemLanguage: true };
+  // Last resort: browser language
+  return getBrowserLanguage();
 };
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const [searchParams] = useSearchParams();
+  const urlLang = searchParams.get('lang');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const initialState = getInitialLanguage();
-  const [language, setLanguageState] = useState<string>(initialState.language);
-  const [useSystemLanguage, setUseSystemLanguageState] = useState<boolean>(
-    initialState.useSystemLanguage
-  );
+  const [language, setLanguageState] = useState<string>(getInitialLanguage(urlLang));
 
   // Handle language change
   const setLanguage = (newLanguage: string) => {
     if (['en', 'ja'].includes(newLanguage)) {
       setLanguageState(newLanguage);
       localStorage.setItem('userLanguage', newLanguage);
-      // When manually selecting a language, turn off system language
-      setUseSystemLanguageState(false);
-      localStorage.setItem('useSystemLanguage', 'false');
-      // This will help axios interceptor use the new language
       document.documentElement.lang = newLanguage;
+      
+      // Update URL with new language parameter
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('lang', newLanguage);
+      
+      // Navigate to the same path but with updated language parameter
+      navigate({ 
+        pathname: location.pathname, 
+        search: newSearchParams.toString() 
+      }, { replace: true });
     }
   };
-
-  // Handle system language preference toggle
-  const setUseSystemLanguage = (value: boolean) => {
-    setUseSystemLanguageState(value);
-    localStorage.setItem('useSystemLanguage', value.toString());
-
-    if (value) {
-      // Update to browser language immediately
-      const browserLang = getBrowserLanguage();
-      setLanguageState(browserLang);
-      document.documentElement.lang = browserLang;
-    }
-  };
-
-  // Check for browser language changes when using system setting
+  
+  // Update language when URL parameter changes
   useEffect(() => {
-    if (!useSystemLanguage) return;
-
-    const handleLanguageChange = () => {
-      const newLang = getBrowserLanguage();
-      setLanguageState(newLang);
-      document.documentElement.lang = newLang;
-    };
-
-    // Initial check
-    handleLanguageChange();
-
-    // There's no direct event for language changes, but we can periodically check
-    // This is a workaround as browsers don't emit events for language changes
-    const intervalId = setInterval(handleLanguageChange, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [useSystemLanguage]);
-
+    if (urlLang && ['en', 'ja'].includes(urlLang) && urlLang !== language) {
+      setLanguageState(urlLang);
+      localStorage.setItem('userLanguage', urlLang);
+      document.documentElement.lang = urlLang;
+    }
+  }, [urlLang, language]);
+  
   // Update language in HTML tag
   useEffect(() => {
     document.documentElement.lang = language;
@@ -103,9 +86,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         userEmail,
         setUserEmail,
         language,
-        setLanguage,
-        useSystemLanguage,
-        setUseSystemLanguage,
+        setLanguage
       }}
     >
       {children}

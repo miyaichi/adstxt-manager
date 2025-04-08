@@ -574,6 +574,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                         requestId={requestId}
                         token={token}
                         onMessageSent={handleMessageSent}
+                        request={request}
                       />
                     </Flex>
                   )

@@ -27,25 +27,24 @@ declare global {
 // Create a logger for the API module
 const logger = createLogger('API');
 
-// Get current language preference
+// Get current language preference based on URL param, localStorage or browser
 const getLanguage = (): string => {
-  // Check if system language preference is enabled
-  const useSystemLanguage = localStorage.getItem('useSystemLanguage') === 'true';
-
-  if (useSystemLanguage) {
-    // Use browser language when system preference is enabled
-    const browserLanguage = navigator.language.split('-')[0];
-    return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
+  // First priority: Check URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const langParam = urlParams.get('lang');
+  if (langParam && ['en', 'ja'].includes(langParam)) {
+    return langParam;
   }
-
-  // Otherwise, try to get from localStorage
+  
+  // Second priority: localStorage
   const savedLanguage = localStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
     return savedLanguage;
   }
-
-  // Default to English if no preference found
-  return 'en';
+  
+  // Last resort: browser language
+  const browserLanguage = navigator.language.split('-')[0];
+  return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
 };
 
 // Configure axios
@@ -89,7 +88,11 @@ export const requestApi = {
       formData.append('records', JSON.stringify(data.records));
     }
 
-    const response = await api.post<ApiResponse<RequestResponse>>('/requests', formData, {
+    // Add current language to request URL
+    const currentLang = getLanguage();
+    const langParam = `?lang=${currentLang}`;
+
+    const response = await api.post<ApiResponse<RequestResponse>>(`/requests${langParam}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -99,8 +102,10 @@ export const requestApi = {
 
   // Get a request by ID
   async getRequest(id: string, token: string): Promise<ApiResponse<RequestWithRecords>> {
+    // Add current language to request
+    const currentLang = getLanguage();
     const response = await api.get<ApiResponse<RequestWithRecords>>(
-      `/requests/${id}?token=${token}`
+      `/requests/${id}?token=${token}&lang=${currentLang}`
     );
     return response.data;
   },
@@ -111,7 +116,11 @@ export const requestApi = {
     status: string,
     token: string
   ): Promise<ApiResponse<Request>> {
-    const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/status`, {
+    // Add current language to request URL
+    const currentLang = getLanguage();
+    const langParam = `?lang=${currentLang}`;
+    
+    const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/status${langParam}`, {
       status,
       token,
     });
@@ -125,7 +134,11 @@ export const requestApi = {
     publisher_domain: string,
     token: string
   ): Promise<ApiResponse<Request>> {
-    const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/publisher`, {
+    // Add current language to request URL
+    const currentLang = getLanguage();
+    const langParam = `?lang=${currentLang}`;
+    
+    const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/publisher${langParam}`, {
       publisher_name,
       publisher_domain,
       token,
@@ -138,7 +151,10 @@ export const requestApi = {
     email: string,
     role?: 'publisher' | 'requester'
   ): Promise<ApiResponse<Request[]>> {
-    const url = role ? `/requests/email/${email}?role=${role}` : `/requests/email/${email}`;
+    // Add current language to request URL
+    const currentLang = getLanguage();
+    const roleParam = role ? `role=${role}&` : '';
+    const url = `/requests/email/${email}?${roleParam}lang=${currentLang}`;
 
     const response = await api.get<ApiResponse<Request[]>>(url);
     return response.data;
@@ -155,7 +171,11 @@ export const requestApi = {
       publisher_domain?: string;
     }
   ): Promise<ApiResponse<RequestResponse>> {
-    const response = await api.put<ApiResponse<RequestResponse>>(`/requests/${id}`, data);
+    // Add current language to request URL
+    const currentLang = getLanguage();
+    const langParam = `?lang=${currentLang}`;
+    
+    const response = await api.put<ApiResponse<RequestResponse>>(`/requests/${id}${langParam}`, data);
     return response.data;
   },
 };
@@ -164,7 +184,12 @@ export const requestApi = {
 export const messageApi = {
   // Create a new message
   async createMessage(data: CreateMessageData): Promise<ApiResponse<Message>> {
-    const response = await api.post<ApiResponse<Message>>('/messages', data);
+    // Get current language to send with request
+    const currentLang = getLanguage();
+    const langParam = `?lang=${currentLang}`;
+    
+    // Add language parameter to URL
+    const response = await api.post<ApiResponse<Message>>(`/messages${langParam}`, data);
     return response.data;
   },
 
@@ -173,7 +198,9 @@ export const messageApi = {
     logger.debug('API Call: getMessagesByRequestId', { requestId, token });
     try {
       const encodedToken = encodeURIComponent(token);
-      const url = `/messages/${requestId}?token=${encodedToken}`;
+      // Add current language to request
+      const currentLang = getLanguage();
+      const url = `/messages/${requestId}?token=${encodedToken}&lang=${currentLang}`;
       logger.debug('Request URL:', url);
 
       const response = await api.get<ApiResponse<Message[]>>(url);

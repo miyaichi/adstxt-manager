@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Flex, TextField, Button, Alert, Heading } from '@aws-amplify/ui-react';
 import { messageApi } from '../../api';
-import { Message } from '../../models';
+import { Message, RequestWithRecords } from '../../models';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 
@@ -9,12 +9,12 @@ interface MessageFormProps {
   requestId: string;
   token: string;
   onMessageSent?: (message: Message) => void;
+  request?: RequestWithRecords | null;
 }
 
-const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSent }) => {
+const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSent, request }) => {
   const { language } = useApp();
   const [content, setContent] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -22,7 +22,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!content || !senderEmail) {
+    if (!content) {
       setError(t('messages.form.requiredFields', language));
       return;
     }
@@ -32,9 +32,11 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
       setError(null);
       setSuccess(false);
 
+      // The sender email will be determined on the server side based on the token
       const response = await messageApi.createMessage({
         request_id: requestId,
-        sender_email: senderEmail,
+        // We don't need to send sender_email anymore as it will be determined from the token
+        sender_email: '', // Sending empty string, will be ignored by backend
         content,
         token,
       });
@@ -68,15 +70,6 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
           {success && <Alert variation="success">{t('messages.form.sendSuccess', language)}</Alert>}
 
           <TextField
-            label={t('messages.form.emailLabel', language)}
-            value={senderEmail}
-            onChange={(e) => setSenderEmail(e.target.value)}
-            placeholder="your@email.com"
-            type="email"
-            isRequired
-          />
-
-          <TextField
             label={t('messages.form.messageLabel', language)}
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -90,7 +83,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
             type="submit"
             variation="primary"
             isLoading={isLoading}
-            isDisabled={!content || !senderEmail}
+            isDisabled={!content}
           >
             {t('common.send', language)}
           </Button>

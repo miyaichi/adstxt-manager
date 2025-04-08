@@ -67,7 +67,7 @@ export interface Message {
 
 export interface CreateMessageData {
   request_id: string;
-  sender_email: string;
+  sender_email?: string; // Optional now, as it will be determined by the backend based on token
   content: string;
   token: string;
 }
