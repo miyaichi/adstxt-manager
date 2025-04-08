@@ -72,7 +72,7 @@ export function notFoundHandler(req: Request, res: Response, next: NextFunction)
   if (req.originalUrl.includes('.hot-update.json') || req.originalUrl.includes('.hot-update.js')) {
     return res.status(404).end();
   }
-  
+
   const error = new ApiError(404, `Not Found - ${req.originalUrl}`, 'common:errors.notFound', {
     url: req.originalUrl,
   });

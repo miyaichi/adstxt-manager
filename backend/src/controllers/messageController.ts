@@ -30,10 +30,10 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const { request, role } = requestResult;
-  
+
   // Determine sender email based on token/role
   let sender_email: string;
-  
+
   if (role === 'publisher') {
     sender_email = request.publisher_email;
   } else if (role === 'requester') {
@@ -68,7 +68,7 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
     // Then check Accept-Language header
     const acceptLanguage = req.headers['accept-language'] || '';
     const acceptLangCode = acceptLanguage.split(',')[0]?.split('-')[0];
-    
+
     // Determine final language with priority order
     let userLanguage: string;
     if (langParam && ['en', 'ja'].includes(langParam)) {
@@ -80,7 +80,7 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
     } else {
       userLanguage = 'en'; // Default fallback
     }
-    
+
     console.log('Message notification language detection (detailed):', {
       urlParam: langParam,
       i18nextLang: i18nextLang,
@@ -91,7 +91,7 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
       senderEmail: sender_email,
       recipientEmail,
     });
-    
+
     // Force lang parameter to request object to ensure i18next detects it correctly
     req.query.lang = userLanguage;
 

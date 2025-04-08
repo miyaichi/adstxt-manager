@@ -79,12 +79,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
             rows={4}
           />
 
-          <Button
-            type="submit"
-            variation="primary"
-            isLoading={isLoading}
-            isDisabled={!content}
-          >
+          <Button type="submit" variation="primary" isLoading={isLoading} isDisabled={!content}>
             {t('common.send', language)}
           </Button>
         </Flex>

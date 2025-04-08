@@ -27,7 +27,7 @@ const getInitialLanguage = (urlLang?: string | null): string => {
     localStorage.setItem('userLanguage', urlLang); // Save URL language to localStorage
     return urlLang;
   }
-  
+
   // Second priority: localStorage
   const savedLanguage = localStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
@@ -43,7 +43,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const urlLang = searchParams.get('lang');
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [language, setLanguageState] = useState<string>(getInitialLanguage(urlLang));
 
@@ -53,19 +53,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setLanguageState(newLanguage);
       localStorage.setItem('userLanguage', newLanguage);
       document.documentElement.lang = newLanguage;
-      
+
       // Update URL with new language parameter
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.set('lang', newLanguage);
-      
+
       // Navigate to the same path but with updated language parameter
-      navigate({ 
-        pathname: location.pathname, 
-        search: newSearchParams.toString() 
-      }, { replace: true });
+      navigate(
+        {
+          pathname: location.pathname,
+          search: newSearchParams.toString(),
+        },
+        { replace: true }
+      );
     }
   };
-  
+
   // Update language when URL parameter changes
   useEffect(() => {
     if (urlLang && ['en', 'ja'].includes(urlLang) && urlLang !== language) {
@@ -74,7 +77,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       document.documentElement.lang = urlLang;
     }
   }, [urlLang, language]);
-  
+
   // Update language in HTML tag
   useEffect(() => {
     document.documentElement.lang = language;
@@ -86,7 +89,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         userEmail,
         setUserEmail,
         language,
-        setLanguage
+        setLanguage,
       }}
     >
       {children}

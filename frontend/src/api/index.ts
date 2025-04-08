@@ -35,13 +35,13 @@ const getLanguage = (): string => {
   if (langParam && ['en', 'ja'].includes(langParam)) {
     return langParam;
   }
-  
+
   // Second priority: localStorage
   const savedLanguage = localStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
     return savedLanguage;
   }
-  
+
   // Last resort: browser language
   const browserLanguage = navigator.language.split('-')[0];
   return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
@@ -92,11 +92,15 @@ export const requestApi = {
     const currentLang = getLanguage();
     const langParam = `?lang=${currentLang}`;
 
-    const response = await api.post<ApiResponse<RequestResponse>>(`/requests${langParam}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post<ApiResponse<RequestResponse>>(
+      `/requests${langParam}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   },
 
@@ -119,7 +123,7 @@ export const requestApi = {
     // Add current language to request URL
     const currentLang = getLanguage();
     const langParam = `?lang=${currentLang}`;
-    
+
     const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/status${langParam}`, {
       status,
       token,
@@ -137,12 +141,15 @@ export const requestApi = {
     // Add current language to request URL
     const currentLang = getLanguage();
     const langParam = `?lang=${currentLang}`;
-    
-    const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/publisher${langParam}`, {
-      publisher_name,
-      publisher_domain,
-      token,
-    });
+
+    const response = await api.patch<ApiResponse<Request>>(
+      `/requests/${id}/publisher${langParam}`,
+      {
+        publisher_name,
+        publisher_domain,
+        token,
+      }
+    );
     return response.data;
   },
 
@@ -174,8 +181,11 @@ export const requestApi = {
     // Add current language to request URL
     const currentLang = getLanguage();
     const langParam = `?lang=${currentLang}`;
-    
-    const response = await api.put<ApiResponse<RequestResponse>>(`/requests/${id}${langParam}`, data);
+
+    const response = await api.put<ApiResponse<RequestResponse>>(
+      `/requests/${id}${langParam}`,
+      data
+    );
     return response.data;
   },
 };
@@ -187,7 +197,7 @@ export const messageApi = {
     // Get current language to send with request
     const currentLang = getLanguage();
     const langParam = `?lang=${currentLang}`;
-    
+
     // Add language parameter to URL
     const response = await api.post<ApiResponse<Message>>(`/messages${langParam}`, data);
     return response.data;

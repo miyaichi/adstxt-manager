@@ -137,13 +137,13 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   const userLanguage = req.language || 'en';
-  
+
   // For debugging
   console.log('Request notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
-    selected: userLanguage
+    selected: userLanguage,
   });
 
   // Send notification emails with role-specific tokens
@@ -310,12 +310,12 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   const userLanguage = req.language || 'en';
-  
+
   console.log('Status update notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
-    selected: userLanguage
+    selected: userLanguage,
   });
 
   // Send email notifications
@@ -584,12 +584,12 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   const userLanguage = req.language || 'en';
-  
+
   console.log('Request update notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
-    selected: userLanguage
+    selected: userLanguage,
   });
 
   // Send email notification to publisher with their role-specific token

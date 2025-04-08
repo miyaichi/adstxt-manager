@@ -28,15 +28,15 @@ class EmailService {
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
-    
+
     // Debug language selection
     console.log(`Email service - Publisher notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
-      requesterName
+      requesterName,
     });
-    
+
     // Always add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
@@ -46,13 +46,17 @@ class EmailService {
       subject: i18next.t('email:request.publisher.subject', { requesterName, lng: validLanguage }),
       title: i18next.t('email:request.publisher.title', { lng: validLanguage }),
       greeting: i18next.t('email:request.publisher.greeting', { lng: validLanguage }),
-      message: i18next.t('email:request.publisher.message', { requesterName, requesterEmail, lng: validLanguage }),
+      message: i18next.t('email:request.publisher.message', {
+        requesterName,
+        requesterEmail,
+        lng: validLanguage,
+      }),
       action: i18next.t('email:request.publisher.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.publisher.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.publisher.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.publisher.signature', { lng: validLanguage })
+      signature: i18next.t('email:request.publisher.signature', { lng: validLanguage }),
     };
-    
+
     const subject = translations.subject;
     const html = `
       <h1>${translations.title}</h1>
@@ -96,15 +100,15 @@ class EmailService {
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
-    
+
     // Debug language selection
     console.log(`Email service - Requester confirmation language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       requesterEmail,
-      requesterName
+      requesterName,
     });
-    
+
     // Always add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
@@ -113,14 +117,17 @@ class EmailService {
     const translations = {
       subject: i18next.t('email:request.requester.subject', { lng: validLanguage }),
       title: i18next.t('email:request.requester.title', { lng: validLanguage }),
-      greeting: i18next.t('email:request.requester.greeting', { requesterName, lng: validLanguage }),
+      greeting: i18next.t('email:request.requester.greeting', {
+        requesterName,
+        lng: validLanguage,
+      }),
       message: i18next.t('email:request.requester.message', { publisherEmail, lng: validLanguage }),
       action: i18next.t('email:request.requester.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.requester.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.requester.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.requester.signature', { lng: validLanguage })
+      signature: i18next.t('email:request.requester.signature', { lng: validLanguage }),
     };
-    
+
     const subject = translations.subject;
     const html = `
       <h1>${translations.title}</h1>
@@ -162,20 +169,20 @@ class EmailService {
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
-    
+
     // Debug language selection
     console.log(`Email service - Status update notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       email,
-      status
+      status,
     });
-    
+
     // Always add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
     const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-    
+
     // Debug translation keys
     const translations = {
       subject: i18next.t('email:statusUpdate.subject', { status: statusText, lng: validLanguage }),
@@ -183,7 +190,7 @@ class EmailService {
       message: i18next.t('email:statusUpdate.message', { status: statusText, lng: validLanguage }),
       action: i18next.t('email:statusUpdate.action', { lng: validLanguage }),
       linkText: i18next.t('email:statusUpdate.linkText', { lng: validLanguage }),
-      signature: i18next.t('email:statusUpdate.signature', { lng: validLanguage })
+      signature: i18next.t('email:statusUpdate.signature', { lng: validLanguage }),
     };
 
     const subject = translations.subject;
@@ -225,7 +232,7 @@ class EmailService {
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
-    
+
     // Debug language selection
     console.log(`Email service - Message notification language: ${validLanguage}`, {
       originalLanguage: language,
@@ -234,7 +241,7 @@ class EmailService {
       senderName,
       availableTranslations: Object.keys(i18next.store.data),
     });
-    
+
     // If role is not specified, don't add it to the URL to maintain backward compatibility
     const roleParam = role ? `&role=${role}` : '';
     // Always add language parameter to URL to maintain language across pages
@@ -250,7 +257,7 @@ class EmailService {
       linkText: i18next.t('email:message.linkText', { lng: validLanguage }),
       signature: i18next.t('email:message.signature', { lng: validLanguage }),
     };
-    
+
     console.log('Email translations:', translations);
 
     const subject = translations.subject;
@@ -294,29 +301,33 @@ class EmailService {
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
-    
+
     // Debug language selection
     console.log(`Email service - Request update notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
-      requesterName
+      requesterName,
     });
-    
+
     // Always add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
-    
+
     // Debug translation keys
     const translations = {
       subject: i18next.t('email:request.update.subject', { requesterName, lng: validLanguage }),
       title: i18next.t('email:request.update.title', { lng: validLanguage }),
       greeting: i18next.t('email:request.update.greeting', { lng: validLanguage }),
-      message: i18next.t('email:request.update.message', { requesterName, requesterEmail, lng: validLanguage }),
+      message: i18next.t('email:request.update.message', {
+        requesterName,
+        requesterEmail,
+        lng: validLanguage,
+      }),
       action: i18next.t('email:request.update.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.update.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.update.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.update.signature', { lng: validLanguage })
+      signature: i18next.t('email:request.update.signature', { lng: validLanguage }),
     };
 
     const subject = translations.subject;
