@@ -32,7 +32,20 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
-  console.error(err);
+  // Skip webpack hot update files
+  if (req.originalUrl.includes('.hot-update.json') || req.originalUrl.includes('.hot-update.js')) {
+    if (!res.headersSent) {
+      res.status(404).end();
+    }
+    return;
+  }
+
+  console.error(`Error handling request to ${req.originalUrl}:`, err);
+
+  // Prevent double-sending headers
+  if (res.headersSent) {
+    return next(err);
+  }
 
   // Default status code and message
   let statusCode = 500;
@@ -54,7 +67,39 @@ export function errorHandler(
     message = err.message;
   }
 
-  // Send the error response
+  // For non-API requests in production that accept HTML, we might want to show a nice error page
+  if (process.env.NODE_ENV === 'production' && 
+      !req.path.startsWith('/api/') && 
+      !req.xhr && 
+      req.accepts('html')) {
+    
+    // For static file errors in production, send a basic HTML error page
+    if (statusCode === 404) {
+      res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Page Not Found - Ads.txt Manager</title>
+          <style>
+            body { font-family: sans-serif; text-align: center; padding: 40px; }
+            h1 { color: #e74c3c; }
+            a { color: #3498db; text-decoration: none; }
+          </style>
+        </head>
+        <body>
+          <h1>Page Not Found</h1>
+          <p>The page you are looking for does not exist.</p>
+          <p><a href="/">Return to home page</a></p>
+        </body>
+        </html>
+      `);
+      return;
+    }
+  }
+
+  // Send the error response as JSON
   res.status(statusCode).json({
     success: false,
     error: {
@@ -74,6 +119,21 @@ export function notFoundHandler(req: Request, res: Response, next: NextFunction)
     return;
   }
 
+  // Skip API or status routes, let them handle 404s through the API error handler
+  if (req.path.startsWith('/api/') || req.path === '/status' || req.path === '/health') {
+    const error = new ApiError(404, `Not Found - ${req.originalUrl}`, 'common:errors.notFound', {
+      url: req.originalUrl,
+    });
+    return next(error);
+  }
+
+  // For non-API routes in production, let the static file handling middleware try to serve index.html
+  // to support client-side routing
+  if (process.env.NODE_ENV === 'production' && !req.xhr && req.accepts('html')) {
+    return next();
+  }
+
+  // For all other cases, send a 404 error
   const error = new ApiError(404, `Not Found - ${req.originalUrl}`, 'common:errors.notFound', {
     url: req.originalUrl,
   });

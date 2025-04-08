@@ -122,23 +122,123 @@ app.get('/status', statusHandler);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  const publicPath = process.env.STATIC_FILES_PATH || __dirname + '/../public';
-  console.log(`Serving static files from: ${publicPath}`);
+  const path = require('path');
+  const fs = require('fs');
+  
+  // Define potential static file paths for the two hosting environments
+  const potentialPaths = [
+    process.env.STATIC_FILES_PATH, // First check environment variable if set
+    path.join(__dirname, '/../public'), // Local development
+    path.join(__dirname, '/../../frontend/build'), // Local development with frontend build
+    path.join(__dirname, '/../../public'), // Project root
+    '/home/ec2-user/adstxt-manager/public' // EC2 deployment path
+  ].filter(Boolean); // Remove undefined entries
+  
+  // Find the first valid path
+  let publicPath: string | null = null;
+  
+  for (const potentialPath of potentialPaths) {
+    if (!potentialPath) continue;
+    
+    try {
+      const stats = fs.statSync(potentialPath);
+      if (stats.isDirectory()) {
+        publicPath = potentialPath;
+        // Check if index.html exists and is readable
+        const indexPath = path.join(potentialPath, 'index.html');
+        try {
+          fs.accessSync(indexPath, fs.constants.R_OK);
+          console.log(`Found valid static files path with index.html: ${potentialPath}`);
+          console.log(`Permissions: ${stats.mode.toString(8)}`);
+          break; // Found a valid path with index.html
+        } catch (indexErr) {
+          console.log(`Found directory but no readable index.html at: ${potentialPath}`);
+        }
+      }
+    } catch (err) {
+      console.log(`Static path not valid: ${potentialPath}`);
+    }
+  }
+  
+  if (!publicPath) {
+    console.error('Could not find any valid static files path! Falling back to current directory.');
+    publicPath = path.resolve('.');
+  } else {
+    console.log(`Using static files path: ${publicPath}`);
+  }
+  
+  // Ensure publicPath is not null for TypeScript
+  publicPath = publicPath || '';
 
-  // Serve static files from the public directory
-  app.use(express.static(publicPath));
+  // Serve static files with options that maximize compatibility
+  app.use(express.static(publicPath, { 
+    maxAge: '1d',
+    fallthrough: true,
+    index: 'index.html',
+    setHeaders: (res) => {
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('Cache-Control', 'public, max-age=86400');
+    }
+  }));
 
-  // For any other request, send the index.html file
+  // For any request that doesn't match a static file or API route
   app.get('*', (req, res, next) => {
     // Skip API and status routes
-    if (req.path.startsWith('/api/') || req.path === '/status' || req.path === '/health') {
+    if (req.path.startsWith('/api/') || 
+        req.path === '/status' || 
+        req.path === '/health' ||
+        req.path.includes('.hot-update.')) {
       return next();
     }
-    res.sendFile(publicPath + '/index.html');
+    
+    const indexPath = path.join(publicPath, 'index.html');
+    
+    // Log the request to help with debugging
+    console.log(`Serving SPA index.html for: ${req.url}`);
+    
+    // First try sendFile (most efficient)
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`Error serving index.html from ${indexPath}:`, err);
+          
+        // Second try readFile and send content
+        try {
+          const content = fs.readFileSync(indexPath, 'utf8');
+          res.contentType('text/html').send(content);
+          console.log(`Served index.html using readFile from: ${indexPath}`);
+        } catch (readErr) {
+          console.error(`Failed to read index.html:`, readErr);
+            
+          // If everything fails, send a basic HTML response
+          res.status(200).contentType('text/html').send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Ads.txt Manager</title>
+              <style>body{font-family:sans-serif;text-align:center;margin-top:50px}</style>
+            </head>
+            <body>
+              <h1>Ads.txt Manager</h1>
+              <p>Application is running but unable to load frontend resources.</p>
+              <p>Please contact support if this issue persists.</p>
+            </body>
+            </html>
+          `);
+        }
+      } else {
+        console.log(`Successfully served index.html for: ${req.url}`);
+      }
+    });
   });
 }
 
-// Error handling middleware
+// Configure the right order of middleware
+// First handle API routes and health checks
+// Then serve static files
+// Then use the notFoundHandler which may handle client-side routing
+// Finally catch any errors with the error handler
 app.use(notFoundHandler);
 app.use(errorHandler);
 
