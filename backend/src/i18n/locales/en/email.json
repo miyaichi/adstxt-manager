@@ -8,7 +8,8 @@
       "action": "To review this request, please click the link below:",
       "linkText": "View Request",
       "warning": "This link is unique to you and should not be shared with others.",
-      "signature": "Thank you,\nAds.txt Manager"
+      "signature": "Thank you,\nAds.txt Manager",
+      "publisherToken": "Publisher Token: {{publisherToken}}"
     },
     "requester": {
       "subject": "Your Ads.txt Request Has Been Submitted",
@@ -18,7 +19,8 @@
       "action": "You can track the status of your request using the link below:",
       "linkText": "View Request Status",
       "warning": "This link is unique to you and should not be shared with others.",
-      "signature": "Thank you,\nAds.txt Manager"
+      "signature": "Thank you,\nAds.txt Manager",
+      "requesterToken": "Requester Token: {{requesterToken}}"
     },
     "update": {
       "subject": "Updated Ads.txt Request from {{requesterName}}",

@@ -1,4 +1,15 @@
 // Request Models
+export interface RecordSummary {
+  id: string;
+  domain: string;
+  account_id: string; 
+  relationship: 'DIRECT' | 'RESELLER';
+  status: 'pending' | 'approved' | 'rejected';
+  has_warning?: boolean;
+  validation_key?: string;
+  severity?: string;
+}
+
 export interface Request {
   id: string;
   publisher_email: string;
@@ -12,6 +23,14 @@ export interface Request {
   requester_token?: string; // Requester-specific token
   created_at: string;
   updated_at: string;
+  records_count?: number;
+  validation_stats?: {
+    total: number;
+    valid: number;
+    invalid: number;
+    warnings: number;
+  };
+  records_summary?: RecordSummary[];
 }
 
 export interface CreateRequestData {
@@ -65,6 +84,13 @@ export interface AdsTxtRecord {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   updated_at: string;
+  // Add warning-related fields
+  is_valid?: boolean; // Whether the record is valid (used by AdsTxtRecordItem)
+  has_warning?: boolean; // Whether the record has warnings 
+  warning?: string; // Legacy warning message
+  validation_key?: string; // Validation key for identifying the issue type
+  severity?: Severity; // Severity level of the warning
+  warning_params?: Record<string, any>; // Parameters for the warning message
 }
 
 export interface CreateAdsTxtRecordData {

@@ -24,8 +24,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<boolean>(false);
 
-  // Check if the record is a parsed record with validation data
-  const isParsedRecord = 'is_valid' in record;
+  // Record is always assumed to have validation properties through our enhanced types
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -77,14 +76,13 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   // Fetch seller information on component mount
   useEffect(() => {
     // Skip seller.json lookup for invalid records
-    if (isParsedRecord && !(record as ParsedAdsTxtRecord).is_valid) {
+    if (record.is_valid === false) {
       console.log('Skipping seller.json lookup for invalid record');
       return;
     }
 
-    // Skip seller.json lookup if record is invalid
-    const parsedRecord = record as ParsedAdsTxtRecord;
-    if (isParsedRecord && parsedRecord.validation_key === 'noSellersJson') {
+    // Skip seller.json lookup for records with noSellersJson validation key
+    if (record.validation_key === 'noSellersJson') {
       console.log('Skipping seller.json lookup for record with noSellersJson validation_key');
       return;
     }
@@ -213,7 +211,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [record, getSellersDomain, isParsedRecord, language]);
+  }, [record, getSellersDomain, language]);
 
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">
@@ -311,14 +309,14 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
         {/* Hide duplicate error message as we already show error inside seller info section */}
 
-        {isParsedRecord && showValidation && (
+        {showValidation && (
           <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
-            {(record as ParsedAdsTxtRecord).is_valid ? (
+            {(record.is_valid !== false) ? (
               <Flex direction="column" width="100%">
                 <Badge variation="success">{t('common.valid', language)}</Badge>
 
                 {/* Display warning if record has one */}
-                {(record as ParsedAdsTxtRecord).has_warning && (
+                {record.has_warning && (
                   <>
                     <Flex
                       gap="0.5rem"

@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
 import {
-  Card,
-  Button,
-  Text,
-  Flex,
-  Loader,
   Alert,
+  Button,
+  Card,
+  Flex,
   Heading,
+  Loader,
+  Text,
   TextAreaField,
 } from '@aws-amplify/ui-react';
+import React, { useEffect, useState } from 'react';
 import { adsTxtApi } from '../../api';
-import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
-import AdsTxtRecordList from './AdsTxtRecordList';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
+import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
+import AdsTxtRecordList from './AdsTxtRecordList';
 
 interface AdsTxtTextInputProps {
   onRecordsSelected: (records: AdsTxtRecord[]) => void;
@@ -201,46 +201,6 @@ appnexus.com, 1234, DIRECT
     setError(null);
   };
 
-  const handleOptimize = async () => {
-    if (!adsTxtContent.trim()) {
-      setError(t('common.contentRequired', language));
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Read current publisher domain value from the parent form if available
-      const publisherDomainInput = document.querySelector(
-        'form [name="publisher_domain"]'
-      ) as HTMLInputElement;
-      const currentDomain = publisherDomainInput ? publisherDomainInput.value : publisherDomain;
-
-      console.log('Optimizing ads.txt content with publisher domain:', currentDomain);
-      const response = await adsTxtApi.optimizeAdsTxtContent(adsTxtContent, currentDomain);
-
-      if (response.success) {
-        // Update the text area with optimized content
-        setAdsTxtContent(response.data.optimized_content);
-
-        // Process the optimized content to update the record list
-        await handleProcess();
-      } else {
-        setError(
-          response.error?.message ||
-            t('common.optimizeError', language) ||
-            'Error optimizing content'
-        );
-      }
-    } catch (err) {
-      setError(t('common.optimizeError', language) || 'Error optimizing content');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Card variation="outlined" padding="1.5rem">
       <Heading level={3} marginBottom="1rem">
@@ -264,14 +224,6 @@ appnexus.com, 1234, DIRECT
           flex="1"
         >
           {isLoading ? <Loader size="small" /> : t('common.process', language) || 'Process'}
-        </Button>
-        <Button
-          variation="warning"
-          isDisabled={!adsTxtContent.trim() || isLoading}
-          onClick={handleOptimize}
-          flex="1"
-        >
-          {isLoading ? <Loader size="small" /> : t('adsTxt.input.optimize', language) || 'Optimize'}
         </Button>
         <Button
           variation="destructive"

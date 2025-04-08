@@ -8,7 +8,8 @@
       "action": "このリクエストを確認するには、以下のリンクをクリックしてください：",
       "linkText": "リクエストを表示",
       "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
-      "signature": "ありがとうございます。\nAds.txtマネージャー"
+      "signature": "ありがとうございます。\nAds.txtマネージャー",
+      "publisherToken": "パブリッシャートークン: {{publisherToken}}"
     },
     "requester": {
       "subject": "Ads.txtリクエストが送信されました",
@@ -18,7 +19,8 @@
       "action": "以下のリンクからリクエストの状況を確認できます：",
       "linkText": "リクエスト状況を表示",
       "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
-      "signature": "ありがとうございます。\nAds.txtマネージャー"
+      "signature": "ありがとうございます。\nAds.txtマネージャー",
+      "requesterToken": "リクエスタートークン: {{requesterToken}}"
     },
     "update": {
       "subject": "{{requesterName}}からのAds.txtリクエスト更新",

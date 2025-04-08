@@ -203,6 +203,14 @@ export const translations = {
       en: 'Recommendation',
       ja: '推奨事項',
     },
+    details: {
+      en: 'Details',
+      ja: '詳細',
+    },
+    andMore: {
+      en: 'and {{count}} more',
+      ja: '他 {{count}} 件',
+    },
     learnMore: {
       en: 'Learn More',
       ja: '詳細を見る',
@@ -539,6 +547,14 @@ export const translations = {
       accessToken: {
         en: 'Access Token',
         ja: 'アクセストークン',
+      },
+      requesterToken: {
+        en: 'Requester Token',
+        ja: 'リクエスタートークン',
+      },
+      publisherToken: {
+        en: 'Publisher Token',
+        ja: 'パブリッシャートークン',
       },
       saveInfo: {
         en: 'Please save this information to check the status of your request later.',
