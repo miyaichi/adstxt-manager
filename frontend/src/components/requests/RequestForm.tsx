@@ -182,8 +182,8 @@ const RequestForm: React.FC = () => {
       const response = await requestApi.createRequest(requestData);
 
       if (response.success) {
-        // 作成時にリクエスターのメールアドレスをローカルストレージに保存
-        localStorage.setItem('userEmail', formData.requester_email);
+        // 作成時にリクエスターのメールアドレスをセッションストレージに保存
+        sessionStorage.setItem('userEmail', formData.requester_email);
 
         // Use requester_token if available, otherwise fall back to legacy token
         setSuccess({

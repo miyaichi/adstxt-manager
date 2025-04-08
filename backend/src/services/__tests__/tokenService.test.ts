@@ -17,68 +17,52 @@ describe('TokenService', () => {
     jest.clearAllMocks();
   });
 
-  describe('generateToken', () => {
-    it('should generate a token using the correct parameters', () => {
-      // Arrange
-      const requestId = 'request-123';
-      const email = 'user@example.com';
-
-      // Mock Date.now to return a consistent timestamp for testing
-      const originalDateNow = Date.now;
-      const mockTimestamp = 1615000000000;
-      Date.now = jest.fn(() => mockTimestamp);
-
-      // Act
-      const token = tokenService.generateToken(requestId, email);
-
-      // Assert
-      expect(crypto.createHash).toHaveBeenCalledWith('sha256');
-
-      const updateMock = crypto.createHash('sha256').update;
-      expect(updateMock).toHaveBeenCalledWith(
-        `${requestId}:${email}:${mockTimestamp}:${config.security.tokenSecret}`
-      );
-
-      const digestMock = updateMock('').digest;
-      expect(digestMock).toHaveBeenCalledWith('hex');
-
-      expect(token).toBe('mocked-token-hash');
-
-      // Restore original Date.now
-      Date.now = originalDateNow;
-    });
-  });
+  // Legacy generateToken test removed as the method has been deprecated
 
   describe('verifyToken', () => {
-    it('should return true when tokens match', () => {
+    it('should return isValid=true and role=publisher when publisher token matches', () => {
       // Arrange
-      const token = 'valid-token-123';
-      const storedToken = 'valid-token-123';
+      const token = 'valid-publisher-token';
+      const storedTokens = {
+        publisherToken: 'valid-publisher-token',
+        requesterToken: 'requester-token'
+      };
 
       // Act
-      const result = tokenService.verifyToken(token, storedToken);
+      const result = tokenService.verifyToken(token, storedTokens);
 
       // Assert
-      expect(result).toBe(true);
+      expect(result).toEqual({ isValid: true, role: 'publisher' });
     });
 
-    it('should return false when tokens do not match', () => {
+    it('should return isValid=true and role=requester when requester token matches', () => {
       // Arrange
-      const token = 'invalid-token-123';
-      const storedToken = 'valid-token-123';
+      const token = 'valid-requester-token';
+      const storedTokens = {
+        publisherToken: 'publisher-token',
+        requesterToken: 'valid-requester-token'
+      };
 
       // Act
-      const result = tokenService.verifyToken(token, storedToken);
+      const result = tokenService.verifyToken(token, storedTokens);
 
       // Assert
-      expect(result).toBe(false);
+      expect(result).toEqual({ isValid: true, role: 'requester' });
     });
 
-    it('should handle undefined or null tokens properly', () => {
-      // Act & Assert
-      expect(tokenService.verifyToken('', '')).toBe(true);
-      expect(tokenService.verifyToken('token', '')).toBe(false);
-      expect(tokenService.verifyToken('', 'token')).toBe(false);
+    it('should return isValid=false when no tokens match', () => {
+      // Arrange
+      const token = 'invalid-token';
+      const storedTokens = {
+        publisherToken: 'publisher-token',
+        requesterToken: 'requester-token'
+      };
+
+      // Act
+      const result = tokenService.verifyToken(token, storedTokens);
+
+      // Assert
+      expect(result).toEqual({ isValid: false });
     });
   });
 

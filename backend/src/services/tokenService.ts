@@ -18,21 +18,7 @@ export interface TokenInfo {
  * Service to generate and validate tokens
  */
 class TokenService {
-  /**
-   * Generate a secure token for request access
-   * @param requestId - The request ID to encode in the token
-   * @param email - The email address associated with the token
-   * @param role - Optional role for the token (backward compatibility)
-   * @returns A secure SHA256 hash token
-   * @deprecated Use generateRoleToken instead
-   */
-  generateToken(requestId: string, email: string, role?: TokenRole): string {
-    const timestamp = Date.now().toString();
-    const roleData = role ? `:${role}` : '';
-    const data = `${requestId}:${email}${roleData}:${timestamp}:${config.security.tokenSecret}`;
-    return crypto.createHash('sha256').update(data).digest('hex');
-  }
-
+  
   /**
    * Generate a token for a specific role
    * @param requestId - The request ID to encode in the token
@@ -83,11 +69,6 @@ class TokenService {
     isValid: boolean;
     role?: TokenRole;
   } {
-    // Check for legacy token (backward compatibility)
-    if (storedTokens.token && token === storedTokens.token) {
-      return { isValid: true };
-    }
-
     // Check publisher token
     if (storedTokens.publisherToken && token === storedTokens.publisherToken) {
       return { isValid: true, role: 'publisher' };

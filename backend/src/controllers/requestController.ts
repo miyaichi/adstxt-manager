@@ -154,7 +154,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         request.id,
         requester_name,
         requester_email,
-        request.publisher_token || request.token || '',
+        request.publisher_token || '',
         userLanguage,
         'publisher'
       ),
@@ -163,7 +163,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         requester_name,
         publisher_email,
         request.id,
-        request.requester_token || request.token || '',
+        request.requester_token || '',
         userLanguage,
         'requester'
       ),
@@ -180,7 +180,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       publisher_token: request.publisher_token,
       requester_token: request.requester_token,
       // Include legacy token for backward compatibility
-      token: request.token,
+      // Legacy token field removed
     },
   });
 });
@@ -325,7 +325,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
       request.requester_email,
       id,
       status,
-      request.requester_token || request.token || '',
+      request.requester_token || '',
       userLanguage,
       'requester'
     );
@@ -599,7 +599,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       id,
       existingRequest.requester_name,
       existingRequest.requester_email,
-      existingRequest.publisher_token || token,
+      existingRequest.publisher_token || '',
       userLanguage,
       'publisher'
     );
@@ -615,7 +615,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
     success: true,
     data: {
       request_id: id,
-      token: token, // Keep original token in response for backwards compatibility
+      // Legacy token field removed from response
       publisher_token: updatedRequest?.publisher_token,
       requester_token: updatedRequest?.requester_token,
       status: 'updated',

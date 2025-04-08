@@ -45,8 +45,6 @@ class RequestModel {
       requestData.requester_email
     );
 
-    // Also generate legacy token for backward compatibility
-    const legacyToken = tokenService.generateToken(id, requestData.publisher_email);
     const now = new Date().toISOString();
 
     const request: Request = {
@@ -57,7 +55,7 @@ class RequestModel {
       publisher_name: requestData.publisher_name,
       publisher_domain: requestData.publisher_domain,
       status: 'pending',
-      token: legacyToken, // Legacy token
+      token: '', // Legacy token field kept for database compatibility
       publisher_token: tokens.publisherToken,
       requester_token: tokens.requesterToken,
       created_at: now,
@@ -83,9 +81,8 @@ class RequestModel {
       return null;
     }
 
-    // Verify token using the updated method that supports both token types
+    // Verify token using role-based tokens only
     const tokenVerification = tokenService.verifyToken(token, {
-      token: request.token,
       publisherToken: request.publisher_token,
       requesterToken: request.requester_token,
     });

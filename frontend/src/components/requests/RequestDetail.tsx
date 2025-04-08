@@ -208,8 +208,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     }
 
     if (request) {
-      // Check localStorage email as a fallback
-      const userEmail = localStorage.getItem('userEmail');
+      // Check sessionStorage email as a fallback
+      const userEmail = sessionStorage.getItem('userEmail');
       if (userEmail) {
         if (userEmail === request.request.requester_email) {
           setUserRole('requester');
@@ -250,7 +250,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     if (request) {
       console.log('DEBUG: requester_email =', request.request.requester_email);
       console.log('DEBUG: publisher_email =', request.request.publisher_email);
-      console.log('DEBUG: localStorage email =', localStorage.getItem('userEmail'));
+      console.log('DEBUG: sessionStorage email =', sessionStorage.getItem('userEmail'));
     }
   }, [userRole, request]);
 

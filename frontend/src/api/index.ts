@@ -27,7 +27,7 @@ declare global {
 // Create a logger for the API module
 const logger = createLogger('API');
 
-// Get current language preference based on URL param, localStorage or browser
+// Get current language preference based on URL param, sessionStorage or browser
 const getLanguage = (): string => {
   // First priority: Check URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -36,8 +36,8 @@ const getLanguage = (): string => {
     return langParam;
   }
 
-  // Second priority: localStorage
-  const savedLanguage = localStorage.getItem('userLanguage');
+  // Second priority: sessionStorage
+  const savedLanguage = sessionStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
     return savedLanguage;
   }

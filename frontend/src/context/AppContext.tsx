@@ -20,16 +20,16 @@ const getBrowserLanguage = (): string => {
   return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
 };
 
-// Get initial language based on URL param, localStorage, or browser
+// Get initial language based on URL param, sessionStorage, or browser
 const getInitialLanguage = (urlLang?: string | null): string => {
   // First priority: URL parameter
   if (urlLang && ['en', 'ja'].includes(urlLang)) {
-    localStorage.setItem('userLanguage', urlLang); // Save URL language to localStorage
+    sessionStorage.setItem('userLanguage', urlLang); // Save URL language to sessionStorage
     return urlLang;
   }
 
-  // Second priority: localStorage
-  const savedLanguage = localStorage.getItem('userLanguage');
+  // Second priority: sessionStorage
+  const savedLanguage = sessionStorage.getItem('userLanguage');
   if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
     return savedLanguage;
   }
@@ -51,7 +51,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const setLanguage = (newLanguage: string) => {
     if (['en', 'ja'].includes(newLanguage)) {
       setLanguageState(newLanguage);
-      localStorage.setItem('userLanguage', newLanguage);
+      sessionStorage.setItem('userLanguage', newLanguage);
       document.documentElement.lang = newLanguage;
 
       // Update URL with new language parameter
@@ -73,7 +73,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   useEffect(() => {
     if (urlLang && ['en', 'ja'].includes(urlLang) && urlLang !== language) {
       setLanguageState(urlLang);
-      localStorage.setItem('userLanguage', urlLang);
+      sessionStorage.setItem('userLanguage', urlLang);
       document.documentElement.lang = urlLang;
     }
   }, [urlLang, language]);
