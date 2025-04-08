@@ -169,10 +169,11 @@ jobs:
           # Additional configurations
           echo "CORS_ORIGIN=${{ vars.CORS_ORIGIN || vars.REACT_APP_API_URL }}" >> backend/.env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
-          echo "EMAIL_HOST=${{ vars.EMAIL_HOST }}" >> backend/.env
-          echo "EMAIL_PORT=${{ vars.EMAIL_PORT || '587' }}" >> backend/.env
-          echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> backend/.env
-          echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> backend/.env
+          echo "SMTP_HOST=${{ vars.SMTP_HOST }}" >> backend/.env
+          echo "SMTP_PORT=${{ vars.SMTP_PORT || '587' }}" >> backend/.env
+          echo "SMTP_FROM_NAME=${{ vars.SMTP_FROM_NAME }}" >> backend/.env
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> backend/.env
+          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> backend/.env
           echo "AWS_REGION=${{ vars.AWS_REGION }}" >> backend/.env
           echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
 
