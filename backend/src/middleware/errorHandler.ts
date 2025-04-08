@@ -70,7 +70,8 @@ export function errorHandler(
 export function notFoundHandler(req: Request, res: Response, next: NextFunction): void {
   // Ignore HMR webpack hot-update files in development
   if (req.originalUrl.includes('.hot-update.json') || req.originalUrl.includes('.hot-update.js')) {
-    return res.status(404).end();
+    res.status(404).end();
+    return;
   }
 
   const error = new ApiError(404, `Not Found - ${req.originalUrl}`, 'common:errors.notFound', {
