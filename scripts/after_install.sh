@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# Don't exit on error to ensure the script completes
+set +e
 
 DEPLOY_DIR="/home/ec2-user/adstxt-manager"
 APP_DIR="$DEPLOY_DIR"
@@ -14,18 +15,37 @@ chmod -R 755 .
 
 # Install dependencies
 echo "Installing dependencies..."
-npm ci --omit=dev --no-audit
+# Use nohup to prevent SIGHUP from killing the process
+nohup bash -c 'npm ci --omit=dev --no-audit' > npm_install.log 2>&1 || {
+  echo "npm ci failed, trying with increased timeout..."
+  npm config set fetch-timeout 300000
+  nohup bash -c 'npm ci --omit=dev --no-audit' > npm_install_retry.log 2>&1
+}
+
+# Check if npm install completed successfully
+if [ -f "npm_install.log" ]; then
+  echo "npm install log:"
+  cat npm_install.log
+fi
+if [ -f "npm_install_retry.log" ]; then
+  echo "npm install retry log:"
+  cat npm_install_retry.log
+fi
 
 # Handle native modules based on architecture
 ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
     echo "ARM architecture detected, rebuilding SQLite..."
-    npm uninstall sqlite3 || true
-    npm install sqlite3 --build-from-source
+    nohup bash -c 'npm uninstall sqlite3 || true' > sqlite_uninstall.log 2>&1
+    nohup bash -c 'npm install sqlite3 --build-from-source' > sqlite_install.log 2>&1
+    echo "SQLite rebuild log:"
+    cat sqlite_install.log
 elif [[ "$ARCH" == "x86_64" ]] && ! node -e "require('sqlite3')" 2>/dev/null; then
     echo "Rebuilding SQLite for x86_64..."
-    npm uninstall sqlite3 || true
-    npm install sqlite3 --build-from-source
+    nohup bash -c 'npm uninstall sqlite3 || true' > sqlite_uninstall.log 2>&1
+    nohup bash -c 'npm install sqlite3 --build-from-source' > sqlite_install.log 2>&1
+    echo "SQLite rebuild log:"
+    cat sqlite_install.log
 fi
 
 # Setup .env file
