@@ -1245,8 +1245,8 @@ export const translations = {
         ja: 'ドメインからのAds.txt取得に失敗しました',
       },
       optimizeFailed: {
-        en: 'Failed to optimize Ads.txt content',
-        ja: 'Ads.txt内容の最適化に失敗しました',
+        en: 'Failed to optimize Ads.txt content. Please try again later.',
+        ja: 'Ads.txt内容の最適化に失敗しました。しばらく待ってから、もう一度お試しください',
       },
       invalidFile: {
         en: 'Please select a valid Ads.txt file',
