@@ -1142,8 +1142,8 @@ export const translations = {
       },
       level2: {
         title: {
-          en: 'Level 2: Advanced',
-          ja: 'レベル2: 高度',
+          en: 'Level 2: Advanced (Testing)',
+          ja: 'レベル2: 高度（テスト中）',
         },
         description: {
           en: 'Level 1 + categorize by seller type, add Certification IDs',
