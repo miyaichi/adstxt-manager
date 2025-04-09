@@ -93,7 +93,6 @@ const http = require('http');
 // HTTP request configuration
 const HTTP_REQUEST_CONFIG = {
   timeout: 30000, // 30 seconds timeout for slower sites
-  validateStatus: () => true, // Allow any status code for proper error handling
   maxContentLength: 200 * 1024 * 1024, // 200MB for large files
   decompress: true, // Handle gzipped responses
   headers: {
@@ -193,7 +192,7 @@ export async function fetchSellersJsonWithCache(
     const primaryUrl = getSellersJsonUrl(domain);
     
     // Create a standard fallback URL if we're using a special domain
-    let fallbackUrl = null;
+    let fallbackUrl: string | null = null;
     if (domain in SPECIAL_DOMAINS) {
       fallbackUrl = `https://${domain}/sellers.json`;
       logger.info(`[fetchSellersJsonWithCache] Using fallback URL if needed: ${fallbackUrl}`);
@@ -364,7 +363,7 @@ async function fetchWithRetry(
       primary: url,
       fallback: fallbackUrl,
       primaryError: lastError.message,
-      fallbackError: fallbackError.message
+      fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
     });
     
     // Throw the original error since it's more relevant
@@ -448,7 +447,8 @@ function createCacheRecordFromResponse(
           logger.info(`Successfully parsed string response as JSON for ${domain}`);
         } catch (parseError) {
           // If parsing fails, it's not valid JSON
-          logger.warn(`Failed to parse string response as JSON for ${domain}: ${parseError.message}`);
+          const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+          logger.warn(`Failed to parse string response as JSON for ${domain}: ${errorMessage}`);
           cacheRecord.status = 'invalid_format';
           cacheRecord.error_message = 'Response is not valid JSON';
           return cacheRecord;
@@ -490,7 +490,7 @@ function createCacheRecordFromResponse(
     } catch (error) {
       logger.error(`Error processing 200 response for ${domain}:`, error);
       cacheRecord.status = 'invalid_format';
-      cacheRecord.error_message = `Failed to process response: ${error.message}`;
+      cacheRecord.error_message = `Failed to process response: ${error instanceof Error ? error.message : String(error)}`;
     }
   } else if (response.status === 404) {
     cacheRecord.status = 'not_found';
