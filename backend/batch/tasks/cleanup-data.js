@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
  * @param {boolean} options.dryRun - Show what would be deleted without actually deleting
  */
 async function run(options = {}) {
-  const { age = 90, dryRun = false } = options;
+  const { age = 90, dryRun = true } = options;
   let transaction = null;
   const results = {
     requests: { identified: 0, deleted: 0 },
