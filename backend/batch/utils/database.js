@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const logger = require('./logger');
 
 // Load environment variables if not already loaded
-if (!process.env.DATABASE_TYPE) {
+if (!process.env.DATABASE_TYPE && !process.env.DB_PROVIDER) {
   // Try .env in current directory first
   if (fs.existsSync(path.resolve(__dirname, '../.env'))) {
     require('dotenv').config({
@@ -26,13 +26,20 @@ let pgPool = null;
  */
 async function initDatabase() {
   try {
+    // Support both naming conventions (EC2 deployment and ECS batch)
+    const host = process.env.DB_HOST || process.env.POSTGRES_HOST;
+    const port = parseInt(process.env.DB_PORT || process.env.POSTGRES_PORT || '5432', 10);
+    const user = process.env.DB_USER || process.env.POSTGRES_USER;
+    const password = process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD;
+    const database = process.env.DB_NAME || process.env.POSTGRES_DB;
+    
     logger.info('Initializing PostgreSQL connection');
     pgPool = new Pool({
-      host: process.env.POSTGRES_HOST,
-      port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      database: process.env.POSTGRES_DB,
+      host,
+      port,
+      user,
+      password,
+      database,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
