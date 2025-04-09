@@ -18,12 +18,15 @@ COPY .env* ./
 # Copy application files
 COPY . .
 
-# Create directory for logs
+# Create directory for logs with proper permissions
 RUN mkdir -p /app/logs && \
+    mkdir -p /tmp/logs && \
+    chmod -R 777 /app/logs && \
+    chmod -R 777 /tmp/logs && \
     chown -R node:node /app/logs
 
 # Create volume for persistent data
-VOLUME ["/app/logs"]
+VOLUME ["/app/logs", "/tmp/logs"]
 
 # Set proper permissions
 RUN chmod +x docker-entrypoint.sh
