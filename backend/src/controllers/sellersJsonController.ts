@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import SellersJsonCacheModel, {
@@ -17,73 +16,7 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'googlesyndication.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
 
   // AOL / Verizon Group
-  'advertising.com': 'https://adserver.adtech.advertising.com/sellers.json',
-  'adtech.com': 'https://adserver.adtech.advertising.com/sellers.json',
-  'aol.com': 'https://adserver.adtech.advertising.com/sellers.json',
-  'aolcloud.net': 'https://adserver.adtech.advertising.com/sellers.json',
-  'yahoo.com': 'https://sellers.yahooinc.com/sellers.json',
-
-  // District M
-  'districtm.io': 'https://sellers.districtm.ca/sellers.json',
-
-  // Criteo
-  'criteo.com': 'https://sellers.criteo.com/sellers.json',
-
-  // Xandr (Microsoft)
-  'xandr.com': 'https://ib.adnxs.com/sellers.json',
-  'appnexus.com': 'https://ib.adnxs.com/sellers.json',
-
-  // Pubmatic
-  'pubmatic.com': 'https://ads.pubmatic.com/sellers.json',
-
-  // OpenX
-  'openx.com': 'https://u.openx.net/sellers.json',
-
-  // Rubicon
-  'rubiconproject.com': 'https://rubiconproject.com/sellers.json',
-
-  // Sovrn (Lijit)
-  'sovrn.com': 'https://ap.lijit.com/sellers.json',
-  'lijit.com': 'https://ap.lijit.com/sellers.json',
-
-  // Index Exchange
-  'indexexchange.com': 'https://indexexchange.com/sellers.json',
-
-  // Media.net
-  'media.net': 'https://static.media.net/sellers.json',
-
-  // ShareThrough
-  'sharethrough.com': 'https://stx-sellers.sharethrough.com/sellers.json',
-
-  // SmartAdServer
-  'smartadserver.com': 'https://sellers.smartadserver.com/sellers.json',
-
-  // Teads
-  'teads.tv': 'https://sellers.teads.tv/sellers.json',
-
-  // Triplelift
-  'triplelift.com': 'https://triplelift.com/sellers.json',
-
-  // Conversant / CJ
-  'conversantmedia.com': 'https://conversant.mgr.consensu.org/sellers.json',
-
-  // Rhythmone
-  'rhythmone.com': 'https://tag.1rx.io/sellers.json',
-
-  // Freewheel
-  'freewheel.tv': 'https://ads.stickyadstv.com/sellers.json',
-
-  // Context Web (PulsePoint)
-  'contextweb.com': 'https://bh.contextweb.com/sellers.json',
-
-  // Outbrain
-  'outbrain.com': 'https://sellers.outbrain.com/sellers.json',
-
-  // Smaato
-  'smaato.com': 'https://s.smaato.com/sellers.json',
-
-  // 33Across
-  '33across.com': 'https://lexicon.33across.com/sellers.json',
+  'advertising.com': 'https://dragon-advertising.com/sellers.json'
 };
 
 // Import required modules
@@ -118,6 +51,9 @@ const HTTP_REQUEST_CONFIG = {
   }),
   // Allow significantly more redirects (some sites have many redirects)
   maxRedirects: 10,
+  // Ensure redirects are followed
+  followRedirect: true,
+  followAllRedirects: true,
   // Don't throw on 4xx or 5xx responses
   validateStatus: function (status) {
     return status >= 200 && status < 600; // Accept all responses between 200-599
@@ -330,6 +266,12 @@ async function fetchWithRetry(
   try {
     logger.info(`Attempting to fetch from primary URL: ${url}`);
     const response = await axios.get(url, options);
+    
+    // Log final URL after possible redirects
+    const finalUrl = response.request?.res?.responseUrl || response.request?.path || url;
+    if (finalUrl !== url) {
+      logger.info(`Request was redirected from ${url} to ${finalUrl}`);
+    }
 
     // If we got a valid response (200) or it's 404, we consider it a definitive result
     if (response.status === 200 || response.status === 404) {
@@ -358,7 +300,15 @@ async function fetchWithRetry(
   // If we reached here, we need to try the fallback URL
   try {
     logger.info(`Trying fallback URL: ${fallbackUrl}`);
-    return await axios.get(fallbackUrl, options);
+    const fallbackResponse = await axios.get(fallbackUrl, options);
+    
+    // Log final URL after possible redirects for fallback
+    const finalFallbackUrl = fallbackResponse.request?.res?.responseUrl || fallbackResponse.request?.path || fallbackUrl;
+    if (finalFallbackUrl !== fallbackUrl) {
+      logger.info(`Fallback request was redirected from ${fallbackUrl} to ${finalFallbackUrl}`);
+    }
+    
+    return fallbackResponse;
   } catch (fallbackError) {
     logger.error(`Both primary and fallback URLs failed:`, {
       primary: url,
@@ -418,6 +368,14 @@ function createCacheRecordFromResponse(
   status_code: number | null;
   error_message: string | null;
 } {
+  // Get the final URL after possible redirects
+  const finalUrl = response.request?.res?.responseUrl || response.request?.path || null;
+  
+  // Log if redirects were followed
+  if (finalUrl && finalUrl !== `https://${domain}/sellers.json`) {
+    logger.info(`Request for ${domain} was redirected to final URL: ${finalUrl}`);
+  }
+  
   // Initialize cache record with explicit type to allow for string assignments
   const cacheRecord: {
     domain: string;
