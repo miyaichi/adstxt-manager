@@ -323,7 +323,8 @@ export const adsTxtApi = {
   // Optimize Ads.txt content
   async optimizeAdsTxtContent(
     content: string,
-    publisherDomain?: string
+    publisherDomain?: string,
+    level?: 'level1' | 'level2'
   ): Promise<ApiResponse<OptimizeAdsTxtResponse>> {
     const data: any = {
       content: content,
@@ -332,6 +333,11 @@ export const adsTxtApi = {
     // Add publisher domain if provided
     if (publisherDomain) {
       data.publisher_domain = publisherDomain;
+    }
+
+    // Add optimization level if provided
+    if (level) {
+      data.level = level;
     }
 
     const response = await api.post<ApiResponse<OptimizeAdsTxtResponse>>('/adsTxt/optimize', data);
@@ -343,10 +349,7 @@ export const adsTxtApi = {
 export const sellersJsonApi = {
   // Get sellers.json for a domain (legacy endpoint for backward compatibility)
   async getSellersJson(domain: string): Promise<ApiResponse<any>> {
-    const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`, {
-      // Get sellers.json for the first time, so we set a longer timeout
-      timeout: 30000,
-    });
+    const response = await api.get<ApiResponse<any>>(`/sellersJson/${encodeURIComponent(domain)}`);
     return response.data;
   },
 

@@ -144,6 +144,15 @@ export interface AdsTxtCacheResponse {
 
 export interface OptimizeAdsTxtResponse {
   optimized_content: string;
+  original_length?: number;
+  optimized_length?: number;
+  optimization_level?: 'level1' | 'level2';
+  categories?: {
+    other: number;
+    confidential: number;
+    missing_seller_id: number;
+    no_seller_json: number;
+  };
 }
 
 // Sellers.json Models

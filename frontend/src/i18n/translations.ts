@@ -1112,6 +1112,10 @@ export const translations = {
         en: 'Optimize',
         ja: '最適化',
       },
+      cancelButton: {
+        en: 'Cancel',
+        ja: 'キャンセル',
+      },
       downloadButton: {
         en: 'Download Optimized File',
         ja: '最適化ファイルをダウンロード',
@@ -1142,12 +1146,8 @@ export const translations = {
           ja: 'レベル2: 高度',
         },
         description: {
-          en: 'Level 1 + fix warnings, sort by importance',
-          ja: 'レベル1 + 警告の修正、重要度による並べ替え',
-        },
-        comingSoon: {
-          en: 'Coming soon',
-          ja: '近日公開',
+          en: 'Level 1 + categorize by seller type, add Certification IDs',
+          ja: 'レベル1 + カテゴリ分け、認証IDの追加',
         },
       },
     },
@@ -1168,6 +1168,10 @@ export const translations = {
         en: 'Optimization Statistics',
         ja: '最適化統計',
       },
+      categoriesLabel: {
+        en: 'Category Breakdown',
+        ja: 'カテゴリ内訳',
+      },
       recordsBefore: {
         en: 'Records before: {{count}}',
         ja: '最適化前のレコード数: {{count}}',
@@ -1184,6 +1188,48 @@ export const translations = {
         en: 'Variables organized: {{count}}',
         ja: '整理された変数: {{count}}',
       },
+      categoryOther: {
+        en: 'Standard Records: {{count}}',
+        ja: '標準レコード: {{count}}',
+      },
+      categoryConfidential: {
+        en: 'Confidential Sellers: {{count}}',
+        ja: '機密セラー: {{count}}',
+      },
+      categoryMissingSellerId: {
+        en: 'Not in Sellers.json: {{count}}',
+        ja: 'Sellers.jsonに未登録: {{count}}',
+      },
+      categoryNoSellerJson: {
+        en: 'No Sellers.json: {{count}}',
+        ja: 'Sellers.jsonなし: {{count}}',
+      },
+    },
+    phase: {
+      fetchingAdsTxt: {
+        en: 'Fetching ads.txt from domain...',
+        ja: 'ドメインからads.txtを取得中...',
+      },
+      parsingAdsTxt: {
+        en: 'Parsing ads.txt content...',
+        ja: 'ads.txtを解析中...',
+      },
+      fetchingSellersJson: {
+        en: 'Fetching sellers.json data...',
+        ja: 'sellers.jsonデータを取得中...',
+      },
+      optimizingAdsTxt: {
+        en: 'Optimizing ads.txt content...',
+        ja: 'ads.txtを最適化中...',
+      },
+      completed: {
+        en: 'Optimization completed!',
+        ja: '最適化が完了しました！',
+      },
+    },
+    loadingMessage: {
+      en: 'Processing...',
+      ja: '処理中...',
     },
     errors: {
       emptyContent: {
@@ -1215,6 +1261,10 @@ export const translations = {
       optimizeSuccess: {
         en: 'Ads.txt successfully optimized!',
         ja: 'Ads.txtの最適化に成功しました！',
+      },
+      operationCancelled: {
+        en: 'Operation cancelled',
+        ja: '処理をキャンセルしました',
       },
     },
   },
