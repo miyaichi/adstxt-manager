@@ -10,47 +10,46 @@ on:
   workflow_dispatch:
 
 env:
-  # These can be overridden in repository settings under Secrets and Variables > Actions > Variables
-  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
-  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'adstxt-manager-batch' }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'adstxt-manager' }}
-  ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION || 'adstxt-manager-batch' }}
-  ECS_SERVICE: ${{ vars.ECS_SERVICE || 'adstxt-manager-batch' }}
-  EVENTS_RULE_NAME: ${{ vars.EVENTS_RULE_NAME || 'adstxt-manager-batch-daily' }}
-  EVENTS_RULE_SCHEDULE: ${{ vars.EVENTS_RULE_SCHEDULE || 'cron(0 1 * * ? *)' }}
-  EVENTS_ROLE_NAME: ${{ vars.EVENTS_ROLE_NAME || 'ecsEventsRole' }}
+  AWS_REGION: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-northeast-1' }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY != '' && vars.ECR_REPOSITORY || 'adstxt-manager-batch' }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER != '' && vars.ECS_CLUSTER || 'adstxt-manager' }}
+  ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION != '' && vars.ECS_TASK_DEFINITION || 'adstxt-manager-batch' }}
+  ECS_SERVICE: ${{ vars.ECS_SERVICE != '' && vars.ECS_SERVICE || 'adstxt-manager-batch' }}
+  EVENTS_RULE_NAME: ${{ vars.EVENTS_RULE_NAME != '' && vars.EVENTS_RULE_NAME || 'adstxt-manager-batch-daily' }}
+  EVENTS_RULE_SCHEDULE: ${{ vars.EVENTS_RULE_SCHEDULE != '' && vars.EVENTS_RULE_SCHEDULE || 'cron(0 1 * * ? *)' }}
+  EVENTS_ROLE_NAME: ${{ vars.EVENTS_ROLE_NAME != '' && vars.EVENTS_ROLE_NAME || 'ecsEventsRole' }}
 
 jobs:
   deploy:
     name: Deploy Batch Process
     runs-on: ubuntu-latest
-    
+
     steps:
       # ===== Setup =====
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      
+
       # ===== ECR Repository Management =====
       - name: Create ECR Repository if needed
         run: |
           aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
           aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }}
-      
+
       # ===== Docker Build & Push =====
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      
+
       - name: Create environment file
         run: |
           cat > backend/.env << EOF
@@ -62,7 +61,7 @@ jobs:
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           NODE_ENV=production
           EOF
-      
+
       - name: Build and push Docker image
         id: build-image
         env:
@@ -71,17 +70,17 @@ jobs:
         run: |
           # Copy .env file to batch directory
           cp backend/.env backend/batch/
-          
+
           # Build and push
           cd backend/batch
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-          
+
           # Cleanup
           rm .env
-      
+
       # ===== ECS Task Update =====
       - name: Download current task definition
         run: |
@@ -89,7 +88,7 @@ jobs:
             --task-definition ${{ env.ECS_TASK_DEFINITION }} \
             --query taskDefinition \
             --region ${{ env.AWS_REGION }} > task-definition.json
-      
+
       - name: Update task definition with new image
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -97,7 +96,7 @@ jobs:
           task-definition: task-definition.json
           container-name: ${{ env.ECR_REPOSITORY }}
           image: ${{ steps.build-image.outputs.image }}
-      
+
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -105,7 +104,7 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
-      
+
       # ===== CloudWatch Events Setup =====
       - name: Setup IAM Role for CloudWatch Events
         run: |
@@ -114,44 +113,35 @@ jobs:
             echo "Creating IAM role ${{ env.EVENTS_ROLE_NAME }}..."
             
             # Create trust policy for CloudWatch Events
-            cat > trust-policy.json << 'EOF'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "events.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+            echo '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "events.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }' > trust-policy.json
             
             # Create policy to allow running ECS tasks
-            cat > role-policy.json << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "ecs:RunTask",
-      "Resource": "*",
-      "Condition": {
-        "ArnLike": {
-          "ecs:cluster": "arn:aws:ecs:*:*:cluster/${{ env.ECS_CLUSTER }}"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:PassRole",
-      "Resource": "*"
-    }
-  ]
-}
-EOF
+            echo '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ecs:RunTask",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "iam:PassRole",
+                  "Resource": "*"
+                }
+              ]
+            }' > role-policy.json
             
             # Create role and attach policy
             aws iam create-role \
@@ -169,7 +159,7 @@ EOF
           else
             echo "IAM role ${{ env.EVENTS_ROLE_NAME }} already exists"
           fi
-      
+
       - name: Setup CloudWatch Events Rule
         run: |
           # Get latest task definition ARN
@@ -178,7 +168,7 @@ EOF
             --query 'taskDefinition.taskDefinitionArn' \
             --output text \
             --region ${{ env.AWS_REGION }})
-          
+
           # Create/update CloudWatch Events rule
           if ! aws events describe-rule \
             --name ${{ env.EVENTS_RULE_NAME }} \
@@ -194,35 +184,33 @@ EOF
           else
             echo "CloudWatch Events rule ${{ env.EVENTS_RULE_NAME }} already exists"
           fi
-          
+
           # Create target configuration
-          cat > target.json << EOF
-[
-  {
-    "Id": "${{ env.ECR_REPOSITORY }}-task",
-    "Arn": "arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }}",
-    "RoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.EVENTS_ROLE_NAME }}",
-    "EcsParameters": {
-      "TaskDefinitionArn": "$TASK_DEF_ARN",
-      "TaskCount": 1,
-      "LaunchType": "FARGATE",
-      "NetworkConfiguration": {
-        "awsvpcConfiguration": {
-          "Subnets": ["${{ secrets.AWS_SUBNET_ID }}"],
-          "SecurityGroups": ["${{ secrets.AWS_SECURITY_GROUP_ID }}"],
-          "AssignPublicIp": "ENABLED"
-        }
-      }
-    }
-  }
-]
-EOF
-          
+          echo '[
+            {
+              "Id": "${{ env.ECR_REPOSITORY }}-task",
+              "Arn": "arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }}",
+              "RoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.EVENTS_ROLE_NAME }}",
+              "EcsParameters": {
+                "TaskDefinitionArn": "'$TASK_DEF_ARN'",
+                "TaskCount": 1,
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                  "awsvpcConfiguration": {
+                    "Subnets": ["${{ secrets.AWS_SUBNET_ID }}"],
+                    "SecurityGroups": ["${{ secrets.AWS_SECURITY_GROUP_ID }}"],
+                    "AssignPublicIp": "ENABLED"
+                  }
+                }
+              }
+            }
+          ]' > target.json
+
           # Set rule target
           echo "Setting target for CloudWatch Events rule ${{ env.EVENTS_RULE_NAME }}..."
           aws events put-targets \
             --rule ${{ env.EVENTS_RULE_NAME }} \
             --targets file://target.json \
             --region ${{ env.AWS_REGION }}
-          
+
           echo "Deployment completed successfully"
