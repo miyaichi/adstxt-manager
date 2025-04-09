@@ -54,9 +54,10 @@ async function run(options = {}) {
     cutoffDate.setDate(cutoffDate.getDate() - age);
     const cutoffTimestamp = cutoffDate.toISOString();
 
-    // Find expired sellers.json cache entries
+    // Find expired sellers.json cache entries, but skip those with known errors
     const query = `SELECT * FROM sellers_json_cache 
                   WHERE updated_at < $1 
+                  AND (error_message IS NULL OR error_message NOT LIKE '%unique constraint%')
                   ORDER BY updated_at ASC 
                   LIMIT $2`;
 
@@ -68,7 +69,8 @@ async function run(options = {}) {
     // Process each expired record
     for (const record of expiredRecords) {
       processed++;
-      const domain = record.domain;
+      // Ensure domain is normalized to lowercase
+      const domain = record.domain.toLowerCase();
 
       try {
         logger.info(`Refreshing sellers.json for domain: ${domain}`);

@@ -80,10 +80,12 @@ export async function fetchSellersJsonWithCache(
     updatedAt: string | null;
   };
 }> {
-  logger.info(`[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${domain}`);
+  // Always normalize domain to lowercase to avoid case-sensitivity issues
+  const normalizedDomain = domain.toLowerCase();
+  logger.info(`[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${normalizedDomain} (original: ${domain})`);
 
-  // Check cache first
-  const cachedData = await SellersJsonCacheModel.getByDomain(domain);
+  // Check cache first - use normalized domain for lookup
+  const cachedData = await SellersJsonCacheModel.getByDomain(normalizedDomain);
   const cacheExpired = cachedData
     ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at, CACHE_EXPIRATION_HOURS)
     : true;
@@ -92,7 +94,7 @@ export async function fetchSellersJsonWithCache(
   if (cachedData && !forceRefresh && !cacheExpired) {
     const status = cachedData.status;
     logger.info(
-      `[fetchSellersJsonWithCache] Using cached "${status}" result for ${domain} (cached at ${cachedData.updated_at})`
+      `[fetchSellersJsonWithCache] Using cached "${status}" result for ${normalizedDomain} (cached at ${cachedData.updated_at})`
     );
 
     // Standard cache response
@@ -121,17 +123,17 @@ export async function fetchSellersJsonWithCache(
 
   // Need to fetch new data
   const reason = !cachedData ? 'not in cache' : forceRefresh ? 'force refresh' : 'cache expired';
-  logger.info(`[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${domain} (${reason})`);
+  logger.info(`[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${normalizedDomain} (${reason})`);
 
   // Fetch from URL
   try {
-    // Get the primary URL for sellers.json
-    const primaryUrl = getSellersJsonUrl(domain);
+    // Get the primary URL for sellers.json - use normalized domain
+    const primaryUrl = getSellersJsonUrl(normalizedDomain);
 
     // Create a standard fallback URL if we're using a special domain
     let fallbackUrl: string | null = null;
-    if (domain in SPECIAL_DOMAINS) {
-      fallbackUrl = `https://${domain}/sellers.json`;
+    if (normalizedDomain in SPECIAL_DOMAINS) {
+      fallbackUrl = `https://${normalizedDomain}/sellers.json`;
       logger.info(`[fetchSellersJsonWithCache] Using fallback URL if needed: ${fallbackUrl}`);
     }
 
@@ -141,16 +143,16 @@ export async function fetchSellersJsonWithCache(
     const response = await fetchWithRetry(primaryUrl, fallbackUrl, HTTP_REQUEST_CONFIG);
 
     logger.info(
-      `[fetchSellersJsonWithCache] Got response from ${domain} with status: ${response.status}`
+      `[fetchSellersJsonWithCache] Got response from ${normalizedDomain} with status: ${response.status}`
     );
 
     // Create cache record from response
-    const cacheRecord = createCacheRecordFromResponse(domain, response);
+    const cacheRecord = createCacheRecordFromResponse(normalizedDomain, response);
 
     // Save to cache
     const savedCache = await SellersJsonCacheModel.saveCache(cacheRecord);
     logger.info(
-      `[fetchSellersJsonWithCache] Saved ${domain} to cache with status: ${savedCache.status}`
+      `[fetchSellersJsonWithCache] Saved ${normalizedDomain} to cache with status: ${savedCache.status}`
     );
 
     // Standard response for freshly fetched data
@@ -174,18 +176,18 @@ export async function fetchSellersJsonWithCache(
       };
     }
   } catch (error) {
-    logger.error(`[fetchSellersJsonWithCache] Error fetching sellers.json for ${domain}:`, error);
+    logger.error(`[fetchSellersJsonWithCache] Error fetching sellers.json for ${normalizedDomain}:`, error);
 
     // Save error to cache
     try {
       // Use handleSellersJsonError but catch the thrown ApiError
-      await handleSellersJsonError(domain, error).catch(() => {
+      await handleSellersJsonError(normalizedDomain, error).catch(() => {
         // Catch and ignore the ApiError since we're handling this internally
-        logger.info(`[fetchSellersJsonWithCache] Error handled and saved to cache for ${domain}`);
+        logger.info(`[fetchSellersJsonWithCache] Error handled and saved to cache for ${normalizedDomain}`);
       });
 
       // Get the newly saved error cache
-      const errorCache = await SellersJsonCacheModel.getByDomain(domain);
+      const errorCache = await SellersJsonCacheModel.getByDomain(normalizedDomain);
 
       // Create error response with cache data if available
       const errorResponse: {
@@ -204,7 +206,7 @@ export async function fetchSellersJsonWithCache(
       };
     } catch (saveError) {
       logger.error(
-        `[fetchSellersJsonWithCache] Failed to save error to cache for ${domain}:`,
+        `[fetchSellersJsonWithCache] Failed to save error to cache for ${normalizedDomain}:`,
         saveError
       );
 
@@ -588,11 +590,14 @@ function getExpiryTime(updatedAt: string): string {
  * @route GET /api/sellersjson/:domain/seller/:sellerId
  */
 export const getSellerById = asyncHandler(async (req: Request, res: Response) => {
-  const { domain, sellerId } = req.params;
+  let { domain, sellerId } = req.params;
 
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
+  
+  // Normalize domain to lowercase
+  domain = domain.toLowerCase();
 
   if (!sellerId) {
     throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
@@ -713,11 +718,14 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
  * @route GET /api/sellersjson/:domain
  */
 export const getSellersJson = asyncHandler(async (req: Request, res: Response) => {
-  const { domain } = req.params;
+  let { domain } = req.params;
 
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
+  
+  // Normalize domain to lowercase
+  domain = domain.toLowerCase();
 
   try {
     // 共通関数を使用してsellers.jsonデータを取得
@@ -750,11 +758,14 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
  * @route GET /api/sellersjson/:domain/metadata
  */
 export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Response) => {
-  const { domain } = req.params;
+  let { domain } = req.params;
 
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
+  
+  // Normalize domain to lowercase
+  domain = domain.toLowerCase();
 
   try {
     // 共通関数を使用してsellers.jsonデータを取得
