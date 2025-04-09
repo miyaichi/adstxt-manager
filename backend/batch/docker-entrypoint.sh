@@ -11,6 +11,14 @@ if [ -f ".env" ]; then
   echo "Found .env file in current directory"
   # Export all variables from .env file
   export $(grep -v '^#' .env | xargs)
+  # Display the contents of the .env file
+  echo "=== .env file contents ==="
+  echo "--------------------------------"
+  # Display the contents of the .env file
+  # Exclude sensitive information
+  grep -v -E 'POSTGRES_PASSWORD|DATABASE_URL|SECRET_KEY' .env
+  echo "--------------------------------"
+  echo "=== End of .env file contents ==="
 fi
 
 # Display environment info
