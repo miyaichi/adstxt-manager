@@ -172,7 +172,7 @@ jobs:
           echo "SMTP_HOST=${{ vars.SMTP_HOST }}" >> backend/.env
           echo "SMTP_PORT=${{ vars.SMTP_PORT || '587' }}" >> backend/.env
           echo "SMTP_FROM=${{ vars.SMTP_FROM }}" >> backend/.env
-          echo "SMTP_FROM_NAME=${{ vars.SMTP_FROM_NAM }}" >> backend/.env
+          echo "SMTP_FROM_NAME=${{ vars.SMTP_FROM_NAME }}" >> backend/.env
           echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> backend/.env
           echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> backend/.env
           echo "AWS_REGION=${{ vars.AWS_REGION }}" >> backend/.env

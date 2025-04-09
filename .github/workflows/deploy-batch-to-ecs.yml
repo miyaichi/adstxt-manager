@@ -169,6 +169,9 @@ jobs:
             --output text \
             --region ${{ env.AWS_REGION }})
 
+          # Get AWS Account ID
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
           # Create/update CloudWatch Events rule
           if ! aws events describe-rule \
             --name ${{ env.EVENTS_RULE_NAME }} \
@@ -186,25 +189,25 @@ jobs:
           fi
 
           # Create target configuration
-          echo '[
+          echo "[
             {
-              "Id": "${{ env.ECR_REPOSITORY }}-task",
-              "Arn": "arn:aws:ecs:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:cluster/${{ env.ECS_CLUSTER }}",
-              "RoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.EVENTS_ROLE_NAME }}",
-              "EcsParameters": {
-                "TaskDefinitionArn": "'$TASK_DEF_ARN'",
-                "TaskCount": 1,
-                "LaunchType": "FARGATE",
-                "NetworkConfiguration": {
-                  "awsvpcConfiguration": {
-                    "Subnets": ["${{ secrets.AWS_SUBNET_ID }}"],
-                    "SecurityGroups": ["${{ secrets.AWS_SECURITY_GROUP_ID }}"],
-                    "AssignPublicIp": "ENABLED"
+              \"Id\": \"${{ env.ECR_REPOSITORY }}-task\",
+              \"Arn\": \"arn:aws:ecs:${{ env.AWS_REGION }}:$ACCOUNT_ID:cluster/${{ env.ECS_CLUSTER }}\",
+              \"RoleArn\": \"arn:aws:iam::$ACCOUNT_ID:role/${{ env.EVENTS_ROLE_NAME }}\",
+              \"EcsParameters\": {
+                \"TaskDefinitionArn\": \"$TASK_DEF_ARN\",
+                \"TaskCount\": 1,
+                \"LaunchType\": \"FARGATE\",
+                \"NetworkConfiguration\": {
+                  \"awsvpcConfiguration\": {
+                    \"Subnets\": [\"${{ secrets.AWS_SUBNET_ID }}\"],
+                    \"SecurityGroups\": [\"${{ secrets.AWS_SECURITY_GROUP_ID }}\"],
+                    \"AssignPublicIp\": \"ENABLED\"
                   }
                 }
               }
             }
-          ]' > target.json
+          ]" > target.json
 
           # Set rule target
           echo "Setting target for CloudWatch Events rule ${{ env.EVENTS_RULE_NAME }}..."
