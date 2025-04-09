@@ -16,7 +16,6 @@ env:
   ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION != '' && vars.ECS_TASK_DEFINITION || 'adstxt-manager-batch' }}
   ECS_SERVICE: ${{ vars.ECS_SERVICE != '' && vars.ECS_SERVICE || 'adstxt-manager-batch' }}
   EVENTS_RULE_NAME: ${{ vars.EVENTS_RULE_NAME != '' && vars.EVENTS_RULE_NAME || 'adstxt-manager-batch-daily' }}
-  # EVENTS_RULE_SCHEDULE: ${{ vars.EVENTS_RULE_SCHEDULE != '' && vars.EVENTS_RULE_SCHEDULE || 'cron(0 1 * * ? *)' }}
   EVENTS_ROLE_NAME: ${{ vars.EVENTS_ROLE_NAME != '' && vars.EVENTS_ROLE_NAME || 'ecsEventsRole' }}
 
 jobs:
