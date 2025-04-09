@@ -29,14 +29,18 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       throw new ApiError(400, 'File too large (max 5MB)', 'errors:fileTooLarge');
     }
 
-    console.log(`Optimizing ads.txt content with length: ${content.length} characters at level: ${level || 'level1'}`);
+    console.log(
+      `Optimizing ads.txt content with length: ${content.length} characters at level: ${level || 'level1'}`
+    );
 
     // Process the content to remove duplicates and standardize format
     let optimizedContent = optimizeAdsTxt(content, publisher_domain);
 
     // レベル1の場合は基本的な最適化のみ行う
     if (!level || level === 'level1') {
-      console.log(`Level 1 optimization complete. Result length: ${optimizedContent.length} characters`);
+      console.log(
+        `Level 1 optimization complete. Result length: ${optimizedContent.length} characters`
+      );
       // 結果を返す
       return res.status(200).json({
         success: true,
@@ -44,7 +48,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           optimized_content: optimizedContent,
           original_length: content.length,
           optimized_length: optimizedContent.length,
-          optimization_level: 'level1'
+          optimization_level: 'level1',
         },
       });
     }
@@ -128,7 +132,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
           // Certification Authority ID を探す (同じドメインの他のエントリから)
           let foundCertId: string | null = null;
-          
+
           for (const otherRecord of recordEntries) {
             if (
               'domain' in otherRecord &&
@@ -168,12 +172,16 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
           // 売り手IDが存在し、非機密なら、TAG-ID を探す
           let certId = foundCertId;
-          
-          if (!certId && sellersJsonData.identifiers && Array.isArray(sellersJsonData.identifiers)) {
+
+          if (
+            !certId &&
+            sellersJsonData.identifiers &&
+            Array.isArray(sellersJsonData.identifiers)
+          ) {
             const tagIdEntry = sellersJsonData.identifiers.find(
               (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
             );
-            
+
             if (tagIdEntry && tagIdEntry.value) {
               certId = tagIdEntry.value;
             }
@@ -210,11 +218,11 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           // まずドメインでソート
           const domainComparison = a.domain.localeCompare(b.domain);
           if (domainComparison !== 0) return domainComparison;
-          
+
           // 同じドメインならDIRECTを先に
           if (a.relationship === 'DIRECT' && b.relationship === 'RESELLER') return -1;
           if (a.relationship === 'RESELLER' && b.relationship === 'DIRECT') return 1;
-          
+
           // 最後にアカウントIDでソート
           return a.account_id.localeCompare(b.account_id);
         });
@@ -229,10 +237,10 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       // 5. 新しい最適化されたコンテンツを作成
       // 変数と余分な行を取得
       const variableEntries = parsedEntries.filter((entry) => 'variable_type' in entry);
-      
+
       // 最終的なコンテンツを構築
       let enhancedContent = '';
-      
+
       // 変数セクションを先に追加
       if (variableEntries.length > 0) {
         const variablesByType = variableEntries.reduce((acc: any, entry: any) => {
@@ -241,56 +249,34 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           acc[type].push(entry);
           return acc;
         }, {});
-        
-        Object.keys(variablesByType).sort().forEach(type => {
-          enhancedContent += `# ${type} Variables\n`;
-          variablesByType[type].forEach((variable: any) => {
-            enhancedContent += `${variable.variable_type}=${variable.value}\n`;
+
+        Object.keys(variablesByType)
+          .sort()
+          .forEach((type) => {
+            enhancedContent += `# ${type} Variables\n`;
+            variablesByType[type].forEach((variable: any) => {
+              enhancedContent += `${variable.variable_type}=${variable.value}\n`;
+            });
+            enhancedContent += '\n';
           });
-          enhancedContent += '\n';
-        });
       }
 
       // 他のセクションに適切なヘッダーとコンテンツを追加
       enhancedContent += '# Advertising System Records\n';
-      
+
       // 分類1: その他
-      sortedOtherRecords.forEach(record => {
+      sortedOtherRecords.forEach((record) => {
         let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
         if (record.certification_authority_id) {
           line += `, ${record.certification_authority_id}`;
         }
         enhancedContent += line + '\n';
       });
-      
+
       // 分類2: 機密性のあるレコード
       if (sortedConfidentialRecords.length > 0) {
         enhancedContent += '\n# Confidential Sellers\n';
-        sortedConfidentialRecords.forEach(record => {
-          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-          if (record.certification_authority_id) {
-            line += `, ${record.certification_authority_id}`;
-          }
-          enhancedContent += line + '\n';
-        });
-      }
-      
-      // 分類3: sellers.jsonに記載のないレコード
-      if (sortedMissingSellerIdRecords.length > 0) {
-        enhancedContent += '\n# Records Not Found in Sellers.json\n';
-        sortedMissingSellerIdRecords.forEach(record => {
-          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-          if (record.certification_authority_id) {
-            line += `, ${record.certification_authority_id}`;
-          }
-          enhancedContent += line + '\n';
-        });
-      }
-      
-      // 分類4: sellers.jsonが提供されていない広告システム
-      if (sortedNoSellerJsonRecords.length > 0) {
-        enhancedContent += '\n# Systems Without Sellers.json\n';
-        sortedNoSellerJsonRecords.forEach(record => {
+        sortedConfidentialRecords.forEach((record) => {
           let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
           if (record.certification_authority_id) {
             line += `, ${record.certification_authority_id}`;
@@ -299,8 +285,36 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         });
       }
 
-      console.log(`Level 2 optimization complete. Result length: ${enhancedContent.length} characters`);
-      console.log(`Categories breakdown - Other: ${sortedOtherRecords.length}, Confidential: ${sortedConfidentialRecords.length}, Missing: ${sortedMissingSellerIdRecords.length}, No sellers.json: ${sortedNoSellerJsonRecords.length}`);
+      // 分類3: sellers.jsonに記載のないレコード
+      if (sortedMissingSellerIdRecords.length > 0) {
+        enhancedContent += '\n# Records Not Found in Sellers.json\n';
+        sortedMissingSellerIdRecords.forEach((record) => {
+          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+          if (record.certification_authority_id) {
+            line += `, ${record.certification_authority_id}`;
+          }
+          enhancedContent += line + '\n';
+        });
+      }
+
+      // 分類4: sellers.jsonが提供されていない広告システム
+      if (sortedNoSellerJsonRecords.length > 0) {
+        enhancedContent += '\n# Systems Without Sellers.json\n';
+        sortedNoSellerJsonRecords.forEach((record) => {
+          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+          if (record.certification_authority_id) {
+            line += `, ${record.certification_authority_id}`;
+          }
+          enhancedContent += line + '\n';
+        });
+      }
+
+      console.log(
+        `Level 2 optimization complete. Result length: ${enhancedContent.length} characters`
+      );
+      console.log(
+        `Categories breakdown - Other: ${sortedOtherRecords.length}, Confidential: ${sortedConfidentialRecords.length}, Missing: ${sortedMissingSellerIdRecords.length}, No sellers.json: ${sortedNoSellerJsonRecords.length}`
+      );
 
       // 結果を返す
       return res.status(200).json({
@@ -314,8 +328,8 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
             other: sortedOtherRecords.length,
             confidential: sortedConfidentialRecords.length,
             missing_seller_id: sortedMissingSellerIdRecords.length,
-            no_seller_json: sortedNoSellerJsonRecords.length
-          }
+            no_seller_json: sortedNoSellerJsonRecords.length,
+          },
         },
       });
     }
@@ -328,7 +342,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         optimized_content: optimizedContent,
         original_length: content.length,
         optimized_length: optimizedContent.length,
-        optimization_level: 'level1'
+        optimization_level: 'level1',
       },
     });
   } catch (error: unknown) {

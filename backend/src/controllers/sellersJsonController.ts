@@ -15,75 +15,75 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'google.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'doubleclick.net': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
   'googlesyndication.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
-  
+
   // AOL / Verizon Group
   'advertising.com': 'https://adserver.adtech.advertising.com/sellers.json',
   'adtech.com': 'https://adserver.adtech.advertising.com/sellers.json',
   'aol.com': 'https://adserver.adtech.advertising.com/sellers.json',
   'aolcloud.net': 'https://adserver.adtech.advertising.com/sellers.json',
   'yahoo.com': 'https://sellers.yahooinc.com/sellers.json',
-  
+
   // District M
   'districtm.io': 'https://sellers.districtm.ca/sellers.json',
-  
+
   // Criteo
   'criteo.com': 'https://sellers.criteo.com/sellers.json',
-  
+
   // Xandr (Microsoft)
   'xandr.com': 'https://ib.adnxs.com/sellers.json',
   'appnexus.com': 'https://ib.adnxs.com/sellers.json',
-  
+
   // Pubmatic
   'pubmatic.com': 'https://ads.pubmatic.com/sellers.json',
-  
+
   // OpenX
   'openx.com': 'https://u.openx.net/sellers.json',
-  
+
   // Rubicon
   'rubiconproject.com': 'https://rubiconproject.com/sellers.json',
-  
+
   // Sovrn (Lijit)
   'sovrn.com': 'https://ap.lijit.com/sellers.json',
   'lijit.com': 'https://ap.lijit.com/sellers.json',
-  
+
   // Index Exchange
   'indexexchange.com': 'https://indexexchange.com/sellers.json',
-  
+
   // Media.net
   'media.net': 'https://static.media.net/sellers.json',
-  
+
   // ShareThrough
   'sharethrough.com': 'https://stx-sellers.sharethrough.com/sellers.json',
-  
+
   // SmartAdServer
   'smartadserver.com': 'https://sellers.smartadserver.com/sellers.json',
-  
+
   // Teads
   'teads.tv': 'https://sellers.teads.tv/sellers.json',
-  
+
   // Triplelift
   'triplelift.com': 'https://triplelift.com/sellers.json',
-  
+
   // Conversant / CJ
   'conversantmedia.com': 'https://conversant.mgr.consensu.org/sellers.json',
-  
+
   // Rhythmone
   'rhythmone.com': 'https://tag.1rx.io/sellers.json',
-  
+
   // Freewheel
   'freewheel.tv': 'https://ads.stickyadstv.com/sellers.json',
-  
+
   // Context Web (PulsePoint)
   'contextweb.com': 'https://bh.contextweb.com/sellers.json',
-  
+
   // Outbrain
   'outbrain.com': 'https://sellers.outbrain.com/sellers.json',
-  
+
   // Smaato
   'smaato.com': 'https://s.smaato.com/sellers.json',
-  
+
   // 33Across
-  '33across.com': 'https://lexicon.33across.com/sellers.json'
+  '33across.com': 'https://lexicon.33across.com/sellers.json',
 };
 
 // Import required modules
@@ -96,10 +96,11 @@ const HTTP_REQUEST_CONFIG = {
   maxContentLength: 200 * 1024 * 1024, // 200MB for large files
   decompress: true, // Handle gzipped responses
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
+    'User-Agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+    Accept: 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'Cache-Control': 'max-age=0',
   },
   // Configure a custom HTTPS agent for more control over the connection
@@ -190,16 +191,16 @@ export async function fetchSellersJsonWithCache(
   try {
     // Get the primary URL for sellers.json
     const primaryUrl = getSellersJsonUrl(domain);
-    
+
     // Create a standard fallback URL if we're using a special domain
     let fallbackUrl: string | null = null;
     if (domain in SPECIAL_DOMAINS) {
       fallbackUrl = `https://${domain}/sellers.json`;
       logger.info(`[fetchSellersJsonWithCache] Using fallback URL if needed: ${fallbackUrl}`);
     }
-    
+
     logger.info(`[fetchSellersJsonWithCache] Fetching from primary URL: ${primaryUrl}`);
-    
+
     // Fetch the sellers.json with retry and fallback
     const response = await fetchWithRetry(primaryUrl, fallbackUrl, HTTP_REQUEST_CONFIG);
 
@@ -329,17 +330,17 @@ async function fetchWithRetry(
   try {
     logger.info(`Attempting to fetch from primary URL: ${url}`);
     const response = await axios.get(url, options);
-    
+
     // If we got a valid response (200) or it's 404, we consider it a definitive result
     if (response.status === 200 || response.status === 404) {
       logger.info(`Successfully fetched from primary URL: ${url} (status ${response.status})`);
       return response;
     }
-    
+
     // Other status codes might indicate temporary issues
     logger.warn(`Received status ${response.status} from ${url}`);
     lastError = new Error(`Primary URL returned status ${response.status}`);
-    
+
     // Only continue to fallback if we have one
     if (!fallbackUrl) {
       return response;
@@ -347,7 +348,7 @@ async function fetchWithRetry(
   } catch (error) {
     logger.warn(`Error fetching from primary URL: ${url}`, error);
     lastError = error;
-    
+
     // If no fallback, rethrow the error
     if (!fallbackUrl) {
       throw error;
@@ -363,9 +364,9 @@ async function fetchWithRetry(
       primary: url,
       fallback: fallbackUrl,
       primaryError: lastError.message,
-      fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
     });
-    
+
     // Throw the original error since it's more relevant
     throw lastError;
   }
@@ -447,7 +448,8 @@ function createCacheRecordFromResponse(
           logger.info(`Successfully parsed string response as JSON for ${domain}`);
         } catch (parseError) {
           // If parsing fails, it's not valid JSON
-          const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+          const errorMessage =
+            parseError instanceof Error ? parseError.message : String(parseError);
           logger.warn(`Failed to parse string response as JSON for ${domain}: ${errorMessage}`);
           cacheRecord.status = 'invalid_format';
           cacheRecord.error_message = 'Response is not valid JSON';
@@ -463,15 +465,15 @@ function createCacheRecordFromResponse(
       // Either sellers array or some metadata (contact_email, identifiers)
       if (
         jsonData &&
-        (
-          (Array.isArray(jsonData.sellers) && jsonData.sellers.length > 0) || 
-          jsonData.contact_email || 
-          (Array.isArray(jsonData.identifiers) && jsonData.identifiers.length > 0)
-        )
+        ((Array.isArray(jsonData.sellers) && jsonData.sellers.length > 0) ||
+          jsonData.contact_email ||
+          (Array.isArray(jsonData.identifiers) && jsonData.identifiers.length > 0))
       ) {
         cacheRecord.status = 'success';
         cacheRecord.content = JSON.stringify(jsonData);
-        logger.info(`Valid sellers.json for ${domain} with ${Array.isArray(jsonData.sellers) ? jsonData.sellers.length : 0} sellers`);
+        logger.info(
+          `Valid sellers.json for ${domain} with ${Array.isArray(jsonData.sellers) ? jsonData.sellers.length : 0} sellers`
+        );
       } else {
         // Check for more specific format issues
         if (jsonData.sellers === undefined) {
@@ -519,10 +521,10 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
   const statusCode = error.response?.status || null;
   const is404 = statusCode === 404;
   const errorMessage = error.message || 'Unknown error';
-  
+
   let status: SellersJsonCacheStatus = 'error';
   let detailedErrorMessage = errorMessage;
-  
+
   // 特定のエラーに対するより詳細な処理
   if (is404) {
     status = 'not_found';

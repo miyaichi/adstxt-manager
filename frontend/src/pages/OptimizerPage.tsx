@@ -13,7 +13,7 @@ import {
   TextField,
   View,
 } from '@aws-amplify/ui-react';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { adsTxtApi } from '../api';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
@@ -30,7 +30,7 @@ const OptimizerPage: React.FC = () => {
   const [currentPhase, setCurrentPhase] = useState<string>('idle');
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
-  
+
   // 処理のフェーズ
   const phases = {
     idle: 'idle',
@@ -101,7 +101,7 @@ const OptimizerPage: React.FC = () => {
     try {
       setCurrentPhase(phases.fetchingAdsTxt);
       setProgressValue(20);
-      
+
       // Fetch ads.txt from domain
       const response = await adsTxtApi.getAdsTxtFromDomain(domain, true);
 
@@ -121,7 +121,7 @@ const OptimizerPage: React.FC = () => {
         console.log('Fetch operation was aborted');
         return null;
       }
-      
+
       console.error(err);
       setError(t('optimizerPage.errors.fetchFailed', language));
       return null;
@@ -158,9 +158,11 @@ const OptimizerPage: React.FC = () => {
     setIsLoading(false);
     setCurrentPhase(phases.idle);
     setProgressValue(0);
-    setSuccess(t('optimizerPage.success.operationCancelled', language, {
-      defaultValue: 'Operation cancelled'
-    }));
+    setSuccess(
+      t('optimizerPage.success.operationCancelled', language, {
+        defaultValue: 'Operation cancelled',
+      })
+    );
   };
 
   const handleOptimize = async () => {
@@ -182,13 +184,13 @@ const OptimizerPage: React.FC = () => {
 
       // 元のコンテンツを保存
       setOriginalContent(fetchedContent);
-      
+
       // フェーズ2: ads.txtを解析
       setCurrentPhase(phases.parsingAdsTxt);
       setProgressValue(40);
-      
+
       // 少し遅延してUIの更新を表示
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       if (signal.aborted) return;
 
       // フェーズ3: 最適化レベルに応じてsellers.jsonを取得（レベル2のみ）
@@ -196,7 +198,7 @@ const OptimizerPage: React.FC = () => {
         setCurrentPhase(phases.fetchingSellersJson);
         setProgressValue(60);
         // 少し遅延してUIの更新を表示
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         if (signal.aborted) return;
       }
 
@@ -206,7 +208,7 @@ const OptimizerPage: React.FC = () => {
 
       // APIを呼び出して最適化
       const response = await adsTxtApi.optimizeAdsTxtContent(
-        fetchedContent, 
+        fetchedContent,
         domain,
         optimizationLevel as 'level1' | 'level2'
       );
@@ -283,27 +285,27 @@ const OptimizerPage: React.FC = () => {
     switch (currentPhase) {
       case phases.fetchingAdsTxt:
         return t('optimizerPage.phase.fetchingAdsTxt', language, {
-          defaultValue: 'Fetching ads.txt from domain...'
+          defaultValue: 'Fetching ads.txt from domain...',
         });
       case phases.parsingAdsTxt:
         return t('optimizerPage.phase.parsingAdsTxt', language, {
-          defaultValue: 'Parsing ads.txt content...'
+          defaultValue: 'Parsing ads.txt content...',
         });
       case phases.fetchingSellersJson:
         return t('optimizerPage.phase.fetchingSellersJson', language, {
-          defaultValue: 'Fetching sellers.json data...'
+          defaultValue: 'Fetching sellers.json data...',
         });
       case phases.optimizingAdsTxt:
         return t('optimizerPage.phase.optimizingAdsTxt', language, {
-          defaultValue: 'Optimizing ads.txt content...'
+          defaultValue: 'Optimizing ads.txt content...',
         });
       case phases.completed:
         return t('optimizerPage.phase.completed', language, {
-          defaultValue: 'Optimization completed!'
+          defaultValue: 'Optimization completed!',
         });
       default:
         return t('optimizerPage.loadingMessage', language, {
-          defaultValue: 'Processing...'
+          defaultValue: 'Processing...',
         });
     }
   };
@@ -370,22 +372,22 @@ const OptimizerPage: React.FC = () => {
                 <Flex direction="column" gap="1rem">
                   <Heading level={5}>{getPhaseMessage()}</Heading>
                   <Text>{progressValue}% 完了</Text>
-                  <div 
-                    style={{ 
-                      height: '8px', 
-                      width: '100%', 
-                      backgroundColor: '#e0e0e0', 
+                  <div
+                    style={{
+                      height: '8px',
+                      width: '100%',
+                      backgroundColor: '#e0e0e0',
                       borderRadius: '4px',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
                     }}
                   >
-                    <div 
-                      style={{ 
-                        height: '100%', 
-                        width: `${progressValue}%`, 
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${progressValue}%`,
                         backgroundColor: '#0972d3',
-                        borderRadius: '4px'
-                      }} 
+                        borderRadius: '4px',
+                      }}
                     />
                   </div>
                 </Flex>
@@ -402,12 +404,9 @@ const OptimizerPage: React.FC = () => {
                   {t('optimizerPage.inputSection.optimizeButton', language)}
                 </Button>
               ) : (
-                <Button
-                  variation="warning"
-                  onClick={handleCancelOptimize}
-                >
+                <Button variation="warning" onClick={handleCancelOptimize}>
                   {t('optimizerPage.inputSection.cancelButton', language, {
-                    defaultValue: 'Cancel'
+                    defaultValue: 'Cancel',
                   })}
                 </Button>
               )}
@@ -457,7 +456,7 @@ const OptimizerPage: React.FC = () => {
                 <Card variation="outlined">
                   <Heading level={5}>
                     {t('optimizerPage.resultSection.categoriesLabel', language, {
-                      defaultValue: 'Category Breakdown'
+                      defaultValue: 'Category Breakdown',
                     })}
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
