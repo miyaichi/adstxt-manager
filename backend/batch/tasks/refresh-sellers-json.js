@@ -54,10 +54,9 @@ async function run(options = {}) {
     cutoffDate.setDate(cutoffDate.getDate() - age);
     const cutoffTimestamp = cutoffDate.toISOString();
 
-    // Find expired sellers.json cache entries, but skip those with known errors
+    // Find expired sellers.json cache entries
     const query = `SELECT * FROM sellers_json_cache 
                   WHERE updated_at < $1 
-                  AND (error_message IS NULL OR error_message NOT LIKE '%unique constraint%')
                   ORDER BY updated_at ASC 
                   LIMIT $2`;
 
