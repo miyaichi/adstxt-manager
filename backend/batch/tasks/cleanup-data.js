@@ -104,9 +104,10 @@ async function run(options = {}) {
       logger.info(`Deleted ${results.adsTxtCache.deleted} ads.txt cache entries with errors`);
     }
 
-    // For sellers.json cache
+    // For sellers.json cache - only delete error records, not "not_found"
+    // This is important because "not_found" is a valid and stable state that shouldn't be purged frequently
     const sellersJsonCacheQuery = `SELECT id FROM sellers_json_cache 
-                                  WHERE status != 'success' AND updated_at < $1`;
+                                  WHERE status = 'error' AND updated_at < $1`;
 
     const oldSellersJsonCache = await db.executeQuery(sellersJsonCacheQuery, [cutoffTimestamp]);
     results.sellersJsonCache.identified = oldSellersJsonCache.length;
@@ -118,7 +119,7 @@ async function run(options = {}) {
 
     if (!dryRun && oldSellersJsonCache.length > 0) {
       const deleteSellersJsonCacheQuery = `DELETE FROM sellers_json_cache 
-                                          WHERE status != 'success' AND updated_at < $1`;
+                                          WHERE status = 'error' AND updated_at < $1`;
 
       const deleteSellersJsonCacheResult = await transaction.query(deleteSellersJsonCacheQuery, [
         cutoffTimestamp,
