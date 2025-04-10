@@ -621,7 +621,8 @@ function getExpiryTime(updatedAt: string): string {
   if (!updatedAt) return '';
 
   const updatedDate = new Date(updatedAt);
-  const expiryDate = new Date(updatedDate.getTime() + CACHE_EXPIRATION_HOURS * 60 * 60 * 1000);
+  // デフォルトの有効期限を使用
+  const expiryDate = new Date(updatedDate.getTime() + CACHE_EXPIRATION.default * 60 * 60 * 1000);
   return expiryDate.toISOString();
 }
 

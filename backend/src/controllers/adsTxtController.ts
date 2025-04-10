@@ -196,8 +196,8 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
           return { domain: normalizedDomain, success: true, fromCache: cacheInfo.isCached, status: cacheInfo.status };
         } catch (error) {
-          logger.error(`Error retrieving sellers.json for ${normalizedDomain}:`, error);
-          return { domain: normalizedDomain, success: false, error, status: 'error' };
+          logger.error(`Error retrieving sellers.json for ${domain}:`, error);
+          return { domain, success: false, error, status: 'error' };
         }
       };
 
