@@ -109,7 +109,9 @@ class SellersJsonCacheModel {
       const now = new Date().toISOString();
 
       if (existingCache) {
-        logger.info(`[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
+        logger.info(
+          `[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
+        );
 
         // Update existing entry
         const updatedCache = await db.update(this.getTableName(), existingCache.id, {
@@ -272,13 +274,11 @@ class SellersJsonCacheModel {
   /**
    * Get only metadata and seller type summary for a domain
    * This is more memory-efficient than getting the full sellers.json data
-   * 
+   *
    * @param domain The domain to retrieve metadata for
    * @returns Object with metadata and sellers summary or null if not found
    */
-  async getMetadataAndSummarizedSellers(
-    domain: string
-  ): Promise<{
+  async getMetadataAndSummarizedSellers(domain: string): Promise<{
     domainInfo: {
       id: string;
       domain: string;
@@ -302,7 +302,7 @@ class SellersJsonCacheModel {
     try {
       // Get cache record first
       const cacheRecord = await this.getByDomain(domain);
-      
+
       // キャッシュが存在しない場合 (キャッシュミス)
       if (!cacheRecord) {
         logger.info(`[SellersJsonCache] No cache entry found for ${domain}`);
@@ -325,13 +325,15 @@ class SellersJsonCacheModel {
             otherCount: 0,
             confidentialCount: 0,
           },
-          isCacheMiss: true
+          isCacheMiss: true,
         };
       }
-      
+
       // キャッシュがあるが成功でない場合は、そのステータス情報を返す
       if (cacheRecord.status !== 'success' || !cacheRecord.content) {
-        logger.info(`[SellersJsonCache] Cache exists for ${domain} but status is ${cacheRecord.status}`);
+        logger.info(
+          `[SellersJsonCache] Cache exists for ${domain} but status is ${cacheRecord.status}`
+        );
         return {
           domainInfo: {
             id: cacheRecord.id,
@@ -351,13 +353,13 @@ class SellersJsonCacheModel {
             otherCount: 0,
             confidentialCount: 0,
           },
-          isCacheMiss: false
+          isCacheMiss: false,
         };
       }
 
       // Check if we're using PostgreSQL for JSONB optimized queries
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
-      
+
       if (dbProvider === 'postgres') {
         try {
           // Use optimized PostgreSQL query for metadata and summary
@@ -405,7 +407,10 @@ class SellersJsonCacheModel {
           }
 
           // Count confidential sellers (handle both boolean and numeric 1)
-          if (seller.is_confidential === true || (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)) {
+          if (
+            seller.is_confidential === true ||
+            (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)
+          ) {
             sellersSummary.confidentialCount++;
           }
         }
@@ -424,7 +429,7 @@ class SellersJsonCacheModel {
           seller_count: parsedContent.sellers?.length || 0,
         },
         sellersSummary,
-        isCacheMiss: false
+        isCacheMiss: false,
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error getting metadata summary: ${error}`);
@@ -435,7 +440,7 @@ class SellersJsonCacheModel {
   /**
    * Get specific seller entries matching the provided account IDs
    * This is more memory-efficient than getting all sellers when only a few are needed
-   * 
+   *
    * @param domain The domain to retrieve sellers from
    * @param accountIds Array of account IDs to find
    * @returns Object with matching sellers and basic metadata or null if not found
@@ -459,7 +464,7 @@ class SellersJsonCacheModel {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
-      
+
       // Get cache record first
       const cacheRecord = await this.getByDomain(normalizedDomain);
       if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
@@ -468,7 +473,7 @@ class SellersJsonCacheModel {
 
       // Check if we're using PostgreSQL for JSONB optimized queries
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
-      
+
       if (dbProvider === 'postgres' && accountIds.length > 0) {
         try {
           // Use optimized PostgreSQL query for specific sellers
@@ -492,9 +497,9 @@ class SellersJsonCacheModel {
       }
 
       // Filter to only include matching seller IDs
-      const accountIdSet = new Set(accountIds.map(id => id.toString().toLowerCase()));
-      const matchingSellers = parsedContent.sellers.filter(seller => 
-        seller.seller_id && accountIdSet.has(seller.seller_id.toString().toLowerCase())
+      const accountIdSet = new Set(accountIds.map((id) => id.toString().toLowerCase()));
+      const matchingSellers = parsedContent.sellers.filter(
+        (seller) => seller.seller_id && accountIdSet.has(seller.seller_id.toString().toLowerCase())
       );
 
       return {

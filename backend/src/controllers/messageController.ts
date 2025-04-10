@@ -62,9 +62,10 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
         : request.requester_name;
 
     // Explicitly prioritize query parameter to fix language selection issue
-    const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang as string) 
-      ? req.query.lang as string 
-      : null;
+    const queryLang =
+      typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang as string)
+        ? (req.query.lang as string)
+        : null;
     // Then check i18next detected language
     const i18nextLang = req.language;
     // Then check Accept-Language header
@@ -72,10 +73,11 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
     const acceptLangCode = acceptLanguage.split(',')[0]?.split('-')[0];
 
     // Determine final language with priority order
-    const userLanguage = queryLang || 
-                        (i18nextLang && ['en', 'ja'].includes(i18nextLang) ? i18nextLang : null) || 
-                        (acceptLangCode && ['en', 'ja'].includes(acceptLangCode) ? acceptLangCode : null) || 
-                        'en';
+    const userLanguage =
+      queryLang ||
+      (i18nextLang && ['en', 'ja'].includes(i18nextLang) ? i18nextLang : null) ||
+      (acceptLangCode && ['en', 'ja'].includes(acceptLangCode) ? acceptLangCode : null) ||
+      'en';
 
     console.log('Message notification language detection (detailed):', {
       urlParam: req.query.lang,
@@ -84,7 +86,13 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
       acceptLanguageHeader: acceptLanguage,
       extractedAcceptLang: acceptLangCode,
       finalLanguage: userLanguage,
-      explicitly_using: queryLang ? 'query parameter' : (i18nextLang ? 'i18next detected' : (acceptLangCode ? 'accept-language header' : 'default')),
+      explicitly_using: queryLang
+        ? 'query parameter'
+        : i18nextLang
+          ? 'i18next detected'
+          : acceptLangCode
+            ? 'accept-language header'
+            : 'default',
       queryParams: req.query,
       senderEmail: sender_email,
       recipientEmail,

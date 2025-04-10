@@ -400,7 +400,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
   /**
    * Query sellers.json metadata and summary info using JSONB operators
    * This is a PostgreSQL-specific optimization for memory efficiency
-   * 
+   *
    * @param domain The domain to get summary for
    * @returns Summary object with metadata and seller type counts
    */
@@ -483,7 +483,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
           bothCount: parseInt(summary.both_count || '0', 10),
           otherCount: parseInt(summary.other_count || '0', 10),
           confidentialCount: parseInt(summary.confidential_count || '0', 10),
-        }
+        },
       };
     } catch (error) {
       console.error('Error in queryJsonBSummary:', error);
@@ -494,7 +494,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
   /**
    * Query for specific sellers by account IDs using JSONB operators
    * Memory-efficient way to get only the needed sellers
-   * 
+   *
    * @param domain The domain to search in
    * @param accountIds Array of account IDs to find
    * @returns Object with matching sellers and basic metadata
@@ -534,8 +534,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
       // Get only sellers matching the specified account IDs
       // This is more efficient than loading all sellers
-      const accountIdsParam = accountIds.map(id => id.toString().toLowerCase());
-      
+      const accountIdsParam = accountIds.map((id) => id.toString().toLowerCase());
+
       const sellerSql = `
         WITH matching_sellers AS (
           SELECT jsonb_array_elements(content->'sellers') as seller
@@ -548,8 +548,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
       `;
 
       const sellersResult = await this.pool.query(sellerSql, [cacheRecord.id, accountIdsParam]);
-      
-      const matchingSellers = sellersResult.rows.map(row => row.seller);
+
+      const matchingSellers = sellersResult.rows.map((row) => row.seller);
 
       return {
         domainInfo: {

@@ -137,9 +137,10 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   // Explicitly prioritize query parameter to fix language selection issue
-  const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang) 
-    ? req.query.lang 
-    : null;
+  const queryLang =
+    typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
+      ? req.query.lang
+      : null;
   const userLanguage = queryLang || req.language || 'en';
 
   // For debugging
@@ -148,7 +149,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
     selected: userLanguage,
-    explicitly_using: queryLang ? 'query parameter' : (req.language ? 'req.language' : 'default'),
+    explicitly_using: queryLang ? 'query parameter' : req.language ? 'req.language' : 'default',
   });
 
   // Send notification emails with role-specific tokens
@@ -315,9 +316,10 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   // Explicitly prioritize query parameter to fix language selection issue
-  const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang) 
-    ? req.query.lang 
-    : null;
+  const queryLang =
+    typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
+      ? req.query.lang
+      : null;
   const userLanguage = queryLang || req.language || 'en';
 
   console.log('Status update notification language:', {
@@ -325,7 +327,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
     selected: userLanguage,
-    explicitly_using: queryLang ? 'query parameter' : (req.language ? 'req.language' : 'default'),
+    explicitly_using: queryLang ? 'query parameter' : req.language ? 'req.language' : 'default',
   });
 
   // Send email notifications
@@ -594,9 +596,10 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
   // Language detection is handled by i18next middleware
   // It will check URL lang parameter first, then Accept-Language header
   // Explicitly prioritize query parameter to fix language selection issue
-  const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang) 
-    ? req.query.lang 
-    : null;
+  const queryLang =
+    typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
+      ? req.query.lang
+      : null;
   const userLanguage = queryLang || req.language || 'en';
 
   console.log('Request update notification language:', {
@@ -604,7 +607,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
     selected: userLanguage,
-    explicitly_using: queryLang ? 'query parameter' : (req.language ? 'req.language' : 'default'),
+    explicitly_using: queryLang ? 'query parameter' : req.language ? 'req.language' : 'default',
   });
 
   // Send email notification to publisher with their role-specific token

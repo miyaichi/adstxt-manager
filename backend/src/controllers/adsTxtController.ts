@@ -89,96 +89,93 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       ): Promise<R[]> {
         const results: R[] = [];
         const chunks: T[][] = [];
-        
+
         // itemsを指定した並列数のチャンクに分割
         for (let i = 0; i < items.length; i += concurrencyLimit) {
           chunks.push(items.slice(i, i + concurrencyLimit));
         }
-        
+
         // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
         for (const chunk of chunks) {
-          const chunkPromises = chunk.map(item => fetchFn(item));
+          const chunkPromises = chunk.map((item) => fetchFn(item));
           const chunkResults = await Promise.all(chunkPromises);
           results.push(...chunkResults);
-          
+
           // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
           if (chunks.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
         }
-        
+
         return results;
       }
-      
+
       // 並列実行の最大値を固定値で設定
       const MAX_CONCURRENT_FETCHES = 10; // 同時に処理するsellers.json取得の最大数
       logger.info(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
-      
+
       // 各ドメインのsellers.json取得処理の関数 - メモリ効率化版
       const fetchSellersJson = async (domain: string) => {
         try {
           logger.debug(`Looking up sellers.json for domain (memory-optimized): ${domain}`);
-          
+
           // メモリ最適化：最初にメタデータだけを取得
           // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
           const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
-          
+
           // メタデータとseller typeの統計情報だけを取得
-          const metadataSummary = await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
-          
+          const metadataSummary =
+            await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
+
           if (metadataSummary) {
             // キャッシュの情報を確認して適切に処理
             const status = metadataSummary.domainInfo.status;
             const isCacheMiss = metadataSummary.isCacheMiss;
-            
+
             // キャッシュデータをメモリに保持 (not_found や error でも保存)
             domainSellersJsonCache.set(domain, {
               // 完全なsellers配列の代わりに必要な情報だけ保持
               __metadata: metadataSummary.metadata,
               __summary: metadataSummary.sellersSummary,
               __domainInfo: metadataSummary.domainInfo,
-              __status: status
+              __status: status,
             });
-            
+
             if (status === 'success') {
               // 成功したデータの場合
-              if (DEBUG) {
-                logger.debug(
-                  `Found memory-optimized sellers.json data for ${domain} (status: ${status}, updated: ${metadataSummary.domainInfo.updated_at})`
-                );
-                logger.debug(`Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`);
-              }
-              
-              return { 
-                domain, 
-                success: true, 
+              logger.debug(
+                `Found memory-optimized sellers.json data for ${domain} (status: ${status}, updated: ${metadataSummary.domainInfo.updated_at})`
+              );
+              logger.debug(
+                `Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`
+              );
+
+              return {
+                domain,
+                success: true,
                 fromCache: true,
                 memoryOptimized: true,
-                status: 'success'
+                status: 'success',
               };
             } else {
               // not_found や error の場合でも、キャッシュミスでなければ再取得しない
               if (!isCacheMiss) {
-                if (DEBUG) {
-                  logger.debug(
-                    `Using existing cache with status '${status}' for ${domain} (updated: ${metadataSummary.domainInfo.updated_at})`
-                  );
-                }
-                
-                return { 
-                  domain, 
-                  success: true, 
+                logger.debug(
+                  `Using existing cache with status '${status}' for ${domain} (updated: ${metadataSummary.domainInfo.updated_at})`
+                );
+
+                return {
+                  domain,
+                  success: true,
                   fromCache: true,
-                  status: status
+                  status: status,
                 };
               }
             }
           }
-          
+
           // キャッシュミスの場合のみ従来の方法で取得を試みる
-          if (DEBUG) {
-            logger.debug(`Cache miss for ${domain}, falling back to regular method`);
-          }
+          logger.debug(`Cache miss for ${domain}, falling back to regular method`);
           const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
             domain,
             false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
@@ -186,17 +183,13 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
           if (fetchedData) {
             domainSellersJsonCache.set(domain, fetchedData);
-            if (DEBUG) {
-              logger.debug(
-                `Found sellers.json data for ${domain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
-              );
-            }
+            logger.debug(
+              `Found sellers.json data for ${domain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
+            );
           } else {
-            if (DEBUG) {
-              logger.debug(
-                `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
-              );
-            }
+            logger.debug(
+              `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
+            );
           }
 
           return { domain, success: true, fromCache: cacheInfo.isCached };
@@ -219,9 +212,9 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           not_found: 0,
           error: 0,
           invalid_format: 0,
-          pending: 0
+          pending: 0,
         },
-        inProgressFetches: new Map<string, Promise<any>>() // 実行中のfetchを追跡
+        inProgressFetches: new Map<string, Promise<any>>(), // 実行中のfetchを追跡
       };
 
       // ステップ1: まずaccountIdの一覧を取得（重複を除く）
@@ -233,7 +226,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         }
       }
       stats.uniqueAccountIds = uniqueAccountIds.size;
-      
+
       // ログレベルはdebugに設定
       logger.debug(`Found ${stats.uniqueAccountIds} unique account IDs in ads.txt records`);
 
@@ -241,18 +234,18 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const optimizedFetchWithCache = async (domain: string) => {
         // 正規化したドメイン名
         const normalizedDomain = domain.toLowerCase();
-        
+
         // すでに実行中のリクエストがあれば再利用
         if (stats.inProgressFetches.has(normalizedDomain)) {
           logger.debug(`Reusing in-progress fetch for ${normalizedDomain}`);
           return stats.inProgressFetches.get(normalizedDomain);
         }
-        
+
         // 新しいfetchを作成して追跡
-        const fetchPromise = fetchSellersJson(domain).then(result => {
+        const fetchPromise = fetchSellersJson(domain).then((result) => {
           // 完了したらマップから削除
           stats.inProgressFetches.delete(normalizedDomain);
-          
+
           // 統計情報を更新
           if (result.success) {
             if (result.fromCache) {
@@ -263,40 +256,43 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
             } else {
               stats.cacheMisses++;
             }
-            
+
             if (result.memoryOptimized) {
               stats.memoryOptimized++;
             }
           }
-          
+
           return result;
         });
-        
+
         // マップに追加
         stats.inProgressFetches.set(normalizedDomain, fetchPromise);
         return fetchPromise;
       };
 
       // ステップ2: ドメインごとに並列処理を制限してsellers.jsonのメタデータ取得
-      logger.debug(`Starting memory-optimized sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`);
-      
+      logger.debug(
+        `Starting memory-optimized sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`
+      );
+
       const fetchResults = await fetchWithConcurrencyLimit(
         Array.from(uniqueDomains),
         optimizedFetchWithCache, // 最適化されたフェッチ関数を使用
         MAX_CONCURRENT_FETCHES
       );
-      
+
       // 処理完了時間を記録
       const processingTimeMs = Date.now() - stats.processingStart;
-      
+
       // 結果サマリーをログに出力
-      logger.info(`
+      logger.info(
+        `
 ------- Sellers.json Processing Summary -------
 Timing: ${(processingTimeMs / 1000).toFixed(2)}s (${processingTimeMs}ms)
 Domains: ${stats.uniqueDomains} unique domains processed
 Results: ${fetchResults.length} total lookups
-  - ${stats.cacheHits} cache hits (${Math.round(stats.cacheHits / fetchResults.length * 100)}%)
-  - ${stats.cacheMisses} cache misses (${Math.round(stats.cacheMisses / fetchResults.length * 100)}%)
+  - ${stats.cacheHits} cache hits (${Math.round((stats.cacheHits / fetchResults.length) * 100)}%)
+  - ${stats.cacheMisses} cache misses (${Math.round((stats.cacheMisses / fetchResults.length) * 100)}%)
 Cache Status Distribution:
   - success: ${stats.statusCounts.success}
   - not_found: ${stats.statusCounts.not_found}
@@ -306,12 +302,13 @@ Cache Status Distribution:
 Memory optimization: ${stats.memoryOptimized} domains processed with metadata-only approach
 Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming avg 2.5MB per full sellers.json)
 ----------------------------------------------
-      `.trim());
-      
+      `.trim()
+      );
+
       // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
 
       // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
-      
+
       // 処理フロー整理：
       // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
       // 2. sellers_json_cacheにstatusにかかわらず、レコードがあり有効期限が切れていなければ、その情報をそのまま使う
@@ -356,29 +353,36 @@ Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming
             if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
             return { record: enhancedRecord, category: 'noSellerJson' };
           }
-          
+
           // メモリ最適化されたデータの場合の処理 (メタデータのみ保持)
           if (sellersJsonData.__metadata && sellersJsonData.__summary) {
             // メモリ使用量削減のため、このレコードに必要な特定のseller情報のみを取得
             try {
               const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
               const specificSeller = await SellersJsonCacheModel.getSpecificSellers(
-                domain.toLowerCase(), 
+                domain.toLowerCase(),
                 [accountId.toString()]
               );
-              
+
               const enhancedRecord = { ...record };
               if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-              
+
               // 特定のsellerが見つかったかどうかで分類
-              if (specificSeller && specificSeller.matchingSellers && specificSeller.matchingSellers.length > 0) {
+              if (
+                specificSeller &&
+                specificSeller.matchingSellers &&
+                specificSeller.matchingSellers.length > 0
+              ) {
                 const seller = specificSeller.matchingSellers[0];
-                
+
                 // 機密フラグをチェック (booleanとnumber型の両方に対応)
-                if (seller.is_confidential === true || (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)) {
+                if (
+                  seller.is_confidential === true ||
+                  (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)
+                ) {
                   return { record: enhancedRecord, category: 'confidential' };
                 }
-                
+
                 // 通常のレコード
                 return { record: enhancedRecord, category: 'other' };
               } else {
@@ -386,14 +390,17 @@ Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming
                 return { record: enhancedRecord, category: 'missingSellerId' };
               }
             } catch (error) {
-              logger.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
+              logger.error(
+                `Error fetching specific seller data for ${domain}/${accountId}:`,
+                error
+              );
               // エラーが発生した場合は非SellersJson扱いにする
               const enhancedRecord = { ...record };
               if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
               return { record: enhancedRecord, category: 'noSellerJson' };
             }
           }
-          
+
           // 従来の処理 (完全なsellers配列がある場合)
           if (!Array.isArray(sellersJsonData.sellers)) {
             const enhancedRecord = { ...record };

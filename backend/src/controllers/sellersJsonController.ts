@@ -16,7 +16,7 @@ const SPECIAL_DOMAINS: Record<string, string> = {
   'googlesyndication.com': 'https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json',
 
   // AOL / Verizon Group
-  'advertising.com': 'https://dragon-advertising.com/sellers.json'
+  'advertising.com': 'https://dragon-advertising.com/sellers.json',
 };
 
 // Import required modules
@@ -82,7 +82,9 @@ export async function fetchSellersJsonWithCache(
 }> {
   // Always normalize domain to lowercase to avoid case-sensitivity issues
   const normalizedDomain = domain.toLowerCase();
-  logger.info(`[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${normalizedDomain} (original: ${domain})`);
+  logger.info(
+    `[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${normalizedDomain} (original: ${domain})`
+  );
 
   // Check cache first - use normalized domain for lookup
   const cachedData = await SellersJsonCacheModel.getByDomain(normalizedDomain);
@@ -123,8 +125,10 @@ export async function fetchSellersJsonWithCache(
 
   // 新しいデータ取得が必要な理由をログに記録
   const reason = !cachedData ? 'not in cache' : forceRefresh ? 'force refresh' : 'cache expired';
-  logger.info(`[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${normalizedDomain} (${reason})`);
-  
+  logger.info(
+    `[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${normalizedDomain} (${reason})`
+  );
+
   // ＊＊＊ 仕様に基づいた処理に戻す ＊＊＊
   // 前回追加していたフロントエンド処理時の最適化コードをコメントアウト
   /* 
@@ -143,7 +147,7 @@ export async function fetchSellersJsonWithCache(
     };
   }
   */
-  
+
   // 仕様確認:
   // 1. レベル２オプティマイズでは、すべてのドメインのsellers.jsonの取得を試みる
   // 2. キャッシュにレコードがあり有効期限内→そのデータを使用(上のif文で処理済み)
@@ -200,14 +204,19 @@ export async function fetchSellersJsonWithCache(
       };
     }
   } catch (error) {
-    logger.error(`[fetchSellersJsonWithCache] Error fetching sellers.json for ${normalizedDomain}:`, error);
+    logger.error(
+      `[fetchSellersJsonWithCache] Error fetching sellers.json for ${normalizedDomain}:`,
+      error
+    );
 
     // Save error to cache
     try {
       // Use handleSellersJsonError but catch the thrown ApiError
       await handleSellersJsonError(normalizedDomain, error).catch(() => {
         // Catch and ignore the ApiError since we're handling this internally
-        logger.info(`[fetchSellersJsonWithCache] Error handled and saved to cache for ${normalizedDomain}`);
+        logger.info(
+          `[fetchSellersJsonWithCache] Error handled and saved to cache for ${normalizedDomain}`
+        );
       });
 
       // Get the newly saved error cache
@@ -292,7 +301,7 @@ async function fetchWithRetry(
   try {
     logger.info(`Attempting to fetch from primary URL: ${url}`);
     const response = await axios.get(url, options);
-    
+
     // Log final URL after possible redirects
     const finalUrl = response.request?.res?.responseUrl || response.request?.path || url;
     if (finalUrl !== url) {
@@ -327,13 +336,14 @@ async function fetchWithRetry(
   try {
     logger.info(`Trying fallback URL: ${fallbackUrl}`);
     const fallbackResponse = await axios.get(fallbackUrl, options);
-    
+
     // Log final URL after possible redirects for fallback
-    const finalFallbackUrl = fallbackResponse.request?.res?.responseUrl || fallbackResponse.request?.path || fallbackUrl;
+    const finalFallbackUrl =
+      fallbackResponse.request?.res?.responseUrl || fallbackResponse.request?.path || fallbackUrl;
     if (finalFallbackUrl !== fallbackUrl) {
       logger.info(`Fallback request was redirected from ${fallbackUrl} to ${finalFallbackUrl}`);
     }
-    
+
     return fallbackResponse;
   } catch (fallbackError) {
     logger.error(`Both primary and fallback URLs failed:`, {
@@ -396,12 +406,12 @@ function createCacheRecordFromResponse(
 } {
   // Get the final URL after possible redirects
   const finalUrl = response.request?.res?.responseUrl || response.request?.path || null;
-  
+
   // Log if redirects were followed
   if (finalUrl && finalUrl !== `https://${domain}/sellers.json`) {
     logger.info(`Request for ${domain} was redirected to final URL: ${finalUrl}`);
   }
-  
+
   // Initialize cache record with explicit type to allow for string assignments
   const cacheRecord: {
     domain: string;
@@ -619,7 +629,7 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
-  
+
   // Normalize domain to lowercase
   domain = domain.toLowerCase();
 
@@ -747,7 +757,7 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
-  
+
   // Normalize domain to lowercase
   domain = domain.toLowerCase();
 
@@ -787,7 +797,7 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
-  
+
   // Normalize domain to lowercase
   domain = domain.toLowerCase();
 
