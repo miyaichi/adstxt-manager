@@ -39,27 +39,78 @@ async function run(options = {}) {
         SELECT domain, content 
         FROM ads_txt_cache 
         WHERE status = 'success' AND content IS NOT NULL AND content != ''
+      ),
+      
+      extracted_domains AS (
+        SELECT 
+          -- Extract first field from each line (the domain)
+          -- Strip any whitespace, and convert to lowercase for consistency
+          CASE
+            -- Filter out invalid entries or malformed domains
+            WHEN SPLIT_PART(TRIM(line), ',', 1) ~ '^[a-zA-Z0-9][a-zA-Z0-9-\\.]+\\.[a-zA-Z]{2,}$' THEN
+              LOWER(SPLIT_PART(TRIM(line), ',', 1))
+            ELSE NULL
+          END as domain
+        FROM domains_with_content,
+             LATERAL (
+               -- Split content by newlines and extract each line
+               SELECT unnest(string_to_array(content, E'\\n')) AS line
+             ) AS lines
+        WHERE 
+          -- Must be a valid ad system entry (contains DIRECT or RESELLER)
+          line ~ 'DIRECT|RESELLER'
+          -- Skip empty lines
+          AND length(trim(line)) > 0 
+          -- Skip comments
+          AND NOT line ~ '^\\s*#'
+          -- Skip variable declarations
+          AND NOT line ~ '^\\s*[a-zA-Z0-9_-]+=.*$'
       )
       
-      SELECT LOWER(SPLIT_PART(TRIM(line), ',', 1)) as domain, COUNT(*) as usage_count
-      FROM domains_with_content,
-           LATERAL (
-             -- Split content by newlines and extract each line
-             SELECT unnest(string_to_array(content, E'\\n')) AS line
-           ) AS lines
-      WHERE line ~ 'DIRECT|RESELLER'
-        AND length(trim(line)) > 0 
-        AND NOT line ~ '^\\s*#'
-      GROUP BY LOWER(SPLIT_PART(TRIM(line), ',', 1))
+      -- Count domains, filtering nulls, and return only frequently used ones
+      SELECT domain, COUNT(*) as usage_count
+      FROM extracted_domains
+      WHERE domain IS NOT NULL
+      GROUP BY domain
+      HAVING COUNT(*) >= $1
+      ORDER BY COUNT(*) DESC
+      LIMIT $2$' THEN
+              LOWER(SPLIT_PART(TRIM(line), ',', 1))
+            ELSE NULL
+          END as domain
+        FROM domains_with_content,
+             LATERAL (
+               -- Split content by newlines and extract each line
+               SELECT unnest(string_to_array(content, E'\\n')) AS line
+             ) AS lines
+        WHERE 
+          -- Must be a valid ad system entry (contains DIRECT or RESELLER)
+          line ~ 'DIRECT|RESELLER'
+          -- Skip empty lines
+          AND length(trim(line)) > 0 
+          -- Skip comments
+          AND NOT line ~ '^\\s*#'
+          -- Skip variable declarations
+          AND NOT line ~ '^\\s*[a-zA-Z0-9_-]+=.*$'
+      )
+      
+      -- Count domains, filtering nulls, and return only frequently used ones
+      SELECT domain, COUNT(*) as usage_count
+      FROM extracted_domains
+      WHERE domain IS NOT NULL
+      GROUP BY domain
       HAVING COUNT(*) >= $1
       ORDER BY COUNT(*) DESC
       LIMIT $2
     `;
 
-    // Using a Common Table Expression to first get all ads.txt content
-    // then extract domain fields from valid advertising system records using SPLIT_PART function
-    // This extracts the first field from each line (the domain name) by splitting on commas
-    // Only includes lines that contain DIRECT or RESELLER relationship and aren't comments
+    // This query uses Common Table Expressions (CTEs) to:
+    // 1. First get all ads.txt cache entries with valid content
+    // 2. Extract domain names from each line of each ads.txt file
+    // 3. Validate domains using regex pattern matching
+    // 4. Filter out comments, empty lines, and variable declarations
+    // 5. Count domain frequency and return the most commonly used ones
+    // 6. Only include domains that appear at least 'minUsage' times
 
     const sspDomains = await db.executeQuery(extractQuery, [minUsage, limit * 2]);
     extracted = sspDomains.length;
@@ -69,7 +120,13 @@ async function run(options = {}) {
     // Step 2: Filter domains that need updating
     // Check which domains are already in the sellers_json_cache and when they were last updated
     for (const domain of sspDomains) {
-      // Normalize domain to lowercase for consistent cache handling
+      // Skip invalid domains and normalize to lowercase for consistent cache handling
+      if (!domain.domain || typeof domain.domain !== 'string') {
+        logger.warn(`Skipping invalid domain entry: ${JSON.stringify(domain)}`);
+        skipped++;
+        continue;
+      }
+      
       const normalizedDomain = domain.domain.toLowerCase();
 
       // Check if this domain already exists in sellers_json_cache
@@ -134,11 +191,19 @@ async function run(options = {}) {
     });
     throw error;
   } finally {
-    // Log summary statistics
+    // Calculate additional statistics
+    const processingRate = extracted > 0 ? (processed / extracted) * 100 : 0;
+    const skipRate = extracted > 0 ? (skipped / extracted) * 100 : 0;
+    
+    // Log comprehensive summary statistics
     logger.info('Sellers.json prefetch task summary', {
       extracted,
       processed,
       skipped,
+      processingRate: `${processingRate.toFixed(2)}%`,
+      skipRate: `${skipRate.toFixed(2)}%`,
+      minUsage,
+      priorityAge,
     });
 
     // Close database connection

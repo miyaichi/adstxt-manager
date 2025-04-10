@@ -66,6 +66,10 @@ docker run -v /path/to/logs:/app/logs \
 docker run -v /path/to/logs:/app/logs \
   adstxt-manager-batch refresh-ads-txt --limit 100
 
+# Run with prefetch options
+docker run -v /path/to/logs:/app/logs \
+  adstxt-manager-batch run-all --prefetch-limit 200 --min-usage 2
+
 # If you need to override environment variables
 docker run -v /path/to/logs:/app/logs \
   -e DATABASE_TYPE=postgres \

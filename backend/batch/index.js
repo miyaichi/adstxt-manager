@@ -116,16 +116,16 @@ program
       await refreshAdsTxt.run({ limit: options.adsTxtLimit });
       logger.info('ads.txt cache refresh task completed');
 
-      // Prefetch sellers.json data based on ads.txt domains (recommended to run before refresh)
-      if (options.prefetchLimit) {
-        logger.info('Starting sellers.json prefetch task');
-        await prefetchSellersJson.run({ 
-          limit: options.prefetchLimit,
-          minUsage: options.minUsage || 3, // Only prefetch domains that appear frequently
-          priorityAge: options.priorityAge || 3 // Prioritize domains with no cache or older than 3 days
-        });
-        logger.info('Sellers.json prefetch task completed');
-      }
+      // Prefetch sellers.json data based on ads.txt domains (always run before refresh)
+      // Use reasonable defaults if no specific limits provided
+      const prefetchLimit = options.prefetchLimit || 100;
+      logger.info('Starting sellers.json prefetch task');
+      await prefetchSellersJson.run({ 
+        limit: prefetchLimit,
+        minUsage: options.minUsage || 3, // Only prefetch domains that appear frequently
+        priorityAge: options.priorityAge || 3 // Prioritize domains with no cache or older than 3 days
+      });
+      logger.info('Sellers.json prefetch task completed');
 
       // Standard sellers.json refresh for expired entries
       logger.info('Starting sellers.json cache refresh task');
