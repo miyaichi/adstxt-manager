@@ -264,8 +264,8 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               if (specificSeller && specificSeller.matchingSellers && specificSeller.matchingSellers.length > 0) {
                 const seller = specificSeller.matchingSellers[0];
                 
-                // 機密フラグをチェック
-                if (seller.is_confidential === true || seller.is_confidential === 1) {
+                // 機密フラグをチェック (booleanとnumber型の両方に対応)
+                if (seller.is_confidential === true || (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)) {
                   return { record: enhancedRecord, category: 'confidential' };
                 }
                 

@@ -99,57 +99,47 @@ class SellersJsonCacheModel {
     status_code: number | null;
     error_message: string | null;
   }): Promise<SellersJsonCache> {
-    // Ensure domain is properly lowercase for consistent storage
-    const normalizedDomain = data.domain.toLowerCase();
-    const { content, status, status_code: statusCode, error_message: errorMessage } = data;
-
-    logger.info(`[SellersJsonCache] Saving cache for domain: ${normalizedDomain}`);
-
-    const now = new Date().toISOString();
-    const existingCache = await this.getByDomain(normalizedDomain);
-
-    // Check if we're using PostgreSQL
-    const dbProvider = process.env.DB_PROVIDER || 'sqlite';
-
-    // Both PostgreSQL and SQLite implementations now use the same approach
-    // with the only difference being that PostgreSQL stores JSON as JSONB
     try {
+      // Ensure domain is properly lowercase for consistent storage
+      const normalizedDomain = data.domain.toLowerCase();
+
+      // Check if cache entry already exists
+      const existingCache = await this.getByDomain(normalizedDomain);
+
+      const now = new Date().toISOString();
+
       if (existingCache) {
+        logger.info(`[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`);
+
         // Update existing entry
-        logger.info(
-          `[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
-        );
-        const updatedCache = await db.update(this.tableName, existingCache.id, {
-          content,
-          status,
-          status_code: statusCode,
-          error_message: errorMessage,
+        const updatedCache = await db.update(this.getTableName(), existingCache.id, {
+          content: data.content,
+          status: data.status,
+          status_code: data.status_code,
+          error_message: data.error_message,
           updated_at: now,
         });
 
-        if (!updatedCache) {
-          throw new Error(`Failed to update sellers.json cache for domain: ${normalizedDomain}`);
-        }
-
         return updatedCache as SellersJsonCache;
       } else {
+        logger.info(`[SellersJsonCache] Creating new cache for domain: ${normalizedDomain}`);
+
         // Create new entry
-        logger.info(`[SellersJsonCache] Creating new cache entry for domain: ${normalizedDomain}`);
-        const newCache: SellersJsonCache = {
+        const newCache = await db.insert(this.getTableName(), {
           id: uuidv4(),
-          domain: normalizedDomain, // Use the normalized domain
-          content,
-          status,
-          status_code: statusCode,
-          error_message: errorMessage,
+          domain: normalizedDomain,
+          content: data.content,
+          status: data.status,
+          status_code: data.status_code,
+          error_message: data.error_message,
           created_at: now,
           updated_at: now,
-        };
+        });
 
-        return (await db.insert(this.tableName, newCache)) as SellersJsonCache;
+        return newCache as SellersJsonCache;
       }
     } catch (error) {
-      logger.error(`Error saving sellers.json cache for ${normalizedDomain}:`, error);
+      logger.error(`Error saving sellers.json cache for ${data.domain}:`, error);
       throw error;
     }
   }
@@ -266,8 +256,11 @@ class SellersJsonCacheModel {
       return {
         cacheRecord: result.cacheRecord,
         metadata: result.metadata,
-        seller: result.seller,
-        found: result.found,
+        seller:
+          result.matching_sellers && result.matching_sellers.length > 0
+            ? result.matching_sellers[0]
+            : null,
+        found: result.matching_sellers && result.matching_sellers.length > 0,
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);
@@ -275,7 +268,6 @@ class SellersJsonCacheModel {
       return null;
     }
   }
-}
 
   /**
    * Get only metadata and seller type summary for a domain
@@ -362,8 +354,8 @@ class SellersJsonCacheModel {
             sellersSummary.otherCount++;
           }
 
-          // Count confidential sellers
-          if (seller.is_confidential === true || seller.is_confidential === 1) {
+          // Count confidential sellers (handle both boolean and numeric 1)
+          if (seller.is_confidential === true || (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)) {
             sellersSummary.confidentialCount++;
           }
         }
