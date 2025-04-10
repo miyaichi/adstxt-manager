@@ -207,12 +207,14 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         cacheHits: 0,
         cacheMisses: 0,
         memoryOptimized: 0,
+        failedRequests: 0,
         statusCounts: {
           success: 0,
           not_found: 0,
           error: 0,
           invalid_format: 0,
           pending: 0,
+          unknown: 0
         },
         inProgressFetches: new Map<string, Promise<any>>(), // 実行中のfetchを追跡
       };
@@ -252,14 +254,24 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               stats.cacheHits++;
               if (result.status) {
                 stats.statusCounts[result.status]++;
+              } else {
+                // ステータスが未定義の場合は未知として集計
+                stats.statusCounts.unknown++;
               }
             } else {
               stats.cacheMisses++;
+              if (result.status) {
+                stats.statusCounts[result.status]++;
+              }
             }
 
             if (result.memoryOptimized) {
               stats.memoryOptimized++;
             }
+          } else {
+            // 取得に失敗した場合
+            stats.failedRequests++;
+            stats.statusCounts.error++;
           }
 
           return result;
@@ -293,14 +305,18 @@ Domains: ${stats.uniqueDomains} unique domains processed
 Results: ${fetchResults.length} total lookups
   - ${stats.cacheHits} cache hits (${Math.round((stats.cacheHits / fetchResults.length) * 100)}%)
   - ${stats.cacheMisses} cache misses (${Math.round((stats.cacheMisses / fetchResults.length) * 100)}%)
+  - ${stats.failedRequests} failed requests (${Math.round((stats.failedRequests / fetchResults.length) * 100)}%)
 Cache Status Distribution:
   - success: ${stats.statusCounts.success}
   - not_found: ${stats.statusCounts.not_found}
   - error: ${stats.statusCounts.error}
   - invalid_format: ${stats.statusCounts.invalid_format}
   - pending: ${stats.statusCounts.pending}
+  - unknown: ${stats.statusCounts.unknown}
 Memory optimization: ${stats.memoryOptimized} domains processed with metadata-only approach
 Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming avg 2.5MB per full sellers.json)
+Processing rate: ${Math.round(fetchResults.length / (processingTimeMs / 1000))} domains/second
+Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed(${stats.failedRequests}) = ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}/${fetchResults.length}
 ----------------------------------------------
       `.trim()
       );
