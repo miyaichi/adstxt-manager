@@ -23,7 +23,7 @@ const SPECIAL_DOMAINS: Record<string, string> = {
 const https = require('https');
 const http = require('http');
 
-// HTTP request configuration
+// HTTP request configuration - インポート時に設定から更新される
 const HTTP_REQUEST_CONFIG = {
   timeout: 30000, // 30 seconds timeout for slower sites
   maxContentLength: 200 * 1024 * 1024, // 200MB for large files
@@ -121,9 +121,33 @@ export async function fetchSellersJsonWithCache(
     }
   }
 
-  // Need to fetch new data
+  // 新しいデータ取得が必要な理由をログに記録
   const reason = !cachedData ? 'not in cache' : forceRefresh ? 'force refresh' : 'cache expired';
   logger.info(`[fetchSellersJsonWithCache] Fetching fresh sellers.json for ${normalizedDomain} (${reason})`);
+  
+  // ＊＊＊ 仕様に基づいた処理に戻す ＊＊＊
+  // 前回追加していたフロントエンド処理時の最適化コードをコメントアウト
+  /* 
+  // フロントエンドのパフォーマンス向上のため取得処理を軽量化
+  if (!forceRefresh && !process.env.FORCE_SELLERS_JSON_FETCH) {
+    // 強制更新でない場合は、キャッシュミスであっても空のデータを返す
+    // バックグラウンドのバッチプロセスがキャッシュを更新する
+    logger.info(`[fetchSellersJsonWithCache] Skipping actual fetch for ${normalizedDomain} to reduce load. Will be updated by batch process.`);
+    return {
+      sellersJsonData: null,
+      cacheInfo: {
+        isCached: false,
+        status: 'pending',
+        updatedAt: null,
+      }
+    };
+  }
+  */
+  
+  // 仕様確認:
+  // 1. レベル２オプティマイズでは、すべてのドメインのsellers.jsonの取得を試みる
+  // 2. キャッシュにレコードがあり有効期限内→そのデータを使用(上のif文で処理済み)
+  // 3. レコードがない or 有効期限切れ→新しくsellers.jsonを取得(この下の処理)
 
   // Fetch from URL
   try {

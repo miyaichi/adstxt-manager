@@ -77,19 +77,56 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
       console.log(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
 
-      // ドメインごとに並列でsellers.jsonを取得
-      const fetchPromises = Array.from(uniqueDomains).map(async (domain) => {
+      // 並列処理の最大値をコントロールする関数
+      async function fetchWithConcurrencyLimit<T, R>(
+        items: T[],
+        fetchFn: (item: T) => Promise<R>,
+        concurrencyLimit: number
+      ): Promise<R[]> {
+        const results: R[] = [];
+        const chunks: T[][] = [];
+        
+        // itemsを指定した並列数のチャンクに分割
+        for (let i = 0; i < items.length; i += concurrencyLimit) {
+          chunks.push(items.slice(i, i + concurrencyLimit));
+        }
+        
+        // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
+        for (const chunk of chunks) {
+          const chunkPromises = chunk.map(item => fetchFn(item));
+          const chunkResults = await Promise.all(chunkPromises);
+          results.push(...chunkResults);
+          
+          // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
+          if (chunks.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        
+        return results;
+      }
+      
+      // 並列実行の最大値を固定値で設定
+      const MAX_CONCURRENT_FETCHES = 10; // 同時に処理するsellers.json取得の最大数
+      console.log(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
+      
+      // 各ドメインのsellers.json取得処理の関数
+      const fetchSellersJson = async (domain: string) => {
         try {
-          console.log(`Pre-fetching sellers.json for domain: ${domain}`);
+          console.log(`Looking up sellers.json for domain: ${domain}`);
+          
+          // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
+          // 2. sellers_json_cacheにstatusにかかわらず、レコードがあり、有効期限が切れていなければ使用する
+          // 3. レコードがない、有効期限が切れているいずれかの場合は、sellers.jsonを取得する
           const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
             domain,
-            false
+            false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
           );
 
           if (fetchedData) {
             domainSellersJsonCache.set(domain, fetchedData);
             console.log(
-              `Pre-fetched sellers.json for ${domain} (${cacheInfo.isCached ? 'from cache' : 'freshly fetched'})`
+              `Found sellers.json data for ${domain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
             );
           } else {
             console.log(
@@ -97,19 +134,30 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
             );
           }
 
-          return { domain, success: true };
+          return { domain, success: true, fromCache: cacheInfo.isCached };
         } catch (error) {
-          console.error(`Error pre-fetching sellers.json for ${domain}:`, error);
+          console.error(`Error retrieving sellers.json for ${domain}:`, error);
           return { domain, success: false, error };
         }
-      });
+      };
 
-      // 並列取得の完了を待つ
-      const fetchResults = await Promise.all(fetchPromises);
-      console.log(`Completed pre-fetching sellers.json for ${fetchResults.length} domains`);
-      console.log(
-        `Successfully pre-fetched: ${fetchResults.filter((r) => r.success).length} domains`
+      // ドメインごとに並列処理を制限してsellers.jsonを取得
+      console.log(`Starting sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`);
+      const fetchResults = await fetchWithConcurrencyLimit(
+        Array.from(uniqueDomains),
+        fetchSellersJson,
+        MAX_CONCURRENT_FETCHES
       );
+      const successCount = fetchResults.filter((r) => r.success).length;
+      const cacheHitCount = fetchResults.filter((r) => r.fromCache).length;
+      
+      console.log(`Completed fetching/lookup of sellers.json for ${fetchResults.length} domains`);
+      console.log(`Results: ${successCount} successful lookups (${cacheHitCount} from cache, ${successCount - cacheHitCount} newly fetched or updated)`);
+      
+      // 処理フロー整理：
+      // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
+      // 2. sellers_json_cacheにstatusにかかわらず、レコードがあり有効期限が切れていなければ、その情報をそのまま使う
+      // 3. レコードがない、有効期限が切れているいずれかの場合は、新しくsellers.jsonを取得する
 
       // 4. レコードを分類とレコードの拡張
       // 分類1: その他
