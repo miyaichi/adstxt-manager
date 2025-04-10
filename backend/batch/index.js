@@ -20,6 +20,7 @@ if (fs.existsSync(path.resolve(__dirname, '.env'))) {
 const refreshAdsTxt = require('./tasks/refresh-ads-txt');
 const refreshSellersJson = require('./tasks/refresh-sellers-json');
 const cleanupData = require('./tasks/cleanup-data');
+const prefetchSellersJson = require('./tasks/prefetch-sellers-json');
 
 // Configure CLI program
 program
@@ -76,6 +77,23 @@ program
   });
 
 program
+  .command('prefetch-sellers-json')
+  .description('Prefetch sellers.json for domains found in ads.txt records')
+  .option('-l, --limit <number>', 'Maximum number of domains to process', parseInt)
+  .option('-m, --min-usage <number>', 'Minimum number of times a domain appears in ads.txt records', parseInt)
+  .option('-p, --priority-age <days>', 'Prioritize domains with cache older than this many days', parseInt)
+  .action(async (options) => {
+    try {
+      logger.info('Starting sellers.json prefetch task');
+      await prefetchSellersJson.run(options);
+      logger.info('Sellers.json prefetch task completed');
+    } catch (error) {
+      logger.error('Sellers.json prefetch task failed', { error: error.message });
+      process.exit(1);
+    }
+  });
+
+program
   .command('run-all')
   .description('Run all maintenance tasks in sequence')
   .option('--ads-txt-limit <number>', 'Maximum number of ads.txt records to process', parseInt)
@@ -84,6 +102,7 @@ program
     'Maximum number of sellers.json records to process',
     parseInt
   )
+  .option('--prefetch-limit <number>', 'Maximum number of domains to prefetch', parseInt)
   .option('--retention-days <days>', 'Age in days for data retention (default: 90)', parseInt, 90)
   .option('--dry-run', 'Show what would be deleted without actually deleting')
   .action(async (options) => {
@@ -95,6 +114,18 @@ program
       await refreshAdsTxt.run({ limit: options.adsTxtLimit });
       logger.info('ads.txt cache refresh task completed');
 
+      // Prefetch sellers.json data based on ads.txt domains (recommended to run before refresh)
+      if (options.prefetchLimit) {
+        logger.info('Starting sellers.json prefetch task');
+        await prefetchSellersJson.run({ 
+          limit: options.prefetchLimit,
+          minUsage: 3, // Only prefetch domains that appear frequently
+          priorityAge: 3 // Prioritize domains with no cache or older than 3 days
+        });
+        logger.info('Sellers.json prefetch task completed');
+      }
+
+      // Standard sellers.json refresh for expired entries
       logger.info('Starting sellers.json cache refresh task');
       await refreshSellersJson.run({ limit: options.sellersJsonLimit });
       logger.info('sellers.json cache refresh task completed');

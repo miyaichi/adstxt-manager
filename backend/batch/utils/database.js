@@ -32,7 +32,7 @@ async function initDatabase() {
     const user = process.env.DB_USER || process.env.POSTGRES_USER;
     const password = process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD;
     const database = process.env.DB_NAME || process.env.POSTGRES_DB;
-    
+
     logger.info('Initializing PostgreSQL connection');
     pgPool = new Pool({
       host,

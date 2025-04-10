@@ -5,10 +5,10 @@ const fs = require('fs');
 // Ensure logs directory exists - try multiple possible locations
 let logsDir;
 const possibleLogDirs = [
-  '/app/logs',                         // Docker container default
-  path.join(__dirname, '../../logs'),  // Relative to utils directory in development
-  path.join(process.cwd(), 'logs'),    // Current working directory
-  '/tmp/logs'                          // Fallback to /tmp which is usually writable
+  '/app/logs', // Docker container default
+  path.join(__dirname, '../../logs'), // Relative to utils directory in development
+  path.join(process.cwd(), 'logs'), // Current working directory
+  '/tmp/logs', // Fallback to /tmp which is usually writable
 ];
 
 // Try to find or create a writable logs directory
@@ -21,7 +21,7 @@ for (const dir of possibleLogDirs) {
     const testFile = path.join(dir, '.test-write-access');
     fs.writeFileSync(testFile, 'test');
     fs.unlinkSync(testFile);
-    
+
     // If we made it here, we have write access
     logsDir = dir;
     console.log(`Using logs directory: ${logsDir}`);
@@ -62,7 +62,7 @@ const transports = [
   // Console transport - always enabled
   new winston.transports.Console({
     format: consoleFormat,
-  })
+  }),
 ];
 
 // Only add file transports if we found a writable directory
@@ -76,7 +76,7 @@ if (logsDir && logsDir !== '.') {
       maxFiles: 5,
     })
   );
-  
+
   // File transport for error logs
   transports.push(
     new winston.transports.File({
