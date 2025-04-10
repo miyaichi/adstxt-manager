@@ -61,8 +61,10 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
         ? request.publisher_name || 'Publisher'
         : request.requester_name;
 
-    // Check URL query parameter first (highest priority)
-    const langParam = req.query.lang as string | undefined;
+    // Explicitly prioritize query parameter to fix language selection issue
+    const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang as string) 
+      ? req.query.lang as string 
+      : null;
     // Then check i18next detected language
     const i18nextLang = req.language;
     // Then check Accept-Language header
@@ -70,23 +72,19 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
     const acceptLangCode = acceptLanguage.split(',')[0]?.split('-')[0];
 
     // Determine final language with priority order
-    let userLanguage: string;
-    if (langParam && ['en', 'ja'].includes(langParam)) {
-      userLanguage = langParam;
-    } else if (i18nextLang && ['en', 'ja'].includes(i18nextLang)) {
-      userLanguage = i18nextLang;
-    } else if (acceptLangCode && ['en', 'ja'].includes(acceptLangCode)) {
-      userLanguage = acceptLangCode;
-    } else {
-      userLanguage = 'en'; // Default fallback
-    }
+    const userLanguage = queryLang || 
+                        (i18nextLang && ['en', 'ja'].includes(i18nextLang) ? i18nextLang : null) || 
+                        (acceptLangCode && ['en', 'ja'].includes(acceptLangCode) ? acceptLangCode : null) || 
+                        'en';
 
     console.log('Message notification language detection (detailed):', {
-      urlParam: langParam,
+      urlParam: req.query.lang,
+      queryLang,
       i18nextLang: i18nextLang,
       acceptLanguageHeader: acceptLanguage,
       extractedAcceptLang: acceptLangCode,
       finalLanguage: userLanguage,
+      explicitly_using: queryLang ? 'query parameter' : (i18nextLang ? 'i18next detected' : (acceptLangCode ? 'accept-language header' : 'default')),
       queryParams: req.query,
       senderEmail: sender_email,
       recipientEmail,
