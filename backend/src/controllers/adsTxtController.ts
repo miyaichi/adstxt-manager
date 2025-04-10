@@ -94,30 +94,45 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         for (let i = 0; i < items.length; i += concurrencyLimit) {
           chunks.push(items.slice(i, i + concurrencyLimit));
         }
-
+        
+        logger.info(`Processing ${items.length} items in ${chunks.length} chunks of max ${concurrencyLimit} each`);
+        
         // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
-        for (const chunk of chunks) {
-          const chunkPromises = chunk.map((item) => fetchFn(item));
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          logger.debug(`Processing chunk ${i+1}/${chunks.length} with ${chunk.length} items`);
+          
+          const chunkPromises = chunk.map(item => fetchFn(item));
           const chunkResults = await Promise.all(chunkPromises);
           results.push(...chunkResults);
-
-          // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
+          
+          // チャンク完了後の統計情報ログ
           if (chunks.length > 1) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            const processed = Math.min(items.length, (i + 1) * concurrencyLimit);
+            const percentComplete = Math.round((processed / items.length) * 100);
+            logger.info(`Completed ${i+1}/${chunks.length} chunks (${percentComplete}% done, ${processed}/${items.length} items)`);
+            
+            // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
+            // チャンクの中間時のみ遅延をいれる (最後のチャンクでは不要)
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           }
         }
 
         return results;
       }
 
-      // 並列実行の最大値を固定値で設定
-      const MAX_CONCURRENT_FETCHES = 10; // 同時に処理するsellers.json取得の最大数
+      // 並列実行の最大値を設定 - 環境変数から取得するか、デフォルト値を使用
+      const MAX_CONCURRENT_FETCHES = parseInt(process.env.SELLERS_JSON_CONCURRENCY || '20', 10); // 同時に処理するsellers.json取得の最大数
       logger.info(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
 
       // 各ドメインのsellers.json取得処理の関数 - メモリ効率化版
       const fetchSellersJson = async (domain: string) => {
         try {
-          logger.debug(`Looking up sellers.json for domain (memory-optimized): ${domain}`);
+          // 正規化したドメイン名を使用
+          const normalizedDomain = domain.toLowerCase();
+          logger.debug(`Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`);
 
           // メモリ最適化：最初にメタデータだけを取得
           // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
@@ -125,7 +140,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
           // メタデータとseller typeの統計情報だけを取得
           const metadataSummary =
-            await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
+            await SellersJsonCacheModel.getMetadataAndSummarizedSellers(normalizedDomain);
 
           if (metadataSummary) {
             // キャッシュの情報を確認して適切に処理
@@ -133,7 +148,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
             const isCacheMiss = metadataSummary.isCacheMiss;
 
             // キャッシュデータをメモリに保持 (not_found や error でも保存)
-            domainSellersJsonCache.set(domain, {
+            domainSellersJsonCache.set(normalizedDomain, {
               // 完全なsellers配列の代わりに必要な情報だけ保持
               __metadata: metadataSummary.metadata,
               __summary: metadataSummary.sellersSummary,
@@ -141,61 +156,48 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
               __status: status,
             });
 
-            if (status === 'success') {
-              // 成功したデータの場合
+            // キャッシュミスでない場合はステータスに関わらず使用する
+            if (!isCacheMiss) {
+              const description = status === 'success' 
+                ? `with ${metadataSummary.metadata.seller_count} sellers, ${metadataSummary.sellersSummary.confidentialCount} confidential` 
+                : `with status '${status}'`;
+              
               logger.debug(
-                `Found memory-optimized sellers.json data for ${domain} (status: ${status}, updated: ${metadataSummary.domainInfo.updated_at})`
+                `Using memory-optimized cache for ${normalizedDomain} ${description} (updated: ${metadataSummary.domainInfo.updated_at})`
               );
-              logger.debug(
-                `Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`
-              );
-
+              
               return {
-                domain,
+                domain: normalizedDomain,
                 success: true,
                 fromCache: true,
                 memoryOptimized: true,
-                status: 'success',
+                status: status,
               };
-            } else {
-              // not_found や error の場合でも、キャッシュミスでなければ再取得しない
-              if (!isCacheMiss) {
-                logger.debug(
-                  `Using existing cache with status '${status}' for ${domain} (updated: ${metadataSummary.domainInfo.updated_at})`
-                );
-
-                return {
-                  domain,
-                  success: true,
-                  fromCache: true,
-                  status: status,
-                };
-              }
             }
           }
 
           // キャッシュミスの場合のみ従来の方法で取得を試みる
-          logger.debug(`Cache miss for ${domain}, falling back to regular method`);
+          logger.debug(`Cache miss for ${normalizedDomain}, falling back to regular method`);
           const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
-            domain,
+            normalizedDomain,
             false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
           );
 
           if (fetchedData) {
-            domainSellersJsonCache.set(domain, fetchedData);
+            domainSellersJsonCache.set(normalizedDomain, fetchedData);
             logger.debug(
-              `Found sellers.json data for ${domain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
+              `Found sellers.json data for ${normalizedDomain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
             );
           } else {
             logger.debug(
-              `No valid sellers.json data available for ${domain} (status: ${cacheInfo.status})`
+              `No valid sellers.json data available for ${normalizedDomain} (status: ${cacheInfo.status})`
             );
           }
 
-          return { domain, success: true, fromCache: cacheInfo.isCached };
+          return { domain: normalizedDomain, success: true, fromCache: cacheInfo.isCached, status: cacheInfo.status };
         } catch (error) {
-          logger.error(`Error retrieving sellers.json for ${domain}:`, error);
-          return { domain, success: false, error };
+          logger.error(`Error retrieving sellers.json for ${normalizedDomain}:`, error);
+          return { domain: normalizedDomain, success: false, error, status: 'error' };
         }
       };
 

@@ -147,7 +147,51 @@ class SellersJsonCacheModel {
   }
 
   /**
-   * Check if a cache entry is expired
+   * Check if a cache entry is expired based on its status
+   * @param cache The cache entry to check
+   * @param expirationConfig Object containing expirationHours for different statuses
+   * @returns True if the cache is expired, false otherwise
+   */
+  isCacheExpiredByStatus(
+    cache: SellersJsonCache, 
+    expirationConfig: {
+      success?: number;
+      not_found?: number;
+      error?: number;
+      invalid_format?: number;
+      default: number;
+    }
+  ): boolean {
+    const updatedDate = new Date(cache.updated_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - updatedDate.getTime());
+    const diffHours = diffTime / (1000 * 60 * 60);
+
+    // ステータスに応じた有効期限を取得
+    let expirationHours: number;
+    
+    switch (cache.status) {
+      case 'success':
+        expirationHours = expirationConfig.success || expirationConfig.default;
+        break;
+      case 'not_found':
+        expirationHours = expirationConfig.not_found || expirationConfig.default;
+        break;
+      case 'error':
+        expirationHours = expirationConfig.error || expirationConfig.default;
+        break;
+      case 'invalid_format':
+        expirationHours = expirationConfig.invalid_format || expirationConfig.default;
+        break;
+      default:
+        expirationHours = expirationConfig.default;
+    }
+
+    return diffHours > expirationHours;
+  }
+
+  /**
+   * Check if a cache entry is expired (legacy method for backward compatibility)
    * @param updatedAt The timestamp when the cache was last updated
    * @param expirationHours The number of hours after which the cache is considered expired (default 24)
    * @returns True if the cache is expired, false otherwise

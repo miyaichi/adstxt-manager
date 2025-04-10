@@ -60,8 +60,14 @@ const HTTP_REQUEST_CONFIG = {
   },
 };
 
-// Cache expiration time in hours
-const CACHE_EXPIRATION_HOURS = 24;
+// Cache expiration time in hours - status-specific expiration
+const CACHE_EXPIRATION = {
+  success: 24,    // 成功したデータは24時間キャッシュ
+  not_found: 72,  // 見つからない場合は72時間キャッシュ（頻繁に再試行しない）
+  error: 6,       // エラーの場合は6時間後に再試行
+  invalid_format: 48, // フォーマットエラーの場合は48時間キャッシュ
+  default: 24     // デフォルトは24時間
+};
 
 /**
  * Common function to fetch sellers.json data with cache handling
@@ -89,7 +95,7 @@ export async function fetchSellersJsonWithCache(
   // Check cache first - use normalized domain for lookup
   const cachedData = await SellersJsonCacheModel.getByDomain(normalizedDomain);
   const cacheExpired = cachedData
-    ? SellersJsonCacheModel.isCacheExpired(cachedData.updated_at, CACHE_EXPIRATION_HOURS)
+    ? SellersJsonCacheModel.isCacheExpiredByStatus(cachedData, CACHE_EXPIRATION)
     : true;
 
   // Use valid cache if available and not forcing refresh
