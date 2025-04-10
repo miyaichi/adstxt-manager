@@ -210,6 +210,8 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         cacheMisses: 0,
         memoryOptimized: 0,
         failedRequests: 0,
+        duplicateRequests: 0,     // 重複リクエストの数
+        processedDomains: new Set<string>(), // 処理済みドメインの追跡
         statusCounts: {
           success: 0,
           not_found: 0,
@@ -238,10 +240,14 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const optimizedFetchWithCache = async (domain: string) => {
         // 正規化したドメイン名
         const normalizedDomain = domain.toLowerCase();
+        
+        // ドメインを処理済みとして記録
+        stats.processedDomains.add(normalizedDomain);
 
         // すでに実行中のリクエストがあれば再利用
         if (stats.inProgressFetches.has(normalizedDomain)) {
           logger.debug(`Reusing in-progress fetch for ${normalizedDomain}`);
+          stats.duplicateRequests++;
           return stats.inProgressFetches.get(normalizedDomain);
         }
 
@@ -298,6 +304,11 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       // 処理完了時間を記録
       const processingTimeMs = Date.now() - stats.processingStart;
 
+      // 処理済みドメイン数と不一致があれば詳細を調査
+      const processedDomainsCount = stats.processedDomains.size;
+      const unaccountedDomains = stats.uniqueDomains - (stats.cacheHits + stats.cacheMisses + stats.failedRequests);
+      const isDomainCountMismatch = processedDomainsCount !== stats.uniqueDomains;
+      
       // 結果サマリーをログに出力
       logger.info(
         `
@@ -308,6 +319,7 @@ Results: ${fetchResults.length} total lookups
   - ${stats.cacheHits} cache hits (${Math.round((stats.cacheHits / fetchResults.length) * 100)}%)
   - ${stats.cacheMisses} cache misses (${Math.round((stats.cacheMisses / fetchResults.length) * 100)}%)
   - ${stats.failedRequests} failed requests (${Math.round((stats.failedRequests / fetchResults.length) * 100)}%)
+  - ${stats.duplicateRequests} duplicate requests detected
 Cache Status Distribution:
   - success: ${stats.statusCounts.success}
   - not_found: ${stats.statusCounts.not_found}
@@ -317,11 +329,20 @@ Cache Status Distribution:
   - unknown: ${stats.statusCounts.unknown}
 Memory optimization: ${stats.memoryOptimized} domains processed with metadata-only approach
 Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming avg 2.5MB per full sellers.json)
-Processing rate: ${Math.round(fetchResults.length / (processingTimeMs / 1000))} domains/second
-Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed(${stats.failedRequests}) = ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}/${fetchResults.length}
+Processing rate: ${Math.round(stats.uniqueDomains / (processingTimeMs / 1000))} domains/second
+Tracking check: ${processedDomainsCount} tracked domains (${isDomainCountMismatch ? "MISMATCH!" : "OK"})
+Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed(${stats.failedRequests}) = ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}/${fetchResults.length} ${unaccountedDomains > 0 ? `(${unaccountedDomains} unaccounted for)` : "(all accounted for)"}
 ----------------------------------------------
       `.trim()
       );
+      
+      // 不一致があり、詳細ログが必要な場合
+      if (isDomainCountMismatch || unaccountedDomains > 0) {
+        logger.warn(`Domain count mismatch detected. This could indicate tracking issues in the code.`);
+        logger.warn(`- Unique domains found: ${stats.uniqueDomains}`);
+        logger.warn(`- Domains tracked as processed: ${processedDomainsCount}`);
+        logger.warn(`- Domains with result status: ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}`);
+      }
 
       // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
 
