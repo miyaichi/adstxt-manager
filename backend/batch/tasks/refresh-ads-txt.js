@@ -55,29 +55,56 @@ async function run(options = {}) {
         // Update the cache entry with new content
         const content = response.data;
         const updateQuery = `UPDATE ads_txt_cache 
-                             SET content = $1, status = 'success', 
+                             SET content = $1, status = 'success', status_code = $3,
                                  updated_at = CURRENT_TIMESTAMP 
                              WHERE domain = $2`;
 
-        await db.executeQuery(updateQuery, [content, domain]);
+        await db.executeQuery(updateQuery, [content, domain, 200]);
 
         succeeded++;
         logger.info(`Successfully refreshed ads.txt for domain: ${domain}`);
       } catch (error) {
         failed++;
-        // Update the cache entry with error status
-        const errorStatus = error.response?.status ? error.response.status : 'network-error';
+        
+        // Map HTTP status code or error type to valid status values
+        let status = 'error'; // Default status
+        let errorMessage = error.message || 'Unknown error';
+        let statusCode = error.response?.status || null;
+        
+        // Determine the appropriate status based on the error
+        if (statusCode === 404) {
+          status = 'not_found';
+          errorMessage = 'ads.txt file not found';
+        } else if (error.code === 'ENOTFOUND') {
+          status = 'not_found';
+          errorMessage = `Domain not found: ${domain}`;
+          statusCode = null;
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+          status = 'error';
+          errorMessage = `Connection timeout for ${domain}`;
+          statusCode = null;
+        } else if (error.code === 'ECONNREFUSED') {
+          status = 'error';
+          errorMessage = `Connection refused for ${domain}`;
+          statusCode = null;
+        } else if (error.response?.data && typeof error.response.data === 'string' && 
+                  (error.response.data.includes('<!DOCTYPE html>') || error.response.data.includes('<html'))) {
+          status = 'invalid_format';
+          errorMessage = 'Response is HTML, not a valid ads.txt file';
+          statusCode = error.response.status;
+        }
 
         const updateQuery = `UPDATE ads_txt_cache 
-                            SET status = $1, content = '', 
-                                updated_at = CURRENT_TIMESTAMP 
+                            SET status = $1, content = '', status_code = $3,
+                                error_message = $4, updated_at = CURRENT_TIMESTAMP 
                             WHERE domain = $2`;
 
-        await db.executeQuery(updateQuery, [errorStatus.toString(), domain]);
+        await db.executeQuery(updateQuery, [status, domain, statusCode, errorMessage]);
 
         logger.error(`Failed to refresh ads.txt for domain: ${domain}`, {
-          error: error.message,
-          status: errorStatus,
+          error: errorMessage,
+          status: status,
+          statusCode: statusCode
         });
       }
     }

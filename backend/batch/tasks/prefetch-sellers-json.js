@@ -41,7 +41,7 @@ async function run(options = {}) {
         WHERE status = 'success' AND content IS NOT NULL AND content != ''
       )
       
-      SELECT LOWER(domain_field) as domain, COUNT(*) as usage_count
+      SELECT LOWER(SPLIT_PART(TRIM(line), ',', 1)) as domain, COUNT(*) as usage_count
       FROM domains_with_content,
            LATERAL (
              -- Split content by newlines and extract each line
@@ -50,17 +50,16 @@ async function run(options = {}) {
       WHERE line ~ 'DIRECT|RESELLER'
         AND length(trim(line)) > 0 
         AND NOT line ~ '^\\s*#'
-      GROUP BY LOWER(domain_field)
+      GROUP BY LOWER(SPLIT_PART(TRIM(line), ',', 1))
       HAVING COUNT(*) >= $1
       ORDER BY COUNT(*) DESC
       LIMIT $2
     `;
 
     // Using a Common Table Expression to first get all ads.txt content
-    // then extract domain fields from valid advertising system records
-
-    // In the actual implementation, you'd need to extract the first field from each line (the domain)
-    // This is simplified and would need proper regex/extraction logic for production
+    // then extract domain fields from valid advertising system records using SPLIT_PART function
+    // This extracts the first field from each line (the domain name) by splitting on commas
+    // Only includes lines that contain DIRECT or RESELLER relationship and aren't comments
 
     const sspDomains = await db.executeQuery(extractQuery, [minUsage, limit * 2]);
     extracted = sspDomains.length;
@@ -70,7 +69,7 @@ async function run(options = {}) {
     // Step 2: Filter domains that need updating
     // Check which domains are already in the sellers_json_cache and when they were last updated
     for (const domain of sspDomains) {
-      // Normalize domain to lowercase
+      // Normalize domain to lowercase for consistent cache handling
       const normalizedDomain = domain.domain.toLowerCase();
 
       // Check if this domain already exists in sellers_json_cache

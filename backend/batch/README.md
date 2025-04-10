@@ -6,6 +6,7 @@ This directory contains batch processing scripts for the AdsTxt Manager applicat
 
 - **Ads.txt Cache Refresh**: Refreshes expired ads.txt cache entries to ensure data is current
 - **Sellers.json Cache Refresh**: Updates expired sellers.json cache entries
+- **Sellers.json Prefetch**: Proactively caches sellers.json data based on frequently used domains in ads.txt records
 - **Data Cleanup**: Removes old request and message data beyond the retention period
 - **Containerized**: Runs as a Docker container for easy deployment
 - **Scheduled Execution**: Configured to run daily via AWS ECS Scheduled Tasks
@@ -37,10 +38,12 @@ node index.js run-all
 # Run specific tasks
 node index.js refresh-ads-txt
 node index.js refresh-sellers-json
+node index.js prefetch-sellers-json
 node index.js cleanup-data
 
 # Run with options
 node index.js refresh-ads-txt --limit 50 --age 14
+node index.js prefetch-sellers-json --limit 100 --min-usage 3 --priority-age 5
 node index.js cleanup-data --age 120 --dry-run
 ```
 
