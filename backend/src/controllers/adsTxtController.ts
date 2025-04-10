@@ -123,30 +123,51 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           const metadataSummary = await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
           
           if (metadataSummary) {
-            // 必要なデータだけをメモリに保持
-            // 完全なsellers.jsonデータではなく、メタデータとサマリーのみ
+            // キャッシュの情報を確認して適切に処理
+            const status = metadataSummary.domainInfo.status;
+            const isCacheMiss = metadataSummary.isCacheMiss;
+            
+            // キャッシュデータをメモリに保持 (not_found や error でも保存)
             domainSellersJsonCache.set(domain, {
               // 完全なsellers配列の代わりに必要な情報だけ保持
               __metadata: metadataSummary.metadata,
               __summary: metadataSummary.sellersSummary,
-              __domainInfo: metadataSummary.domainInfo
+              __domainInfo: metadataSummary.domainInfo,
+              __status: status
             });
             
-            console.log(
-              `Found memory-optimized sellers.json data for ${domain} (status: ${metadataSummary.domainInfo.status}, updated: ${metadataSummary.domainInfo.updated_at})`
-            );
-            console.log(`Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`);
-            
-            return { 
-              domain, 
-              success: true, 
-              fromCache: true,
-              memoryOptimized: true 
-            };
+            if (status === 'success') {
+              // 成功したデータの場合
+              console.log(
+                `Found memory-optimized sellers.json data for ${domain} (status: ${status}, updated: ${metadataSummary.domainInfo.updated_at})`
+              );
+              console.log(`Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`);
+              
+              return { 
+                domain, 
+                success: true, 
+                fromCache: true,
+                memoryOptimized: true 
+              };
+            } else {
+              // not_found や error の場合でも、キャッシュミスでなければ再取得しない
+              if (!isCacheMiss) {
+                console.log(
+                  `Using existing cache with status '${status}' for ${domain} (updated: ${metadataSummary.domainInfo.updated_at})`
+                );
+                
+                return { 
+                  domain, 
+                  success: true, 
+                  fromCache: true,
+                  status: status
+                };
+              }
+            }
           }
           
-          // メタデータが取得できない場合は従来の方法で取得を試みる
-          console.log(`Falling back to regular method for ${domain}`);
+          // キャッシュミスの場合のみ従来の方法で取得を試みる
+          console.log(`Cache miss for ${domain}, falling back to regular method`);
           const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
             domain,
             false // forceRefreshはfalseのまま（期限切れの場合のみ取得）

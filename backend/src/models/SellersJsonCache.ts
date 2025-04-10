@@ -297,12 +297,62 @@ class SellersJsonCacheModel {
       otherCount: number;
       confidentialCount: number;
     };
+    isCacheMiss: boolean;
   } | null> {
     try {
       // Get cache record first
       const cacheRecord = await this.getByDomain(domain);
-      if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
-        return null;
+      
+      // キャッシュが存在しない場合 (キャッシュミス)
+      if (!cacheRecord) {
+        logger.info(`[SellersJsonCache] No cache entry found for ${domain}`);
+        return {
+          domainInfo: {
+            id: '',
+            domain: domain.toLowerCase(),
+            status: 'not_found',
+            updated_at: new Date().toISOString(),
+          },
+          metadata: {
+            version: '',
+            contact_email: '',
+            seller_count: 0,
+          },
+          sellersSummary: {
+            publisherCount: 0,
+            intermediaryCount: 0,
+            bothCount: 0,
+            otherCount: 0,
+            confidentialCount: 0,
+          },
+          isCacheMiss: true
+        };
+      }
+      
+      // キャッシュがあるが成功でない場合は、そのステータス情報を返す
+      if (cacheRecord.status !== 'success' || !cacheRecord.content) {
+        logger.info(`[SellersJsonCache] Cache exists for ${domain} but status is ${cacheRecord.status}`);
+        return {
+          domainInfo: {
+            id: cacheRecord.id,
+            domain: cacheRecord.domain,
+            status: cacheRecord.status,
+            updated_at: cacheRecord.updated_at,
+          },
+          metadata: {
+            version: '',
+            contact_email: '',
+            seller_count: 0,
+          },
+          sellersSummary: {
+            publisherCount: 0,
+            intermediaryCount: 0,
+            bothCount: 0,
+            otherCount: 0,
+            confidentialCount: 0,
+          },
+          isCacheMiss: false
+        };
       }
 
       // Check if we're using PostgreSQL for JSONB optimized queries
@@ -374,6 +424,7 @@ class SellersJsonCacheModel {
           seller_count: parsedContent.sellers?.length || 0,
         },
         sellersSummary,
+        isCacheMiss: false
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error getting metadata summary: ${error}`);
