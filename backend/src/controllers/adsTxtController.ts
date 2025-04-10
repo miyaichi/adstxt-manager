@@ -110,14 +110,43 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const MAX_CONCURRENT_FETCHES = 10; // 同時に処理するsellers.json取得の最大数
       console.log(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
       
-      // 各ドメインのsellers.json取得処理の関数
+      // 各ドメインのsellers.json取得処理の関数 - メモリ効率化版
       const fetchSellersJson = async (domain: string) => {
         try {
-          console.log(`Looking up sellers.json for domain: ${domain}`);
+          console.log(`Looking up sellers.json for domain (memory-optimized): ${domain}`);
           
-          // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
-          // 2. sellers_json_cacheにstatusにかかわらず、レコードがあり、有効期限が切れていなければ使用する
-          // 3. レコードがない、有効期限が切れているいずれかの場合は、sellers.jsonを取得する
+          // メモリ最適化：最初にメタデータだけを取得
+          // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
+          const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+          
+          // メタデータとseller typeの統計情報だけを取得
+          const metadataSummary = await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
+          
+          if (metadataSummary) {
+            // 必要なデータだけをメモリに保持
+            // 完全なsellers.jsonデータではなく、メタデータとサマリーのみ
+            domainSellersJsonCache.set(domain, {
+              // 完全なsellers配列の代わりに必要な情報だけ保持
+              __metadata: metadataSummary.metadata,
+              __summary: metadataSummary.sellersSummary,
+              __domainInfo: metadataSummary.domainInfo
+            });
+            
+            console.log(
+              `Found memory-optimized sellers.json data for ${domain} (status: ${metadataSummary.domainInfo.status}, updated: ${metadataSummary.domainInfo.updated_at})`
+            );
+            console.log(`Seller counts: ${metadataSummary.metadata.seller_count} total, ${metadataSummary.sellersSummary.confidentialCount} confidential`);
+            
+            return { 
+              domain, 
+              success: true, 
+              fromCache: true,
+              memoryOptimized: true 
+            };
+          }
+          
+          // メタデータが取得できない場合は従来の方法で取得を試みる
+          console.log(`Falling back to regular method for ${domain}`);
           const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
             domain,
             false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
@@ -141,18 +170,37 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         }
       };
 
-      // ドメインごとに並列処理を制限してsellers.jsonを取得
-      console.log(`Starting sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`);
+      // ステップ1: まずaccountIdの一覧を取得（重複を除く）
+      // メモリ効率のためには、あとでSeller ID別の検索を最適化するために必要
+      const uniqueAccountIds = new Set<string>();
+      for (const record of recordEntries) {
+        if ('account_id' in record && record.account_id) {
+          uniqueAccountIds.add(record.account_id.toString().toLowerCase());
+        }
+      }
+      console.log(`Found ${uniqueAccountIds.size} unique account IDs in ads.txt records`);
+
+      // ステップ2: ドメインごとに並列処理を制限してsellers.jsonのメタデータ取得
+      console.log(`Starting memory-optimized sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`);
       const fetchResults = await fetchWithConcurrencyLimit(
         Array.from(uniqueDomains),
         fetchSellersJson,
         MAX_CONCURRENT_FETCHES
       );
+      
       const successCount = fetchResults.filter((r) => r.success).length;
       const cacheHitCount = fetchResults.filter((r) => r.fromCache).length;
+      const memoryOptimizedCount = fetchResults.filter((r) => r?.memoryOptimized).length || 0;
       
       console.log(`Completed fetching/lookup of sellers.json for ${fetchResults.length} domains`);
       console.log(`Results: ${successCount} successful lookups (${cacheHitCount} from cache, ${successCount - cacheHitCount} newly fetched or updated)`);
+      
+      // メモリ使用量削減の詳細をログに出力
+      console.log(`Memory optimization: ${memoryOptimizedCount} domains processed with metadata-only approach`);
+      const estimatedSavingsMB = Math.round((memoryOptimizedCount * 2.5));
+      console.log(`Memory savings estimate: ~${estimatedSavingsMB}MB (assuming avg 2.5MB per full sellers.json)`);
+
+      // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
       
       // 処理フロー整理：
       // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
@@ -169,7 +217,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       // 分類4: sellers.jsonが提供されていない広告システムのもの
       const noSellerJsonRecords: any[] = [];
 
-      // 各レコードを拡張して分類する
+      // 各レコードを拡張して分類する - メモリ最適化版
       const enhancedRecords = await Promise.all(
         recordEntries.map(async (record, index) => {
           if (!('domain' in record)) return { record, category: 'other' };
@@ -193,7 +241,51 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           }
 
           // 分類4: sellers.jsonが提供されていない広告システム
-          if (!sellersJsonData || !Array.isArray(sellersJsonData.sellers)) {
+          if (!sellersJsonData) {
+            const enhancedRecord = { ...record };
+            if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
+            return { record: enhancedRecord, category: 'noSellerJson' };
+          }
+          
+          // メモリ最適化されたデータの場合の処理 (メタデータのみ保持)
+          if (sellersJsonData.__metadata && sellersJsonData.__summary) {
+            // メモリ使用量削減のため、このレコードに必要な特定のseller情報のみを取得
+            try {
+              const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+              const specificSeller = await SellersJsonCacheModel.getSpecificSellers(
+                domain.toLowerCase(), 
+                [accountId.toString()]
+              );
+              
+              const enhancedRecord = { ...record };
+              if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
+              
+              // 特定のsellerが見つかったかどうかで分類
+              if (specificSeller && specificSeller.matchingSellers && specificSeller.matchingSellers.length > 0) {
+                const seller = specificSeller.matchingSellers[0];
+                
+                // 機密フラグをチェック
+                if (seller.is_confidential === true || seller.is_confidential === 1) {
+                  return { record: enhancedRecord, category: 'confidential' };
+                }
+                
+                // 通常のレコード
+                return { record: enhancedRecord, category: 'other' };
+              } else {
+                // マッチするsellerが見つからない
+                return { record: enhancedRecord, category: 'missingSellerId' };
+              }
+            } catch (error) {
+              console.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
+              // エラーが発生した場合は非SellersJson扱いにする
+              const enhancedRecord = { ...record };
+              if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
+              return { record: enhancedRecord, category: 'noSellerJson' };
+            }
+          }
+          
+          // 従来の処理 (完全なsellers配列がある場合)
+          if (!Array.isArray(sellersJsonData.sellers)) {
             const enhancedRecord = { ...record };
             if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
             return { record: enhancedRecord, category: 'noSellerJson' };

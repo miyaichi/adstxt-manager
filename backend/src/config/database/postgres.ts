@@ -396,4 +396,177 @@ export class PostgresDatabase implements IDatabaseAdapter {
       found: result.matching_sellers && result.matching_sellers.length > 0,
     };
   }
+
+  /**
+   * Query sellers.json metadata and summary info using JSONB operators
+   * This is a PostgreSQL-specific optimization for memory efficiency
+   * 
+   * @param domain The domain to get summary for
+   * @returns Summary object with metadata and seller type counts
+   */
+  public async queryJsonBSummary(domain: string): Promise<any> {
+    try {
+      // First check if the domain exists and has valid data
+      const domainCheckSql = `
+        SELECT id, domain, status, updated_at 
+        FROM sellers_json_cache 
+        WHERE domain = $1 AND status = 'success'
+      `;
+
+      const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+
+      if (domainResult.rows.length === 0) {
+        return null; // Domain not found or not successful status
+      }
+
+      const cacheRecord = domainResult.rows[0];
+
+      // Now use JSONB operators to get metadata and summary
+      const summarySql = `
+        SELECT 
+          jsonb_extract_path(content, 'version') as version,
+          jsonb_extract_path(content, 'contact_email') as contact_email,
+          (SELECT COUNT(*) FROM jsonb_array_elements(content->'sellers')) as seller_count,
+          (
+            SELECT COUNT(*) 
+            FROM jsonb_array_elements(content->'sellers') s
+            WHERE s->>'seller_type' = 'PUBLISHER'
+          ) as publisher_count,
+          (
+            SELECT COUNT(*) 
+            FROM jsonb_array_elements(content->'sellers') s
+            WHERE s->>'seller_type' = 'INTERMEDIARY'
+          ) as intermediary_count,
+          (
+            SELECT COUNT(*) 
+            FROM jsonb_array_elements(content->'sellers') s
+            WHERE s->>'seller_type' = 'BOTH'
+          ) as both_count,
+          (
+            SELECT COUNT(*) 
+            FROM jsonb_array_elements(content->'sellers') s
+            WHERE s->>'seller_type' NOT IN ('PUBLISHER', 'INTERMEDIARY', 'BOTH')
+          ) as other_count,
+          (
+            SELECT COUNT(*) 
+            FROM jsonb_array_elements(content->'sellers') s
+            WHERE (s->>'is_confidential')::boolean = true
+          ) as confidential_count
+        FROM sellers_json_cache
+        WHERE id = $1
+      `;
+
+      const summaryResult = await this.pool.query(summarySql, [cacheRecord.id]);
+
+      if (summaryResult.rows.length === 0) {
+        return null;
+      }
+
+      const summary = summaryResult.rows[0];
+
+      // Return formatted summary
+      return {
+        domainInfo: {
+          id: cacheRecord.id,
+          domain: cacheRecord.domain,
+          status: cacheRecord.status,
+          updated_at: cacheRecord.updated_at,
+        },
+        metadata: {
+          version: summary.version,
+          contact_email: summary.contact_email,
+          seller_count: parseInt(summary.seller_count || '0', 10),
+        },
+        sellersSummary: {
+          publisherCount: parseInt(summary.publisher_count || '0', 10),
+          intermediaryCount: parseInt(summary.intermediary_count || '0', 10),
+          bothCount: parseInt(summary.both_count || '0', 10),
+          otherCount: parseInt(summary.other_count || '0', 10),
+          confidentialCount: parseInt(summary.confidential_count || '0', 10),
+        }
+      };
+    } catch (error) {
+      console.error('Error in queryJsonBSummary:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Query for specific sellers by account IDs using JSONB operators
+   * Memory-efficient way to get only the needed sellers
+   * 
+   * @param domain The domain to search in
+   * @param accountIds Array of account IDs to find
+   * @returns Object with matching sellers and basic metadata
+   */
+  public async queryJsonBSpecificSellers(domain: string, accountIds: string[]): Promise<any> {
+    if (!accountIds || accountIds.length === 0) {
+      return null;
+    }
+
+    try {
+      // First check if the domain exists and has valid data
+      const domainCheckSql = `
+        SELECT id, domain, status, updated_at 
+        FROM sellers_json_cache 
+        WHERE domain = $1 AND status = 'success'
+      `;
+
+      const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+
+      if (domainResult.rows.length === 0) {
+        return null; // Domain not found or not successful status
+      }
+
+      const cacheRecord = domainResult.rows[0];
+
+      // Get basic metadata
+      const metadataSql = `
+        SELECT 
+          jsonb_extract_path(content, 'version') as version,
+          jsonb_extract_path(content, 'contact_email') as contact_email
+        FROM sellers_json_cache
+        WHERE id = $1
+      `;
+
+      const metadataResult = await this.pool.query(metadataSql, [cacheRecord.id]);
+      const metadata = metadataResult.rows[0] || {};
+
+      // Get only sellers matching the specified account IDs
+      // This is more efficient than loading all sellers
+      const accountIdsParam = accountIds.map(id => id.toString().toLowerCase());
+      
+      const sellerSql = `
+        WITH matching_sellers AS (
+          SELECT jsonb_array_elements(content->'sellers') as seller
+          FROM sellers_json_cache
+          WHERE id = $1
+        )
+        SELECT seller
+        FROM matching_sellers
+        WHERE LOWER(seller->>'seller_id') = ANY($2)
+      `;
+
+      const sellersResult = await this.pool.query(sellerSql, [cacheRecord.id, accountIdsParam]);
+      
+      const matchingSellers = sellersResult.rows.map(row => row.seller);
+
+      return {
+        domainInfo: {
+          id: cacheRecord.id,
+          domain: cacheRecord.domain,
+          status: cacheRecord.status,
+          updated_at: cacheRecord.updated_at,
+        },
+        metadata: {
+          version: metadata.version,
+          contact_email: metadata.contact_email,
+        },
+        matchingSellers,
+      };
+    } catch (error) {
+      console.error('Error in queryJsonBSpecificSellers:', error);
+      return null;
+    }
+  }
 }

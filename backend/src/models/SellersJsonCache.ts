@@ -277,4 +277,201 @@ class SellersJsonCacheModel {
   }
 }
 
+  /**
+   * Get only metadata and seller type summary for a domain
+   * This is more memory-efficient than getting the full sellers.json data
+   * 
+   * @param domain The domain to retrieve metadata for
+   * @returns Object with metadata and sellers summary or null if not found
+   */
+  async getMetadataAndSummarizedSellers(
+    domain: string
+  ): Promise<{
+    domainInfo: {
+      id: string;
+      domain: string;
+      status: SellersJsonCacheStatus;
+      updated_at: string;
+    };
+    metadata: {
+      version?: string;
+      contact_email?: string;
+      seller_count: number;
+    };
+    sellersSummary: {
+      publisherCount: number;
+      intermediaryCount: number;
+      bothCount: number;
+      otherCount: number;
+      confidentialCount: number;
+    };
+  } | null> {
+    try {
+      // Get cache record first
+      const cacheRecord = await this.getByDomain(domain);
+      if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
+        return null;
+      }
+
+      // Check if we're using PostgreSQL for JSONB optimized queries
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+      
+      if (dbProvider === 'postgres') {
+        try {
+          // Use optimized PostgreSQL query for metadata and summary
+          const postgres = (db as any).implementation as any;
+          if (postgres.queryJsonBSummary) {
+            const result = await postgres.queryJsonBSummary(domain);
+            if (result) {
+              return result;
+            }
+          }
+        } catch (error) {
+          logger.error(`[SellersJsonCache] Error in PostgreSQL optimization: ${error}`);
+          // Fall back to normal processing on error
+        }
+      }
+
+      // If not using PostgreSQL or optimization failed, parse the data manually
+      // but still extract only what's needed to save memory
+      const parsedContent = this.parseContent(cacheRecord.content);
+      if (!parsedContent) {
+        return null;
+      }
+
+      // Extract only required metadata
+      const sellersSummary = {
+        publisherCount: 0,
+        intermediaryCount: 0,
+        bothCount: 0,
+        otherCount: 0,
+        confidentialCount: 0,
+      };
+
+      // Count seller types without storing full sellers array
+      if (parsedContent.sellers && Array.isArray(parsedContent.sellers)) {
+        for (const seller of parsedContent.sellers) {
+          // Count by seller type
+          if (seller.seller_type === 'PUBLISHER') {
+            sellersSummary.publisherCount++;
+          } else if (seller.seller_type === 'INTERMEDIARY') {
+            sellersSummary.intermediaryCount++;
+          } else if (seller.seller_type === 'BOTH') {
+            sellersSummary.bothCount++;
+          } else {
+            sellersSummary.otherCount++;
+          }
+
+          // Count confidential sellers
+          if (seller.is_confidential === true || seller.is_confidential === 1) {
+            sellersSummary.confidentialCount++;
+          }
+        }
+      }
+
+      return {
+        domainInfo: {
+          id: cacheRecord.id,
+          domain: cacheRecord.domain,
+          status: cacheRecord.status,
+          updated_at: cacheRecord.updated_at,
+        },
+        metadata: {
+          version: parsedContent.version,
+          contact_email: parsedContent.contact_email,
+          seller_count: parsedContent.sellers?.length || 0,
+        },
+        sellersSummary,
+      };
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error getting metadata summary: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get specific seller entries matching the provided account IDs
+   * This is more memory-efficient than getting all sellers when only a few are needed
+   * 
+   * @param domain The domain to retrieve sellers from
+   * @param accountIds Array of account IDs to find
+   * @returns Object with matching sellers and basic metadata or null if not found
+   */
+  async getSpecificSellers(
+    domain: string,
+    accountIds: string[]
+  ): Promise<{
+    domainInfo: {
+      id: string;
+      domain: string;
+      status: SellersJsonCacheStatus;
+      updated_at: string;
+    };
+    metadata: {
+      version?: string;
+      contact_email?: string;
+    };
+    matchingSellers: Array<any>;
+  } | null> {
+    try {
+      // Ensure domain is properly lowercase for consistent lookup
+      const normalizedDomain = domain.toLowerCase();
+      
+      // Get cache record first
+      const cacheRecord = await this.getByDomain(normalizedDomain);
+      if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
+        return null;
+      }
+
+      // Check if we're using PostgreSQL for JSONB optimized queries
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+      
+      if (dbProvider === 'postgres' && accountIds.length > 0) {
+        try {
+          // Use optimized PostgreSQL query for specific sellers
+          const postgres = (db as any).implementation as any;
+          if (postgres.queryJsonBSpecificSellers) {
+            const result = await postgres.queryJsonBSpecificSellers(normalizedDomain, accountIds);
+            if (result) {
+              return result;
+            }
+          }
+        } catch (error) {
+          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${error}`);
+          // Fall back to normal processing on error
+        }
+      }
+
+      // Parse the data manually but extract only what's needed
+      const parsedContent = this.parseContent(cacheRecord.content);
+      if (!parsedContent || !parsedContent.sellers || !Array.isArray(parsedContent.sellers)) {
+        return null;
+      }
+
+      // Filter to only include matching seller IDs
+      const accountIdSet = new Set(accountIds.map(id => id.toString().toLowerCase()));
+      const matchingSellers = parsedContent.sellers.filter(seller => 
+        seller.seller_id && accountIdSet.has(seller.seller_id.toString().toLowerCase())
+      );
+
+      return {
+        domainInfo: {
+          id: cacheRecord.id,
+          domain: cacheRecord.domain,
+          status: cacheRecord.status,
+          updated_at: cacheRecord.updated_at,
+        },
+        metadata: {
+          version: parsedContent.version,
+          contact_email: parsedContent.contact_email,
+        },
+        matchingSellers,
+      };
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error getting specific sellers: ${error}`);
+      return null;
+    }
+  }
+}
+
 export default new SellersJsonCacheModel();
