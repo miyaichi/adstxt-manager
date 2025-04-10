@@ -94,28 +94,32 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         for (let i = 0; i < items.length; i += concurrencyLimit) {
           chunks.push(items.slice(i, i + concurrencyLimit));
         }
-        
-        logger.info(`Processing ${items.length} items in ${chunks.length} chunks of max ${concurrencyLimit} each`);
-        
+
+        logger.info(
+          `Processing ${items.length} items in ${chunks.length} chunks of max ${concurrencyLimit} each`
+        );
+
         // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
-          logger.debug(`Processing chunk ${i+1}/${chunks.length} with ${chunk.length} items`);
-          
-          const chunkPromises = chunk.map(item => fetchFn(item));
+          logger.debug(`Processing chunk ${i + 1}/${chunks.length} with ${chunk.length} items`);
+
+          const chunkPromises = chunk.map((item) => fetchFn(item));
           const chunkResults = await Promise.all(chunkPromises);
           results.push(...chunkResults);
-          
+
           // チャンク完了後の統計情報ログ
           if (chunks.length > 1) {
             const processed = Math.min(items.length, (i + 1) * concurrencyLimit);
             const percentComplete = Math.round((processed / items.length) * 100);
-            logger.info(`Completed ${i+1}/${chunks.length} chunks (${percentComplete}% done, ${processed}/${items.length} items)`);
-            
+            logger.info(
+              `Completed ${i + 1}/${chunks.length} chunks (${percentComplete}% done, ${processed}/${items.length} items)`
+            );
+
             // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
             // チャンクの中間時のみ遅延をいれる (最後のチャンクでは不要)
             if (i < chunks.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, 100));
             }
           }
         }
@@ -132,7 +136,9 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         try {
           // 正規化したドメイン名を使用
           const normalizedDomain = domain.toLowerCase();
-          logger.debug(`Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`);
+          logger.debug(
+            `Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`
+          );
 
           // メモリ最適化：最初にメタデータだけを取得
           // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
@@ -158,14 +164,15 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
             // キャッシュミスでない場合はステータスに関わらず使用する
             if (!isCacheMiss) {
-              const description = status === 'success' 
-                ? `with ${metadataSummary.metadata.seller_count} sellers, ${metadataSummary.sellersSummary.confidentialCount} confidential` 
-                : `with status '${status}'`;
-              
+              const description =
+                status === 'success'
+                  ? `with ${metadataSummary.metadata.seller_count} sellers, ${metadataSummary.sellersSummary.confidentialCount} confidential`
+                  : `with status '${status}'`;
+
               logger.debug(
                 `Using memory-optimized cache for ${normalizedDomain} ${description} (updated: ${metadataSummary.domainInfo.updated_at})`
               );
-              
+
               return {
                 domain: normalizedDomain,
                 success: true,
@@ -194,7 +201,12 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
             );
           }
 
-          return { domain: normalizedDomain, success: true, fromCache: cacheInfo.isCached, status: cacheInfo.status };
+          return {
+            domain: normalizedDomain,
+            success: true,
+            fromCache: cacheInfo.isCached,
+            status: cacheInfo.status,
+          };
         } catch (error) {
           logger.error(`Error retrieving sellers.json for ${domain}:`, error);
           return { domain, success: false, error, status: 'error' };
@@ -210,7 +222,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         cacheMisses: 0,
         memoryOptimized: 0,
         failedRequests: 0,
-        duplicateRequests: 0,     // 重複リクエストの数
+        duplicateRequests: 0, // 重複リクエストの数
         processedDomains: new Set<string>(), // 処理済みドメインの追跡
         statusCounts: {
           success: 0,
@@ -218,7 +230,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           error: 0,
           invalid_format: 0,
           pending: 0,
-          unknown: 0
+          unknown: 0,
         },
         inProgressFetches: new Map<string, Promise<any>>(), // 実行中のfetchを追跡
       };
@@ -240,7 +252,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const optimizedFetchWithCache = async (domain: string) => {
         // 正規化したドメイン名
         const normalizedDomain = domain.toLowerCase();
-        
+
         // ドメインを処理済みとして記録
         stats.processedDomains.add(normalizedDomain);
 
@@ -306,9 +318,13 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
       // 処理済みドメイン数と不一致があれば詳細を調査
       const processedDomainsCount = stats.processedDomains.size;
-      const unaccountedDomains = stats.uniqueDomains - (stats.cacheHits + stats.cacheMisses + stats.failedRequests);
+      const unaccountedDomains =
+        stats.uniqueDomains - (stats.cacheHits + stats.cacheMisses + stats.failedRequests);
       const isDomainCountMismatch = processedDomainsCount !== stats.uniqueDomains;
-      
+
+      // 検証ステップ: 重複リクエスト数と未カウントドメイン数が一致するか確認
+      const duplicatesMatchUnaccounted = stats.duplicateRequests === unaccountedDomains;
+
       // 結果サマリーをログに出力
       logger.info(
         `
@@ -330,21 +346,32 @@ Cache Status Distribution:
 Memory optimization: ${stats.memoryOptimized} domains processed with metadata-only approach
 Memory savings estimate: ~${Math.round(stats.memoryOptimized * 2.5)}MB (assuming avg 2.5MB per full sellers.json)
 Processing rate: ${Math.round(stats.uniqueDomains / (processingTimeMs / 1000))} domains/second
-Tracking check: ${processedDomainsCount} tracked domains (${isDomainCountMismatch ? "MISMATCH!" : "OK"})
-Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed(${stats.failedRequests}) = ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}/${fetchResults.length} ${unaccountedDomains > 0 ? `(${unaccountedDomains} unaccounted for)` : "(all accounted for)"}
+Tracking check: ${processedDomainsCount} tracked domains (${isDomainCountMismatch ? 'MISMATCH!' : 'OK'})
+Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed(${stats.failedRequests}) = ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}/${fetchResults.length} ${unaccountedDomains > 0 ? `(${unaccountedDomains} unaccounted for)` : '(all accounted for)'}
+Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounted domains' : "✗ Duplicates don't match unaccounted domains"}
 ----------------------------------------------
       `.trim()
       );
-      
+
       // 不一致があり、詳細ログが必要な場合
       if (isDomainCountMismatch || unaccountedDomains > 0) {
-        logger.warn(`Domain count mismatch detected. This could indicate tracking issues in the code.`);
-        logger.warn(`- Unique domains found: ${stats.uniqueDomains}`);
-        logger.warn(`- Domains tracked as processed: ${processedDomainsCount}`);
-        logger.warn(`- Domains with result status: ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}`);
+        if (duplicatesMatchUnaccounted) {
+          logger.info(
+            `Mismatch explained: ${unaccountedDomains} domains are duplicates and correctly tracked as duplicateRequests.`
+          );
+        } else {
+          logger.warn(
+            `Domain count mismatch detected. This could indicate tracking issues in the code.`
+          );
+          logger.warn(`- Unique domains found: ${stats.uniqueDomains}`);
+          logger.warn(`- Domains tracked as processed: ${processedDomainsCount}`);
+          logger.warn(
+            `- Domains with result status: ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}`
+          );
+          logger.warn(`- Duplicate requests detected: ${stats.duplicateRequests}`);
+          logger.warn(`- Unaccounted for domains: ${unaccountedDomains}`);
+        }
       }
-
-      // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
 
       // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
 

@@ -153,7 +153,7 @@ class SellersJsonCacheModel {
    * @returns True if the cache is expired, false otherwise
    */
   isCacheExpiredByStatus(
-    cache: SellersJsonCache, 
+    cache: SellersJsonCache,
     expirationConfig: {
       success?: number;
       not_found?: number;
@@ -169,7 +169,7 @@ class SellersJsonCacheModel {
 
     // ステータスに応じた有効期限を取得
     let expirationHours: number;
-    
+
     switch (cache.status) {
       case 'success':
         expirationHours = expirationConfig.success || expirationConfig.default;

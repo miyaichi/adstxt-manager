@@ -62,11 +62,11 @@ const HTTP_REQUEST_CONFIG = {
 
 // Cache expiration time in hours - status-specific expiration
 const CACHE_EXPIRATION = {
-  success: 24,    // 成功したデータは24時間キャッシュ
-  not_found: 72,  // 見つからない場合は72時間キャッシュ（頻繁に再試行しない）
-  error: 6,       // エラーの場合は6時間後に再試行
+  success: 24, // 成功したデータは24時間キャッシュ
+  not_found: 72, // 見つからない場合は72時間キャッシュ（頻繁に再試行しない）
+  error: 6, // エラーの場合は6時間後に再試行
   invalid_format: 48, // フォーマットエラーの場合は48時間キャッシュ
-  default: 24     // デフォルトは24時間
+  default: 24, // デフォルトは24時間
 };
 
 /**
