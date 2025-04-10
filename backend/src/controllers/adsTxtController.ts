@@ -474,7 +474,7 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
             return { record: enhancedRecord, category: 'noSellerJson' };
           }
 
-          // 売り手IDが存在するか確認
+          // セラーIDが存在するか確認
           const matchingSeller = sellersJsonData.sellers.find(
             (seller: any) => seller.seller_id && seller.seller_id.toString() === accountId
           );
@@ -493,7 +493,7 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
             return { record: enhancedRecord, category: 'confidential' };
           }
 
-          // 売り手IDが存在し、非機密なら、TAG-ID を探す
+          // セラーIDが存在し、非機密なら、TAG-ID を探す
           let certId = foundCertId;
 
           if (
