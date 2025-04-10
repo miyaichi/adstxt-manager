@@ -34,92 +34,85 @@ async function run(options = {}) {
     // Finds domains that appear in ads.txt records frequently
     logger.info('Extracting SSP domains from ads_txt_cache...');
 
+    // Simple and robust query to extract domains from ads.txt lines
     const extractQuery = `
-      WITH domains_with_content AS (
-        SELECT domain, content 
+      WITH ads_txt_lines AS (
+        -- First get all ads.txt files with valid content
+        SELECT 
+          domain as publisher_domain,
+          unnest(string_to_array(content, E'\\n')) AS line
         FROM ads_txt_cache 
         WHERE status = 'success' AND content IS NOT NULL AND content != ''
       ),
       
-      extracted_domains AS (
+      domain_counts AS (
+        -- Extract domain from each line and count occurrences
         SELECT 
-          -- Extract first field from each line (the domain)
-          -- Strip any whitespace, and convert to lowercase for consistency
-          CASE
-            -- Filter out invalid entries or malformed domains
-            WHEN SPLIT_PART(TRIM(line), ',', 1) ~ '^[a-zA-Z0-9][a-zA-Z0-9-\\.]+\\.[a-zA-Z]{2,}$' THEN
-              LOWER(SPLIT_PART(TRIM(line), ',', 1))
-            ELSE NULL
-          END as domain
-        FROM domains_with_content,
-             LATERAL (
-               -- Split content by newlines and extract each line
-               SELECT unnest(string_to_array(content, E'\\n')) AS line
-             ) AS lines
+          LOWER(SPLIT_PART(TRIM(line), ',', 1)) as domain,
+          COUNT(*) as usage_count
+        FROM ads_txt_lines
         WHERE 
-          -- Must be a valid ad system entry (contains DIRECT or RESELLER)
-          line ~ 'DIRECT|RESELLER'
-          -- Skip empty lines
-          AND length(trim(line)) > 0 
+          -- Only include non-empty lines
+          TRIM(line) != ''
+          -- Only include lines that look like ad system entries 
+          AND line ~ 'DIRECT|RESELLER'
           -- Skip comments
           AND NOT line ~ '^\\s*#'
-          -- Skip variable declarations
-          AND NOT line ~ '^\\s*[a-zA-Z0-9_-]+=.*$'
+        GROUP BY LOWER(SPLIT_PART(TRIM(line), ',', 1))
       )
       
-      -- Count domains, filtering nulls, and return only frequently used ones
-      SELECT domain, COUNT(*) as usage_count
-      FROM extracted_domains
-      WHERE domain IS NOT NULL
-      GROUP BY domain
-      HAVING COUNT(*) >= $1
-      ORDER BY COUNT(*) DESC
-      LIMIT $2$' THEN
-              LOWER(SPLIT_PART(TRIM(line), ',', 1))
-            ELSE NULL
-          END as domain
-        FROM domains_with_content,
-             LATERAL (
-               -- Split content by newlines and extract each line
-               SELECT unnest(string_to_array(content, E'\\n')) AS line
-             ) AS lines
-        WHERE 
-          -- Must be a valid ad system entry (contains DIRECT or RESELLER)
-          line ~ 'DIRECT|RESELLER'
-          -- Skip empty lines
-          AND length(trim(line)) > 0 
-          -- Skip comments
-          AND NOT line ~ '^\\s*#'
-          -- Skip variable declarations
-          AND NOT line ~ '^\\s*[a-zA-Z0-9_-]+=.*$'
-      )
-      
-      -- Count domains, filtering nulls, and return only frequently used ones
-      SELECT domain, COUNT(*) as usage_count
-      FROM extracted_domains
-      WHERE domain IS NOT NULL
-      GROUP BY domain
-      HAVING COUNT(*) >= $1
-      ORDER BY COUNT(*) DESC
+      -- Get most frequently used domains
+      SELECT domain, usage_count
+      FROM domain_counts
+      WHERE 
+        -- Ensure domain is something that looks valid
+        domain != '' 
+        -- Filter by minimum usage threshold
+        AND usage_count >= $1
+      ORDER BY usage_count DESC
       LIMIT $2
     `;
 
     // This query uses Common Table Expressions (CTEs) to:
     // 1. First get all ads.txt cache entries with valid content
     // 2. Extract domain names from each line of each ads.txt file
-    // 3. Validate domains using regex pattern matching
-    // 4. Filter out comments, empty lines, and variable declarations
-    // 5. Count domain frequency and return the most commonly used ones
-    // 6. Only include domains that appear at least 'minUsage' times
+    // 3. Count frequency of domains and filter by minimum usage
+    // 4. Return the most commonly used domains in descending order
 
-    const sspDomains = await db.executeQuery(extractQuery, [minUsage, limit * 2]);
-    extracted = sspDomains.length;
-
-    logger.info(`Extracted ${extracted} unique domains from ads_txt_cache`);
+    let domains;
+    try {
+      // Execute the domain extraction query
+      const sspDomains = await db.executeQuery(extractQuery, [minUsage, limit * 2]);
+      extracted = sspDomains.length;
+      logger.info(`Extracted ${extracted} unique domains from ads_txt_cache`);
+      domains = sspDomains;
+    } catch (error) {
+      logger.error(`Error extracting domains from ads_txt_cache: ${error.message}`, {
+        error: error.message,
+        stack: error.stack
+      });
+      
+      // Use a simpler fallback query if the advanced one fails
+      logger.info('Using fallback domain extraction query');
+      const fallbackQuery = `
+        SELECT LOWER(domain) as domain, COUNT(*) as usage_count
+        FROM ads_txt_cache 
+        WHERE status = 'success'
+        GROUP BY LOWER(domain)
+        HAVING COUNT(*) >= $1
+        ORDER BY COUNT(*) DESC
+        LIMIT $2
+      `;
+      
+      const fallbackDomains = await db.executeQuery(fallbackQuery, [1, limit]);
+      extracted = fallbackDomains.length;
+      logger.info(`Extracted ${extracted} domains using fallback query`);
+      domains = fallbackDomains;
+    }
 
     // Step 2: Filter domains that need updating
     // Check which domains are already in the sellers_json_cache and when they were last updated
-    for (const domain of sspDomains) {
+    for (const domain of domains) {
       // Skip invalid domains and normalize to lowercase for consistent cache handling
       if (!domain.domain || typeof domain.domain !== 'string') {
         logger.warn(`Skipping invalid domain entry: ${JSON.stringify(domain)}`);
