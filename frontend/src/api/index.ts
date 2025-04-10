@@ -339,8 +339,18 @@ export const adsTxtApi = {
     if (level) {
       data.level = level;
     }
-
-    const response = await api.post<ApiResponse<OptimizeAdsTxtResponse>>('/adsTxt/optimize', data);
+    
+    // Use extended timeout (0 = no timeout) for level2 optimization due to potentially long processing time
+    const timeout = level === 'level2' ? 0 : 15000;
+    
+    // Log the timeout setting for debugging purposes
+    logger.debug(`Optimizing ads.txt with ${level || 'default'} level, timeout: ${timeout === 0 ? 'unlimited' : timeout + 'ms'}`);
+    
+    // Create a custom request with specific timeout for this operation
+    const response = await api.post<ApiResponse<OptimizeAdsTxtResponse>>('/adsTxt/optimize', data, { 
+      timeout: timeout
+    });
+    
     return response.data;
   },
 };
