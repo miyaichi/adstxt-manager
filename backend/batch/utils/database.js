@@ -50,6 +50,9 @@ async function initDatabase() {
     try {
       await client.query('SELECT NOW()');
       logger.info('PostgreSQL database connection established');
+      
+      // Check and setup UUID extension if needed
+      global.uuidExtensionAvailable = await ensureUuidExtension();
     } finally {
       client.release();
     }
@@ -69,6 +72,46 @@ async function getDatabase() {
     await initDatabase();
   }
   return pgPool;
+}
+
+/**
+ * Check if the UUID extension is available and create it if possible
+ * This should be called during database initialization
+ */
+async function ensureUuidExtension() {
+  try {
+    if (!pgPool) {
+      logger.warn('Database not initialized when checking UUID extension');
+      return false;
+    }
+
+    // First check if the extension is already installed - use direct query to avoid circular reference
+    const client = await pgPool.connect();
+    try {
+      const checkResult = await client.query('SELECT COUNT(*) FROM pg_extension WHERE extname = \'uuid-ossp\'');
+      
+      if (parseInt(checkResult.rows[0].count) > 0) {
+        logger.info('UUID extension is already available');
+        return true;
+      }
+      
+      // Try to create the extension
+      try {
+        logger.info('Attempting to create UUID extension...');
+        await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+        logger.info('Successfully created UUID extension');
+        return true;
+      } catch (createError) {
+        logger.warn(`Cannot create UUID extension: ${createError.message}`);
+        return false;
+      }
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    logger.warn(`Error checking UUID extension: ${error.message}`);
+    return false;
+  }
 }
 
 /**
@@ -156,4 +199,5 @@ module.exports = {
   beginTransaction,
   commitTransaction,
   rollbackTransaction,
+  ensureUuidExtension,
 };
