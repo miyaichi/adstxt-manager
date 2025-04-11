@@ -624,16 +624,16 @@ class SellersJsonCacheModel {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
-      
+
       // アカウントIDも正規化
-      const normalizedIds = accountIds.map(id => id.toString().toLowerCase());
-      
+      const normalizedIds = accountIds.map((id) => id.toString().toLowerCase());
+
       // キャッシュキーの作成（ドメイン:アカウントIDのリスト）
       const cacheKey = `${normalizedDomain}:${normalizedIds.join(',')}`;
-      
+
       // 結果がすでにメモリキャッシュにあるか確認
       const cachedResult = this.specificSellersCache.get(cacheKey);
-      if (cachedResult && (Date.now() - cachedResult.timestamp) < this.memoryCacheTTL) {
+      if (cachedResult && Date.now() - cachedResult.timestamp < this.memoryCacheTTL) {
         logger.debug(`[SellersJsonCache] Using specific sellers memory cache for ${cacheKey}`);
         return cachedResult.result;
       }
@@ -644,7 +644,7 @@ class SellersJsonCacheModel {
         // キャッシュに結果を保存（null結果も保存して同じクエリの繰り返しを防ぐ）
         this.specificSellersCache.set(cacheKey, {
           result: null,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         return null;
       }
@@ -657,12 +657,15 @@ class SellersJsonCacheModel {
           // Use optimized PostgreSQL query for specific sellers
           const postgres = (db as any).implementation as any;
           if (postgres.queryJsonBSpecificSellers) {
-            const result = await postgres.queryJsonBSpecificSellers(normalizedDomain, normalizedIds);
+            const result = await postgres.queryJsonBSpecificSellers(
+              normalizedDomain,
+              normalizedIds
+            );
             if (result) {
               // 結果をキャッシュに保存
               this.specificSellersCache.set(cacheKey, {
                 result,
-                timestamp: Date.now()
+                timestamp: Date.now(),
               });
               return result;
             }
@@ -679,14 +682,14 @@ class SellersJsonCacheModel {
         // キャッシュに結果を保存（null結果も保存して同じクエリの繰り返しを防ぐ）
         this.specificSellersCache.set(cacheKey, {
           result: null,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         return null;
       }
 
       // アカウントIDをセットに変換して高速検索
       const accountIdSet = new Set(normalizedIds);
-      
+
       // Filter to only include matching seller IDs
       const matchingSellers = parsedContent.sellers.filter(
         (seller) => seller.seller_id && accountIdSet.has(seller.seller_id.toString().toLowerCase())
@@ -706,13 +709,13 @@ class SellersJsonCacheModel {
         },
         matchingSellers,
       };
-      
+
       // 結果をキャッシュに保存
       this.specificSellersCache.set(cacheKey, {
         result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-      
+
       // キャッシュサイズを確認し、大きすぎる場合はクリーンアップ
       if (this.specificSellersCache.size > this.memoryCacheMaxSize) {
         this.cleanupSpecificSellersCache();
@@ -724,7 +727,7 @@ class SellersJsonCacheModel {
       return null;
     }
   }
-  
+
   /**
    * 古い特定セラーのキャッシュをクリーンアップするメソッド
    */
@@ -732,33 +735,35 @@ class SellersJsonCacheModel {
     try {
       const now = Date.now();
       const expiredKeys: string[] = [];
-      
+
       // まず期限切れのエントリを特定
       for (const [key, entry] of this.specificSellersCache.entries()) {
         if (now - entry.timestamp > this.memoryCacheTTL) {
           expiredKeys.push(key);
         }
       }
-      
+
       // 期限切れのエントリを削除
       for (const key of expiredKeys) {
         this.specificSellersCache.delete(key);
       }
-      
+
       // それでもまだ多すぎる場合は、古いものから削除
       if (this.specificSellersCache.size > this.memoryCacheMaxSize) {
         const entries = Array.from(this.specificSellersCache.entries());
         entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-        
+
         // 削除する数を計算（キャッシュの約20%を削除）
         const toRemoveCount = Math.ceil(this.memoryCacheMaxSize * 0.2);
-        const keysToRemove = entries.slice(0, toRemoveCount).map(entry => entry[0]);
-        
+        const keysToRemove = entries.slice(0, toRemoveCount).map((entry) => entry[0]);
+
         for (const key of keysToRemove) {
           this.specificSellersCache.delete(key);
         }
-        
-        logger.debug(`[SellersJsonCache] Cleaned up ${keysToRemove.length} old entries from specific sellers cache`);
+
+        logger.debug(
+          `[SellersJsonCache] Cleaned up ${keysToRemove.length} old entries from specific sellers cache`
+        );
       }
     } catch (error) {
       logger.error(`[SellersJsonCache] Error cleaning up specific sellers cache: ${error}`);

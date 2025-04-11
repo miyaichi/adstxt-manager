@@ -53,28 +53,30 @@ function createPerformanceTimer(): PerformanceTimer {
         minutes: (elapsed / 60000).toFixed(2),
       };
     },
-    
+
     logStep: (stepName: string) => {
       const now = Date.now();
       timing.steps[stepName] = now;
       const elapsed = Date.now() - startTime;
-      logger.info(`Step completed: ${stepName} - Time: ${(elapsed / 1000).toFixed(2)}s (${elapsed}ms)`);
+      logger.info(
+        `Step completed: ${stepName} - Time: ${(elapsed / 1000).toFixed(2)}s (${elapsed}ms)`
+      );
     },
-    
+
     getTiming: () => timing,
-    
+
     calculateStepTimes: () => {
       return Object.entries(timing.steps).map(([name, time], index, array) => {
         const prevTime = index === 0 ? timing.start : array[index - 1][1];
         const duration = time - prevTime;
         const totalTime = Date.now() - startTime;
-        return { 
-          name, 
-          duration, 
-          percentage: ((duration / totalTime) * 100).toFixed(1) + '%' 
+        return {
+          name,
+          duration,
+          percentage: ((duration / totalTime) * 100).toFixed(1) + '%',
         };
       });
-    }
+    },
   };
 }
 
@@ -84,12 +86,12 @@ function createPerformanceTimer(): PerformanceTimer {
 async function classifyRecords(
   recordEntries: any[],
   domainSellersJsonCache: Map<string, any>
-): Promise<{ 
-  enhancedRecords: Array<{ record: any; category: string }>,
-  otherRecords: any[],
-  confidentialRecords: any[],
-  missingSellerIdRecords: any[],
-  noSellerJsonRecords: any[]
+): Promise<{
+  enhancedRecords: Array<{ record: any; category: string }>;
+  otherRecords: any[];
+  confidentialRecords: any[];
+  missingSellerIdRecords: any[];
+  noSellerJsonRecords: any[];
 }> {
   // Initialize result arrays for each category
   const otherRecords: any[] = [];
@@ -104,42 +106,45 @@ async function classifyRecords(
       domainCertIds.set(record.domain, record.certification_authority_id);
     }
   }
-  
+
   // 2. Optimization: Group records by domain+accountId combinations
   // This prevents multiple database queries for the same combination
-  const recordGroups = new Map<string, {
-    records: any[],
-    domain: string,
-    accountId: string
-  }>();
-  
+  const recordGroups = new Map<
+    string,
+    {
+      records: any[];
+      domain: string;
+      accountId: string;
+    }
+  >();
+
   for (const record of recordEntries) {
     if (!('domain' in record)) continue;
-    
+
     const domain = record.domain;
     const accountId = record.account_id?.toString() || '';
     const key = `${domain}:${accountId}`;
-    
+
     if (!recordGroups.has(key)) {
       recordGroups.set(key, {
         records: [],
         domain,
-        accountId
+        accountId,
       });
     }
     recordGroups.get(key)?.records.push(record);
   }
-  
+
   // 3. Function to process each domain+accountId pair
   // This ensures we only query each unique combination once
   const processDomainAccountPair = async (domain: string, accountId: string, records: any[]) => {
     // Find Certification Authority ID (once per group)
     const foundCertId = domainCertIds.get(domain) || null;
     const sellersJsonData = domainSellersJsonCache.get(domain);
-    
+
     let category = 'other';
     let certId = foundCertId;
-    
+
     // Handle missing or invalid sellers.json data
     if (!sellersJsonData) {
       category = 'noSellerJson';
@@ -152,10 +157,14 @@ async function classifyRecords(
           domain.toLowerCase(),
           [accountId.toString()]
         );
-        
-        if (specificSeller && specificSeller.matchingSellers && specificSeller.matchingSellers.length > 0) {
+
+        if (
+          specificSeller &&
+          specificSeller.matchingSellers &&
+          specificSeller.matchingSellers.length > 0
+        ) {
           const seller = specificSeller.matchingSellers[0];
-          
+
           // Check confidentiality flag (support both boolean and number)
           if (
             seller.is_confidential === true ||
@@ -179,49 +188,45 @@ async function classifyRecords(
       const matchingSeller = sellersJsonData.sellers.find(
         (seller: any) => seller.seller_id && seller.seller_id.toString() === accountId
       );
-      
+
       if (!matchingSeller) {
         category = 'missingSellerId';
       } else if (matchingSeller.is_confidential === 1) {
         category = 'confidential';
       } else {
         category = 'other';
-        
+
         // Look for TAG-ID (once per group)
-        if (
-          !certId &&
-          sellersJsonData.identifiers &&
-          Array.isArray(sellersJsonData.identifiers)
-        ) {
+        if (!certId && sellersJsonData.identifiers && Array.isArray(sellersJsonData.identifiers)) {
           const tagIdEntry = sellersJsonData.identifiers.find(
             (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
           );
-          
+
           if (tagIdEntry && tagIdEntry.value) {
             certId = tagIdEntry.value;
           }
         }
       }
     }
-    
+
     // Apply results to all records in the group
-    return records.map(record => {
+    return records.map((record) => {
       const enhancedRecord = { ...record };
       if (certId) enhancedRecord.certification_authority_id = certId;
       return { record: enhancedRecord, category };
     });
   };
-  
+
   // 4. Process all groups in parallel and combine results
   const groupResults = await Promise.all(
-    Array.from(recordGroups.values()).map(({ domain, accountId, records }) => 
+    Array.from(recordGroups.values()).map(({ domain, accountId, records }) =>
       processDomainAccountPair(domain, accountId, records)
     )
   );
-  
+
   // 5. Flatten results
   const enhancedRecords = groupResults.flat();
-  
+
   // Add records without domain attribute
   for (const record of recordEntries) {
     if (!('domain' in record)) {
@@ -252,7 +257,7 @@ async function classifyRecords(
     otherRecords,
     confidentialRecords,
     missingSellerIdRecords,
-    noSellerJsonRecords
+    noSellerJsonRecords,
   };
 }
 
@@ -285,7 +290,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
     // Process the content to remove duplicates and standardize format
     const optimizationStart = Date.now();
     let optimizedContent = optimizeAdsTxt(content, publisher_domain);
-    logStep('基本最適化(重複排除)');
+    logStep('Basic optimization complete');
 
     // For level 1, only perform basic optimization
     if (!level || level === DEFAULT_OPTIMIZATION_LEVEL) {
@@ -294,7 +299,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       logger.info(
         `Level 1 optimization complete. Result length: ${optimizedContent.length} characters. Total time: ${totalTime.seconds}s`
       );
-      
+
       // Return the results
       return res.status(200).json({
         success: true,
@@ -307,21 +312,21 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         },
       });
     }
-    
+
     // レベル2の場合はここから詳細な分析を開始
-    logStep('レベル2最適化開始');
+    logStep('Level2 optimization started');
 
     // レベル2の場合はセラーズJSON連携による補完と詳細分類を行う
     if (level === 'level2') {
       // 1. 最適化されたコンテンツを解析
       const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
-      logStep('コンテンツ解析');
+      logStep('Contents analysis');
 
       // 2. レコードエントリのみを処理
       const recordEntries = parsedEntries.filter(
         (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
       );
-      logStep('レコードフィルタリング');
+      logStep('Record filtering');
 
       // 3. ドメインを抽出し、sellers.json を並列取得
       const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
@@ -334,7 +339,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           uniqueDomains.add(record.domain);
         }
       }
-      logStep('ユニークドメイン抽出');
+      logStep('Unique domain extraction');
 
       logger.info(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
 
@@ -568,7 +573,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         optimizedFetchWithCache, // 最適化されたフェッチ関数を使用
         MAX_CONCURRENT_FETCHES
       );
-      logStep('sellers.json取得完了');
+      logStep('sellers.json retrieval complete');
 
       // 処理完了時間を記録
       const processingTimeMs = Date.now() - stats.processingStart;
@@ -638,15 +643,15 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
       // 3. If the record doesn't exist or is expired, we fetch a new sellers.json
 
       // Start record classification process
-      logStep('レコード分類処理開始');
-      
+      logStep('Start classification');
+
       // Call the classification function to execute the process
-      const { 
-        enhancedRecords, 
-        otherRecords, 
-        confidentialRecords, 
-        missingSellerIdRecords, 
-        noSellerJsonRecords 
+      const {
+        enhancedRecords,
+        otherRecords,
+        confidentialRecords,
+        missingSellerIdRecords,
+        noSellerJsonRecords,
       } = await classifyRecords(recordEntries, domainSellersJsonCache);
 
       // Sort records within each category (domain → relationship)
@@ -670,8 +675,8 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
       const sortedConfidentialRecords = sortRecords(confidentialRecords);
       const sortedMissingSellerIdRecords = sortRecords(missingSellerIdRecords);
       const sortedNoSellerJsonRecords = sortRecords(noSellerJsonRecords);
-      
-      logStep('レコード分類完了');
+
+      logStep('Classification complete');
 
       // ステップ4: 新しい最適化されたコンテンツを作成
       // 変数と余分な行を取得
@@ -747,12 +752,12 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
           enhancedContent += line + '\n';
         });
       }
-      
-      logStep('最終コンテンツ生成');
+
+      logStep('Final content generation');
 
       // Final timing measurement
       const totalTime = getElapsedTime();
-      
+
       logger.info(
         `Level 2 optimization complete. Result length: ${enhancedContent.length} characters. Total time: ${totalTime.seconds}s (${totalTime.minutes}m)`
       );
@@ -762,10 +767,12 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
 
       // Calculate time spent on each step
       const stepTimes = performanceTimer.calculateStepTimes();
-      
+
       // Log the time breakdown for each step
       logger.info('Step timing breakdown:', {
-        steps: stepTimes.map(s => `${s.name}: ${(s.duration / 1000).toFixed(2)}s (${s.percentage})`)
+        steps: stepTimes.map(
+          (s) => `${s.name}: ${(s.duration / 1000).toFixed(2)}s (${s.percentage})`
+        ),
       });
 
       // Return the results
@@ -783,10 +790,10 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
             no_seller_json: sortedNoSellerJsonRecords.length,
           },
           execution_time_ms: totalTime.ms,
-          execution_steps: stepTimes.map(s => ({ 
-            name: s.name, 
+          execution_steps: stepTimes.map((s) => ({
+            name: s.name,
             duration_ms: s.duration,
-            percentage: s.percentage
+            percentage: s.percentage,
           })),
         },
       });
