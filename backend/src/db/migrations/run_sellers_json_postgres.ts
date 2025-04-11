@@ -28,18 +28,24 @@ export const runSellersJsonPostgresMigration = async (): Promise<void> => {
     logger.info('Sellers.json JSONB table created or updated successfully');
     
     // Check if the table has data
-    const countResult = await db.execute('SELECT COUNT(*) FROM sellers_json_cache');
-    const recordCount = countResult[0].count;
+    const countResult = await db.execute<{ count: string }>('SELECT COUNT(*) FROM sellers_json_cache');
+    // Handle array result from db.execute
+    const countArray = countResult as Array<{ count: string }>;
+    const recordCount = countArray[0]?.count || '0';
     
     logger.info(`Sellers.json cache table has ${recordCount} records`);
     
     // Only try to migrate data if the function exists and we need to
     try {
-      const functionExists = await db.execute(
+      const functionExists = await db.execute<{ count: string }>(
         "SELECT COUNT(*) FROM pg_proc WHERE proname = 'migrate_sellers_json_data'"
       );
       
-      if (functionExists[0].count > 0) {
+      // Handle array result from db.execute
+      const functionExistsArray = functionExists as Array<{ count: string }>;
+      const functionCount = functionExistsArray[0]?.count || '0';
+      
+      if (parseInt(functionCount, 10) > 0) {
         logger.info('Found data migration function, running migration');
         await db.execute('SELECT migrate_sellers_json_data()');
         logger.info('Data migration completed successfully');
