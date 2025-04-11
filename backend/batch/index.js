@@ -118,9 +118,9 @@ program
 
       // Prefetch sellers.json data based on ads.txt domains (always run before refresh)
       // Use reasonable defaults if no specific limits provided
-      const prefetchLimit = options.prefetchLimit || 100;
+      const prefetchLimit = options.prefetchLimit || 300;
       logger.info('Starting sellers.json prefetch task');
-      await prefetchSellersJson.run({ 
+      await prefetchSellersJson.run({
         limit: prefetchLimit,
         minUsage: options.minUsage || 3, // Only prefetch domains that appear frequently
         priorityAge: options.priorityAge || 3 // Prioritize domains with no cache or older than 3 days
