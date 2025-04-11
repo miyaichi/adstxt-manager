@@ -2,8 +2,8 @@
   "family": "adstxt-manager-batch",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512",
+  "cpu": "1024",
+  "memory": "2048",
   "executionRoleArn": "arn:aws:iam::340305476423:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {

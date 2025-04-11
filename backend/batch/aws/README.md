@@ -90,3 +90,29 @@ Monitor the execution of the batch process in:
 - CloudWatch Logs - `/ecs/adstxt-manager-batch`
 - ECS Task history
 - CloudWatch Events rule history
+
+## Updating Task Resources
+
+The task definition has been updated to allocate more resources for handling larger JSON data:
+- CPU: 1024 (1 vCPU)
+- Memory: 2048MB (2GB)
+
+These values are optimized for processing large sellers.json files (like Google's ~100MB file).
+
+To apply these changes:
+
+1. Register the updated task definition:
+   ```bash
+   chmod +x register-task-definition.sh
+   ./register-task-definition.sh
+   ```
+
+2. Update the service to use the new task definition:
+   ```bash
+   TASK_DEF=$(aws ecs describe-task-definition --task-definition adstxt-manager-batch --query 'taskDefinition.taskDefinitionArn' --output text)
+   aws ecs update-service --cluster adstxt-manager --service adstxt-manager-batch --task-definition $TASK_DEF
+   ```
+
+3. Or trigger a new GitHub workflow deployment by pushing changes to the batch directory.
+
+If you need to further adjust resources based on performance monitoring, modify the `cpu` and `memory` values in `task-definition.json`.
