@@ -1142,12 +1142,12 @@ export const translations = {
       },
       level2: {
         title: {
-          en: 'Level 2: Advanced (Testing)',
-          ja: 'レベル2: 高度（テスト中）',
+          en: 'Level 2: Advanced (Takes time)',
+          ja: 'レベル2: 高度（時間がかかります）',
         },
         description: {
-          en: 'Level 1 + categorize by seller type, add Certification IDs',
-          ja: 'レベル1 + カテゴリ分け、認証IDの追加',
+          en: 'Level 1 + categorize by seller type, completion of Certification IDs',
+          ja: 'レベル1 + カテゴリ分け、認証IDの補完',
         },
       },
     },
