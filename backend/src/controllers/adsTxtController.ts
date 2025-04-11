@@ -11,10 +11,251 @@ import { createLogger } from '../utils/logger';
 // Create logger for AdsTxt optimization
 const logger = createLogger('AdsTxtOptimizer');
 
+// Configuration values
+const DEFAULT_OPTIMIZATION_LEVEL = 'level1';
+const MAX_FILE_SIZE = 5000000; // 5MB
+const MAX_CONCURRENT_FETCHES = parseInt(process.env.SELLERS_JSON_CONCURRENCY || '20', 10);
+
 /**
  * Update the status of an Ads.txt record
  * @route PATCH /api/adstxt/:id/status
  */
+/**
+ * Interface for performance timing utilities
+ */
+interface PerformanceTimer {
+  // Get elapsed time
+  getElapsedTime(): { ms: number; seconds: string; minutes: string };
+  // Record completion of a step
+  logStep(stepName: string): void;
+  // Get timing information
+  getTiming(): { start: number; steps: Record<string, number> };
+  // Calculate time spent on each step
+  calculateStepTimes(): Array<{ name: string; duration: number; percentage: string }>;
+}
+
+/**
+ * Create performance timing utility
+ */
+function createPerformanceTimer(): PerformanceTimer {
+  const startTime = Date.now();
+  const timing = {
+    start: startTime,
+    steps: {} as Record<string, number>,
+  };
+
+  return {
+    getElapsedTime: () => {
+      const elapsed = Date.now() - startTime;
+      return {
+        ms: elapsed,
+        seconds: (elapsed / 1000).toFixed(2),
+        minutes: (elapsed / 60000).toFixed(2),
+      };
+    },
+    
+    logStep: (stepName: string) => {
+      const now = Date.now();
+      timing.steps[stepName] = now;
+      const elapsed = Date.now() - startTime;
+      logger.info(`Step completed: ${stepName} - Time: ${(elapsed / 1000).toFixed(2)}s (${elapsed}ms)`);
+    },
+    
+    getTiming: () => timing,
+    
+    calculateStepTimes: () => {
+      return Object.entries(timing.steps).map(([name, time], index, array) => {
+        const prevTime = index === 0 ? timing.start : array[index - 1][1];
+        const duration = time - prevTime;
+        const totalTime = Date.now() - startTime;
+        return { 
+          name, 
+          duration, 
+          percentage: ((duration / totalTime) * 100).toFixed(1) + '%' 
+        };
+      });
+    }
+  };
+}
+
+/**
+ * Function to classify records by processing them in optimized batches
+ */
+async function classifyRecords(
+  recordEntries: any[],
+  domainSellersJsonCache: Map<string, any>
+): Promise<{ 
+  enhancedRecords: Array<{ record: any; category: string }>,
+  otherRecords: any[],
+  confidentialRecords: any[],
+  missingSellerIdRecords: any[],
+  noSellerJsonRecords: any[]
+}> {
+  // Initialize result arrays for each category
+  const otherRecords: any[] = [];
+  const confidentialRecords: any[] = [];
+  const missingSellerIdRecords: any[] = [];
+  const noSellerJsonRecords: any[] = [];
+
+  // 1. Preprocessing: Collect Certification Authority IDs by domain
+  const domainCertIds = new Map<string, string>();
+  for (const record of recordEntries) {
+    if ('domain' in record && record.domain && record.certification_authority_id) {
+      domainCertIds.set(record.domain, record.certification_authority_id);
+    }
+  }
+  
+  // 2. Optimization: Group records by domain+accountId combinations
+  // This prevents multiple database queries for the same combination
+  const recordGroups = new Map<string, {
+    records: any[],
+    domain: string,
+    accountId: string
+  }>();
+  
+  for (const record of recordEntries) {
+    if (!('domain' in record)) continue;
+    
+    const domain = record.domain;
+    const accountId = record.account_id?.toString() || '';
+    const key = `${domain}:${accountId}`;
+    
+    if (!recordGroups.has(key)) {
+      recordGroups.set(key, {
+        records: [],
+        domain,
+        accountId
+      });
+    }
+    recordGroups.get(key)?.records.push(record);
+  }
+  
+  // 3. Function to process each domain+accountId pair
+  // This ensures we only query each unique combination once
+  const processDomainAccountPair = async (domain: string, accountId: string, records: any[]) => {
+    // Find Certification Authority ID (once per group)
+    const foundCertId = domainCertIds.get(domain) || null;
+    const sellersJsonData = domainSellersJsonCache.get(domain);
+    
+    let category = 'other';
+    let certId = foundCertId;
+    
+    // Handle missing or invalid sellers.json data
+    if (!sellersJsonData) {
+      category = 'noSellerJson';
+    } else if (sellersJsonData.__metadata && sellersJsonData.__summary) {
+      // Memory-optimized data processing - execute query only once
+      try {
+        // Share query results across all records in the group
+        const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+        const specificSeller = await SellersJsonCacheModel.getSpecificSellers(
+          domain.toLowerCase(),
+          [accountId.toString()]
+        );
+        
+        if (specificSeller && specificSeller.matchingSellers && specificSeller.matchingSellers.length > 0) {
+          const seller = specificSeller.matchingSellers[0];
+          
+          // Check confidentiality flag (support both boolean and number)
+          if (
+            seller.is_confidential === true ||
+            (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)
+          ) {
+            category = 'confidential';
+          } else {
+            category = 'other';
+          }
+        } else {
+          category = 'missingSellerId';
+        }
+      } catch (error) {
+        logger.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
+        category = 'noSellerJson';
+      }
+    } else if (!Array.isArray(sellersJsonData.sellers)) {
+      category = 'noSellerJson';
+    } else {
+      // Legacy processing - search sellers array
+      const matchingSeller = sellersJsonData.sellers.find(
+        (seller: any) => seller.seller_id && seller.seller_id.toString() === accountId
+      );
+      
+      if (!matchingSeller) {
+        category = 'missingSellerId';
+      } else if (matchingSeller.is_confidential === 1) {
+        category = 'confidential';
+      } else {
+        category = 'other';
+        
+        // Look for TAG-ID (once per group)
+        if (
+          !certId &&
+          sellersJsonData.identifiers &&
+          Array.isArray(sellersJsonData.identifiers)
+        ) {
+          const tagIdEntry = sellersJsonData.identifiers.find(
+            (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
+          );
+          
+          if (tagIdEntry && tagIdEntry.value) {
+            certId = tagIdEntry.value;
+          }
+        }
+      }
+    }
+    
+    // Apply results to all records in the group
+    return records.map(record => {
+      const enhancedRecord = { ...record };
+      if (certId) enhancedRecord.certification_authority_id = certId;
+      return { record: enhancedRecord, category };
+    });
+  };
+  
+  // 4. Process all groups in parallel and combine results
+  const groupResults = await Promise.all(
+    Array.from(recordGroups.values()).map(({ domain, accountId, records }) => 
+      processDomainAccountPair(domain, accountId, records)
+    )
+  );
+  
+  // 5. Flatten results
+  const enhancedRecords = groupResults.flat();
+  
+  // Add records without domain attribute
+  for (const record of recordEntries) {
+    if (!('domain' in record)) {
+      enhancedRecords.push({ record, category: 'other' });
+    }
+  }
+
+  // Organize records by category
+  enhancedRecords.forEach(({ record, category }) => {
+    switch (category) {
+      case 'confidential':
+        confidentialRecords.push(record);
+        break;
+      case 'missingSellerId':
+        missingSellerIdRecords.push(record);
+        break;
+      case 'noSellerJson':
+        noSellerJsonRecords.push(record);
+        break;
+      default:
+        otherRecords.push(record);
+        break;
+    }
+  });
+
+  return {
+    enhancedRecords,
+    otherRecords,
+    confidentialRecords,
+    missingSellerIdRecords,
+    noSellerJsonRecords
+  };
+}
+
 /**
  * Optimize the ads.txt content to remove duplicates and standardize format
  * @route POST /api/adstxt/optimize
@@ -27,8 +268,12 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
   }
 
   try {
+    // Initialize performance timing utilities
+    const performanceTimer = createPerformanceTimer();
+    const { logStep, getElapsedTime } = performanceTimer;
+
     // Check the content length - allow large files but set a limit
-    if (content.length > 5000000) {
+    if (content.length > MAX_FILE_SIZE) {
       // Refuse files larger than 5MB
       throw new ApiError(400, 'File too large (max 5MB)', 'errors:fileTooLarge');
     }
@@ -38,14 +283,19 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
     );
 
     // Process the content to remove duplicates and standardize format
+    const optimizationStart = Date.now();
     let optimizedContent = optimizeAdsTxt(content, publisher_domain);
+    logStep('基本最適化(重複排除)');
 
-    // レベル1の場合は基本的な最適化のみ行う
-    if (!level || level === 'level1') {
+    // For level 1, only perform basic optimization
+    if (!level || level === DEFAULT_OPTIMIZATION_LEVEL) {
+      // Final timing measurement
+      const totalTime = getElapsedTime();
       logger.info(
-        `Level 1 optimization complete. Result length: ${optimizedContent.length} characters`
+        `Level 1 optimization complete. Result length: ${optimizedContent.length} characters. Total time: ${totalTime.seconds}s`
       );
-      // 結果を返す
+      
+      // Return the results
       return res.status(200).json({
         success: true,
         data: {
@@ -53,19 +303,25 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           original_length: content.length,
           optimized_length: optimizedContent.length,
           optimization_level: 'level1',
+          execution_time_ms: totalTime.ms,
         },
       });
     }
+    
+    // レベル2の場合はここから詳細な分析を開始
+    logStep('レベル2最適化開始');
 
     // レベル2の場合はセラーズJSON連携による補完と詳細分類を行う
     if (level === 'level2') {
       // 1. 最適化されたコンテンツを解析
       const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
+      logStep('コンテンツ解析');
 
       // 2. レコードエントリのみを処理
       const recordEntries = parsedEntries.filter(
         (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
       );
+      logStep('レコードフィルタリング');
 
       // 3. ドメインを抽出し、sellers.json を並列取得
       const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
@@ -78,6 +334,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
           uniqueDomains.add(record.domain);
         }
       }
+      logStep('ユニークドメイン抽出');
 
       logger.info(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
 
@@ -127,14 +384,13 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         return results;
       }
 
-      // 並列実行の最大値を設定 - 環境変数から取得するか、デフォルト値を使用
-      const MAX_CONCURRENT_FETCHES = parseInt(process.env.SELLERS_JSON_CONCURRENCY || '20', 10); // 同時に処理するsellers.json取得の最大数
+      // Log the maximum number of concurrent sellers.json fetches
       logger.info(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
 
-      // 各ドメインのsellers.json取得処理の関数 - メモリ効率化版
+      // Function to fetch sellers.json for each domain - memory optimized version
       const fetchSellersJson = async (domain: string) => {
         try {
-          // 正規化したドメイン名を使用
+          // Use normalized domain name
           const normalizedDomain = domain.toLowerCase();
           logger.debug(
             `Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`
@@ -312,6 +568,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         optimizedFetchWithCache, // 最適化されたフェッチ関数を使用
         MAX_CONCURRENT_FETCHES
       );
+      logStep('sellers.json取得完了');
 
       // 処理完了時間を記録
       const processingTimeMs = Date.now() - stats.processingStart;
@@ -373,191 +630,50 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
         }
       }
 
-      // ステップ3: 後で必要な場合のみ、特定のaccount_idに関するsellersデータのみ取得する準備
+      // Step 3: Classify and enhance records
 
-      // 処理フロー整理：
-      // 1. レベル２オプティマイズでは、ads.txtに記載されているすべてのドメインのsellers.jsonの取得を試みる
-      // 2. sellers_json_cacheにstatusにかかわらず、レコードがあり有効期限が切れていなければ、その情報をそのまま使う
-      // 3. レコードがない、有効期限が切れているいずれかの場合は、新しくsellers.jsonを取得する
+      // Process flow overview:
+      // 1. For level 2 optimization, we attempt to fetch sellers.json for all domains listed in ads.txt
+      // 2. If a record exists in sellers_json_cache (regardless of status) and is not expired, we use that information
+      // 3. If the record doesn't exist or is expired, we fetch a new sellers.json
 
-      // 4. レコードを分類とレコードの拡張
-      // 分類1: その他
-      const otherRecords: any[] = [];
-      // 分類2: sellerレコードがis_confidential = 1 のもの
-      const confidentialRecords: any[] = [];
-      // 分類3: sellers.jsonに記載のないもの
-      const missingSellerIdRecords: any[] = [];
-      // 分類4: sellers.jsonが提供されていない広告システムのもの
-      const noSellerJsonRecords: any[] = [];
+      // Start record classification process
+      logStep('レコード分類処理開始');
+      
+      // Call the classification function to execute the process
+      const { 
+        enhancedRecords, 
+        otherRecords, 
+        confidentialRecords, 
+        missingSellerIdRecords, 
+        noSellerJsonRecords 
+      } = await classifyRecords(recordEntries, domainSellersJsonCache);
 
-      // 各レコードを拡張して分類する - メモリ最適化版
-      const enhancedRecords = await Promise.all(
-        recordEntries.map(async (record, index) => {
-          if (!('domain' in record)) return { record, category: 'other' };
-
-          const domain = record.domain;
-          const accountId = record.account_id;
-          const sellersJsonData = domainSellersJsonCache.get(domain);
-
-          // Certification Authority ID を探す (同じドメインの他のエントリから)
-          let foundCertId: string | null = null;
-
-          for (const otherRecord of recordEntries) {
-            if (
-              'domain' in otherRecord &&
-              otherRecord.domain === domain &&
-              otherRecord.certification_authority_id
-            ) {
-              foundCertId = otherRecord.certification_authority_id || null;
-              break;
-            }
-          }
-
-          // 分類4: sellers.jsonが提供されていない広告システム
-          if (!sellersJsonData) {
-            const enhancedRecord = { ...record };
-            if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-            return { record: enhancedRecord, category: 'noSellerJson' };
-          }
-
-          // メモリ最適化されたデータの場合の処理 (メタデータのみ保持)
-          if (sellersJsonData.__metadata && sellersJsonData.__summary) {
-            // メモリ使用量削減のため、このレコードに必要な特定のseller情報のみを取得
-            try {
-              const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
-              const specificSeller = await SellersJsonCacheModel.getSpecificSellers(
-                domain.toLowerCase(),
-                [accountId.toString()]
-              );
-
-              const enhancedRecord = { ...record };
-              if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-
-              // 特定のsellerが見つかったかどうかで分類
-              if (
-                specificSeller &&
-                specificSeller.matchingSellers &&
-                specificSeller.matchingSellers.length > 0
-              ) {
-                const seller = specificSeller.matchingSellers[0];
-
-                // 機密フラグをチェック (booleanとnumber型の両方に対応)
-                if (
-                  seller.is_confidential === true ||
-                  (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)
-                ) {
-                  return { record: enhancedRecord, category: 'confidential' };
-                }
-
-                // 通常のレコード
-                return { record: enhancedRecord, category: 'other' };
-              } else {
-                // マッチするsellerが見つからない
-                return { record: enhancedRecord, category: 'missingSellerId' };
-              }
-            } catch (error) {
-              logger.error(
-                `Error fetching specific seller data for ${domain}/${accountId}:`,
-                error
-              );
-              // エラーが発生した場合は非SellersJson扱いにする
-              const enhancedRecord = { ...record };
-              if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-              return { record: enhancedRecord, category: 'noSellerJson' };
-            }
-          }
-
-          // 従来の処理 (完全なsellers配列がある場合)
-          if (!Array.isArray(sellersJsonData.sellers)) {
-            const enhancedRecord = { ...record };
-            if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-            return { record: enhancedRecord, category: 'noSellerJson' };
-          }
-
-          // セラーIDが存在するか確認
-          const matchingSeller = sellersJsonData.sellers.find(
-            (seller: any) => seller.seller_id && seller.seller_id.toString() === accountId
-          );
-
-          // 分類3: sellers.jsonに記載のないもの
-          if (!matchingSeller) {
-            const enhancedRecord = { ...record };
-            if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-            return { record: enhancedRecord, category: 'missingSellerId' };
-          }
-
-          // 分類2: sellerレコードがis_confidential = 1 のもの
-          if (matchingSeller.is_confidential === 1) {
-            const enhancedRecord = { ...record };
-            if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
-            return { record: enhancedRecord, category: 'confidential' };
-          }
-
-          // セラーIDが存在し、非機密なら、TAG-ID を探す
-          let certId = foundCertId;
-
-          if (
-            !certId &&
-            sellersJsonData.identifiers &&
-            Array.isArray(sellersJsonData.identifiers)
-          ) {
-            const tagIdEntry = sellersJsonData.identifiers.find(
-              (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
-            );
-
-            if (tagIdEntry && tagIdEntry.value) {
-              certId = tagIdEntry.value;
-            }
-          }
-
-          // 分類1: その他 (条件を満たすすべてのレコード)
-          const enhancedRecord = { ...record };
-          if (certId) enhancedRecord.certification_authority_id = certId;
-          return { record: enhancedRecord, category: 'other' };
-        })
-      );
-
-      // 分類ごとにレコードを整理
-      enhancedRecords.forEach(({ record, category }) => {
-        switch (category) {
-          case 'confidential':
-            confidentialRecords.push(record);
-            break;
-          case 'missingSellerId':
-            missingSellerIdRecords.push(record);
-            break;
-          case 'noSellerJson':
-            noSellerJsonRecords.push(record);
-            break;
-          default:
-            otherRecords.push(record);
-            break;
-        }
-      });
-
-      // 各分類内でレコードを整理 (ドメイン→リレーションシップでソート)
+      // Sort records within each category (domain → relationship)
       const sortRecords = (records: any[]) => {
         return records.sort((a, b) => {
-          // まずドメインでソート
+          // Sort by domain first
           const domainComparison = a.domain.localeCompare(b.domain);
           if (domainComparison !== 0) return domainComparison;
 
-          // 同じドメインならDIRECTを先に
+          // For same domain, put DIRECT before RESELLER
           if (a.relationship === 'DIRECT' && b.relationship === 'RESELLER') return -1;
           if (a.relationship === 'RESELLER' && b.relationship === 'DIRECT') return 1;
 
-          // 最後にアカウントIDでソート
+          // Finally sort by account ID
           return a.account_id.localeCompare(b.account_id);
         });
       };
 
-      // すべての分類でレコードをソート
+      // Sort records in all categories
       const sortedOtherRecords = sortRecords(otherRecords);
       const sortedConfidentialRecords = sortRecords(confidentialRecords);
       const sortedMissingSellerIdRecords = sortRecords(missingSellerIdRecords);
       const sortedNoSellerJsonRecords = sortRecords(noSellerJsonRecords);
+      
+      logStep('レコード分類完了');
 
-      // 5. 新しい最適化されたコンテンツを作成
+      // ステップ4: 新しい最適化されたコンテンツを作成
       // 変数と余分な行を取得
       const variableEntries = parsedEntries.filter((entry) => 'variable_type' in entry);
 
@@ -631,15 +747,28 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
           enhancedContent += line + '\n';
         });
       }
+      
+      logStep('最終コンテンツ生成');
 
+      // Final timing measurement
+      const totalTime = getElapsedTime();
+      
       logger.info(
-        `Level 2 optimization complete. Result length: ${enhancedContent.length} characters`
+        `Level 2 optimization complete. Result length: ${enhancedContent.length} characters. Total time: ${totalTime.seconds}s (${totalTime.minutes}m)`
       );
       logger.info(
         `Categories breakdown - Other: ${sortedOtherRecords.length}, Confidential: ${sortedConfidentialRecords.length}, Missing: ${sortedMissingSellerIdRecords.length}, No sellers.json: ${sortedNoSellerJsonRecords.length}`
       );
 
-      // 結果を返す
+      // Calculate time spent on each step
+      const stepTimes = performanceTimer.calculateStepTimes();
+      
+      // Log the time breakdown for each step
+      logger.info('Step timing breakdown:', {
+        steps: stepTimes.map(s => `${s.name}: ${(s.duration / 1000).toFixed(2)}s (${s.percentage})`)
+      });
+
+      // Return the results
       return res.status(200).json({
         success: true,
         data: {
@@ -653,11 +782,17 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
             missing_seller_id: sortedMissingSellerIdRecords.length,
             no_seller_json: sortedNoSellerJsonRecords.length,
           },
+          execution_time_ms: totalTime.ms,
+          execution_steps: stepTimes.map(s => ({ 
+            name: s.name, 
+            duration_ms: s.duration,
+            percentage: s.percentage
+          })),
         },
       });
     }
 
-    // 未知のレベルの場合はレベル1として処理
+    // Process as level 1 for unknown optimization levels
     logger.warn(`Unknown optimization level: ${level}, using level1 instead`);
     return res.status(200).json({
       success: true,

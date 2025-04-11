@@ -576,6 +576,27 @@ class SellersJsonCacheModel {
     }
   }
 
+  // 特定のドメインとアカウントIDのペアの結果をメモリキャッシュするためのマップ
+  private specificSellersCache: Map<
+    string,
+    {
+      result: {
+        domainInfo: {
+          id: string;
+          domain: string;
+          status: SellersJsonCacheStatus;
+          updated_at: string;
+        };
+        metadata: {
+          version?: string;
+          contact_email?: string;
+        };
+        matchingSellers: Array<any>;
+      } | null;
+      timestamp: number;
+    }
+  > = new Map();
+
   /**
    * Get specific seller entries matching the provided account IDs
    * This is more memory-efficient than getting all sellers when only a few are needed
@@ -603,23 +624,46 @@ class SellersJsonCacheModel {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
+      
+      // アカウントIDも正規化
+      const normalizedIds = accountIds.map(id => id.toString().toLowerCase());
+      
+      // キャッシュキーの作成（ドメイン:アカウントIDのリスト）
+      const cacheKey = `${normalizedDomain}:${normalizedIds.join(',')}`;
+      
+      // 結果がすでにメモリキャッシュにあるか確認
+      const cachedResult = this.specificSellersCache.get(cacheKey);
+      if (cachedResult && (Date.now() - cachedResult.timestamp) < this.memoryCacheTTL) {
+        logger.debug(`[SellersJsonCache] Using specific sellers memory cache for ${cacheKey}`);
+        return cachedResult.result;
+      }
 
       // Get cache record first - メモリキャッシュも利用
       const cacheRecord = await this.getByDomain(normalizedDomain, false);
       if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
+        // キャッシュに結果を保存（null結果も保存して同じクエリの繰り返しを防ぐ）
+        this.specificSellersCache.set(cacheKey, {
+          result: null,
+          timestamp: Date.now()
+        });
         return null;
       }
 
       // Check if we're using PostgreSQL for JSONB optimized queries
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
 
-      if (dbProvider === 'postgres' && accountIds.length > 0) {
+      if (dbProvider === 'postgres' && normalizedIds.length > 0) {
         try {
           // Use optimized PostgreSQL query for specific sellers
           const postgres = (db as any).implementation as any;
           if (postgres.queryJsonBSpecificSellers) {
-            const result = await postgres.queryJsonBSpecificSellers(normalizedDomain, accountIds);
+            const result = await postgres.queryJsonBSpecificSellers(normalizedDomain, normalizedIds);
             if (result) {
+              // 結果をキャッシュに保存
+              this.specificSellersCache.set(cacheKey, {
+                result,
+                timestamp: Date.now()
+              });
               return result;
             }
           }
@@ -632,16 +676,24 @@ class SellersJsonCacheModel {
       // Parse the data manually but extract only what's needed
       const parsedContent = this.parseContent(cacheRecord.content);
       if (!parsedContent || !parsedContent.sellers || !Array.isArray(parsedContent.sellers)) {
+        // キャッシュに結果を保存（null結果も保存して同じクエリの繰り返しを防ぐ）
+        this.specificSellersCache.set(cacheKey, {
+          result: null,
+          timestamp: Date.now()
+        });
         return null;
       }
 
+      // アカウントIDをセットに変換して高速検索
+      const accountIdSet = new Set(normalizedIds);
+      
       // Filter to only include matching seller IDs
-      const accountIdSet = new Set(accountIds.map((id) => id.toString().toLowerCase()));
       const matchingSellers = parsedContent.sellers.filter(
         (seller) => seller.seller_id && accountIdSet.has(seller.seller_id.toString().toLowerCase())
       );
 
-      return {
+      // 結果を作成
+      const result = {
         domainInfo: {
           id: cacheRecord.id,
           domain: cacheRecord.domain,
@@ -654,9 +706,62 @@ class SellersJsonCacheModel {
         },
         matchingSellers,
       };
+      
+      // 結果をキャッシュに保存
+      this.specificSellersCache.set(cacheKey, {
+        result,
+        timestamp: Date.now()
+      });
+      
+      // キャッシュサイズを確認し、大きすぎる場合はクリーンアップ
+      if (this.specificSellersCache.size > this.memoryCacheMaxSize) {
+        this.cleanupSpecificSellersCache();
+      }
+
+      return result;
     } catch (error) {
       logger.error(`[SellersJsonCache] Error getting specific sellers: ${error}`);
       return null;
+    }
+  }
+  
+  /**
+   * 古い特定セラーのキャッシュをクリーンアップするメソッド
+   */
+  private cleanupSpecificSellersCache(): void {
+    try {
+      const now = Date.now();
+      const expiredKeys: string[] = [];
+      
+      // まず期限切れのエントリを特定
+      for (const [key, entry] of this.specificSellersCache.entries()) {
+        if (now - entry.timestamp > this.memoryCacheTTL) {
+          expiredKeys.push(key);
+        }
+      }
+      
+      // 期限切れのエントリを削除
+      for (const key of expiredKeys) {
+        this.specificSellersCache.delete(key);
+      }
+      
+      // それでもまだ多すぎる場合は、古いものから削除
+      if (this.specificSellersCache.size > this.memoryCacheMaxSize) {
+        const entries = Array.from(this.specificSellersCache.entries());
+        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        
+        // 削除する数を計算（キャッシュの約20%を削除）
+        const toRemoveCount = Math.ceil(this.memoryCacheMaxSize * 0.2);
+        const keysToRemove = entries.slice(0, toRemoveCount).map(entry => entry[0]);
+        
+        for (const key of keysToRemove) {
+          this.specificSellersCache.delete(key);
+        }
+        
+        logger.debug(`[SellersJsonCache] Cleaned up ${keysToRemove.length} old entries from specific sellers cache`);
+      }
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error cleaning up specific sellers cache: ${error}`);
     }
   }
 }
