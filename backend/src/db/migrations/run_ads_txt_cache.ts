@@ -15,15 +15,15 @@ export const runAdsTxtCacheMigration = async (): Promise<void> => {
   try {
     // Read SQL file
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
-    
+
     // Execute the SQL
     await db.execute(sql);
-    
+
     // Check if the table has data after migration
     const countResult = await db.execute<{ count: string }>('SELECT COUNT(*) FROM ads_txt_cache');
     const countArray = countResult as Array<{ count: string }>;
     const recordCount = countArray[0]?.count || '0';
-    
+
     logger.info(`AdsTxt cache migration executed successfully. Table has ${recordCount} records.`);
   } catch (error) {
     logger.error('Error executing AdsTxt cache migration:', error);

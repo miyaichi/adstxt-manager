@@ -238,10 +238,11 @@ const OptimizerPage: React.FC = () => {
         setProgressValue(100);
         setSuccess(t('optimizerPage.success.optimizeSuccess', language));
       } else {
+        console.error('Optimization failed:', response.error);
         setError(t('optimizerPage.errors.optimizeFailed', language));
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error during optimization:', err);
       setError(t('optimizerPage.errors.optimizeFailed', language));
     } finally {
       setIsLoading(false);
@@ -262,7 +263,7 @@ const OptimizerPage: React.FC = () => {
           }, 3000);
         })
         .catch((err) => {
-          console.error('クリップボードへのコピーに失敗しました:', err);
+          console.error('Failed to copy to the clipboard:', err);
           setError('クリップボードへのコピーに失敗しました');
         });
     }
