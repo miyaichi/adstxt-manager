@@ -103,7 +103,9 @@ async function classifyRecords(
   const domainCertIds = new Map<string, string>();
   for (const record of recordEntries) {
     if ('domain' in record && record.domain && record.certification_authority_id) {
-      domainCertIds.set(record.domain, record.certification_authority_id);
+      // Always normalize domain to lowercase for consistent lookups
+      const normalizedDomain = record.domain.toLowerCase();
+      domainCertIds.set(normalizedDomain, record.certification_authority_id);
     }
   }
 
@@ -122,13 +124,15 @@ async function classifyRecords(
     if (!('domain' in record)) continue;
 
     const domain = record.domain;
+    // Always normalize domain to lowercase for consistent lookups
+    const normalizedDomain = domain.toLowerCase();
     const accountId = record.account_id?.toString() || '';
-    const key = `${domain}:${accountId}`;
+    const key = `${normalizedDomain}:${accountId}`;
 
     if (!recordGroups.has(key)) {
       recordGroups.set(key, {
         records: [],
-        domain,
+        domain: normalizedDomain, // Use normalized domain
         accountId,
       });
     }
@@ -138,15 +142,19 @@ async function classifyRecords(
   // 3. Function to process each domain+accountId pair
   // This ensures we only query each unique combination once
   const processDomainAccountPair = async (domain: string, accountId: string, records: any[]) => {
-    // Find Certification Authority ID (once per group)
-    const foundCertId = domainCertIds.get(domain) || null;
-    const sellersJsonData = domainSellersJsonCache.get(domain);
+    // Find Certification Authority ID (once per group) - normalize domain for consistent lookup
+    const normalizedDomain = domain.toLowerCase();
+    const foundCertId = domainCertIds.get(normalizedDomain) || domainCertIds.get(domain) || null;
+    const sellersJsonData = domainSellersJsonCache.get(normalizedDomain) || domainSellersJsonCache.get(domain);
 
     let category = 'other';
     let certId = foundCertId;
 
     // Handle missing or invalid sellers.json data
     if (!sellersJsonData) {
+      category = 'noSellerJson';
+    } else if (sellersJsonData.__status && sellersJsonData.__status !== 'success') {
+      // Handle domains with cache entries that indicate no valid sellers.json
       category = 'noSellerJson';
     } else if (sellersJsonData.__metadata && sellersJsonData.__summary) {
       // Memory-optimized data processing - execute query only once
@@ -181,7 +189,8 @@ async function classifyRecords(
         logger.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
         category = 'noSellerJson';
       }
-    } else if (!Array.isArray(sellersJsonData.sellers)) {
+    } else if (!Array.isArray(sellersJsonData.sellers) || 
+               (sellersJsonData.status && sellersJsonData.status !== 'success')) {
       category = 'noSellerJson';
     } else {
       // Legacy processing - search sellers array
@@ -336,7 +345,8 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const uniqueDomains = new Set<string>();
       for (const record of recordEntries) {
         if ('domain' in record && record.domain) {
-          uniqueDomains.add(record.domain);
+          // Always normalize domain to lowercase for consistent lookups
+          uniqueDomains.add(record.domain.toLowerCase());
         }
       }
       logStep('Unique domain extraction');
