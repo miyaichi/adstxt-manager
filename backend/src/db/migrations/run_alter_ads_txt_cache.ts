@@ -13,9 +13,18 @@ if (!fs.existsSync(sqlFilePath)) {
 
 export const runAlterAdsTxtCacheMigration = async (): Promise<void> => {
   try {
+    // Read SQL file
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
+    
+    // Execute the SQL
     await db.execute(sql);
-    logger.info('AdsTxt cache alteration migration executed successfully');
+    
+    // Check if the table has data after migration
+    const countResult = await db.execute<{ count: string }>('SELECT COUNT(*) FROM ads_txt_cache');
+    const countArray = countResult as Array<{ count: string }>;
+    const recordCount = countArray[0]?.count || '0';
+    
+    logger.info(`AdsTxt cache alteration migration executed successfully. Table has ${recordCount} records.`);
   } catch (error) {
     logger.error('Error executing AdsTxt cache alteration migration:', error);
     throw error;

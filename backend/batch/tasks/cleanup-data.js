@@ -81,9 +81,9 @@ async function run(options = {}) {
     }
 
     // 5. Clean up error-status cache entries older than retention period
-    // For ads.txt cache
+    // For ads.txt cache - only delete error records, not "not_found" or "invalid_format"
     const adsTxtCacheQuery = `SELECT id FROM ads_txt_cache 
-                             WHERE status != 'success' AND updated_at < $1`;
+                             WHERE status = 'error' AND updated_at < $1`;
 
     const oldAdsTxtCache = await db.executeQuery(adsTxtCacheQuery, [cutoffTimestamp]);
     results.adsTxtCache.identified = oldAdsTxtCache.length;
@@ -94,7 +94,7 @@ async function run(options = {}) {
 
     if (!dryRun && oldAdsTxtCache.length > 0) {
       const deleteAdsTxtCacheQuery = `DELETE FROM ads_txt_cache 
-                                      WHERE status != 'success' AND updated_at < $1`;
+                                      WHERE status = 'error' AND updated_at < $1`;
 
       const deleteAdsTxtCacheResult = await transaction.query(deleteAdsTxtCacheQuery, [
         cutoffTimestamp,
