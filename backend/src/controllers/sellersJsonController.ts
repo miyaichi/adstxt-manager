@@ -88,12 +88,13 @@ export async function fetchSellersJsonWithCache(
 }> {
   // Always normalize domain to lowercase to avoid case-sensitivity issues
   const normalizedDomain = domain.toLowerCase();
-  logger.info(
+  logger.debug(
     `[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${normalizedDomain} (original: ${domain})`
   );
 
   // Check cache first - use normalized domain for lookup
-  const cachedData = await SellersJsonCacheModel.getByDomain(normalizedDomain);
+  // forceRefreshがtrueの場合はskipCacheをtrueにしてメモリキャッシュをスキップ
+  const cachedData = await SellersJsonCacheModel.getByDomain(normalizedDomain, forceRefresh);
   const cacheExpired = cachedData
     ? SellersJsonCacheModel.isCacheExpiredByStatus(cachedData, CACHE_EXPIRATION)
     : true;
@@ -101,7 +102,7 @@ export async function fetchSellersJsonWithCache(
   // Use valid cache if available and not forcing refresh
   if (cachedData && !forceRefresh && !cacheExpired) {
     const status = cachedData.status;
-    logger.info(
+    logger.debug(
       `[fetchSellersJsonWithCache] Using cached "${status}" result for ${normalizedDomain} (cached at ${cachedData.updated_at})`
     );
 

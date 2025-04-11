@@ -53,6 +53,20 @@ export interface SellersJsonContent {
 
 class SellersJsonCacheModel {
   private readonly tableName = 'sellers_json_cache';
+  // メモリ内キャッシュをクラスレベルで保持する
+  private memoryCache: Map<
+    string,
+    {
+      cache: SellersJsonCache;
+      timestamp: number;
+    }
+  > = new Map();
+
+  // メモリキャッシュの有効期限（ミリ秒）
+  private readonly memoryCacheTTL = 60 * 1000; // 60秒
+
+  // メモリキャッシュのサイズ上限
+  private readonly memoryCacheMaxSize = 1000;
 
   // Get the appropriate table name
   private getTableName(): string {
@@ -60,27 +74,102 @@ class SellersJsonCacheModel {
   }
 
   /**
+   * メモリキャッシュからドメインのデータを取得
+   * @param domain ドメイン名
+   * @returns キャッシュされたデータ、または null
+   */
+  private getFromMemoryCache(domain: string): SellersJsonCache | null {
+    const normalizedDomain = domain.toLowerCase();
+    const cached = this.memoryCache.get(normalizedDomain);
+
+    if (!cached) {
+      return null;
+    }
+
+    // キャッシュの有効期限をチェック
+    const now = Date.now();
+    if (now - cached.timestamp > this.memoryCacheTTL) {
+      // 有効期限切れの場合、キャッシュから削除
+      this.memoryCache.delete(normalizedDomain);
+      return null;
+    }
+
+    return cached.cache;
+  }
+
+  /**
+   * ドメインのデータをメモリキャッシュに保存
+   * @param domain ドメイン名
+   * @param cache キャッシュデータ
+   */
+  private saveToMemoryCache(domain: string, cache: SellersJsonCache): void {
+    const normalizedDomain = domain.toLowerCase();
+
+    // キャッシュサイズがリミットに達した場合、古いエントリを削除
+    if (this.memoryCache.size >= this.memoryCacheMaxSize) {
+      // キャッシュの整理 - 最も古いエントリを削除
+      let oldestTimestamp = Date.now();
+      let oldestKey = '';
+
+      for (const [key, value] of this.memoryCache.entries()) {
+        if (value.timestamp < oldestTimestamp) {
+          oldestTimestamp = value.timestamp;
+          oldestKey = key;
+        }
+      }
+
+      if (oldestKey) {
+        this.memoryCache.delete(oldestKey);
+      }
+    }
+
+    // 新しいデータをキャッシュに保存
+    this.memoryCache.set(normalizedDomain, {
+      cache,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
    * Get a sellers.json cache entry by domain
    * @param domain The domain to retrieve
+   * @param skipCache 強制的にキャッシュをスキップする場合はtrue
    * @returns The cache entry or null if not found
    */
-  async getByDomain(domain: string): Promise<SellersJsonCache | null> {
+  async getByDomain(domain: string, skipCache: boolean = false): Promise<SellersJsonCache | null> {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
 
-      logger.info(`[SellersJsonCache] Looking up domain: ${normalizedDomain}`);
+      // キャッシュをスキップしない場合はメモリキャッシュを確認
+      if (!skipCache) {
+        const cachedResult = this.getFromMemoryCache(normalizedDomain);
+        if (cachedResult) {
+          logger.debug(`[SellersJsonCache] Memory cache hit for domain: ${normalizedDomain}`);
+          return cachedResult;
+        }
+      }
+
+      logger.debug(`[SellersJsonCache] Looking up domain in database: ${normalizedDomain}`);
 
       const results = await db.query(this.getTableName(), {
         where: { domain: normalizedDomain },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
-      logger.info(
+      // INFO → DEBUG に変更してログ出力を減らす
+      logger.debug(
         `[SellersJsonCache] Query results for ${normalizedDomain}: ${results.length} records found`
       );
 
-      return results.length > 0 ? (results[0] as SellersJsonCache) : null;
+      const result = results.length > 0 ? (results[0] as SellersJsonCache) : null;
+
+      // 結果がある場合はメモリキャッシュに保存
+      if (result) {
+        this.saveToMemoryCache(normalizedDomain, result);
+      }
+
+      return result;
     } catch (error) {
       logger.error('Error fetching sellers.json cache:', error);
       throw error;
@@ -109,25 +198,28 @@ class SellersJsonCacheModel {
       const now = new Date().toISOString();
 
       if (existingCache) {
-        logger.info(
+        logger.debug(
           `[SellersJsonCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
         );
 
         // Update existing entry
-        const updatedCache = await db.update(this.getTableName(), existingCache.id, {
+        const updatedCache = (await db.update(this.getTableName(), existingCache.id, {
           content: data.content,
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
           updated_at: now,
-        });
+        })) as SellersJsonCache;
 
-        return updatedCache as SellersJsonCache;
+        // メモリキャッシュも更新
+        this.saveToMemoryCache(normalizedDomain, updatedCache);
+
+        return updatedCache;
       } else {
-        logger.info(`[SellersJsonCache] Creating new cache for domain: ${normalizedDomain}`);
+        logger.debug(`[SellersJsonCache] Creating new cache for domain: ${normalizedDomain}`);
 
         // Create new entry
-        const newCache = await db.insert(this.getTableName(), {
+        const newCache = (await db.insert(this.getTableName(), {
           id: uuidv4(),
           domain: normalizedDomain,
           content: data.content,
@@ -136,9 +228,12 @@ class SellersJsonCacheModel {
           error_message: data.error_message,
           created_at: now,
           updated_at: now,
-        });
+        })) as SellersJsonCache;
 
-        return newCache as SellersJsonCache;
+        // メモリキャッシュに保存
+        this.saveToMemoryCache(normalizedDomain, newCache);
+
+        return newCache;
       }
     } catch (error) {
       logger.error(`Error saving sellers.json cache for ${data.domain}:`, error);
@@ -344,8 +439,8 @@ class SellersJsonCacheModel {
     isCacheMiss: boolean;
   } | null> {
     try {
-      // Get cache record first
-      const cacheRecord = await this.getByDomain(domain);
+      // Get cache record first - メモリキャッシュも利用
+      const cacheRecord = await this.getByDomain(domain, false);
 
       // キャッシュが存在しない場合 (キャッシュミス)
       if (!cacheRecord) {
@@ -509,8 +604,8 @@ class SellersJsonCacheModel {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
 
-      // Get cache record first
-      const cacheRecord = await this.getByDomain(normalizedDomain);
+      // Get cache record first - メモリキャッシュも利用
+      const cacheRecord = await this.getByDomain(normalizedDomain, false);
       if (!cacheRecord || cacheRecord.status !== 'success' || !cacheRecord.content) {
         return null;
       }
