@@ -1,5 +1,6 @@
 import React from 'react';
-import { Flex, Text, Divider, useTheme } from '@aws-amplify/ui-react';
+import { Flex, Text, Divider, useTheme, Link } from '@aws-amplify/ui-react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 
@@ -27,9 +28,9 @@ const Footer: React.FC = () => {
         <Text>{t('footer.copyright', language, { year: currentYear })}</Text>
 
         <Flex gap="1rem">
-          <Text>{t('common.termsOfService', language)}</Text>
-          <Text>{t('common.privacyPolicy', language)}</Text>
-          <Text>{t('common.contact', language)}</Text>
+          <Link as={RouterLink} to="/terms">{t('common.termsOfService', language)}</Link>
+          <Link as={RouterLink} to="/privacy">{t('common.privacyPolicy', language)}</Link>
+          <Link as={RouterLink} to="/help">{t('common.help', language)}</Link>
         </Flex>
       </Flex>
     </Flex>

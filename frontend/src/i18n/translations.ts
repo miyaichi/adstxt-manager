@@ -215,6 +215,18 @@ export const translations = {
       en: 'Learn More',
       ja: '詳細を見る',
     },
+    help: {
+      en: 'Help',
+      ja: 'ヘルプ',
+    },
+    loading: {
+      en: 'Loading...',
+      ja: '読み込み中...',
+    },
+    loadingError: {
+      en: 'Failed to load content. Please try again later.',
+      ja: 'コンテンツの読み込みに失敗しました。後でもう一度お試しください。',
+    },
     home: {
       en: 'Home',
       ja: 'ホーム',

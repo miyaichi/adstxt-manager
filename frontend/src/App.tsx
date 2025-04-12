@@ -15,6 +15,8 @@ import StatusPage from './pages/StatusPage';
 import HelpPage from './pages/HelpPage';
 import EditRequestPage from './pages/EditRequestPage';
 import OptimizerPage from './pages/OptimizerPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 // Import theme
 import { theme } from './styles/theme';
@@ -34,6 +36,8 @@ function App() {
               <Route path="/optimizer" element={<OptimizerPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>
