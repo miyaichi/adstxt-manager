@@ -18,7 +18,7 @@ export const VALIDATION_KEYS = {
   INVALID_RELATIONSHIP: 'invalidRelationship',
   INVALID_DOMAIN: 'invalidDomain',
   EMPTY_ACCOUNT_ID: 'emptyAccountId',
-  DUPLICATE_ENTRY: 'duplicateEntry',
+  IMPLIMENTED: 'implimentedEntry',
   NO_SELLERS_JSON: 'noSellersJson',
   DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'directAccountIdNotInSellersJson',
   RESELLER_ACCOUNT_ID_NOT_IN_SELLERS_JSON: 'resellerAccountIdNotInSellersJson',
@@ -660,14 +660,14 @@ function findDuplicateRecords(
     // Create lookup key for this record
     const key = createLookupKey(record);
 
-    // Check for exact duplicate
+    // Check for exact implimented
     if (existingRecordMap.has(key)) {
-      logger.debug(`Found duplicate for: ${key}`);
+      logger.debug(`Found implimented for: ${key}`);
       return createDuplicateWarningRecord(
         record,
         publisherDomain,
-        VALIDATION_KEYS.DUPLICATE_ENTRY,
-        Severity.WARNING
+        VALIDATION_KEYS.IMPLIMENTED,
+        Severity.INFO
       );
     }
 

@@ -398,7 +398,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                                 invalidRelationship: 'invalid-relationship',
                                 invalidDomain: 'invalid-domain',
                                 emptyAccountId: 'empty-account-id',
-                                duplicateEntry: 'duplicate-entry',
+                                implimentedEntry: 'implimented-entry',
                                 noSellersJson: 'no-sellers-json',
                                 directAccountIdNotInSellersJson:
                                   'direct-account-id-not-in-sellers-json',

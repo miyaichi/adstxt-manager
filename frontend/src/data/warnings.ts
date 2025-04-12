@@ -70,14 +70,14 @@ export const warningInfos: Record<string, WarningInfo> = {
   },
 
   // Duplicate warnings
-  'duplicate-entry': {
-    id: 'duplicate-entry',
+  'implimented-entry': {
+    id: 'implimented-entry',
     codes: [],
-    level: 'warning',
-    titleKey: 'warnings.duplicateEntry.title',
-    descriptionKey: 'warnings.duplicateEntry.description',
-    recommendationKey: 'warnings.duplicateEntry.recommendation',
-    helpAnchor: '#duplicate-entry',
+    level: 'info',
+    titleKey: 'warnings.implimentedEntry.title',
+    descriptionKey: 'warnings.implimentedEntry.description',
+    recommendationKey: 'warnings.implimentedEntry.recommendation',
+    helpAnchor: '#implimented-entry',
   },
 
   // Sellers.json warnings

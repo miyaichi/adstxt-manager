@@ -58,27 +58,18 @@ This document describes all the validation warnings that may appear in the Ads.t
 
 ---
 
-## Duplicate Entry Warnings
+## Implimented Entry　Information
 
-<a id="duplicate-entry"></a>
+<a id="implimented-entry"></a>
 
-### Duplicate Entry
+### Implimented Entry
 
 **Description**: An identical entry already exists in the Ads.txt file for the specified domain.
 
-**Recommendation**: Remove the duplicate entry to avoid confusion and maintain a cleaner Ads.txt file.
+**Recommendation**: You do not need to include the implemented entry in the new entry. The existing entry is already valid and does not need to be duplicated.
 
 ---
 
-<a id="duplicate-entry-case-insensitive"></a>
-
-### Duplicate Entry (Case Insensitive)
-
-**Description**: An entry with the same values but different capitalization already exists in the Ads.txt file.
-
-**Recommendation**: Consolidate the entries into a single entry with consistent capitalization. While Ads.txt files are case-insensitive for validation purposes, keeping consistent formatting improves readability.
-
----
 
 ## Sellers.json Validation Warnings
 

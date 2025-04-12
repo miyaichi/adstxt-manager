@@ -71,18 +71,19 @@ export const translations = {
         ja: '広告システムでのパブリッシャーのIDである有効なアカウントIDを提供してください。',
       },
     },
-    duplicateEntry: {
+    implimentedEntry: {
       title: {
-        en: 'Duplicate Entry',
-        ja: '重複エントリ',
+        en: 'Implimented Entry',
+        ja: '実施済みエントリ',
       },
       description: {
-        en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
-        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
+        en: "An identical entry already exists in the Ads.txt file for the specified domain.",
+        ja: 'パブリッシャーのads.txt（{{domain}}）にすでに実施済みのエントリが見つかりました',
       },
       recommendation: {
-        en: 'Remove the duplicate entry to maintain a cleaner ads.txt file.',
-        ja: 'よりクリーンなads.txtファイルを維持するために、重複エントリを削除してください。',
+        en: '**Recommendation**: You do not need to include the implemented entry in the new entry. The existing entry is already valid and does not need to be duplicated.',
+        ja: '新規エントリに実施済みエントリを含める必要はありません。既存のエントリはすでに有効であり、重複する必要はありません。',
+
       },
     },
     noSellersJson: {
@@ -406,7 +407,7 @@ export const translations = {
         en: 'Account ID must not be empty',
         ja: 'アカウントIDは空であってはなりません',
       },
-      duplicateEntry: {
+      implimentedEntry: {
         en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
         ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
       },
