@@ -120,7 +120,7 @@ async function run(options = {}) {
         continue;
       }
       
-      const normalizedDomain = domain.domain.toLowerCase();
+      const normalizedDomain = domain.domain.toLowerCase().trim();
 
       // Check if this domain already exists in sellers_json_cache
       const checkQuery = `

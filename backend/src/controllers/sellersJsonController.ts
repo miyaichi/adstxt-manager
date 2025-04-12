@@ -86,8 +86,8 @@ export async function fetchSellersJsonWithCache(
     updatedAt: string | null;
   };
 }> {
-  // Always normalize domain to lowercase to avoid case-sensitivity issues
-  const normalizedDomain = domain.toLowerCase();
+  // Always normalize domain to lowercase and trim whitespace to avoid case-sensitivity and whitespace issues
+  const normalizedDomain = domain.toLowerCase().trim();
   logger.debug(
     `[fetchSellersJsonWithCache] Looking up sellers.json for domain: ${normalizedDomain} (original: ${domain})`
   );

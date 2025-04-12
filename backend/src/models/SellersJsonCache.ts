@@ -79,7 +79,7 @@ class SellersJsonCacheModel {
    * @returns キャッシュされたデータ、または null
    */
   private getFromMemoryCache(domain: string): SellersJsonCache | null {
-    const normalizedDomain = domain.toLowerCase();
+    const normalizedDomain = domain.toLowerCase().trim();
     const cached = this.memoryCache.get(normalizedDomain);
 
     if (!cached) {
@@ -103,7 +103,7 @@ class SellersJsonCacheModel {
    * @param cache キャッシュデータ
    */
   private saveToMemoryCache(domain: string, cache: SellersJsonCache): void {
-    const normalizedDomain = domain.toLowerCase();
+    const normalizedDomain = domain.toLowerCase().trim();
 
     // キャッシュサイズがリミットに達した場合、古いエントリを削除
     if (this.memoryCache.size >= this.memoryCacheMaxSize) {
@@ -138,8 +138,8 @@ class SellersJsonCacheModel {
    */
   async getByDomain(domain: string, skipCache: boolean = false): Promise<SellersJsonCache | null> {
     try {
-      // Ensure domain is properly lowercase for consistent lookup
-      const normalizedDomain = domain.toLowerCase();
+      // Ensure domain is properly lowercase and trimmed for consistent lookup
+      const normalizedDomain = domain.toLowerCase().trim();
 
       // キャッシュをスキップしない場合はメモリキャッシュを確認
       if (!skipCache) {
@@ -189,8 +189,8 @@ class SellersJsonCacheModel {
     error_message: string | null;
   }): Promise<SellersJsonCache> {
     try {
-      // Ensure domain is properly lowercase for consistent storage
-      const normalizedDomain = data.domain.toLowerCase();
+      // Ensure domain is properly lowercase and trimmed for consistent storage
+      const normalizedDomain = data.domain.toLowerCase().trim();
 
       // Check if cache entry already exists
       const existingCache = await this.getByDomain(normalizedDomain);
@@ -353,8 +353,8 @@ class SellersJsonCacheModel {
     found: boolean;
   } | null> {
     try {
-      // Ensure domain is properly lowercase for consistent lookup
-      const normalizedDomain = domain.toLowerCase();
+      // Ensure domain is properly lowercase and trimmed for consistent lookup
+      const normalizedDomain = domain.toLowerCase().trim();
       const normalizedSellerId = sellerId.toString().trim();
 
       logger.info(
@@ -448,7 +448,7 @@ class SellersJsonCacheModel {
         return {
           domainInfo: {
             id: '',
-            domain: domain.toLowerCase(),
+            domain: domain.toLowerCase().trim(),
             status: 'not_found',
             updated_at: new Date().toISOString(),
           },
@@ -622,8 +622,8 @@ class SellersJsonCacheModel {
     matchingSellers: Array<any>;
   } | null> {
     try {
-      // Ensure domain is properly lowercase for consistent lookup
-      const normalizedDomain = domain.toLowerCase();
+      // Ensure domain is properly lowercase and trimmed for consistent lookup
+      const normalizedDomain = domain.toLowerCase().trim();
 
       // アカウントIDも正規化
       const normalizedIds = accountIds.map((id) => id.toString().toLowerCase());

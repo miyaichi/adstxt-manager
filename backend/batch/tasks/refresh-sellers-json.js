@@ -98,8 +98,8 @@ function getSellersJsonRequestConfig() {
  * @returns {Object} - Result with status and message
  */
 async function processSellersJsonResponse(domain, response) {
-  // Normalize domain to lowercase
-  const normalizedDomain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  const normalizedDomain = domain.toLowerCase().trim();
 
   try {
     // Create a cache record to store
