@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
 import {
+  Alert,
+  Button,
   Flex,
   Heading,
-  TextField,
-  TextAreaField,
-  Button,
   Text,
-  Alert,
+  TextAreaField,
+  TextField,
   View,
 } from '@aws-amplify/ui-react';
+import axios from 'axios';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
-import axios from 'axios';
-import { API_BASE_URL } from '../api';
 
 const ContactPage: React.FC = () => {
   const { language } = useApp();
@@ -27,38 +26,39 @@ const ContactPage: React.FC = () => {
       setError(t('contact.form.emailRequired', language));
       return false;
     }
-    
+
     if (!message.trim()) {
       setError(t('contact.form.messageRequired', language));
       return false;
     }
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError(t('contact.form.invalidEmail', language));
       return false;
     }
-    
+
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      await axios.post(`${API_BASE_URL}/contact`, {
+      // Use relative API path - the proxy will handle it
+      await axios.post('/api/contact', {
         email,
-        message
+        message,
       });
-      
+
       setSuccess(true);
       setEmail('');
       setMessage('');
@@ -80,10 +80,7 @@ const ContactPage: React.FC = () => {
           heading={t('contact.success.title', language)}
         >
           <Text>{t('contact.success.message', language)}</Text>
-          <Button
-            onClick={() => setSuccess(false)}
-            marginTop="1rem"
-          >
+          <Button onClick={() => setSuccess(false)} marginTop="1rem">
             {t('contact.success.newMessage', language)}
           </Button>
         </Alert>
@@ -92,20 +89,12 @@ const ContactPage: React.FC = () => {
   }
 
   return (
-    <Flex
-      as="main"
-      direction="column"
-      padding="2rem"
-      maxWidth="800px"
-      margin="0 auto"
-    >
+    <Flex as="main" direction="column" padding="2rem" maxWidth="800px" margin="0 auto">
       <Heading level={1} marginBottom="1rem">
         {t('contact.title', language)}
       </Heading>
-      
-      <Text marginBottom="2rem">
-        {t('contact.description', language)}
-      </Text>
+
+      <Text marginBottom="2rem">{t('contact.description', language)}</Text>
 
       {error && (
         <Alert
@@ -129,7 +118,7 @@ const ContactPage: React.FC = () => {
           isRequired
           marginBottom="1rem"
         />
-        
+
         <TextAreaField
           label={t('contact.form.messageLabel', language)}
           placeholder={t('contact.form.messagePlaceholder', language)}
@@ -139,7 +128,7 @@ const ContactPage: React.FC = () => {
           rows={8}
           marginBottom="1.5rem"
         />
-        
+
         <Button
           type="submit"
           variation="primary"
@@ -154,5 +143,4 @@ const ContactPage: React.FC = () => {
   );
 };
 
-export default ContactPage;</string">
-</invoke>
+export default ContactPage;

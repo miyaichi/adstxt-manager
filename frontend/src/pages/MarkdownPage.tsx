@@ -11,9 +11,9 @@ export interface MarkdownPageProps {
   sectionParam?: string; // Parameter name for section anchors in URL (default: 'section')
 }
 
-export const MarkdownPage: React.FC<MarkdownPageProps> = ({ 
+export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   pageType,
-  sectionParam = 'section'
+  sectionParam = 'section',
 }) => {
   const [markdown, setMarkdown] = useState('');
   const [searchParams] = useSearchParams();

@@ -28,10 +28,18 @@ const Footer: React.FC = () => {
         <Text>{t('footer.copyright', language, { year: currentYear })}</Text>
 
         <Flex gap="1rem">
-          <Link as={RouterLink} to="/terms">{t('common.termsOfService', language)}</Link>
-          <Link as={RouterLink} to="/privacy">{t('common.privacyPolicy', language)}</Link>
-          <Link as={RouterLink} to="/help">{t('common.help', language)}</Link>
-          <Link as={RouterLink} to="/contact">{t('common.contact', language)}</Link>
+          <Link as={RouterLink} to="/terms">
+            {t('common.termsOfService', language)}
+          </Link>
+          <Link as={RouterLink} to="/privacy">
+            {t('common.privacyPolicy', language)}
+          </Link>
+          <Link as={RouterLink} to="/help">
+            {t('common.help', language)}
+          </Link>
+          <Link as={RouterLink} to="/contact">
+            {t('common.contact', language)}
+          </Link>
         </Flex>
       </Flex>
     </Flex>

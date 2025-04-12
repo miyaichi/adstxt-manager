@@ -145,7 +145,8 @@ async function classifyRecords(
     // Find Certification Authority ID (once per group) - normalize domain for consistent lookup
     const normalizedDomain = domain.toLowerCase();
     const foundCertId = domainCertIds.get(normalizedDomain) || domainCertIds.get(domain) || null;
-    const sellersJsonData = domainSellersJsonCache.get(normalizedDomain) || domainSellersJsonCache.get(domain);
+    const sellersJsonData =
+      domainSellersJsonCache.get(normalizedDomain) || domainSellersJsonCache.get(domain);
 
     let category = 'other';
     let certId = foundCertId;
@@ -189,8 +190,10 @@ async function classifyRecords(
         logger.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
         category = 'noSellerJson';
       }
-    } else if (!Array.isArray(sellersJsonData.sellers) || 
-               (sellersJsonData.status && sellersJsonData.status !== 'success')) {
+    } else if (
+      !Array.isArray(sellersJsonData.sellers) ||
+      (sellersJsonData.status && sellersJsonData.status !== 'success')
+    ) {
       category = 'noSellerJson';
     } else {
       // Legacy processing - search sellers array

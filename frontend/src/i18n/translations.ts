@@ -259,10 +259,6 @@ export const translations = {
       en: 'Cancel',
       ja: 'キャンセル',
     },
-    loading: {
-      en: 'Loading...',
-      ja: '読み込み中...',
-    },
     updating: {
       en: 'Updating...',
       ja: '更新中...',
