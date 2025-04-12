@@ -24,7 +24,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Map pageType to directory
-  const getPageDirectory = () => {
+  const getPageDirectory = React.useCallback(() => {
     switch (pageType) {
       case 'privacy':
         return 'privacy';
@@ -34,10 +34,10 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
       default:
         return 'help';
     }
-  };
+  }, [pageType]);
 
   // Map pageType to filename
-  const getPageFilename = () => {
+  const getPageFilename = React.useCallback(() => {
     switch (pageType) {
       case 'privacy':
         return 'privacy-policy.md';
@@ -47,7 +47,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
       default:
         return 'warnings.md';
     }
-  };
+  }, [pageType]);
 
   // If there's a lang parameter in the URL, use it to update the app language
   useEffect(() => {
@@ -84,7 +84,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
         setError(t('common.loadingError', language));
         setIsLoading(false);
       });
-  }, [language, pageType]);
+  }, [language, pageType, getPageDirectory, getPageFilename]);
 
   useEffect(() => {
     // Scroll to the specific section if provided
