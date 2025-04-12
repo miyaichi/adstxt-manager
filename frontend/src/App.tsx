@@ -17,6 +17,7 @@ import EditRequestPage from './pages/EditRequestPage';
 import OptimizerPage from './pages/OptimizerPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import ContactPage from './pages/ContactPage';
 
 // Import theme
 import { theme } from './styles/theme';
@@ -38,6 +39,7 @@ function App() {
               <Route path="/help" element={<HelpPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>

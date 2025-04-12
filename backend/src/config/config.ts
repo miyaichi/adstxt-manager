@@ -16,6 +16,7 @@ export default {
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'adstxt-manager@example.com',
     fromName: process.env.SMTP_FROM_NAME || 'Ads.txt Manager',
+    contactRecipient: process.env.CONTACT_EMAIL || '',
   },
   security: {
     tokenSecret: process.env.TOKEN_SECRET || 'default_secret_key_change_in_production',

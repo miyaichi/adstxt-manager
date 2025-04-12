@@ -31,6 +31,7 @@ const Footer: React.FC = () => {
           <Link as={RouterLink} to="/terms">{t('common.termsOfService', language)}</Link>
           <Link as={RouterLink} to="/privacy">{t('common.privacyPolicy', language)}</Link>
           <Link as={RouterLink} to="/help">{t('common.help', language)}</Link>
+          <Link as={RouterLink} to="/contact">{t('common.contact', language)}</Link>
         </Flex>
       </Flex>
     </Flex>

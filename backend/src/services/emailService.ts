@@ -350,6 +350,40 @@ class EmailService {
 
     return transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send an email notification about a contact form submission
+   * @param senderEmail - The email address of the person submitting the form
+   * @param message - The message content from the contact form
+   * @returns Promise resolving to the nodemailer info object
+   */
+  async sendContactFormEmail(senderEmail: string, message: string) {
+    const subject = `New Contact Form Submission from ${senderEmail}`;
+    const html = `
+      <h1>New Contact Form Submission</h1>
+      <p><strong>From:</strong> ${senderEmail}</p>
+      <h2>Message:</h2>
+      <p>${message.replace(/\n/g, '<br />')}</p>
+    `;
+
+    const mailOptions = {
+      from: `"${config.email.fromName}" <${config.email.from}>`,
+      to: config.email.contactRecipient || config.email.from, // Send to designated contact recipient or fallback to the from address
+      replyTo: senderEmail, // Set reply-to as the sender's email for easy response
+      subject,
+      html,
+    };
+
+    return transporter.sendMail(mailOptions);
+  }
 }
 
-export default new EmailService();
+// Instance of the email service
+const emailService = new EmailService();
+
+// Named export for the contact form email function
+export const sendContactFormEmail = (senderEmail: string, message: string) => {
+  return emailService.sendContactFormEmail(senderEmail, message);
+};
+
+export default emailService;

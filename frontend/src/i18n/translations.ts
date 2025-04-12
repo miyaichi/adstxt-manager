@@ -267,6 +267,10 @@ export const translations = {
       en: 'Updating...',
       ja: '更新中...',
     },
+    sending: {
+      en: 'Sending...',
+      ja: '送信中...',
+    },
     selectTabToViewMessages: {
       en: 'Select tab to view messages',
       ja: 'メッセージを表示するタブを選択してください',
@@ -1340,6 +1344,68 @@ export const translations = {
     copyright: {
       en: '© {{year}} Ads.txt Manager. All rights reserved.',
       ja: '© {{year}} Ads.txt Manager. All rights reserved.',
+    },
+  },
+  contact: {
+    title: {
+      en: 'Contact Us',
+      ja: 'お問い合わせ',
+    },
+    description: {
+      en: 'Have questions or need help? Fill out the form below and our team will get back to you as soon as possible.',
+      ja: 'ご質問やサポートが必要ですか？以下のフォームにご記入いただければ、チームができるだけ早くご連絡いたします。',
+    },
+    form: {
+      emailLabel: {
+        en: 'Your Email',
+        ja: 'メールアドレス',
+      },
+      emailPlaceholder: {
+        en: 'Enter your email address',
+        ja: 'メールアドレスを入力してください',
+      },
+      messageLabel: {
+        en: 'Message',
+        ja: 'メッセージ',
+      },
+      messagePlaceholder: {
+        en: 'What would you like to ask or tell us?',
+        ja: 'お問い合わせ内容を入力してください',
+      },
+      submitButton: {
+        en: 'Send Message',
+        ja: 'メッセージを送信',
+      },
+      emailRequired: {
+        en: 'Please enter your email address',
+        ja: 'メールアドレスを入力してください',
+      },
+      messageRequired: {
+        en: 'Please enter a message',
+        ja: 'メッセージを入力してください',
+      },
+      invalidEmail: {
+        en: 'Please enter a valid email address',
+        ja: '有効なメールアドレスを入力してください',
+      },
+      submitError: {
+        en: 'An error occurred while sending your message. Please try again later.',
+        ja: 'メッセージの送信中にエラーが発生しました。後でもう一度お試しください。',
+      },
+    },
+    success: {
+      title: {
+        en: 'Message Sent',
+        ja: 'メッセージを送信しました',
+      },
+      message: {
+        en: 'Thank you for contacting us! We have received your message and will respond to your inquiry as soon as possible.',
+        ja: 'お問い合わせありがとうございます！メッセージを受け取りました。できるだけ早くお返事いたします。',
+      },
+      newMessage: {
+        en: 'Send Another Message',
+        ja: '別のメッセージを送信',
+      },
     },
   },
   adsTxt: {
