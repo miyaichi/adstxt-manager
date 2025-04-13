@@ -15,6 +15,7 @@ class EmailService {
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
    * @param role - The role of the recipient (publisher)
+   * @param publisherName - The name of the publisher (optional)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendPublisherRequestNotification(
@@ -24,7 +25,8 @@ class EmailService {
     requesterEmail: string,
     token: string,
     language: string = 'en',
-    role: string = 'publisher'
+    role: string = 'publisher',
+    publisherName: string = ''
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
@@ -34,6 +36,7 @@ class EmailService {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
+      publisherName,
       requesterName,
     });
 
@@ -41,11 +44,17 @@ class EmailService {
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
 
+    // Use domain as publisher name if not provided
+    const displayPublisherName = publisherName || publisherEmail.split('@')[1] || publisherEmail;
+
     // Debug translation keys
     const translations = {
       subject: i18next.t('email:request.publisher.subject', { requesterName, lng: validLanguage }),
       title: i18next.t('email:request.publisher.title', { lng: validLanguage }),
-      greeting: i18next.t('email:request.publisher.greeting', { lng: validLanguage }),
+      greeting: i18next.t('email:request.publisher.greeting', {
+        publisherName: displayPublisherName,
+        lng: validLanguage,
+      }),
       message: i18next.t('email:request.publisher.message', {
         requesterName,
         requesterEmail,
@@ -54,7 +63,10 @@ class EmailService {
       action: i18next.t('email:request.publisher.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.publisher.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.publisher.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.publisher.signature', { lng: validLanguage }),
+      signature: i18next.t('email:request.publisher.signature', {
+        appUrl: config.server.appUrl,
+        lng: validLanguage,
+      }),
     };
 
     const subject = translations.subject;
@@ -96,7 +108,8 @@ class EmailService {
     requestId: string,
     token: string,
     language: string = 'en',
-    role: string = 'requester'
+    role: string = 'requester',
+    publisherName: string = ''
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
@@ -107,11 +120,15 @@ class EmailService {
       validatedLanguage: validLanguage,
       requesterEmail,
       requesterName,
+      publisherName,
     });
 
     // Always add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
+
+    // Use domain as publisher name if not provided
+    const displayPublisherName = publisherName || publisherEmail.split('@')[1] || publisherEmail;
 
     // Debug translation keys
     const translations = {
@@ -121,11 +138,18 @@ class EmailService {
         requesterName,
         lng: validLanguage,
       }),
-      message: i18next.t('email:request.requester.message', { publisherEmail, lng: validLanguage }),
+      message: i18next.t('email:request.requester.message', {
+        publisherEmail,
+        publisherName: displayPublisherName,
+        lng: validLanguage,
+      }),
       action: i18next.t('email:request.requester.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.requester.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.requester.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.requester.signature', { lng: validLanguage }),
+      signature: i18next.t('email:request.requester.signature', {
+        appUrl: config.server.appUrl,
+        lng: validLanguage,
+      }),
     };
 
     const subject = translations.subject;
@@ -157,6 +181,7 @@ class EmailService {
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
    * @param role - The role of the recipient
+   * @param publisherName - The name of the publisher (optional)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendStatusUpdateNotification(
@@ -165,7 +190,8 @@ class EmailService {
     status: string,
     token: string,
     language: string = 'en',
-    role: string = 'requester'
+    role: string = 'requester',
+    publisherName: string = ''
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
@@ -176,6 +202,7 @@ class EmailService {
       validatedLanguage: validLanguage,
       email,
       status,
+      publisherName,
     });
 
     // Always add language parameter to URL to maintain language across pages
@@ -183,14 +210,24 @@ class EmailService {
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
     const statusText = status.charAt(0).toUpperCase() + status.slice(1);
 
+    // Use domain as publisher name if not provided
+    const displayPublisherName = publisherName || email.split('@')[1] || email;
+
     // Debug translation keys
     const translations = {
       subject: i18next.t('email:statusUpdate.subject', { status: statusText, lng: validLanguage }),
       title: i18next.t('email:statusUpdate.title', { lng: validLanguage }),
-      message: i18next.t('email:statusUpdate.message', { status: statusText, lng: validLanguage }),
+      message: i18next.t('email:statusUpdate.message', {
+        status: statusText,
+        publisherName: displayPublisherName,
+        lng: validLanguage,
+      }),
       action: i18next.t('email:statusUpdate.action', { lng: validLanguage }),
       linkText: i18next.t('email:statusUpdate.linkText', { lng: validLanguage }),
-      signature: i18next.t('email:statusUpdate.signature', { lng: validLanguage }),
+      signature: i18next.t('email:statusUpdate.signature', {
+        appUrl: config.server.appUrl,
+        lng: validLanguage,
+      }),
     };
 
     const subject = translations.subject;
@@ -220,6 +257,7 @@ class EmailService {
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
    * @param role - The role of the recipient
+   * @param publisherName - The name of the publisher (optional)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendMessageNotification(
@@ -228,7 +266,8 @@ class EmailService {
     senderName: string,
     token: string,
     language: string = 'en',
-    role?: string
+    role?: string,
+    publisherName: string = ''
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
@@ -239,6 +278,7 @@ class EmailService {
       validatedLanguage: validLanguage,
       recipientEmail: email,
       senderName,
+      publisherName,
       availableTranslations: Object.keys(i18next.store.data),
     });
 
@@ -248,14 +288,24 @@ class EmailService {
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}${roleParam}${langParam}`;
 
+    // Use domain as publisher name if not provided
+    const displayPublisherName = publisherName || email.split('@')[1] || email;
+
     // Debug translation keys to ensure they're working
     const translations = {
       subject: i18next.t('email:message.subject', { lng: validLanguage }),
       title: i18next.t('email:message.title', { lng: validLanguage }),
-      message: i18next.t('email:message.message', { senderName, lng: validLanguage }),
+      message: i18next.t('email:message.message', {
+        senderName,
+        publisherName: displayPublisherName,
+        lng: validLanguage,
+      }),
       action: i18next.t('email:message.action', { lng: validLanguage }),
       linkText: i18next.t('email:message.linkText', { lng: validLanguage }),
-      signature: i18next.t('email:message.signature', { lng: validLanguage }),
+      signature: i18next.t('email:message.signature', {
+        appUrl: config.server.appUrl,
+        lng: validLanguage,
+      }),
     };
 
     console.log('Email translations:', translations);
@@ -288,6 +338,7 @@ class EmailService {
    * @param token - The secure token for accessing the request
    * @param language - The language code to use for the email
    * @param role - The role of the recipient (publisher)
+   * @param publisherName - The name of the publisher (optional)
    * @returns Promise resolving to the nodemailer info object
    */
   async sendRequestUpdateNotification(
@@ -297,7 +348,8 @@ class EmailService {
     requesterEmail: string,
     token: string,
     language: string = 'en',
-    role: string = 'publisher'
+    role: string = 'publisher',
+    publisherName: string = ''
   ) {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
@@ -307,6 +359,7 @@ class EmailService {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
+      publisherName,
       requesterName,
     });
 
@@ -314,11 +367,17 @@ class EmailService {
     const langParam = `&lang=${validLanguage}`;
     const requestUrl = `${config.server.appUrl}/request/${requestId}?token=${token}&role=${role}${langParam}`;
 
+    // Use domain as publisher name if not provided
+    const displayPublisherName = publisherName || publisherEmail.split('@')[1] || publisherEmail;
+
     // Debug translation keys
     const translations = {
       subject: i18next.t('email:request.update.subject', { requesterName, lng: validLanguage }),
       title: i18next.t('email:request.update.title', { lng: validLanguage }),
-      greeting: i18next.t('email:request.update.greeting', { lng: validLanguage }),
+      greeting: i18next.t('email:request.update.greeting', {
+        publisherName: displayPublisherName,
+        lng: validLanguage,
+      }),
       message: i18next.t('email:request.update.message', {
         requesterName,
         requesterEmail,
@@ -327,7 +386,10 @@ class EmailService {
       action: i18next.t('email:request.update.action', { lng: validLanguage }),
       linkText: i18next.t('email:request.update.linkText', { lng: validLanguage }),
       warning: i18next.t('email:request.update.warning', { lng: validLanguage }),
-      signature: i18next.t('email:request.update.signature', { lng: validLanguage }),
+      signature: i18next.t('email:request.update.signature', {
+        appUrl: config.server.appUrl,
+        lng: validLanguage,
+      }),
     };
 
     const subject = translations.subject;

@@ -3,50 +3,50 @@
     "publisher": {
       "subject": "New Ads.txt Update Request from {{requesterName}}",
       "title": "New Ads.txt Update Request",
-      "greeting": "Dear Publisher,",
-      "message": "{{requesterName}} ({{requesterEmail}}) has requested to update your Ads.txt file.",
-      "action": "To review this request, please click the link below:",
+      "greeting": "Dear {{publisherName}},",
+      "message": "{{requesterName}} ({{requesterEmail}}) has submitted a request to update your Ads.txt file.",
+      "action": "To review the requested changes and take action, please click the link below:",
       "linkText": "View Request",
-      "warning": "This link is unique to you and should not be shared with others.",
-      "signature": "Thank you,\nAds.txt Manager",
+      "warning": "Please note that this link contains your secure access token and should not be shared with others.",
+      "signature": "Thank you,<br/><a href=\"{{appUrl}}\">Ads.txt Manager</a>",
       "publisherToken": "Publisher Token: {{publisherToken}}"
     },
     "requester": {
       "subject": "Your Ads.txt Request Has Been Submitted",
       "title": "Ads.txt Update Request Submitted",
       "greeting": "Hello {{requesterName}},",
-      "message": "Your request to update the Ads.txt file for publisher {{publisherEmail}} has been submitted successfully.",
-      "action": "You can track the status of your request using the link below:",
+      "message": "Your request to update the Ads.txt file for publisher {{publisherName}} ({{publisherEmail}}) has been successfully submitted.",
+      "action": "You can track the status of your request and communicate with the publisher using the link below:",
       "linkText": "View Request Status",
-      "warning": "This link is unique to you and should not be shared with others.",
-      "signature": "Thank you,\nAds.txt Manager",
+      "warning": "This link contains your secure access token and should not be shared with others.",
+      "signature": "Thank you,<br/><a href=\"{{appUrl}}\">Ads.txt Manager</a>",
       "requesterToken": "Requester Token: {{requesterToken}}"
     },
     "update": {
-      "subject": "Updated Ads.txt Request from {{requesterName}}",
+      "subject": "Ads.txt Request from {{requesterName}} Has Been Updated",
       "title": "Ads.txt Request Updated",
-      "greeting": "Dear Publisher,",
-      "message": "{{requesterName}} ({{requesterEmail}}) has updated their previous Ads.txt request.",
-      "action": "To review the updated request, please click the link below:",
+      "greeting": "Dear {{publisherName}},",
+      "message": "{{requesterName}} ({{requesterEmail}}) has updated their previous Ads.txt request for your website.",
+      "action": "To review the updated changes and take action, please click the link below:",
       "linkText": "View Updated Request",
-      "warning": "This link is unique to you and should not be shared with others.",
-      "signature": "Thank you,\nAds.txt Manager"
+      "warning": "This secure link is unique to you and should not be shared with anyone else.",
+      "signature": "Thank you,<br/><a href=\"{{appUrl}}\">Ads.txt Manager</a>"
     }
   },
   "statusUpdate": {
     "subject": "Ads.txt Request Status: {{status}}",
     "title": "Ads.txt Request Status Update",
-    "message": "The status of an Ads.txt request has been updated to: {{status}}.",
-    "action": "To view the request details, please click the link below:",
+    "message": "The status of an Ads.txt request you're involved with has been updated to: {{status}}.",
+    "action": "TTo view the complete request details and next steps, please click the link below:",
     "linkText": "View Request",
-    "signature": "Thank you,\nAds.txt Manager"
+    "signature": "Thank you,<br/><a href=\"{{appUrl}}\">Ads.txt Manager</a>"
   },
   "message": {
-    "subject": "New Message on Ads.txt Request",
+    "subject": "New Message Regarding Your Ads.txt Request",
     "title": "New Message Received",
     "message": "You have received a new message from {{senderName}} regarding an Ads.txt request.",
     "action": "To view the message, please click the link below:",
     "linkText": "View Message",
-    "signature": "Thank you,\nAds.txt Manager"
+    "signature": "Thank you,<br/><a href=\"{{appUrl}}\">Ads.txt Manager</a>"
   }
 }

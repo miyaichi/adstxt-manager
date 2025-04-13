@@ -124,7 +124,10 @@ describe('EmailService', () => {
         email,
         requestId,
         status,
-        token
+        token,
+        'en',
+        'requester',
+        'Example Publisher'
       );
 
       // Assert
@@ -158,7 +161,15 @@ describe('EmailService', () => {
       const token = 'secure-token-123';
 
       // Act
-      await emailService.sendStatusUpdateNotification(email, requestId, status, token);
+      await emailService.sendStatusUpdateNotification(
+        email,
+        requestId,
+        status,
+        token,
+        'en',
+        'requester',
+        'Example Publisher'
+      );
 
       // Assert
       const mailOptions = (transporter.sendMail as jest.Mock).mock.calls[0][0];
@@ -180,7 +191,10 @@ describe('EmailService', () => {
         email,
         requestId,
         senderName,
-        token
+        token,
+        'en',
+        'requester',
+        'Example Publisher'
       );
 
       // Assert
@@ -218,7 +232,10 @@ describe('EmailService', () => {
           'user@example.com',
           'request-123',
           'Jane Smith',
-          'secure-token-123'
+          'secure-token-123',
+          'en',
+          'requester',
+          'Example Publisher'
         )
       ).rejects.toThrow('SMTP error');
     });

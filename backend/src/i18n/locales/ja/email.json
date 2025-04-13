@@ -1,52 +1,52 @@
 {
   "request": {
     "publisher": {
-      "subject": "{{requesterName}}からの新しいAds.txt更新リクエスト",
+      "subject": "{{requesterName}}からの新しいAds.txt更新リクエストが届きました",
       "title": "新しいAds.txt更新リクエスト",
-      "greeting": "パブリッシャー様、",
-      "message": "{{requesterName}}（{{requesterEmail}}）があなたのAds.txtファイルの更新をリクエストしています。",
-      "action": "このリクエストを確認するには、以下のリンクをクリックしてください：",
-      "linkText": "リクエストを表示",
-      "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
-      "signature": "ありがとうございます。\nAds.txtマネージャー",
+      "greeting": "{{publisherName}}様、",
+      "message": "{{requesterName}}（{{requesterEmail}}）からあなたのウェブサイトのAds.txtファイル更新リクエストが届きました。",
+      "action": "リクエストの内容を確認し対応するには、以下のリンクをクリックしてください：",
+      "linkText": "リクエストを確認する",
+      "warning": "このリンクはあなた専用のセキュアアクセストークンを含んでいますので、他の方と共有しないようご注意ください。",
+      "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>",
       "publisherToken": "パブリッシャートークン: {{publisherToken}}"
     },
     "requester": {
       "subject": "Ads.txtリクエストが送信されました",
       "title": "Ads.txt更新リクエストの送信完了",
       "greeting": "{{requesterName}}様、",
-      "message": "パブリッシャー{{publisherEmail}}へのAds.txtファイル更新リクエストが正常に送信されました。",
-      "action": "以下のリンクからリクエストの状況を確認できます：",
-      "linkText": "リクエスト状況を表示",
-      "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
-      "signature": "ありがとうございます。\nAds.txtマネージャー",
+      "message": "パブリッシャー{{publisherName}}（{{publisherEmail}}）宛てのAds.txtファイル更新リクエストが正常に送信されました。",
+      "action": "リクエストの状況確認やパブリッシャーとのコミュニケーションは、以下のリンクから行えます：",
+      "linkText": "リリクエスト状況を確認する",
+      "warning": "このリンクはあなた専用のセキュアアクセストークンを含んでいますので、他の方と共有しないようご注意ください。",
+      "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>",
       "requesterToken": "リクエスタートークン: {{requesterToken}}"
     },
     "update": {
-      "subject": "{{requesterName}}からのAds.txtリクエスト更新",
+      "subject": "{{requesterName}}からのAds.txtリクエストが更新されました",
       "title": "Ads.txtリクエストが更新されました",
-      "greeting": "パブリッシャー様、",
-      "message": "{{requesterName}}（{{requesterEmail}}）が以前のAds.txtリクエストを更新しました。",
-      "action": "更新されたリクエストを確認するには、以下のリンクをクリックしてください：",
-      "linkText": "更新されたリクエストを表示",
-      "warning": "このリンクはあなた専用であり、他の人と共有しないでください。",
-      "signature": "ありがとうございます。\nAds.txtマネージャー"
+      "greeting": "{{publisherName}}様、",
+      "message": "{{requesterName}}（{{requesterEmail}}）が以前送信したAds.txtリクエストを更新しました。",
+      "action": "更新された内容を確認するには、以下のリンクをクリックしてください：",
+      "linkText": "更新されたリクエストを確認する",
+      "warning": "ここのリンクはあなた専用のセキュアアクセスを提供するものですので、他の方と共有しないようお願いいたします。",
+      "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>"
     }
   },
   "statusUpdate": {
-    "subject": "Ads.txtリクエスト状況: {{status}}",
+    "subject": "Ads.txtリクエスト状況が更新されました: {{status}}",
     "title": "Ads.txtリクエスト状況の更新",
-    "message": "Ads.txtリクエストのステータスが更新されました: {{status}}",
+    "message": "{{publisherName}}向けのAds.txtリクエストのステータスが更新されました: {{status}}",
     "action": "リクエストの詳細を確認するには、以下のリンクをクリックしてください：",
-    "linkText": "リクエストを表示",
-    "signature": "ありがとうございます。\nAds.txtマネージャー"
+    "linkText": "リクエストを確認する",
+    "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>"
   },
   "message": {
-    "subject": "Ads.txtリクエストに新しいメッセージ",
+    "subject": "Ads.txtリクエストに関する新着メッセージ",
     "title": "新しいメッセージを受信しました",
-    "message": "Ads.txtリクエストに関して{{senderName}}から新しいメッセージを受信しました。",
+    "message": "{{publisherName}}向けのAds.txtリクエストに関して{{senderName}}から新しいメッセージが届いています。",
     "action": "メッセージを確認するには、以下のリンクをクリックしてください：",
-    "linkText": "メッセージを表示",
-    "signature": "ありがとうございます。\nAds.txtマネージャー"
+    "linkText": "メッセージを確認する",
+    "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>"
   }
 }

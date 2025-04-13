@@ -98,7 +98,9 @@ describe('Message Controller Tests', () => {
         'request-123',
         'Test Requester', // The sender name
         'valid-token-123',
-        'en'
+        'en',
+        undefined, // role
+        'Test Publisher' // publisherName
       );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
@@ -134,7 +136,9 @@ describe('Message Controller Tests', () => {
         'request-123',
         'Test Publisher', // The sender name
         'valid-token-123',
-        'en'
+        'en',
+        undefined, // role
+        'Test Publisher' // publisherName
       );
     });
 

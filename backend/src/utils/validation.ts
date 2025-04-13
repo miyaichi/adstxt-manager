@@ -943,10 +943,11 @@ function extractDomainsFromVariables(
   parsedEntries: ParsedAdsTxtEntry[],
   variableType: 'OWNERDOMAIN' | 'MANAGERDOMAIN'
 ): string[] {
-  const variableEntries = parsedEntries.filter(isAdsTxtVariable)
-                                      .filter(entry => entry.variable_type === variableType);
-  
-  return variableEntries.map(entry => {
+  const variableEntries = parsedEntries
+    .filter(isAdsTxtVariable)
+    .filter((entry) => entry.variable_type === variableType);
+
+  return variableEntries.map((entry) => {
     // For MANAGERDOMAIN, it can be in format "domain" or "domain,CountryCode"
     if (variableType === 'MANAGERDOMAIN' && entry.value.includes(',')) {
       // Return only the domain part before comma
@@ -981,21 +982,23 @@ function validateDirectRelationship(
       // Get OWNERDOMAIN and MANAGERDOMAIN values from variables
       const ownerDomains = extractDomainsFromVariables(parsedEntries, 'OWNERDOMAIN');
       const managerDomains = extractDomainsFromVariables(parsedEntries, 'MANAGERDOMAIN');
-      
+
       // Normalize seller domain
       const sellerDomainLower = matchingSeller.domain.toLowerCase().trim();
-      
+
       // Check if seller domain matches any OWNERDOMAIN or MANAGERDOMAIN
-      const matchesOwnerDomain = ownerDomains.some(domain => domain === sellerDomainLower);
-      const matchesManagerDomain = managerDomains.some(domain => domain === sellerDomainLower);
-      
-      validationResult.directDomainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
-      
+      const matchesOwnerDomain = ownerDomains.some((domain) => domain === sellerDomainLower);
+      const matchesManagerDomain = managerDomains.some((domain) => domain === sellerDomainLower);
+
+      validationResult.directDomainMatchesSellerJsonEntry =
+        matchesOwnerDomain || matchesManagerDomain;
+
       // If no OWNERDOMAIN or MANAGERDOMAIN variables found, fall back to original behavior
       if (ownerDomains.length === 0 && managerDomains.length === 0) {
         // Compare publisher domain with seller domain (case insensitive)
         const publisherDomainLower = publisherDomain.toLowerCase();
-        validationResult.directDomainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+        validationResult.directDomainMatchesSellerJsonEntry =
+          publisherDomainLower === sellerDomainLower;
       }
     }
 
@@ -1040,7 +1043,7 @@ function validateResellerRelationship(
 
   // Case 17: For RESELLER entries, check if account_id is in sellers.json
   validationResult.resellerAccountIdInSellersJson = !!matchingSeller;
-  
+
   // Case 18: For RESELLER entries, check if seller domain matches OWNERDOMAIN or MANAGERDOMAIN
   if (matchingSeller) {
     if (matchingSeller.is_confidential === 1 || !matchingSeller.domain) {
@@ -1049,21 +1052,23 @@ function validateResellerRelationship(
       // Get OWNERDOMAIN and MANAGERDOMAIN values from variables
       const ownerDomains = extractDomainsFromVariables(parsedEntries, 'OWNERDOMAIN');
       const managerDomains = extractDomainsFromVariables(parsedEntries, 'MANAGERDOMAIN');
-      
+
       // Normalize seller domain
       const sellerDomainLower = matchingSeller.domain.toLowerCase().trim();
-      
+
       // Check if seller domain matches any OWNERDOMAIN or MANAGERDOMAIN
-      const matchesOwnerDomain = ownerDomains.some(domain => domain === sellerDomainLower);
-      const matchesManagerDomain = managerDomains.some(domain => domain === sellerDomainLower);
-      
-      validationResult.resellerDomainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
-      
+      const matchesOwnerDomain = ownerDomains.some((domain) => domain === sellerDomainLower);
+      const matchesManagerDomain = managerDomains.some((domain) => domain === sellerDomainLower);
+
+      validationResult.resellerDomainMatchesSellerJsonEntry =
+        matchesOwnerDomain || matchesManagerDomain;
+
       // If no OWNERDOMAIN or MANAGERDOMAIN variables found, fall back to original behavior
       if (ownerDomains.length === 0 && managerDomains.length === 0) {
         // Compare publisher domain with seller domain (case insensitive)
         const publisherDomainLower = publisherDomain.toLowerCase();
-        validationResult.resellerDomainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+        validationResult.resellerDomainMatchesSellerJsonEntry =
+          publisherDomainLower === sellerDomainLower;
       }
     }
   }
@@ -1145,7 +1150,10 @@ function generateWarnings(
   }
 
   // Case 13: Domain mismatch for DIRECT - now checks against OWNERDOMAIN and MANAGERDOMAIN as well
-  if (record.relationship === 'DIRECT' && validationResult.directDomainMatchesSellerJsonEntry === false) {
+  if (
+    record.relationship === 'DIRECT' &&
+    validationResult.directDomainMatchesSellerJsonEntry === false
+  ) {
     warnings.push(
       createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
         domain: record.domain,
@@ -1154,9 +1162,12 @@ function generateWarnings(
       })
     );
   }
-  
+
   // Case 18: Domain mismatch for RESELLER - checks against OWNERDOMAIN and MANAGERDOMAIN as well
-  if (record.relationship === 'RESELLER' && validationResult.resellerDomainMatchesSellerJsonEntry === false) {
+  if (
+    record.relationship === 'RESELLER' &&
+    validationResult.resellerDomainMatchesSellerJsonEntry === false
+  ) {
     warnings.push(
       createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
         domain: record.domain,

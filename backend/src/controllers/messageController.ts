@@ -114,7 +114,8 @@ export const createMessage = asyncHandler(async (req: Request, res: Response) =>
       senderName,
       recipientToken,
       userLanguage,
-      recipientRole
+      recipientRole,
+      request.publisher_name || ''
     );
   } catch (error) {
     console.error('Error sending message notification email:', error);

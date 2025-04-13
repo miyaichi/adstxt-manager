@@ -162,7 +162,8 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         requester_email,
         request.publisher_token || '',
         userLanguage,
-        'publisher'
+        'publisher',
+        publisher_name || ''
       ),
       emailService.sendRequesterConfirmation(
         requester_email,
@@ -171,7 +172,8 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         request.id,
         request.requester_token || '',
         userLanguage,
-        'requester'
+        'requester',
+        publisher_name || ''
       ),
     ]);
   } catch (error) {
@@ -339,7 +341,8 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
       status,
       request.requester_token || '',
       userLanguage,
-      'requester'
+      'requester',
+      request.publisher_name || ''
     );
   } catch (error) {
     console.error('Error sending status update email:', error);
@@ -619,7 +622,8 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       existingRequest.requester_email,
       existingRequest.publisher_token || '',
       userLanguage,
-      'publisher'
+      'publisher',
+      existingRequest.publisher_name || ''
     );
   } catch (error) {
     console.error('Error sending update notification email:', error);
