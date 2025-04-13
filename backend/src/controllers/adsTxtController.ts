@@ -103,8 +103,8 @@ async function classifyRecords(
   const domainCertIds = new Map<string, string>();
   for (const record of recordEntries) {
     if ('domain' in record && record.domain && record.certification_authority_id) {
-      // Always normalize domain to lowercase for consistent lookups
-      const normalizedDomain = record.domain.toLowerCase();
+      // Always normalize domain to lowercase and trim whitespace for consistent lookups
+      const normalizedDomain = record.domain.toLowerCase().trim();
       domainCertIds.set(normalizedDomain, record.certification_authority_id);
     }
   }
@@ -124,8 +124,8 @@ async function classifyRecords(
     if (!('domain' in record)) continue;
 
     const domain = record.domain;
-    // Always normalize domain to lowercase for consistent lookups
-    const normalizedDomain = domain.toLowerCase();
+    // Always normalize domain to lowercase and trim whitespace for consistent lookups
+    const normalizedDomain = domain.toLowerCase().trim();
     const accountId = record.account_id?.toString() || '';
     const key = `${normalizedDomain}:${accountId}`;
 
@@ -143,7 +143,7 @@ async function classifyRecords(
   // This ensures we only query each unique combination once
   const processDomainAccountPair = async (domain: string, accountId: string, records: any[]) => {
     // Find Certification Authority ID (once per group) - normalize domain for consistent lookup
-    const normalizedDomain = domain.toLowerCase();
+    const normalizedDomain = domain.toLowerCase().trim();
     const foundCertId = domainCertIds.get(normalizedDomain) || domainCertIds.get(domain) || null;
     const sellersJsonData =
       domainSellersJsonCache.get(normalizedDomain) || domainSellersJsonCache.get(domain);
@@ -409,7 +409,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       const fetchSellersJson = async (domain: string) => {
         try {
           // Use normalized domain name
-          const normalizedDomain = domain.toLowerCase();
+          const normalizedDomain = domain.toLowerCase().trim();
           logger.debug(
             `Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`
           );
@@ -525,7 +525,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
       // 並列フェッチを効率化するカスタム関数（実行中のPromiseを再利用）
       const optimizedFetchWithCache = async (domain: string) => {
         // 正規化したドメイン名
-        const normalizedDomain = domain.toLowerCase();
+        const normalizedDomain = domain.toLowerCase().trim();
 
         // ドメインを処理済みとして記録
         stats.processedDomains.add(normalizedDomain);

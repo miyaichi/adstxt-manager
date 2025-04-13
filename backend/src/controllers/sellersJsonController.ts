@@ -638,8 +638,8 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
 
-  // Normalize domain to lowercase
-  domain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  domain = domain.toLowerCase().trim();
 
   if (!sellerId) {
     throw new ApiError(400, 'Seller ID parameter is required', 'errors:sellerIdRequired');
@@ -766,8 +766,8 @@ export const getSellersJson = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
 
-  // Normalize domain to lowercase
-  domain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  domain = domain.toLowerCase().trim();
 
   try {
     // 共通関数を使用してsellers.jsonデータを取得
@@ -806,8 +806,8 @@ export const getSellersJsonMetadata = asyncHandler(async (req: Request, res: Res
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
   }
 
-  // Normalize domain to lowercase
-  domain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  domain = domain.toLowerCase().trim();
 
   try {
     // 共通関数を使用してsellers.jsonデータを取得

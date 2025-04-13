@@ -263,8 +263,8 @@ async function saveToCache(cacheRecord) {
  * @param {Error} error - The error
  */
 async function handleSellersJsonError(domain, error) {
-  // Normalize domain to lowercase
-  const normalizedDomain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  const normalizedDomain = domain.toLowerCase().trim();
 
   logger.error(`Error fetching sellers.json for domain ${normalizedDomain}:`, error);
 
@@ -309,8 +309,8 @@ async function handleSellersJsonError(domain, error) {
  * @returns {Object} - Result with status and message
  */
 async function refreshSellersJson(domain) {
-  // Normalize domain to lowercase
-  const normalizedDomain = domain.toLowerCase();
+  // Normalize domain to lowercase and trim whitespace
+  const normalizedDomain = domain.toLowerCase().trim();
 
   try {
     logger.info(`Refreshing sellers.json for domain: ${normalizedDomain}`);

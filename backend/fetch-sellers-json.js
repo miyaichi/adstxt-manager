@@ -390,7 +390,7 @@ async function ensureTableExists() {
 async function saveToDatabase(domain, data, url, statusCode = 200) {
   const now = new Date().toISOString();
   const id = uuidv4();
-  const lowercaseDomain = domain.toLowerCase();
+  const lowercaseDomain = domain.toLowerCase().trim();
 
   if (DB_PROVIDER === 'postgres') {
     // PostgreSQL implementation with JSONB - Store the entire JSON object

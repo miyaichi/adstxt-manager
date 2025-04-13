@@ -449,14 +449,14 @@ export interface SellersJsonSellerRecord {
 export interface CrossCheckValidationResult {
   // Case 11/16: Does the advertising system have a sellers.json file?
   hasSellerJson: boolean;
-  // Case 12: Is the publisher account ID listed as a seller_id in the sellers.json file?
-  accountIdInSellersJson: boolean;
-  // Case 13: Does the sellers.json entry for this seller_id have matching domain?
-  domainMatchesSellerJsonEntry: boolean | null; // null if domain is confidential or missing
+  // Case 12: For DIRECT entries, is the publisher account ID listed as a seller_id in the sellers.json file?
+  directAccountIdInSellersJson: boolean;
+  // Case 13: For DIRECT entries, does the sellers.json entry for this seller_id have matching domain?
+  directDomainMatchesSellerJsonEntry: boolean | null; // null if domain is confidential or missing
   // Case 14: For DIRECT entries, is the seller_type PUBLISHER?
   directEntryHasPublisherType: boolean | null; // null if not a DIRECT entry
-  // Case 15: Is the seller_id unique in the sellers.json file?
-  sellerIdIsUnique: boolean | null;
+  // Case 15: For DIRECT entries, is the seller_id unique in the sellers.json file?
+  directSellerIdIsUnique: boolean | null; // null if not a DIRECT entry
   // Case 17: For RESELLER entries, is the publisher account ID listed as a seller_id?
   resellerAccountIdInSellersJson: boolean | null; // null if not a RESELLER entry
   // Case 18: For RESELLER entries, does the sellers.json entry domain match OWNERDOMAIN or MANAGERDOMAIN?
@@ -617,7 +617,7 @@ function createExistingRecordsMap(
 
   for (const record of existingRecords) {
     if (record.is_valid) {
-      const domainLower = record.domain.toLowerCase();
+      const domainLower = record.domain.toLowerCase().trim();
       const key = `${domainLower}|${record.account_id}|${record.relationship}`;
       existingRecordMap.set(key, record);
     }
@@ -634,7 +634,7 @@ function createLookupKey(record: ParsedAdsTxtRecord): string {
   // - domain: case insensitive (lowercase)
   // - account_id: case sensitive (as is)
   // - relationship: already normalized to DIRECT/RESELLER
-  const lowerDomain = record.domain.toLowerCase();
+  const lowerDomain = record.domain.toLowerCase().trim();
   return `${lowerDomain}|${record.account_id}|${record.relationship}`;
 }
 
@@ -797,8 +797,9 @@ async function validateSingleRecord(
   const matchingSeller = findMatchingSeller(sellersJsonData.sellers, normalizedAccountId);
   validationResult.sellerData = matchingSeller || null;
 
-  // Case 12/17: Check if account_id is in sellers.json
-  validationResult.accountIdInSellersJson = !!matchingSeller;
+  // For DIRECT entries, set the account ID match result
+  // This will be used for Case 12 (DIRECT) - later logic will handle Case 17 (RESELLER)
+  validationResult.directAccountIdInSellersJson = !!matchingSeller;
 
   // Run relationship-specific validations
   if (record.relationship === 'DIRECT') {
@@ -851,10 +852,10 @@ async function validateSingleRecord(
 function createInitialValidationResult(): CrossCheckValidationResult {
   return {
     hasSellerJson: false,
-    accountIdInSellersJson: false,
-    domainMatchesSellerJsonEntry: null,
+    directAccountIdInSellersJson: false,
+    directDomainMatchesSellerJsonEntry: null,
     directEntryHasPublisherType: null,
-    sellerIdIsUnique: null, // Changed from false to null to indicate unknown state
+    directSellerIdIsUnique: null, // Changed from false to null to indicate unknown state
     resellerAccountIdInSellersJson: null,
     resellerDomainMatchesSellerJsonEntry: null, // Added for Case 18
     resellerEntryHasIntermediaryType: null,
@@ -968,13 +969,14 @@ function validateDirectRelationship(
 ): void {
   // Reset RESELLER-specific fields
   validationResult.resellerAccountIdInSellersJson = null;
+  validationResult.resellerDomainMatchesSellerJsonEntry = null; // Reset Case 18 field
   validationResult.resellerEntryHasIntermediaryType = null;
   validationResult.resellerSellerIdIsUnique = null;
 
   if (matchingSeller) {
     // Case 13: For DIRECT entries, check if seller domain matches OWNERDOMAIN or MANAGERDOMAIN
     if (matchingSeller.is_confidential === 1 || !matchingSeller.domain) {
-      validationResult.domainMatchesSellerJsonEntry = null; // Confidential or no domain
+      validationResult.directDomainMatchesSellerJsonEntry = null; // Confidential or no domain
     } else {
       // Get OWNERDOMAIN and MANAGERDOMAIN values from variables
       const ownerDomains = extractDomainsFromVariables(parsedEntries, 'OWNERDOMAIN');
@@ -987,13 +989,13 @@ function validateDirectRelationship(
       const matchesOwnerDomain = ownerDomains.some(domain => domain === sellerDomainLower);
       const matchesManagerDomain = managerDomains.some(domain => domain === sellerDomainLower);
       
-      validationResult.domainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
+      validationResult.directDomainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
       
       // If no OWNERDOMAIN or MANAGERDOMAIN variables found, fall back to original behavior
       if (ownerDomains.length === 0 && managerDomains.length === 0) {
         // Compare publisher domain with seller domain (case insensitive)
         const publisherDomainLower = publisherDomain.toLowerCase();
-        validationResult.domainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+        validationResult.directDomainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
       }
     }
 
@@ -1005,14 +1007,14 @@ function validateDirectRelationship(
     // Case 15: Check if seller_id is unique in the file
     if (sellerIdCounts.has(normalizedAccountId)) {
       const count = sellerIdCounts.get(normalizedAccountId)!;
-      validationResult.sellerIdIsUnique = count === 1;
+      validationResult.directSellerIdIsUnique = count === 1;
       console.log(
-        `Seller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.sellerIdIsUnique}`
+        `Seller ID ${normalizedAccountId} appears ${count} times, unique: ${validationResult.directSellerIdIsUnique}`
       );
     } else {
       // This should not happen if we found a matching seller
       console.warn(`Seller ID ${normalizedAccountId} not found in counts map`);
-      validationResult.sellerIdIsUnique = null;
+      validationResult.directSellerIdIsUnique = null;
     }
   } else {
     // If no matching seller found, we can't determine uniqueness
@@ -1034,6 +1036,7 @@ function validateResellerRelationship(
   // Reset DIRECT-specific fields
   validationResult.directEntryHasPublisherType = null;
   validationResult.domainMatchesSellerJsonEntry = null;
+  validationResult.sellerIdIsUnique = null; // Reset Case 15 field
 
   // Case 17: For RESELLER entries, check if account_id is in sellers.json
   validationResult.resellerAccountIdInSellersJson = !!matchingSeller;
@@ -1403,7 +1406,7 @@ export function optimizeAdsTxt(content: string, publisherDomain?: string): strin
     const groupedRecords = new Map<string, ParsedAdsTxtRecord[]>();
 
     recordEntries.forEach((record) => {
-      const domainLower = record.domain.toLowerCase();
+      const domainLower = record.domain.toLowerCase().trim();
       const group = groupedRecords.get(domainLower) || [];
       group.push(record);
       groupedRecords.set(domainLower, group);

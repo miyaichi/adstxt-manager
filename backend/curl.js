@@ -137,7 +137,7 @@ function saveToDatabase(domain, content, url, status, statusCode, errorMessage) 
   return new Promise((resolve, reject) => {
     const now = new Date().toISOString();
     const id = uuidv4();
-    const normalizedDomain = domain.toLowerCase();
+    const normalizedDomain = domain.toLowerCase().trim();
 
     // Check if domain exists
     db.get('SELECT id FROM ads_txt_cache WHERE domain = ?', [normalizedDomain], (err, row) => {
