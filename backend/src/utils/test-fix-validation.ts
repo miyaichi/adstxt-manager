@@ -22,7 +22,7 @@ async function testFixedValidation() {
       console.log('\nDetailed validation results:');
       console.log(`- hasSellerJson: ${validatedRecords[0].validation_results.hasSellerJson}`);
       console.log(
-        `- accountIdInSellersJson: ${validatedRecords[0].validation_results.accountIdInSellersJson}`
+        `- directAccountIdInSellersJson: ${validatedRecords[0].validation_results.directAccountIdInSellersJson}`
       );
       console.log(
         `- resellerAccountIdInSellersJson: ${validatedRecords[0].validation_results.resellerAccountIdInSellersJson}`

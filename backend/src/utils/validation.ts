@@ -1018,7 +1018,7 @@ function validateDirectRelationship(
     }
   } else {
     // If no matching seller found, we can't determine uniqueness
-    validationResult.sellerIdIsUnique = null;
+    validationResult.directSellerIdIsUnique = null;
   }
 }
 
@@ -1035,8 +1035,8 @@ function validateResellerRelationship(
 ): void {
   // Reset DIRECT-specific fields
   validationResult.directEntryHasPublisherType = null;
-  validationResult.domainMatchesSellerJsonEntry = null;
-  validationResult.sellerIdIsUnique = null; // Reset Case 15 field
+  validationResult.directDomainMatchesSellerJsonEntry = null;
+  validationResult.directSellerIdIsUnique = null; // Reset Case 15 field
 
   // Case 17: For RESELLER entries, check if account_id is in sellers.json
   validationResult.resellerAccountIdInSellersJson = !!matchingSeller;
@@ -1124,7 +1124,7 @@ function generateWarnings(
   }
 
   // Case 12/17 Account ID not found
-  if (!validationResult.accountIdInSellersJson) {
+  if (!validationResult.directAccountIdInSellersJson) {
     if (record.relationship === 'DIRECT') {
       warnings.push(
         createWarning(VALIDATION_KEYS.DIRECT_ACCOUNT_ID_NOT_IN_SELLERS_JSON, {
@@ -1145,7 +1145,7 @@ function generateWarnings(
   }
 
   // Case 13: Domain mismatch for DIRECT - now checks against OWNERDOMAIN and MANAGERDOMAIN as well
-  if (record.relationship === 'DIRECT' && validationResult.domainMatchesSellerJsonEntry === false) {
+  if (record.relationship === 'DIRECT' && validationResult.directDomainMatchesSellerJsonEntry === false) {
     warnings.push(
       createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
         domain: record.domain,
@@ -1180,8 +1180,8 @@ function generateWarnings(
   // Case 5/8: Seller ID not unique
   const hasDuplicateDirectSellerId =
     record.relationship === 'DIRECT' &&
-    validationResult.accountIdInSellersJson &&
-    validationResult.sellerIdIsUnique === false;
+    validationResult.directAccountIdInSellersJson &&
+    validationResult.directSellerIdIsUnique === false;
 
   const hasDuplicateResellerSellerId =
     record.relationship === 'RESELLER' &&
@@ -1201,7 +1201,7 @@ function generateWarnings(
   // Case 19: RESELLER entry not marked as INTERMEDIARY
   if (
     record.relationship === 'RESELLER' &&
-    validationResult.accountIdInSellersJson &&
+    validationResult.directAccountIdInSellersJson &&
     validationResult.resellerEntryHasIntermediaryType === false
   ) {
     warnings.push(
