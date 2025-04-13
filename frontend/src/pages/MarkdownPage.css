@@ -38,6 +38,39 @@
   margin-bottom: 16px;
 }
 
+/* 箇条書きのスタイリング */
+.markdown-content ul,
+.markdown-content ol {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-left: 2em;
+}
+
+.markdown-content li {
+  margin-bottom: 4px;
+}
+
+.markdown-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* 見出しの後のpタグの間の箇条書きのインデント */
+.markdown-content h2 + p + ul,
+.markdown-content h3 + p + ul,
+.markdown-content h4 + p + ul {
+  margin-left: 1.5em;
+  padding-left: 1.5em;
+}
+
+/* 入れ子になった箇条書きのスタイル */
+.markdown-content ul ul,
+.markdown-content ol ol,
+.markdown-content ul ol,
+.markdown-content ol ul {
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
 .markdown-content a {
   color: #0366d6;
   text-decoration: none;
