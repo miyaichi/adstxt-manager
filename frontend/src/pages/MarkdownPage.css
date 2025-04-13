@@ -52,15 +52,18 @@
   list-style-type: decimal;
 }
 
-.markdown-content ol li {
-  display: block;
+/* リスト項目のスタイル - 番号付きリストと箇条書きの両方に適用 */
+.markdown-content li {
+  margin-bottom: 0.5em;
   position: relative;
 }
 
-.markdown-content li {
-  margin-bottom: 4px;
+/* 番号付きリストのリスト項目の基本スタイル */
+.markdown-content ol > li {
+  padding-left: 0.5em;
 }
 
+/* 最後のリスト項目はマージンを削除 */
 .markdown-content li:last-child {
   margin-bottom: 0;
 }
@@ -96,13 +99,20 @@
 
 /* 番号付きリストの行間を広げる */
 .markdown-content ol > li {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   line-height: 1.6;
+  padding-bottom: 4px;
 }
 
 /* 条項用の番号付きリストの中の文章を読みやすく */
 .markdown-content ol > li p {
-  margin: 4px 0;
+  margin: 6px 0;
+}
+
+/* リスト項目内の段落テキストのスタイル - 禁止事項リストなどで使用 */
+.markdown-content ol > li > p:first-child {
+  display: inline-block;
+  margin-top: 0;
 }
 
 /* 入れ子になった箇条書きのスタイル */
@@ -110,8 +120,22 @@
 .markdown-content ol ol,
 .markdown-content ul ol,
 .markdown-content ol ul {
-  margin-top: 4px;
+  margin-top: 0.5em;
   margin-bottom: 0;
+  padding-left: 1.5em;
+}
+
+/* 番号付きリスト内の箇条書きリスト（特に利用規約の条項内） */
+.markdown-content ol > li > ul {
+  margin-top: 0.5em;
+  margin-left: 0;
+  padding-left: 1em;
+  list-style-type: disc;
+}
+
+/* 番号付きリスト内の箇条書きリスト内のアイテム */
+.markdown-content ol > li > ul > li {
+  margin-bottom: 0.3em;
 }
 
 .markdown-content a {
