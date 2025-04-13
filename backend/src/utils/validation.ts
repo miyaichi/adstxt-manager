@@ -447,7 +447,7 @@ export interface SellersJsonSellerRecord {
  * Validation results for cross-checking ads.txt with sellers.json
  */
 export interface CrossCheckValidationResult {
-  // Case 11: Does the advertising system have a sellers.json file?
+  // Case 11/16: Does the advertising system have a sellers.json file?
   hasSellerJson: boolean;
   // Case 12: Is the publisher account ID listed as a seller_id in the sellers.json file?
   accountIdInSellersJson: boolean;
@@ -1114,7 +1114,7 @@ function generateWarnings(
 ): Array<{ key: string; params?: Record<string, any>; severity?: Severity }> {
   const warnings: Array<{ key: string; params?: Record<string, any>; severity?: Severity }> = [];
 
-  // Case 11: Missing sellers.json
+  // Case 11/16: Missing sellers.json
   if (!validationResult.hasSellerJson) {
     warnings.push(createWarning(VALIDATION_KEYS.NO_SELLERS_JSON, { domain: record.domain }));
     return warnings; // Return early if no sellers.json - don't add other warnings
