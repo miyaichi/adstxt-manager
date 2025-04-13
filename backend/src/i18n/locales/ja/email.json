@@ -17,7 +17,7 @@
       "greeting": "{{requesterName}}様、",
       "message": "パブリッシャー{{publisherName}}（{{publisherEmail}}）宛てのAds.txtファイル更新リクエストが正常に送信されました。",
       "action": "リクエストの状況確認やパブリッシャーとのコミュニケーションは、以下のリンクから行えます：",
-      "linkText": "リリクエスト状況を確認する",
+      "linkText": "リクエスト状況を確認する",
       "warning": "このリンクはあなた専用のセキュアアクセストークンを含んでいますので、他の方と共有しないようご注意ください。",
       "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>",
       "requesterToken": "リクエスタートークン: {{requesterToken}}"
@@ -29,7 +29,7 @@
       "message": "{{requesterName}}（{{requesterEmail}}）が以前送信したAds.txtリクエストを更新しました。",
       "action": "更新された内容を確認するには、以下のリンクをクリックしてください：",
       "linkText": "更新されたリクエストを確認する",
-      "warning": "ここのリンクはあなた専用のセキュアアクセスを提供するものですので、他の方と共有しないようお願いいたします。",
+      "warning": "このリンクはあなた専用のセキュアアクセスを提供するものですので、他の方と共有しないようお願いいたします。",
       "signature": "よろしくお願いいたします。<br/><a href=\"{{appUrl}}\">Ads.txtマネージャー</a>"
     }
   },
