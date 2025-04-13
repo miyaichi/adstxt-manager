@@ -46,6 +46,17 @@
   padding-left: 2em;
 }
 
+/* 番号付きリスト特有のスタイル */
+.markdown-content ol {
+  counter-reset: item;
+  list-style-type: decimal;
+}
+
+.markdown-content ol li {
+  display: block;
+  position: relative;
+}
+
 .markdown-content li {
   margin-bottom: 4px;
 }
@@ -60,6 +71,38 @@
 .markdown-content h4 + p + ul {
   margin-left: 1.5em;
   padding-left: 1.5em;
+}
+
+/* 条項や契約書スタイルのための特別セレクタ */
+/* 第X条 の形式の見出しを想定 */
+.markdown-content h2,
+.markdown-content h3 {
+  font-weight: 600;
+}
+
+/* 条項見出しの後にあるordered listへの特別なスタイル */
+/* 第3条 (禁止事項) パターンに対応 */
+.markdown-content h2 + p + ol,
+.markdown-content h3 + p + ol,
+.markdown-content h4 + p + ol {
+  margin-left: 2em;
+  padding-left: 1.5em;
+  color: #333;
+  background-color: #fafafa;
+  border-radius: 4px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* 番号付きリストの行間を広げる */
+.markdown-content ol > li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+/* 条項用の番号付きリストの中の文章を読みやすく */
+.markdown-content ol > li p {
+  margin: 4px 0;
 }
 
 /* 入れ子になった箇条書きのスタイル */
