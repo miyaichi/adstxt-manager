@@ -77,13 +77,12 @@ export const translations = {
         ja: '実施済みエントリ',
       },
       description: {
-        en: "An identical entry already exists in the Ads.txt file for the specified domain.",
+        en: 'An identical entry already exists in the Ads.txt file for the specified domain.',
         ja: 'パブリッシャーのads.txt（{{domain}}）にすでに実施済みのエントリが見つかりました',
       },
       recommendation: {
         en: '**Recommendation**: You do not need to include the implemented entry in the new entry. The existing entry is already valid and does not need to be duplicated.',
         ja: '新規エントリに実施済みエントリを含める必要はありません。既存のエントリはすでに有効であり、重複する必要はありません。',
-
       },
     },
     noSellersJson: {
