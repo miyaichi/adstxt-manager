@@ -713,9 +713,9 @@ export const getSellerById = asyncHandler(async (req: Request, res: Response) =>
       // 標準メソッドにフォールバック
     }
 
-    // 通常のJSON解析で売り手を検索
+    // 通常のJSON解析でセラーを検索
     if (Array.isArray(sellersJsonData.sellers)) {
-      // 売り手をデータ内で検索
+      // セラーをデータ内で検索
       const result = findSellerInData(sellersJsonData, normalizedSellerId);
 
       // メタデータを抽出

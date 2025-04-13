@@ -134,12 +134,12 @@ export const translations = {
         ja: 'ドメインの不一致',
       },
       description: {
-        en: "The sellers.json domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
-        ja: 'sellers.jsonドメイン（{{seller_domain}}）がパブリッシャードメイン（{{publisher_domain}}）と一致しません',
+        en: "The sellers.json domain ({{seller_domain}}) doesn't match the OWNERDOMAIN/MANAGERDOMAIN or publisher domain ({{publisher_domain}})",
+        ja: 'sellers.jsonドメイン（{{seller_domain}}）がOWNERDOMAIN/MANAGERDOMAINまたはパブリッシャードメイン（{{publisher_domain}}）と一致しません',
       },
       recommendation: {
-        en: 'For DIRECT relationships, the domains should match. Verify with the advertising system.',
-        ja: 'DIRECT関係の場合、ドメインは一致する必要があります。広告システムで確認してください。',
+        en: 'For both DIRECT and RESELLER relationships, the domains should match with either OWNERDOMAIN, MANAGERDOMAIN, or the publisher domain. Verify with the advertising system.',
+        ja: 'DIRECTとRESELLERの両方の関係で、ドメインは OWNERDOMAIN、MANAGERDOMAIN、またはパブリッシャードメインのいずれかと一致する必要があります。広告システムで確認してください。',
       },
     },
     directNotPublisher: {

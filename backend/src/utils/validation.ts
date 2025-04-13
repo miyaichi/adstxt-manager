@@ -459,6 +459,8 @@ export interface CrossCheckValidationResult {
   sellerIdIsUnique: boolean | null;
   // Case 17: For RESELLER entries, is the publisher account ID listed as a seller_id?
   resellerAccountIdInSellersJson: boolean | null; // null if not a RESELLER entry
+  // Case 18: For RESELLER entries, does the sellers.json entry domain match OWNERDOMAIN or MANAGERDOMAIN?
+  resellerDomainMatchesSellerJsonEntry: boolean | null; // null if domain is confidential or missing
   // Case 19: For RESELLER entries, is the seller_type INTERMEDIARY?
   resellerEntryHasIntermediaryType: boolean | null; // null if not a RESELLER entry
   // Case 20: For RESELLER entries, is the seller_id unique?
@@ -517,7 +519,8 @@ export async function crossCheckAdsTxtRecords(
       publisherDomain,
       resultRecords,
       SellersJsonCacheModel,
-      logger
+      logger,
+      parsedEntries // Pass all entries including variables for domain validation
     );
 
     // Combine variable entries with validated record entries
@@ -682,7 +685,8 @@ async function validateAgainstSellersJson(
   publisherDomain: string,
   records: ParsedAdsTxtRecord[],
   SellersJsonCacheModel: any,
-  logger: Logger
+  logger: Logger,
+  allEntries: ParsedAdsTxtEntry[] = [] // Add allEntries parameter to pass all entries including variables
 ): Promise<ParsedAdsTxtRecord[]> {
   // Cache for sellers.json data and seller ID counts
   const sellersJsonCache = new Map<string, any>();
@@ -702,7 +706,8 @@ async function validateAgainstSellersJson(
           sellersJsonCache,
           domainSellerIdCountsMap,
           SellersJsonCacheModel,
-          logger
+          logger,
+          allEntries // Pass all entries including variables
         );
       } catch (error: any) {
         logger.error(
@@ -745,7 +750,8 @@ async function validateSingleRecord(
   sellersJsonCache: Map<string, any>,
   domainSellerIdCountsMap: Map<string, Map<string, number>>,
   SellersJsonCacheModel: any,
-  logger: Logger
+  logger: Logger,
+  allEntries: ParsedAdsTxtEntry[] = [] // Add allEntries parameter
 ): Promise<ParsedAdsTxtRecord> {
   // Extract advertising system domain from the record
   const adSystemDomain = record.domain.toLowerCase();
@@ -801,14 +807,17 @@ async function validateSingleRecord(
       matchingSeller,
       publisherDomain,
       normalizedAccountId,
-      sellerIdCounts
+      sellerIdCounts,
+      allEntries // Pass all entries including variables
     );
   } else if (record.relationship === 'RESELLER') {
     validateResellerRelationship(
       validationResult,
       matchingSeller,
+      publisherDomain,
       normalizedAccountId,
-      sellerIdCounts
+      sellerIdCounts,
+      allEntries // Pass all entries including variables
     );
   }
 
@@ -847,6 +856,7 @@ function createInitialValidationResult(): CrossCheckValidationResult {
     directEntryHasPublisherType: null,
     sellerIdIsUnique: null, // Changed from false to null to indicate unknown state
     resellerAccountIdInSellersJson: null,
+    resellerDomainMatchesSellerJsonEntry: null, // Added for Case 18
     resellerEntryHasIntermediaryType: null,
     resellerSellerIdIsUnique: null,
   };
@@ -923,6 +933,29 @@ function findMatchingSeller(
 }
 
 /**
+ * Extract and normalize domain values from variable entries
+ * @param variableEntries Array of variable entries from the ads.txt
+ * @param variableType Type of variable to extract (OWNERDOMAIN or MANAGERDOMAIN)
+ * @returns Array of domain values from the specified variable
+ */
+function extractDomainsFromVariables(
+  parsedEntries: ParsedAdsTxtEntry[],
+  variableType: 'OWNERDOMAIN' | 'MANAGERDOMAIN'
+): string[] {
+  const variableEntries = parsedEntries.filter(isAdsTxtVariable)
+                                      .filter(entry => entry.variable_type === variableType);
+  
+  return variableEntries.map(entry => {
+    // For MANAGERDOMAIN, it can be in format "domain" or "domain,CountryCode"
+    if (variableType === 'MANAGERDOMAIN' && entry.value.includes(',')) {
+      // Return only the domain part before comma
+      return entry.value.split(',')[0].toLowerCase().trim();
+    }
+    return entry.value.toLowerCase().trim();
+  });
+}
+
+/**
  * Validate a DIRECT relationship
  */
 function validateDirectRelationship(
@@ -930,7 +963,8 @@ function validateDirectRelationship(
   matchingSeller: SellersJsonSellerRecord | undefined,
   publisherDomain: string,
   normalizedAccountId: string,
-  sellerIdCounts: Map<string, number>
+  sellerIdCounts: Map<string, number>,
+  parsedEntries: ParsedAdsTxtEntry[] = [] // Added parsedEntries parameter
 ): void {
   // Reset RESELLER-specific fields
   validationResult.resellerAccountIdInSellersJson = null;
@@ -938,14 +972,29 @@ function validateDirectRelationship(
   validationResult.resellerSellerIdIsUnique = null;
 
   if (matchingSeller) {
-    // Case 13: For DIRECT entries, check if domains match
+    // Case 13: For DIRECT entries, check if seller domain matches OWNERDOMAIN or MANAGERDOMAIN
     if (matchingSeller.is_confidential === 1 || !matchingSeller.domain) {
       validationResult.domainMatchesSellerJsonEntry = null; // Confidential or no domain
     } else {
-      // Compare publisher domain with seller domain (case insensitive)
-      const publisherDomainLower = publisherDomain.toLowerCase();
-      const sellerDomainLower = matchingSeller.domain.toLowerCase();
-      validationResult.domainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+      // Get OWNERDOMAIN and MANAGERDOMAIN values from variables
+      const ownerDomains = extractDomainsFromVariables(parsedEntries, 'OWNERDOMAIN');
+      const managerDomains = extractDomainsFromVariables(parsedEntries, 'MANAGERDOMAIN');
+      
+      // Normalize seller domain
+      const sellerDomainLower = matchingSeller.domain.toLowerCase().trim();
+      
+      // Check if seller domain matches any OWNERDOMAIN or MANAGERDOMAIN
+      const matchesOwnerDomain = ownerDomains.some(domain => domain === sellerDomainLower);
+      const matchesManagerDomain = managerDomains.some(domain => domain === sellerDomainLower);
+      
+      validationResult.domainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
+      
+      // If no OWNERDOMAIN or MANAGERDOMAIN variables found, fall back to original behavior
+      if (ownerDomains.length === 0 && managerDomains.length === 0) {
+        // Compare publisher domain with seller domain (case insensitive)
+        const publisherDomainLower = publisherDomain.toLowerCase();
+        validationResult.domainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+      }
     }
 
     // Case 14: For DIRECT entries, check if seller_type is PUBLISHER
@@ -977,8 +1026,10 @@ function validateDirectRelationship(
 function validateResellerRelationship(
   validationResult: CrossCheckValidationResult,
   matchingSeller: SellersJsonSellerRecord | undefined,
+  publisherDomain: string,
   normalizedAccountId: string,
-  sellerIdCounts: Map<string, number>
+  sellerIdCounts: Map<string, number>,
+  parsedEntries: ParsedAdsTxtEntry[] = [] // Added parsedEntries parameter
 ): void {
   // Reset DIRECT-specific fields
   validationResult.directEntryHasPublisherType = null;
@@ -986,6 +1037,33 @@ function validateResellerRelationship(
 
   // Case 17: For RESELLER entries, check if account_id is in sellers.json
   validationResult.resellerAccountIdInSellersJson = !!matchingSeller;
+  
+  // Case 18: For RESELLER entries, check if seller domain matches OWNERDOMAIN or MANAGERDOMAIN
+  if (matchingSeller) {
+    if (matchingSeller.is_confidential === 1 || !matchingSeller.domain) {
+      validationResult.resellerDomainMatchesSellerJsonEntry = null; // Confidential or no domain
+    } else {
+      // Get OWNERDOMAIN and MANAGERDOMAIN values from variables
+      const ownerDomains = extractDomainsFromVariables(parsedEntries, 'OWNERDOMAIN');
+      const managerDomains = extractDomainsFromVariables(parsedEntries, 'MANAGERDOMAIN');
+      
+      // Normalize seller domain
+      const sellerDomainLower = matchingSeller.domain.toLowerCase().trim();
+      
+      // Check if seller domain matches any OWNERDOMAIN or MANAGERDOMAIN
+      const matchesOwnerDomain = ownerDomains.some(domain => domain === sellerDomainLower);
+      const matchesManagerDomain = managerDomains.some(domain => domain === sellerDomainLower);
+      
+      validationResult.resellerDomainMatchesSellerJsonEntry = matchesOwnerDomain || matchesManagerDomain;
+      
+      // If no OWNERDOMAIN or MANAGERDOMAIN variables found, fall back to original behavior
+      if (ownerDomains.length === 0 && managerDomains.length === 0) {
+        // Compare publisher domain with seller domain (case insensitive)
+        const publisherDomainLower = publisherDomain.toLowerCase();
+        validationResult.resellerDomainMatchesSellerJsonEntry = publisherDomainLower === sellerDomainLower;
+      }
+    }
+  }
 
   if (matchingSeller) {
     // Case 19: For RESELLER entries, check if seller_type is INTERMEDIARY
@@ -1063,8 +1141,19 @@ function generateWarnings(
     return warnings;
   }
 
-  // Case 13/18: Domain mismatch for DIRECT
+  // Case 13: Domain mismatch for DIRECT - now checks against OWNERDOMAIN and MANAGERDOMAIN as well
   if (record.relationship === 'DIRECT' && validationResult.domainMatchesSellerJsonEntry === false) {
+    warnings.push(
+      createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
+        domain: record.domain,
+        publisher_domain: publisherDomain,
+        seller_domain: validationResult.sellerData?.domain || 'unknown',
+      })
+    );
+  }
+  
+  // Case 18: Domain mismatch for RESELLER - checks against OWNERDOMAIN and MANAGERDOMAIN as well
+  if (record.relationship === 'RESELLER' && validationResult.resellerDomainMatchesSellerJsonEntry === false) {
     warnings.push(
       createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
         domain: record.domain,

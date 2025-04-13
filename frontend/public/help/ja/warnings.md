@@ -106,9 +106,9 @@
 
 ### ドメインの不一致
 
-**説明**: DIRECT関係の場合、Ads.txtファイル内のドメインが、セラーのsellers.jsonファイルであなたのパブリッシャーIDに記載されているドメインと一致しません。
+**説明**: sellers.jsonファイル内のドメインが、Ads.txtファイル内のOWNERDOMAIN、MANAGERDOMAIN、またはパブリッシャードメインと一致しません。
 
-**推奨事項**: DIRECT関係の場合、Ads.txtファイル内のドメインは、広告システムのsellers.jsonファイルであなたのパブリッシャーIDに記載されているドメインと一致する必要があります。広告システムで正しいドメインを確認してください。
+**推奨事項**: DIRECTとRESELLERの両方の関係において、広告システムのsellers.jsonファイル内のドメインは、OWNERDOMAIN、MANAGERDOMAIN、またはパブリッシャードメインのいずれかと一致する必要があります。Ads.txtファイルにOWNERDOMAINまたはMANAGERDOMAIN変数がある場合、それらが最初にチェックされます。広告システムで正しいドメインを確認してください。
 
 ---
 

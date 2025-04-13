@@ -107,9 +107,9 @@ This document describes all the validation warnings that may appear in the Ads.t
 
 ### Domain Mismatch
 
-**Description**: For a DIRECT relationship, the domain in your Ads.txt file doesn't match the domain listed for your publisher ID in the seller's sellers.json file.
+**Description**: The domain in the sellers.json file doesn't match with the OWNERDOMAIN, MANAGERDOMAIN, or the publisher domain in your Ads.txt file.
 
-**Recommendation**: For DIRECT relationships, the domain in your Ads.txt file should match the domain listed in the advertising system's sellers.json file for your publisher ID. Verify the correct domain with the advertising system.
+**Recommendation**: For both DIRECT and RESELLER relationships, the domain in the advertising system's sellers.json file should match with either your OWNERDOMAIN, MANAGERDOMAIN, or the publisher domain. If you have OWNERDOMAIN or MANAGERDOMAIN variables in your Ads.txt file, they will be checked first. Verify the correct domain with the advertising system.
 
 ---
 
