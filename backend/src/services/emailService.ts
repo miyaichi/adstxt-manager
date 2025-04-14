@@ -446,11 +446,7 @@ class EmailService {
    * @param language - The language code to use for the email
    * @returns Promise resolving to the nodemailer info object
    */
-  async sendEmailVerificationLink(
-    email: string,
-    token: string,
-    language: string = 'en'
-  ) {
+  async sendEmailVerificationLink(email: string, token: string, language: string = 'en') {
     // Validate language before using it
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
@@ -463,14 +459,14 @@ class EmailService {
 
     // Add language parameter to URL to maintain language across pages
     const langParam = `&lang=${validLanguage}`;
-    
+
     // リクエスト一覧ページに直接リンクするように設定
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
-    
+
     // リクエスト一覧ページへリンク
     const verificationUrl = `${config.server.appUrl}/requests?email=${encodedEmail}&token=${encodedToken}${langParam}`;
-    
+
     // デバッグログ
     console.log(`Verification URL: ${verificationUrl}`);
 

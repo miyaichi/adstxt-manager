@@ -25,7 +25,7 @@ const RequestListPage: React.FC = () => {
   const role = searchParams.get('role') as 'publisher' | 'requester' | null;
   const token = searchParams.get('token');
   const { language } = useApp();
-  
+
   // Email検証が必要かどうかを示す状態
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -45,7 +45,11 @@ const RequestListPage: React.FC = () => {
         setNeedsVerification(false);
 
         // トークンがある場合は検証付きでリクエスト
-        const response = await requestApi.getRequestsByEmail(email, role || undefined, token || undefined);
+        const response = await requestApi.getRequestsByEmail(
+          email,
+          role || undefined,
+          token || undefined
+        );
 
         if (response.success) {
           setRequests(response.data);
@@ -61,7 +65,7 @@ const RequestListPage: React.FC = () => {
         }
       } catch (err: any) {
         console.error('Error fetching requests:', err);
-        
+
         // APIエラーの場合は、エラーメッセージを表示
         if (err.response?.status === 401) {
           // トークンが無効または期限切れの場合
@@ -138,11 +142,17 @@ const RequestListPage: React.FC = () => {
             </Flex>
           ) : needsVerification ? (
             <Alert variation="info">
-              <Heading level={3}>{t('requestListPage.verification.title', language) || '認証が必要です'}</Heading>
-              <Text>{t('requestListPage.verification.description', language) || 'アクセスするためにはメールアドレスの認証が必要です。'}</Text>
+              <Heading level={3}>
+                {t('requestListPage.verification.title', language) || '認証が必要です'}
+              </Heading>
+              <Text>
+                {t('requestListPage.verification.description', language) ||
+                  'アクセスするためにはメールアドレスの認証が必要です。'}
+              </Text>
               {verificationSent && (
                 <Text fontWeight="bold" marginTop="1rem">
-                  {t('requestListPage.verification.emailSent', language) || '認証メールを送信しました。メールを確認して、リンクをクリックしてください。'}
+                  {t('requestListPage.verification.emailSent', language) ||
+                    '認証メールを送信しました。メールを確認して、リンクをクリックしてください。'}
                 </Text>
               )}
             </Alert>

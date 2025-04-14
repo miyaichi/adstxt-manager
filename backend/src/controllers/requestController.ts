@@ -432,36 +432,41 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
     console.log(`Validating token for access to requests: ${token}`);
     const isValidToken = tokenService.verifyEmailToken(email, token);
     console.log(`Token validation result: ${isValidToken ? 'valid' : 'invalid'}`);
-    
+
     if (!isValidToken) {
       console.log(`Token validation failed for ${email}`);
-      throw new ApiError(401, 'Invalid or expired verification token', 'errors:emailVerification.invalidToken');
+      throw new ApiError(
+        401,
+        'Invalid or expired verification token',
+        'errors:emailVerification.invalidToken'
+      );
     }
-    
+
     console.log(`Token validated successfully for ${email}`);
   } else {
     // トークンが提供されていない場合は、検証メールを送信
     console.log(`No token provided for ${email}, initiating email verification flow`);
-    
+
     try {
       // 検証トークンを生成
       const verificationToken = tokenService.generateEmailVerificationToken(email);
-      
+
       // 言語設定を取得
-      const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
-        ? req.query.lang
-        : null;
+      const queryLang =
+        typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
+          ? req.query.lang
+          : null;
       const userLanguage = queryLang || req.language || 'en';
-      
+
       // 検証メールを送信
       await emailService.sendEmailVerificationLink(email, verificationToken, userLanguage);
-      
+
       // 特別なレスポンスを返す（フロントエンドでこれを検知して適切なメッセージを表示）
       return res.status(202).json({
         success: false,
         needsVerification: true,
         message: 'Email verification required - verification email sent',
-        i18nKey: 'errors:emailVerification.verificationRequired'
+        i18nKey: 'errors:emailVerification.verificationRequired',
       });
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -489,9 +494,9 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
         // レコード数のみを取得 - AdsTxtRecordModelを使用
         const records = await AdsTxtRecordModel.getByRequestId(request.id);
         const recordCount = records.length;
-        
+
         console.log(`Request ${request.id}: Simple count - ${recordCount} records`);
-        
+
         // シンプルなリクエスト情報を返す
         return {
           ...request,
