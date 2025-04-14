@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import {
+  Alert,
+  Button,
   Card,
+  Divider,
   Flex,
   Heading,
-  View,
   Text,
-  Button,
   TextField,
-  Alert,
-  Divider,
+  View,
 } from '@aws-amplify/ui-react';
-import { requestApi } from '../api';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
 
