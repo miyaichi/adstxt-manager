@@ -134,7 +134,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
         <Flex justifyContent="flex-end" marginTop="0.5rem">
           <Button
             as={Link}
-            to={`/request/${request.id}?token=${request.token}`}
+            to={`/request/${request.id}?token=${request.publisher_token || request.requester_token || request.token || ''}`}
             variation="primary"
             size="small"
           >
