@@ -235,25 +235,9 @@ const RequestForm: React.FC = () => {
           >
             <Text fontWeight="bold">{t('requests.success.requestId', language)}</Text>
             <Text fontFamily="monospace">{success.requestId}</Text>
-            <Divider marginBlock="1rem" />
-
-            <Text fontWeight="bold">
-              {t('requests.success.requesterToken', language) || 'Requester Token'}
-            </Text>
-            <Text fontFamily="monospace">{success.requester_token || success.token}</Text>
-
-            {success.publisher_token && (
-              <>
-                <Divider marginBlock="1rem" />
-                <Text fontWeight="bold">
-                  {t('requests.success.publisherToken', language) || 'Publisher Token'}
-                </Text>
-                <Text fontFamily="monospace">{success.publisher_token}</Text>
-              </>
-            )}
           </Flex>
 
-          <Text>{t('requests.success.saveInfo', language)}</Text>
+          <Text>{t('requests.success.emailNotification', language) || 'Email notifications with request details have been sent to both parties.'}</Text>
 
           <Button onClick={handleViewRequest} variation="primary">
             {t('requests.success.viewRequest', language)}

@@ -556,21 +556,9 @@ export const translations = {
         en: 'Request ID',
         ja: 'リクエストID',
       },
-      accessToken: {
-        en: 'Access Token',
-        ja: 'アクセストークン',
-      },
-      requesterToken: {
-        en: 'Requester Token',
-        ja: 'リクエスタートークン',
-      },
-      publisherToken: {
-        en: 'Publisher Token',
-        ja: 'パブリッシャートークン',
-      },
-      saveInfo: {
-        en: 'Please save this information to check the status of your request later.',
-        ja: '後でリクエストのステータスを確認するためにこの情報を保存してください。',
+      emailNotification: {
+        en: 'Email notifications with links to access this request have been sent to both parties.',
+        ja: 'このリクエストにアクセスするためのリンクを含むメール通知が両当事者に送信されました。',
       },
       viewRequest: {
         en: 'View Request',
