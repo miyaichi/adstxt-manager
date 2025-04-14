@@ -13,22 +13,28 @@ const { refreshSellersJson } = require('./refresh-sellers-json');
  * @param {number} options.limit - Maximum number of domains to prefetch
  * @param {number} options.minUsage - Minimum number of times a domain appears in ads.txt records
  * @param {number} options.priorityAge - Prioritize domains with no sellers.json cache or older than this many days
+ * @param {number} options.updatedInDays - Process domains with ads.txt entries updated within this many days
  */
 async function run(options = {}) {
-  const { limit = 100, minUsage = 3, priorityAge = 3 } = options;
+  const { limit = 100, minUsage = 3, priorityAge = 3, updatedInDays = 7 } = options;
 
   let extracted = 0;
   let processed = 0;
   let skipped = 0;
 
   try {
-    logger.info('Starting sellers.json prefetch task', { limit, minUsage, priorityAge });
+    logger.info('Starting sellers.json prefetch task', { limit, minUsage, priorityAge, updatedInDays });
     await db.initDatabase();
 
     // Calculate the cutoff date for determining "old" cache entries
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - priorityAge);
     const cutoffTimestamp = cutoffDate.toISOString();
+    
+    // Calculate the cutoff date for recent ads.txt updates
+    const updatedCutoffDate = new Date();
+    updatedCutoffDate.setDate(updatedCutoffDate.getDate() - updatedInDays);
+    const updatedCutoffTimestamp = updatedCutoffDate.toISOString();
 
     // Step 1: Extract unique domains from ads_txt_cache with usage count
     // Finds domains that appear in ads.txt records frequently
@@ -37,12 +43,13 @@ async function run(options = {}) {
     // Simple and robust query to extract domains from ads.txt lines
     const extractQuery = `
       WITH ads_txt_lines AS (
-        -- First get all ads.txt files with valid content
+        -- First get all ads.txt files with valid content that were recently updated
         SELECT 
           domain as publisher_domain,
           unnest(string_to_array(content, E'\\n')) AS line
         FROM ads_txt_cache 
         WHERE status = 'success' AND content IS NOT NULL AND content != ''
+        AND updated_at > $2  -- Focus on recently updated ads.txt files
       ),
       
       domain_counts AS (
@@ -70,7 +77,6 @@ async function run(options = {}) {
         -- Filter by minimum usage threshold
         AND usage_count >= $1
       ORDER BY usage_count DESC
-      LIMIT $2
     `;
 
     // This query uses Common Table Expressions (CTEs) to:
@@ -81,10 +87,10 @@ async function run(options = {}) {
 
     let domains;
     try {
-      // Execute the domain extraction query
-      const sspDomains = await db.executeQuery(extractQuery, [minUsage, limit * 2]);
+      // Execute the domain extraction query with both usage and time-based filtering
+      const sspDomains = await db.executeQuery(extractQuery, [minUsage, updatedCutoffTimestamp]);
       extracted = sspDomains.length;
-      logger.info(`Extracted ${extracted} unique domains from ads_txt_cache`);
+      logger.info(`Extracted ${extracted} unique domains from recently updated ads.txt records`);
       domains = sspDomains;
     } catch (error) {
       logger.error(`Error extracting domains from ads_txt_cache: ${error.message}`, {
@@ -97,14 +103,13 @@ async function run(options = {}) {
       const fallbackQuery = `
         SELECT LOWER(domain) as domain, COUNT(*) as usage_count
         FROM ads_txt_cache 
-        WHERE status = 'success'
+        WHERE status = 'success' AND updated_at > $2
         GROUP BY LOWER(domain)
         HAVING COUNT(*) >= $1
         ORDER BY COUNT(*) DESC
-        LIMIT $2
       `;
       
-      const fallbackDomains = await db.executeQuery(fallbackQuery, [1, limit]);
+      const fallbackDomains = await db.executeQuery(fallbackQuery, [1, updatedCutoffTimestamp]);
       extracted = fallbackDomains.length;
       logger.info(`Extracted ${extracted} domains using fallback query`);
       domains = fallbackDomains;
@@ -197,6 +202,7 @@ async function run(options = {}) {
       skipRate: `${skipRate.toFixed(2)}%`,
       minUsage,
       priorityAge,
+      updatedInDays,
     });
 
     // Close database connection
