@@ -936,6 +936,24 @@ export const translations = {
         en: 'Failed to fetch requests',
         ja: 'リクエストの取得に失敗しました',
       },
+      authRequired: {
+        en: 'Authentication required. Please check your email.',
+        ja: '認証が必要です。メールを確認してください。',
+      },
+    },
+    verification: {
+      title: {
+        en: 'Verification Required',
+        ja: '認証が必要です',
+      },
+      description: {
+        en: 'Email verification is required to access the requests. Please check your email.',
+        ja: 'リクエストにアクセスするにはメールアドレスの認証が必要です。',
+      },
+      emailSent: {
+        en: 'A verification email has been sent. Please check your inbox and click the link to verify your email.',
+        ja: '認証メールを送信しました。メールを確認して、リンクをクリックしてメールアドレスを認証してください。',
+      },
     },
   },
   requestDetailPage: {

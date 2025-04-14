@@ -438,6 +438,62 @@ class EmailService {
 
     return transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send an email verification link for accessing request list
+   * @param email - The email address to verify
+   * @param token - The verification token
+   * @param language - The language code to use for the email
+   * @returns Promise resolving to the nodemailer info object
+   */
+  async sendEmailVerificationLink(
+    email: string,
+    token: string,
+    language: string = 'en'
+  ) {
+    // Validate language before using it
+    const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
+
+    // Debug language selection
+    console.log(`Email service - Email verification language: ${validLanguage}`, {
+      originalLanguage: language,
+      validatedLanguage: validLanguage,
+      email,
+    });
+
+    // Add language parameter to URL to maintain language across pages
+    const langParam = `&lang=${validLanguage}`;
+    
+    // リクエスト一覧ページに直接リンクするように設定
+    const encodedToken = encodeURIComponent(token);
+    const encodedEmail = encodeURIComponent(email);
+    
+    // リクエスト一覧ページへリンク
+    const verificationUrl = `${config.server.appUrl}/requests?email=${encodedEmail}&token=${encodedToken}${langParam}`;
+    
+    // デバッグログ
+    console.log(`Verification URL: ${verificationUrl}`);
+
+    const subject = 'メールアドレス確認 - Ads.txt Manager';
+    const html = `
+      <h1>メールアドレスの確認</h1>
+      <p>Ads.txt Managerでリクエスト一覧にアクセスするためのメールアドレス確認です。</p>
+      <p>下記のリンクをクリックして、リクエスト一覧にアクセスしてください。</p>
+      <p><a href="${verificationUrl}">リクエスト一覧を表示</a></p>
+      <p>※このリンクには有効期限があります。期限切れの場合は再度認証をお試しください。</p>
+      <p>Ads.txt Manager チーム</p>
+    `;
+
+    const mailOptions = {
+      from: `"${config.email.fromName}" <${config.email.from}>`,
+      to: email,
+      subject,
+      html,
+    };
+
+    console.log(`Sending verification email to ${email}`);
+    return transporter.sendMail(mailOptions);
+  }
 }
 
 // Instance of the email service

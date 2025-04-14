@@ -207,6 +207,9 @@ export interface SellersJsonMetadataResponse {
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  // メール検証に関する追加プロパティ
+  needsVerification?: boolean;
+  i18nKey?: string;
   error?: {
     message: string;
     key?: string;

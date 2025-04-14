@@ -23,7 +23,12 @@ const RequestListPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');
   const role = searchParams.get('role') as 'publisher' | 'requester' | null;
+  const token = searchParams.get('token');
   const { language } = useApp();
+  
+  // Email検証が必要かどうかを示す状態
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,24 +42,40 @@ const RequestListPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        setNeedsVerification(false);
 
-        const response = await requestApi.getRequestsByEmail(email, role || undefined);
+        // トークンがある場合は検証付きでリクエスト
+        const response = await requestApi.getRequestsByEmail(email, role || undefined, token || undefined);
 
         if (response.success) {
           setRequests(response.data);
+          setVerificationSent(false);
+        } else if (response.needsVerification) {
+          // 検証が必要な場合（202ステータス）
+          console.log('Email verification required, verification email sent');
+          setNeedsVerification(true);
+          setVerificationSent(true);
+          setError(null);
         } else {
           setError(response.error?.message || t('requestListPage.errors.fetchError', language));
         }
-      } catch (err) {
-        setError(t('requestListPage.errors.fetchError', language));
-        console.error(err);
+      } catch (err: any) {
+        console.error('Error fetching requests:', err);
+        
+        // APIエラーの場合は、エラーメッセージを表示
+        if (err.response?.status === 401) {
+          // トークンが無効または期限切れの場合
+          setError(t('requestListPage.errors.authRequired', language));
+        } else {
+          setError(t('requestListPage.errors.fetchError', language));
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchRequests();
-  }, [email, role, language]);
+  }, [email, role, token, language]);
 
   if (!email) {
     return (
@@ -115,6 +136,16 @@ const RequestListPage: React.FC = () => {
             <Flex justifyContent="center" padding="2rem">
               <Loader size="large" />
             </Flex>
+          ) : needsVerification ? (
+            <Alert variation="info">
+              <Heading level={3}>{t('requestListPage.verification.title', language) || '認証が必要です'}</Heading>
+              <Text>{t('requestListPage.verification.description', language) || 'アクセスするためにはメールアドレスの認証が必要です。'}</Text>
+              {verificationSent && (
+                <Text fontWeight="bold" marginTop="1rem">
+                  {t('requestListPage.verification.emailSent', language) || '認証メールを送信しました。メールを確認して、リンクをクリックしてください。'}
+                </Text>
+              )}
+            </Alert>
           ) : error ? (
             <Alert variation="error">{error}</Alert>
           ) : (

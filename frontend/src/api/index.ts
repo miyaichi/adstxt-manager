@@ -156,12 +156,14 @@ export const requestApi = {
   // Get requests by email
   async getRequestsByEmail(
     email: string,
-    role?: 'publisher' | 'requester'
+    role?: 'publisher' | 'requester',
+    token?: string
   ): Promise<ApiResponse<Request[]>> {
     // Add current language to request URL
     const currentLang = getLanguage();
     const roleParam = role ? `role=${role}&` : '';
-    const url = `/requests/email/${email}?${roleParam}lang=${currentLang}`;
+    const tokenParam = token ? `token=${encodeURIComponent(token)}&` : '';
+    const url = `/requests/email/${email}?${roleParam}${tokenParam}lang=${currentLang}`;
 
     const response = await api.get<ApiResponse<Request[]>>(url);
     return response.data;

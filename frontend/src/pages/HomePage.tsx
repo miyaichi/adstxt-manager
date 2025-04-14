@@ -34,16 +34,8 @@ const HomePage: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Fetch requests for this email
-      const response = await requestApi.getRequestsByEmail(email);
-
-      if (response.success && response.data.length > 0) {
-        // If requests exist, navigate to the request list
-        navigate(`/requests?email=${encodeURIComponent(email)}`);
-      } else {
-        // No requests found, show message
-        setError(t('homePage.errors.noRequests', language));
-      }
+      // 検証が必要ない場合はリダイレクト
+      navigate(`/requests?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(t('homePage.errors.fetchError', language));
       console.error(err);

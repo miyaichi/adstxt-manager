@@ -3,6 +3,7 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel, { CreateAdsTxtRecordDTO } from '../models/AdsTxtRecord';
 import RequestModel, { CreateRequestDTO } from '../models/Request';
 import emailService from '../services/emailService';
+import tokenService from '../services/tokenService';
 import {
   isValidEmail,
   parseAdsTxtContent,
@@ -420,10 +421,52 @@ export const updatePublisherInfo = asyncHandler(async (req: Request, res: Respon
  */
 export const getRequestsByEmail = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.params;
-  const { role } = req.query;
+  const { role, token } = req.query;
 
   if (!isValidEmail(email)) {
     throw new ApiError(400, 'Invalid email address', 'errors:invalidEmail');
+  }
+
+  // If token is provided, verify it before returning requests
+  if (token && typeof token === 'string') {
+    console.log(`Validating token for access to requests: ${token}`);
+    const isValidToken = tokenService.verifyEmailToken(email, token);
+    console.log(`Token validation result: ${isValidToken ? 'valid' : 'invalid'}`);
+    
+    if (!isValidToken) {
+      console.log(`Token validation failed for ${email}`);
+      throw new ApiError(401, 'Invalid or expired verification token', 'errors:emailVerification.invalidToken');
+    }
+    
+    console.log(`Token validated successfully for ${email}`);
+  } else {
+    // トークンが提供されていない場合は、検証メールを送信
+    console.log(`No token provided for ${email}, initiating email verification flow`);
+    
+    try {
+      // 検証トークンを生成
+      const verificationToken = tokenService.generateEmailVerificationToken(email);
+      
+      // 言語設定を取得
+      const queryLang = typeof req.query.lang === 'string' && ['en', 'ja'].includes(req.query.lang)
+        ? req.query.lang
+        : null;
+      const userLanguage = queryLang || req.language || 'en';
+      
+      // 検証メールを送信
+      await emailService.sendEmailVerificationLink(email, verificationToken, userLanguage);
+      
+      // 特別なレスポンスを返す（フロントエンドでこれを検知して適切なメッセージを表示）
+      return res.status(202).json({
+        success: false,
+        needsVerification: true,
+        message: 'Email verification required - verification email sent',
+        i18nKey: 'errors:emailVerification.verificationRequired'
+      });
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      throw new ApiError(500, 'Error sending verification email', 'errors:server.error');
+    }
   }
 
   let requests;
@@ -438,63 +481,36 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
     requests = [...publisherRequests, ...requesterRequests];
   }
 
-  // Enhance requests with validation stats, warnings, and record counts
-  const enhancedRequests = await Promise.all(
+  // 一覧表示用に最小限の情報を含めた簡略版のレスポンスを返す
+  // 検証処理は行わない（時間のかかる処理を避ける）
+  const simpleRequests = await Promise.all(
     requests.map(async (request) => {
       try {
-        // Get enhanced records with warning information
-        const records = await AdsTxtRecordModel.getEnhancedRecords(request.id);
-
-        // Get validation stats
-        const validation_stats = await AdsTxtRecordModel.getValidationStats(request.id);
-
-        // Log to debug
-        console.log(
-          `Request ${request.id}: Enhanced records:`,
-          records.map((r) => ({
-            id: r.id,
-            has_warning: r.has_warning,
-            validation_key: r.validation_key,
-          }))
-        );
-
-        // Return enhanced request object with records containing warnings
-        const result = {
+        // レコード数のみを取得 - AdsTxtRecordModelを使用
+        const records = await AdsTxtRecordModel.getByRequestId(request.id);
+        const recordCount = records.length;
+        
+        console.log(`Request ${request.id}: Simple count - ${recordCount} records`);
+        
+        // シンプルなリクエスト情報を返す
+        return {
           ...request,
-          records_count: records.length,
-          validation_stats,
-          // Include simplified record information with warnings
-          records_summary: records.map((record) => ({
-            id: record.id,
-            domain: record.domain,
-            account_id: record.account_id,
-            relationship: record.relationship,
-            status: record.status,
-            has_warning: record.has_warning || false,
-            validation_key: record.validation_key,
-            severity: record.severity,
-          })),
+          records_count: recordCount,
         };
-
-        // Additional debug logging
-        console.log(`Enhanced request ${request.id}: `, {
-          records_count: result.records_count,
-          validation_stats: result.validation_stats,
-          warnings_count: result.records_summary.filter((r) => r.has_warning).length,
-        });
-
-        return result;
       } catch (error) {
-        console.error(`Error getting validation stats for request ${request.id}:`, error);
-        // Return request without enhancements if there's an error
-        return request;
+        console.error(`Error getting record count for request ${request.id}:`, error);
+        // エラーが発生した場合でもリクエスト情報は返す
+        return {
+          ...request,
+          records_count: 0,
+        };
       }
     })
   );
 
   res.status(200).json({
     success: true,
-    data: enhancedRequests,
+    data: simpleRequests,
   });
 });
 

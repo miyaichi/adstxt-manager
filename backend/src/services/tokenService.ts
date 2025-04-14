@@ -89,6 +89,94 @@ class TokenService {
   generateRequestId(): string {
     return crypto.randomUUID();
   }
+
+  /**
+   * Generate a secure email verification token
+   * @param email - The email address to verify
+   * @returns A secure token for email verification
+   */
+  generateEmailVerificationToken(email: string): string {
+    console.log(`Generating secure email verification token for ${email}`);
+    
+    // 1. メールアドレスを正規化 (小文字化、余分なスペース削除)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // 2. 有効期限を設定 (設定ファイルから取得)
+    const expiryTime = Date.now() + config.security.emailVerificationExpiry;
+    
+    // 3. 署名対象データを生成 (メールアドレス + 有効期限 + 秘密キー)
+    const data = `${normalizedEmail}:${expiryTime}:${config.security.jwtSecret}`;
+    
+    // 4. HMAC-SHA256でメッセージ認証コード(MAC)を生成
+    const hmac = crypto.createHmac('sha256', config.security.jwtSecret);
+    hmac.update(data);
+    const digest = hmac.digest('hex');
+    
+    // 5. 有効期限と署名を組み合わせてトークンを形成
+    // 有効期限は基数36で表現して短くする
+    const token = `${expiryTime.toString(36)}.${digest}`;
+    
+    console.log(`Generated token for ${normalizedEmail}, expires: ${new Date(expiryTime).toISOString()}`);
+    return token;
+  }
+
+  /**
+   * Verify an email verification token
+   * @param email - The email address to verify
+   * @param token - The token to verify
+   * @returns Boolean indicating if the token is valid
+   */
+  verifyEmailToken(email: string, token: string): boolean {
+    console.log(`Verifying secure email token for ${email}`);
+    
+    try {
+      // 1. トークンのフォーマットを検証 (期限.署名の形式か)
+      const parts = token.split('.');
+      if (parts.length !== 2) {
+        console.log('Invalid token format: parts mismatch');
+        return false;
+      }
+      
+      // 2. 有効期限を解析
+      const expiryTime = parseInt(parts[0], 36);
+      if (isNaN(expiryTime)) {
+        console.log('Invalid token format: expiry time not a number');
+        return false;
+      }
+      
+      // 3. 有効期限をチェック
+      const now = Date.now();
+      if (expiryTime < now) {
+        console.log(`Token expired at ${new Date(expiryTime).toISOString()}, current time: ${new Date(now).toISOString()}`);
+        return false;
+      }
+      
+      // 4. メールアドレスを正規化
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // 5. 署名の検証に必要なデータを再構成
+      const data = `${normalizedEmail}:${expiryTime}:${config.security.jwtSecret}`;
+      
+      // 6. 期待される署名を計算
+      const hmac = crypto.createHmac('sha256', config.security.jwtSecret);
+      hmac.update(data);
+      const expectedDigest = hmac.digest('hex');
+      
+      // 7. 受け取った署名と期待される署名を比較
+      const receivedDigest = parts[1];
+      const isValid = expectedDigest === receivedDigest;
+      
+      console.log(`Token validation result: ${isValid ? 'valid' : 'invalid'}`);
+      if (!isValid) {
+        console.log('Signature verification failed');
+      }
+      
+      return isValid;
+    } catch (error) {
+      console.error('Error verifying email token:', error);
+      return false;
+    }
+  }
 }
 
 export default new TokenService();

@@ -21,6 +21,8 @@ export default {
   security: {
     tokenSecret: process.env.TOKEN_SECRET || 'default_secret_key_change_in_production',
     tokenExpiry: '7d', // Token expiry time
+    jwtSecret: process.env.JWT_SECRET || 'jwt_secret_key_change_in_production',
+    emailVerificationExpiry: 24 * 60 * 60 * 1000, // 24時間（ミリ秒）
   },
   database: {
     path: process.env.DB_PATH || './src/db/database.sqlite',
