@@ -11,9 +11,8 @@ export interface Request extends DatabaseRecord {
   publisher_name?: string;
   publisher_domain?: string;
   status: 'pending' | 'approved' | 'rejected' | 'updated';
-  token?: string; // Legacy token (will be deprecated)
-  publisher_token?: string; // New publisher-specific token
-  requester_token?: string; // New requester-specific token
+  publisher_token?: string; // Publisher-specific token
+  requester_token?: string; // Requester-specific token
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +54,6 @@ class RequestModel {
       publisher_name: requestData.publisher_name,
       publisher_domain: requestData.publisher_domain,
       status: 'pending',
-      token: '', // Legacy token field kept for database compatibility
       publisher_token: tokens.publisherToken,
       requester_token: tokens.requesterToken,
       created_at: now,

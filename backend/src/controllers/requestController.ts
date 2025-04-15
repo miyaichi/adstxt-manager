@@ -188,8 +188,6 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       request_id: request.id,
       publisher_token: request.publisher_token,
       requester_token: request.requester_token,
-      // Include legacy token for backward compatibility
-      // Legacy token field removed
     },
   });
 });
@@ -658,7 +656,6 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
     success: true,
     data: {
       request_id: id,
-      // Legacy token field removed from response
       publisher_token: updatedRequest?.publisher_token,
       requester_token: updatedRequest?.requester_token,
       status: 'updated',
