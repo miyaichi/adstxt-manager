@@ -237,7 +237,10 @@ const RequestForm: React.FC = () => {
             <Text fontFamily="monospace">{success.requestId}</Text>
           </Flex>
 
-          <Text>{t('requests.success.emailNotification', language) || 'Email notifications with request details have been sent to both parties.'}</Text>
+          <Text>
+            {t('requests.success.emailNotification', language) ||
+              'Email notifications with request details have been sent to both parties.'}
+          </Text>
 
           <Button onClick={handleViewRequest} variation="primary">
             {t('requests.success.viewRequest', language)}

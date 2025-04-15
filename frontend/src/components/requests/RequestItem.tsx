@@ -103,8 +103,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
                         • {record.domain}, {record.account_id}:
                         {` ${
                           record.validation_key
-                            ? t(`warnings.${record.validation_key}.title`, language) ||
-                              'Warning'
+                            ? t(`warnings.${record.validation_key}.title`, language) || 'Warning'
                             : 'Warning'
                         }`}
                       </Text>

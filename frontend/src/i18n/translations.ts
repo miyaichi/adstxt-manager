@@ -384,8 +384,7 @@ export const translations = {
       ja: '表示',
     },
   },
-  errors: {
-  },
+  errors: {},
   newRequestPage: {
     breadcrumb: {
       en: 'New Request',

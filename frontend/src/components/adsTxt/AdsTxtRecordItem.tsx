@@ -457,11 +457,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                       }
 
                       // Use warnings title instead of errors.adsTxtValidation
-                      return t(
-                        `warnings.${parsedRecord.validation_key}.title`,
-                        language,
-                        params
-                      );
+                      return t(`warnings.${parsedRecord.validation_key}.title`, language, params);
                     }
 
                     // Fall back to legacy error format
