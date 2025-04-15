@@ -1,3 +1,8 @@
+/**
+ * Refresh sellers.json cache entries
+ * This task finds expired sellers.json cache entries in the database and attempts to refresh them.
+ */
+
 const axios = require('axios');
 const db = require('../utils/database');
 const logger = require('../utils/logger');
@@ -220,13 +225,13 @@ async function saveToCache(cacheRecord) {
     } else {
       // Create new record
       const now = new Date().toISOString();
-      
+
       // Use the global flag set during database initialization
       const uuidAvailable = global.uuidExtensionAvailable === true;
       logger.debug(`Using ${uuidAvailable ? 'uuid_generate_v4()' : 'md5-based UUID generation'}`);
-      
+
       // Use appropriate query based on UUID extension availability
-      const insertQuery = uuidAvailable 
+      const insertQuery = uuidAvailable
         ? `INSERT INTO sellers_json_cache 
            (id, domain, content, status, status_code, error_message, created_at, updated_at) 
            VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $6)

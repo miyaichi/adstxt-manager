@@ -1,3 +1,8 @@
+/**
+ * Refresh expired ads.txt cache entries
+ * This task finds expired ads.txt cache entries in the database and attempts to refresh them.
+ */
+
 const axios = require('axios');
 const db = require('../utils/database');
 const logger = require('../utils/logger');
@@ -65,12 +70,12 @@ async function run(options = {}) {
         logger.info(`Successfully refreshed ads.txt for domain: ${domain}`);
       } catch (error) {
         failed++;
-        
+
         // Map HTTP status code or error type to valid status values
         let status = 'error'; // Default status
         let errorMessage = error.message || 'Unknown error';
         let statusCode = error.response?.status || null;
-        
+
         // Determine the appropriate status based on the error
         if (statusCode === 404) {
           status = 'not_found';
@@ -87,8 +92,11 @@ async function run(options = {}) {
           status = 'error';
           errorMessage = `Connection refused for ${domain}`;
           statusCode = null;
-        } else if (error.response?.data && typeof error.response.data === 'string' && 
-                  (error.response.data.includes('<!DOCTYPE html>') || error.response.data.includes('<html'))) {
+        } else if (
+          error.response?.data &&
+          typeof error.response.data === 'string' &&
+          (error.response.data.includes('<!DOCTYPE html>') || error.response.data.includes('<html'))
+        ) {
           status = 'invalid_format';
           errorMessage = 'Response is HTML, not a valid ads.txt file';
           statusCode = error.response.status;
@@ -104,7 +112,7 @@ async function run(options = {}) {
         logger.error(`Failed to refresh ads.txt for domain: ${domain}`, {
           error: errorMessage,
           status: status,
-          statusCode: statusCode
+          statusCode: statusCode,
         });
       }
     }

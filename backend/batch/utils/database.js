@@ -50,7 +50,7 @@ async function initDatabase() {
     try {
       await client.query('SELECT NOW()');
       logger.info('PostgreSQL database connection established');
-      
+
       // Check and setup UUID extension if needed
       global.uuidExtensionAvailable = await ensureUuidExtension();
     } finally {
@@ -88,13 +88,15 @@ async function ensureUuidExtension() {
     // First check if the extension is already installed - use direct query to avoid circular reference
     const client = await pgPool.connect();
     try {
-      const checkResult = await client.query('SELECT COUNT(*) FROM pg_extension WHERE extname = \'uuid-ossp\'');
-      
+      const checkResult = await client.query(
+        "SELECT COUNT(*) FROM pg_extension WHERE extname = 'uuid-ossp'"
+      );
+
       if (parseInt(checkResult.rows[0].count) > 0) {
         logger.info('UUID extension is already available');
         return true;
       }
-      
+
       // Try to create the extension
       try {
         logger.info('Attempting to create UUID extension...');

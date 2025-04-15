@@ -80,8 +80,16 @@ program
   .command('prefetch-sellers-json')
   .description('Prefetch sellers.json for domains found in ads.txt records')
   .option('-l, --limit <number>', 'Maximum number of domains to process', parseInt)
-  .option('-m, --min-usage <number>', 'Minimum number of times a domain appears in ads.txt records (default: 3)', parseInt)
-  .option('-p, --priority-age <days>', 'Prioritize domains with cache older than this many days (default: 3)', parseInt)
+  .option(
+    '-m, --min-usage <number>',
+    'Minimum number of times a domain appears in ads.txt records (default: 3)',
+    parseInt
+  )
+  .option(
+    '-p, --priority-age <days>',
+    'Prioritize domains with cache older than this many days (default: 3)',
+    parseInt
+  )
   .action(async (options) => {
     try {
       logger.info('Starting sellers.json prefetch task');
@@ -103,8 +111,18 @@ program
     parseInt
   )
   .option('--prefetch-limit <number>', 'Maximum number of domains to prefetch', parseInt)
-  .option('--min-usage <number>', 'Minimum number of times a domain appears in ads.txt records (default: 3)', parseInt, 3)
-  .option('--priority-age <days>', 'Prioritize domains with cache older than this many days (default: 3)', parseInt, 3)
+  .option(
+    '--min-usage <number>',
+    'Minimum number of times a domain appears in ads.txt records (default: 3)',
+    parseInt,
+    3
+  )
+  .option(
+    '--priority-age <days>',
+    'Prioritize domains with cache older than this many days (default: 3)',
+    parseInt,
+    3
+  )
   .option('--retention-days <days>', 'Age in days for data retention (default: 90)', parseInt, 90)
   .option('--dry-run', 'Show what would be deleted without actually deleting')
   .action(async (options) => {
@@ -123,7 +141,7 @@ program
       await prefetchSellersJson.run({
         limit: prefetchLimit,
         minUsage: options.minUsage || 3, // Only prefetch domains that appear frequently
-        priorityAge: options.priorityAge || 3 // Prioritize domains with no cache or older than 3 days
+        priorityAge: options.priorityAge || 3, // Prioritize domains with no cache or older than 3 days
       });
       logger.info('Sellers.json prefetch task completed');
 

@@ -23,14 +23,19 @@ async function run(options = {}) {
   let skipped = 0;
 
   try {
-    logger.info('Starting sellers.json prefetch task', { limit, minUsage, priorityAge, updatedInDays });
+    logger.info('Starting sellers.json prefetch task', {
+      limit,
+      minUsage,
+      priorityAge,
+      updatedInDays,
+    });
     await db.initDatabase();
 
     // Calculate the cutoff date for determining "old" cache entries
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - priorityAge);
     const cutoffTimestamp = cutoffDate.toISOString();
-    
+
     // Calculate the cutoff date for recent ads.txt updates
     const updatedCutoffDate = new Date();
     updatedCutoffDate.setDate(updatedCutoffDate.getDate() - updatedInDays);
@@ -95,9 +100,9 @@ async function run(options = {}) {
     } catch (error) {
       logger.error(`Error extracting domains from ads_txt_cache: ${error.message}`, {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-      
+
       // Use a simpler fallback query if the advanced one fails
       logger.info('Using fallback domain extraction query');
       const fallbackQuery = `
@@ -108,7 +113,7 @@ async function run(options = {}) {
         HAVING COUNT(*) >= $1
         ORDER BY COUNT(*) DESC
       `;
-      
+
       const fallbackDomains = await db.executeQuery(fallbackQuery, [1, updatedCutoffTimestamp]);
       extracted = fallbackDomains.length;
       logger.info(`Extracted ${extracted} domains using fallback query`);
@@ -124,7 +129,7 @@ async function run(options = {}) {
         skipped++;
         continue;
       }
-      
+
       const normalizedDomain = domain.domain.toLowerCase().trim();
 
       // Check if this domain already exists in sellers_json_cache
@@ -192,7 +197,7 @@ async function run(options = {}) {
     // Calculate additional statistics
     const processingRate = extracted > 0 ? (processed / extracted) * 100 : 0;
     const skipRate = extracted > 0 ? (skipped / extracted) * 100 : 0;
-    
+
     // Log comprehensive summary statistics
     logger.info('Sellers.json prefetch task summary', {
       extracted,
