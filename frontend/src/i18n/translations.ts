@@ -385,64 +385,6 @@ export const translations = {
     },
   },
   errors: {
-    adsTxtValidation: {
-      invalidFormat: {
-        en: 'Invalid format. Expected comma-separated values',
-        ja: '無効な形式です。カンマ区切りの値が必要です',
-      },
-      missingFields: {
-        en: 'Line must contain at least domain, account ID, and account type',
-        ja: 'ラインには少なくともドメイン、アカウントID、アカウントタイプが必要です',
-      },
-      invalidRelationship: {
-        en: 'Relationship type must be either DIRECT or RESELLER',
-        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります',
-      },
-      invalidDomain: {
-        en: 'Domain must be a valid root domain (e.g., example.com, not sub.example.com)',
-        ja: 'ドメインは有効なルートドメインである必要があります（例：example.com、sub.example.comではない）',
-      },
-      emptyAccountId: {
-        en: 'Account ID must not be empty',
-        ja: 'アカウントIDは空であってはなりません',
-      },
-      implimentedEntry: {
-        en: "Duplicate entry found in publisher's ads.txt ({{domain}})",
-        ja: 'パブリッシャーのads.txt（{{domain}}）に重複エントリが見つかりました',
-      },
-      noSellersJson: {
-        en: 'No sellers.json file found for domain {{domain}}',
-        ja: 'ドメイン{{domain}}のsellers.jsonファイルが見つかりません',
-      },
-      directAccountIdNotInSellersJson: {
-        en: 'Publisher account ID {{account_id}} not found in sellers.json for {{domain}}',
-        ja: 'パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
-      },
-      resellerAccountIdNotInSellersJson: {
-        en: 'Reseller account ID {{account_id}} not found in sellers.json for {{domain}}',
-        ja: 'リセラーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
-      },
-      domainMismatch: {
-        en: "The sellers.json domain ({{seller_domain}}) doesn't match the publisher domain ({{publisher_domain}})",
-        ja: 'sellers.jsonドメイン（{{seller_domain}}）がパブリッシャードメイン（{{publisher_domain}}）と一致しません',
-      },
-      directNotPublisher: {
-        en: 'Seller {{account_id}} is not marked as PUBLISHER in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHERとしてマークされていません（現在のタイプ: {{seller_type}}）',
-      },
-      sellerIdNotUnique: {
-        en: 'Seller ID {{account_id}} appears multiple times in sellers.json for {{domain}}',
-        ja: 'セラーID {{account_id}} が {{domain}} のsellers.jsonに複数回表示されています',
-      },
-      resellerNotIntermediary: {
-        en: 'Seller {{account_id}} is not marked as INTERMEDIARY in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARYとしてマークされていません（現在のタイプ: {{seller_type}}）',
-      },
-      sellersJsonValidationError: {
-        en: 'Error validating against sellers.json for {{domain}}: {{message}}',
-        ja: '{{domain}} のsellers.jsonとの検証中にエラーが発生しました: {{message}}',
-      },
-    },
   },
   newRequestPage: {
     breadcrumb: {

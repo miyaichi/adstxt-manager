@@ -456,9 +456,9 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                         params.account_id = record.account_id;
                       }
 
-                      // Get the translated error message directly using validation_key
+                      // Use warnings title instead of errors.adsTxtValidation
                       return t(
-                        `errors.adsTxtValidation.${parsedRecord.validation_key}`,
+                        `warnings.${parsedRecord.validation_key}.title`,
                         language,
                         params
                       );
@@ -518,7 +518,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                         params.message = (record as any).warning_params.message;
                       }
 
-                      return t('errors:adsTxtValidation.' + errType, language, params);
+                      return t(`warnings.${errType}.title`, language, params);
                     } else {
                       return errorMessage;
                     }

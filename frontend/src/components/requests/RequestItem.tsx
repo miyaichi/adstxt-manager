@@ -104,7 +104,6 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
                         {` ${
                           record.validation_key
                             ? t(`warnings.${record.validation_key}.title`, language) ||
-                              t(`errors.adsTxtValidation.${record.validation_key}`, language) ||
                               'Warning'
                             : 'Warning'
                         }`}
