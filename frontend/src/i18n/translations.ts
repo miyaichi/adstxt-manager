@@ -11,22 +11,22 @@ export const translations = {
         ja: 'Ads.txtエントリのフォーマットが無効で、正しく解析できませんでした。',
       },
       recommendation: {
-        en: 'Ensure the entry follows the correct format: domain.com, account_id, DIRECT|RESELLER, certification_authority_id',
-        ja: 'エントリが正しいフォーマットに従っていることを確認してください: domain.com, account_id, DIRECT|RESELLER, certification_authority_id',
+        en: 'Ensure the entry follows the format: domain.com, account_id, DIRECT|RESELLER, certification_authority_id',
+        ja: 'エントリが`domain.com, account_id, DIRECT|RESELLER, certification_authority_id`というフォーマットに従っていることを確認してください。',
       },
     },
     missingFields: {
       title: {
-        en: 'Missing Fields',
+        en: 'Missing Required Fields',
         ja: '必須フィールドの欠落',
       },
       description: {
-        en: 'The Ads.txt entry is missing one or more required fields.',
-        ja: 'Ads.txtエントリに1つ以上の必須フィールドがありません。',
+        en: 'The ads.txt entry is missing the three required fields.',
+        ja: 'ads.txtエントリに必要な3つのフィールドがありません。',
       },
       recommendation: {
-        en: 'Make sure your entry includes domain, account ID, and account type.',
-        ja: 'エントリにドメイン、アカウントID、アカウントタイプが含まれていることを確認してください。',
+        en: 'Make sure your entry includes domain, account ID, and account type (DIRECT or RESELLER).',
+        ja: 'エントリにドメイン、アカウントID、およびアカウントタイプ（DIRECTまたはRESELLER）が含まれていることを確認してください。',
       },
     },
     invalidRelationship: {
@@ -35,8 +35,8 @@ export const translations = {
         ja: '無効な関係タイプ',
       },
       description: {
-        en: 'The relationship type must be either DIRECT or RESELLER.',
-        ja: '関係タイプはDIRECTまたはRESELLERのいずれかである必要があります。',
+        en: 'The third required field must contain either DIRECT or RESELLER.',
+        ja: '3番目の必須フィールドには「DIRECT」または「RESELLER」のいずれかが含まれている必要があります。',
       },
       recommendation: {
         en: 'Change the relationship type to either DIRECT or RESELLER.',
@@ -49,11 +49,11 @@ export const translations = {
         ja: '無効なドメイン',
       },
       description: {
-        en: 'Domain must be a valid domain (e.g., example.com).',
-        ja: 'ドメインは有効なドメインである必要があります（例：example.com）。',
+        en: 'The advertising system domain is not a valid domain.',
+        ja: '広告システムドメインが有効なドメインではありません。',
       },
       recommendation: {
-        en: 'Check that the domain name of the advertising system is a valid domain.',
+        en: 'Ensure that the domain name of the advertising system is a valid domain.',
         ja: '広告システムのドメイン名が有効なドメインであることを確認してください。',
       },
     },
@@ -63,17 +63,17 @@ export const translations = {
         ja: '空のアカウントID',
       },
       description: {
-        en: 'Account ID must not be empty.',
-        ja: 'アカウントIDは空であってはなりません。',
+        en: 'The account ID field is empty.',
+        ja: 'アカウントIDフィールドが空です。',
       },
       recommendation: {
         en: "Provide a valid account ID, which should be the publisher's ID in the advertising system.",
-        ja: '広告システムでのパブリッシャーのIDである有効なアカウントIDを提供してください。',
+        ja: '広告システムのプラットフォームでのパブリッシャーIDである有効なアカウントIDを提供してください。',
       },
     },
     implimentedEntry: {
       title: {
-        en: 'Implimented Entry',
+        en: 'Implemented Entry',
         ja: '実施済みエントリ',
       },
       description: {
@@ -81,50 +81,50 @@ export const translations = {
         ja: 'パブリッシャーのads.txt（{{domain}}）にすでに実施済みのエントリが見つかりました',
       },
       recommendation: {
-        en: '**Recommendation**: You do not need to include the implemented entry in the new entry. The existing entry is already valid and does not need to be duplicated.',
-        ja: '新規エントリに実施済みエントリを含める必要はありません。既存のエントリはすでに有効であり、重複する必要はありません。',
+        en: 'You do not need to include the implemented entry in the new entry. The existing entry is already valid.',
+        ja: '新規エントリに実施済みエントリを含める必要はありません。既存のエントリはすでに有効です。',
       },
     },
     noSellersJson: {
       title: {
-        en: 'No Sellers.json Found',
-        ja: 'Sellers.jsonが見つかりません',
+        en: 'No Sellers.json File',
+        ja: 'Sellers.jsonファイルがない',
       },
       description: {
-        en: 'No sellers.json file found for domain {{domain}}',
-        ja: 'ドメイン{{domain}}のsellers.jsonファイルが見つかりません',
+        en: 'No sellers.json file was found for the specified advertising system domain {{domain}}.',
+        ja: '指定された広告システムドメイン{{domain}}のsellers.jsonファイルが見つかりませんでした。',
       },
       recommendation: {
-        en: 'The advertising system should provide a valid sellers.json file at their domain root.',
-        ja: '広告システムはドメインルートに有効なsellers.jsonファイルを提供する必要があります。',
+        en: 'Contact your selling partner to ask them to implement sellers.json.',
+        ja: '販売パートナーに連絡して、sellers.jsonを実装するよう依頼してください。',
       },
     },
     directAccountIdNotInSellersJson: {
       title: {
-        en: 'Account ID Not Found (DIRECT)',
-        ja: 'アカウントIDが見つかりません（DIRECT）',
+        en: 'DIRECT: Account ID Not in Sellers.json',
+        ja: 'DIRECT: アカウントIDがSellers.jsonにない',
       },
       description: {
-        en: 'Publisher account ID {{account_id}} not found in sellers.json for {{domain}}',
-        ja: 'パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+        en: 'Publisher account ID {{account_id}} not found in sellers.json for {{domain}}.',
+        ja: 'パブリッシャーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません。',
       },
       recommendation: {
-        en: 'Verify the account ID or contact the advertising system to update their sellers.json.',
-        ja: 'アカウントIDを確認するか、sellers.jsonを更新するために広告システムに連絡してください。',
+        en: 'Remove this entry if you no longer work with the seller, or verify the account ID and contact the advertising system.',
+        ja: '販売者と連携していない場合は、ファイルからこのエントリを削除してください。またはアカウントIDを確認し、広告システムに連絡してください。',
       },
     },
     resellerAccountIdNotInSellersJson: {
       title: {
-        en: 'Account ID Not Found (RESELLER)',
-        ja: 'アカウントIDが見つかりません（RESELLER）',
+        en: 'RESELLER: Account ID Not in Sellers.json',
+        ja: 'RESELLER: アカウントIDがSellers.jsonにない',
       },
       description: {
-        en: 'Reseller account ID {{account_id}} not found in sellers.json for {{domain}}',
-        ja: 'リセラーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません',
+        en: 'Reseller account ID {{account_id}} not found in sellers.json for {{domain}}.',
+        ja: 'リセラーアカウントID {{account_id}} が {{domain}} のsellers.jsonに見つかりません。',
       },
       recommendation: {
-        en: 'Verify the account ID or contact the reseller to ensure they are registered.',
-        ja: 'アカウントIDを確認するか、リセラーに連絡して登録を確認してください。',
+        en: 'Remove this entry if you no longer work with the seller, or verify the account ID and contact the reseller.',
+        ja: '販売者と連携していない場合は、ファイルからこのエントリを削除してください。またはアカウントIDを確認し、リセラーに連絡してください。',
       },
     },
     domainMismatch: {
@@ -133,60 +133,60 @@ export const translations = {
         ja: 'ドメインの不一致',
       },
       description: {
-        en: "The sellers.json domain ({{seller_domain}}) doesn't match the OWNERDOMAIN/MANAGERDOMAIN or publisher domain ({{publisher_domain}})",
-        ja: 'sellers.jsonドメイン（{{seller_domain}}）がOWNERDOMAIN/MANAGERDOMAINまたはパブリッシャードメイン（{{publisher_domain}}）と一致しません',
+        en: "The sellers.json domain ({{seller_domain}}) doesn't match the OWNERDOMAIN/MANAGERDOMAIN or publisher domain ({{publisher_domain}}).",
+        ja: 'sellers.jsonドメイン（{{seller_domain}}）がOWNERDOMAIN/MANAGERDOMAINまたはパブリッシャードメイン（{{publisher_domain}}）と一致しません。',
       },
       recommendation: {
-        en: 'For both DIRECT and RESELLER relationships, the domains should match with either OWNERDOMAIN, MANAGERDOMAIN, or the publisher domain. Verify with the advertising system.',
-        ja: 'DIRECTとRESELLERの両方の関係で、ドメインは OWNERDOMAIN、MANAGERDOMAIN、またはパブリッシャードメインのいずれかと一致する必要があります。広告システムで確認してください。',
+        en: 'Confirm that you are listed as expected. The domain should match with your OWNERDOMAIN, MANAGERDOMAIN, or publisher domain.',
+        ja: '期待通りにリストされていることを確認してください。ドメインはOWNERDOMAIN、MANAGERDOMAIN、またはパブリッシャードメインと一致する必要があります。',
       },
     },
     directNotPublisher: {
       title: {
-        en: 'Seller Not Marked as PUBLISHER',
-        ja: 'セラーがPUBLISHERとしてマークされていない',
+        en: 'DIRECT: Seller Not Marked as PUBLISHER。',
+        ja: 'DIRECT: セラーがPUBLISHERとしてマークされていません。',
       },
       description: {
-        en: 'Seller {{account_id}} is not marked as PUBLISHER/BOTH in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでPUBLISHER/BOTHとしてマークされていません（現在のタイプ: {{seller_type}}）',
+        en: 'For a DIRECT relationship, the seller in sellers.json is listed as BOTH or INTERMEDIARY instead of PUBLISHER.',
+        ja: 'DIRECT関係の場合、sellers.jsonファイル内のセラーがPUBLISHERではなくBOTHまたはINTERMEDIARYとしてリストされています。',
       },
       recommendation: {
-        en: 'For DIRECT relationships, the seller type should be PUBLISHER/BOTH in sellers.json.',
-        ja: 'DIRECT関係の場合、sellers.jsonでセラータイプはPUBLISHER/BOTHであるべきです。',
+        en: 'If this is incorrect, work with your selling partner to ensure files display the correct relationship.',
+        ja: 'これが正しくない場合は、ファイルが正しい関係を表示するように販売パートナーと協力してください。',
       },
     },
     sellerIdNotUnique: {
       title: {
-        en: 'Non-Unique Seller ID',
-        ja: '一意でないセラーID',
+        en: 'Seller ID Not Unique.',
+        ja: 'セラーIDが一意ではありません。',
       },
       description: {
-        en: 'Seller ID {{account_id}} appears multiple times in sellers.json for {{domain}}',
-        ja: 'セラーID {{account_id}} が {{domain}} のsellers.jsonに複数回表示されています',
+        en: 'Seller ID {{account_id}} appears multiple times in sellers.json for {{domain}}.',
+        ja: 'セラーID {{account_id}} が {{domain}} のsellers.jsonに複数回表示されています。',
       },
       recommendation: {
-        en: 'Contact the advertising system to clarify which entry is correct.',
-        ja: 'どのエントリが正しいかを明確にするために広告システムに連絡してください。',
+        en: 'Review the other selling partners using this ID and contact your selling partner for clarification.',
+        ja: 'このIDを使用している他の販売パートナーを確認し、在庫がどのように販売されているかをより理解するために販売パートナーに連絡してください。',
       },
     },
     resellerNotIntermediary: {
       title: {
-        en: 'Reseller Not Marked as INTERMEDIARY',
-        ja: 'リセラーがINTERMEDIARYとしてマークされていない',
+        en: 'RESELLER: Seller Not Marked as INTERMEDIARY.',
+        ja: 'RESELLER: セラーがINTERMEDIARYとしてマークされていません。',
       },
       description: {
-        en: 'Seller {{account_id}} is not marked as INTERMEDIARY/BOTH in sellers.json (current type: {{seller_type}})',
-        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARY/BOTHとしてマークされていません（現在のタイプ: {{seller_type}}）',
+        en: 'Seller {{account_id}} is not marked as INTERMEDIARY/BOTH in sellers.json (current type: {{seller_type}}).',
+        ja: 'セラー {{account_id}} がsellers.jsonでINTERMEDIARY/BOTHとしてマークされていません（現在のタイプ: {{seller_type}}）。',
       },
       recommendation: {
-        en: 'For RESELLER relationships, the seller type should be INTERMEDIARY/BOTH in sellers.json.',
-        ja: 'RESELLER関係の場合、sellers.jsonでセラータイプはINTERMEDIARY/BOTHであるべきです。',
+        en: 'If this is incorrect, work with your selling partner to ensure files display the correct relationship.',
+        ja: 'これが正しくない場合は、ファイルが正しい関係を表示するように販売パートナーと協力してください。',
       },
     },
     sellersJsonValidationError: {
       title: {
-        en: 'Sellers.json Validation Error',
-        ja: 'Sellers.json検証エラー',
+        en: 'Sellers.json Validation Error.',
+        ja: 'Sellers.json検証エラー。',
       },
       description: {
         en: 'Error validating against sellers.json for {{domain}}: {{message}}',
@@ -194,7 +194,7 @@ export const translations = {
       },
       recommendation: {
         en: 'This is usually a temporary error. You can proceed but full validation was not possible.',
-        ja: 'これは通常、一時的なエラーです。続行できますが、完全な検証はできませんでした。',
+        ja: 'これは通常、一時的または技術的なエラーです。エントリを続行できますが、sellers.jsonとの完全な検証ができませんでした。',
       },
     },
   },
