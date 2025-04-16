@@ -88,10 +88,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     }
 
     const requestId = Math.random().toString(36).substring(2, 15);
-    const domain = getSellersDomain(record.account_type);
+    // 常にパブリッシャードメインからセラー情報を取得
+    const domain = record.domain;
 
     console.log(
-      `[${requestId}] Fetching seller information for ${record.account_id} from ${domain}`
+      `[${requestId}] Fetching seller information for ${record.account_id} from publisher domain ${domain}`
     );
 
     let isMounted = true;
@@ -119,58 +120,10 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             // sellers.json file found but seller_id doesn't exist
             console.warn(`[${requestId}] Seller ID ${record.account_id} not found in ${domain}`);
 
-            // Try with record's domain as fallback if different
-            if (domain !== record.domain) {
-              console.log(`[${requestId}] Trying fallback with record.domain: ${record.domain}`);
-
-              api.sellersJson
-                .getSellerById(record.domain, record.account_id)
-                .then((fallbackResponse) => {
-                  if (!isMounted) return;
-
-                  if (fallbackResponse.success && fallbackResponse.data) {
-                    if (
-                      fallbackResponse.error ||
-                      (fallbackResponse.data.key && !fallbackResponse.data.found)
-                    ) {
-                      // API succeeded but returned an error
-                      const errorKey = fallbackResponse.error?.key || fallbackResponse.data.key;
-                      console.warn(`[${requestId}] Error for fallback domain:`, errorKey);
-                      setError(true);
-                      setSellerInfo(null);
-                    } else if (fallbackResponse.data.found && fallbackResponse.data.seller) {
-                      console.log(
-                        `[${requestId}] Found seller info in fallback domain ${record.domain}`
-                      );
-                      setSellerInfo(fallbackResponse.data);
-                      setError(false);
-                    } else {
-                      console.warn(`[${requestId}] Seller not found in fallback domain either`);
-                      setError(true);
-                      setSellerInfo(null);
-                    }
-                  } else {
-                    console.warn(
-                      `[${requestId}] API failure for fallback domain:`,
-                      fallbackResponse.error
-                    );
-                    setError(true);
-                    setSellerInfo(null);
-                  }
-                  setLoading(false);
-                })
-                .catch((err) => {
-                  if (!isMounted) return;
-                  console.error(`[${requestId}] Fallback attempt failed:`, err);
-                  setError(true);
-                  setSellerInfo(null);
-                  setLoading(false);
-                });
-            } else {
-              setError(true);
-              setSellerInfo(null);
-              setLoading(false);
-            }
+            // パブリッシャードメインでセラーが見つからない場合は直接エラーとする
+            setError(true);
+            setSellerInfo(null);
+            setLoading(false);
           } else if (response.data.seller) {
             // Seller info found
             console.log(
@@ -259,15 +212,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           {!loading && sellerInfo && sellerInfo.seller && (
             <Card variation="elevated" padding="0.75rem" backgroundColor="#f8f8f8">
               <Flex direction="column" gap="0.5rem">
-                {/* Cached indicator */}
-                {sellerInfo.cache.is_cached && (
-                  <Flex justifyContent="flex-end">
-                    <Badge variation="info" size="small">
-                      {t('adsTxt.recordItem.cached', language)}
-                    </Badge>
-                  </Flex>
-                )}
-
                 {/* Seller details */}
                 {sellerInfo.seller.is_confidential ? (
                   <Text>{t('adsTxt.recordItem.confidentialInfo', language)}</Text>
@@ -290,17 +234,6 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                       </Text>
                     </Flex>
                   </>
-                )}
-
-                {/* Metadata display (simplified) */}
-                {sellerInfo.metadata && sellerInfo.metadata.seller_count > 0 && (
-                  <Text fontSize="0.75rem" color="gray">
-                    {t('adsTxt.recordItem.sellersCount', language, {
-                      count: sellerInfo.metadata.seller_count,
-                    })}
-                    {sellerInfo.metadata.version &&
-                      ` (${t('adsTxt.recordItem.version', language)}: ${sellerInfo.metadata.version})`}
-                  </Text>
                 )}
               </Flex>
             </Card>
