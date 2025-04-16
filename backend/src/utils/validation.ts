@@ -1167,9 +1167,9 @@ function generateWarnings(
   // ただし、RESELLERの場合はINTERMEDIARYまたはBOTHの場合はドメインが一致しなくても許容する
   if (
     record.relationship === 'RESELLER' &&
-    validationResult.resellerDomainMatchesSellerJsonEntry === false && 
-    validationResult.sellerData && 
-    validationResult.sellerData.seller_type && 
+    validationResult.resellerDomainMatchesSellerJsonEntry === false &&
+    validationResult.sellerData &&
+    validationResult.sellerData.seller_type &&
     !['INTERMEDIARY', 'BOTH'].includes(validationResult.sellerData.seller_type.toUpperCase())
   ) {
     warnings.push(

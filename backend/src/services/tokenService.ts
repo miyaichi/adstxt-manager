@@ -63,7 +63,7 @@ class TokenService {
    */
   verifyToken(
     token: string,
-    storedTokens: { publisherToken?: string; requesterToken?: string; }
+    storedTokens: { publisherToken?: string; requesterToken?: string }
   ): {
     isValid: boolean;
     role?: TokenRole;

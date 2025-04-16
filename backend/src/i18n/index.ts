@@ -14,11 +14,11 @@ function getLocalesPath() {
     join(__dirname, '../i18n/locales'),
     join(__dirname, '../src/i18n/locales'),
     join(process.cwd(), 'dist/i18n/locales'),
-    join(process.cwd(), 'src/i18n/locales')
+    join(process.cwd(), 'src/i18n/locales'),
   ];
 
   console.log('[i18n] Looking for locales in the following paths:');
-  
+
   // 最初に見つかったパスを使用
   for (const p of possiblePaths) {
     try {
@@ -28,7 +28,7 @@ function getLocalesPath() {
         // en と ja の両方のディレクトリがあるか確認
         const hasEn = fs.existsSync(join(p, 'en'));
         const hasJa = fs.existsSync(join(p, 'ja'));
-        
+
         if (hasEn && hasJa) {
           console.log(`[i18n] ✅ Found valid locales directory: ${p}`);
           // en/email.json が存在するか確認
@@ -79,10 +79,12 @@ i18next
       cookieExpirationDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 year
       cookieDomain: 'localhost',
     },
-  }).then(() => {
+  })
+  .then(() => {
     console.log('[i18n] Successfully initialized with languages:', i18next.languages);
     console.log('[i18n] Using locales path:', localesPath);
-  }).catch(err => {
+  })
+  .catch((err) => {
     console.error('[i18n] Failed to initialize:', err);
   });
 
