@@ -1164,9 +1164,13 @@ function generateWarnings(
   }
 
   // Case 18: Domain mismatch for RESELLER - checks against OWNERDOMAIN and MANAGERDOMAIN as well
+  // ただし、RESELLERの場合はINTERMEDIARYまたはBOTHの場合はドメインが一致しなくても許容する
   if (
     record.relationship === 'RESELLER' &&
-    validationResult.resellerDomainMatchesSellerJsonEntry === false
+    validationResult.resellerDomainMatchesSellerJsonEntry === false && 
+    validationResult.sellerData && 
+    validationResult.sellerData.seller_type && 
+    !['INTERMEDIARY', 'BOTH'].includes(validationResult.sellerData.seller_type.toUpperCase())
   ) {
     warnings.push(
       createWarning(VALIDATION_KEYS.DOMAIN_MISMATCH, {
