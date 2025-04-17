@@ -396,14 +396,27 @@ class SellersJsonCacheModel {
 
       // PostgreSQLからの結果をより堅牢に処理
       // 結果のデバッグログを追加
-      logger.info(`[SellersJsonCache] Result details: ${JSON.stringify({
-        hasMatchingSellers: result.matching_sellers ? true : false,
-        matchingSellersType: result.matching_sellers ? typeof result.matching_sellers : 'undefined',
-        matchingSellersIsArray: result.matching_sellers ? Array.isArray(result.matching_sellers) : false,
-        matchingSellersLength: result.matching_sellers && Array.isArray(result.matching_sellers) 
-          ? result.matching_sellers.length : 'N/A'
+      logger.info(`[SellersJsonCache] Raw result from DB: ${JSON.stringify({
+        // 注意: PostgreSQL固有の返り値を確認
+        hasMatchingSellersProp: result.matching_sellers !== undefined,
+        hasExplicitSeller: result.seller !== undefined,
+        hasExplicitFound: result.found !== undefined
       })}`);
 
+      // PostgreSQLアダプタから直接返ってきたセラー情報とfound状態を利用
+      if (result.seller !== undefined && result.found !== undefined) {
+        logger.info(`[SellersJsonCache] Using explicit seller and found from DB result`);
+        return {
+          cacheRecord: result.cacheRecord,
+          metadata: result.metadata,
+          seller: result.seller,
+          found: result.found
+        };
+      }
+
+      // 後方互換性のため、matching_sellersからセラー情報を抽出する処理も維持
+      logger.info(`[SellersJsonCache] Processing matching_sellers from result`);
+      
       // 文字列からオブジェクトへの変換を保証
       let parsedSellers: any[] | null = null;
       

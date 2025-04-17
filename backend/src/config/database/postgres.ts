@@ -411,7 +411,14 @@ export class PostgresDatabase implements IDatabaseAdapter {
     const hasValidSellers = matchingSellers !== null && 
                            Array.isArray(matchingSellers) && 
                            matchingSellers.length > 0;
+
+    // デバッグ: 最終的な結果を確認
+    console.log(`[DEBUG] Final processed result: ${JSON.stringify({
+      hasValidSellers,
+      matchingSellers: matchingSellers ? JSON.stringify(matchingSellers) : 'null'
+    })}`);
     
+    // 重要: PostgreSQLでの結果を正規化して返す形式を統一
     return {
       cacheRecord,
       metadata: {
@@ -421,6 +428,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
         identifiers: result.identifiers,
         seller_count: parseInt(result.seller_count || '0', 10),
       },
+      // 重要: 結果をSellersJsonCacheモデルに渡すために明示的に含める
+      matching_sellers: matchingSellers,
       // 適切にパースされたセラー情報を使用
       seller: hasValidSellers && matchingSellers ? matchingSellers[0] : null,
       found: hasValidSellers,
