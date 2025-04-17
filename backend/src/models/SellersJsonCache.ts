@@ -394,14 +394,50 @@ class SellersJsonCacheModel {
         `[SellersJsonCache] Found optimized result for ${normalizedSellerId} in ${normalizedDomain}`
       );
 
+      // PostgreSQLからの結果をより堅牢に処理
+      // 結果のデバッグログを追加
+      logger.info(`[SellersJsonCache] Result details: ${JSON.stringify({
+        hasMatchingSellers: result.matching_sellers ? true : false,
+        matchingSellersType: result.matching_sellers ? typeof result.matching_sellers : 'undefined',
+        matchingSellersIsArray: result.matching_sellers ? Array.isArray(result.matching_sellers) : false,
+        matchingSellersLength: result.matching_sellers && Array.isArray(result.matching_sellers) 
+          ? result.matching_sellers.length : 'N/A'
+      })}`);
+
+      // 文字列からオブジェクトへの変換を保証
+      let parsedSellers: any[] | null = null;
+      
+      if (result.matching_sellers) {
+        try {
+          // 文字列の場合はJSONとしてパース
+          if (typeof result.matching_sellers === 'string') {
+            parsedSellers = JSON.parse(result.matching_sellers);
+          }
+          // 既にオブジェクトの場合はそのまま使用
+          else if (Array.isArray(result.matching_sellers)) {
+            parsedSellers = result.matching_sellers;
+          }
+          // その他の場合、オブジェクトを配列に変換
+          else if (typeof result.matching_sellers === 'object') {
+            parsedSellers = [result.matching_sellers];
+          }
+        } catch (e) {
+          logger.error(`[SellersJsonCache] Error parsing matching_sellers: ${e}`);
+        }
+      }
+      
+      // 有効なセラー情報があるかを確認
+      const hasValidSellers = parsedSellers !== null && 
+                            Array.isArray(parsedSellers) && 
+                            parsedSellers.length > 0;
+                            
+      logger.info(`[SellersJsonCache] Final check: hasValidSellers=${hasValidSellers}, parsedSellers=${parsedSellers ? JSON.stringify(parsedSellers) : 'null'}`);
+      
       return {
         cacheRecord: result.cacheRecord,
         metadata: result.metadata,
-        seller:
-          result.matching_sellers && result.matching_sellers.length > 0
-            ? result.matching_sellers[0]
-            : null,
-        found: result.matching_sellers && result.matching_sellers.length > 0,
+        seller: hasValidSellers && parsedSellers ? parsedSellers[0] : null,
+        found: hasValidSellers
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);
