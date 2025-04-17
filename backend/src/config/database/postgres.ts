@@ -334,7 +334,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
       WHERE domain = $1 AND status = 'success'
     `;
 
-    const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+    // 正規化されたドメインを使用
+    const normalizedDomain = domain.toLowerCase().trim();
+    const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
 
     if (domainResult.rows.length === 0) {
       return null; // Domain not found or not successful status
@@ -370,7 +372,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
       WHERE sj.id = $1
     `;
 
-    const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, sellerId]);
+    // sellerId を正規化して空白をトリム
+    const normalizedSellerId = sellerId.toString().trim();
+    const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, normalizedSellerId]);
 
     if (sellerResult.rows.length === 0) {
       return null;
