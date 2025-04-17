@@ -22,7 +22,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
         ssl: this.getSslConfig(),
         max: parseInt(process.env.PG_MAX_POOL_SIZE || '10'),
         idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000'),
-        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '10000'),
+        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '30000'), // タイムアウト値を延長
+        statement_timeout: parseInt(process.env.PG_STATEMENT_TIMEOUT || '60000'), // クエリ実行タイムアウトを追加
       });
       console.log('Connected to PostgreSQL database using connection string');
     } else {
@@ -36,7 +37,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
         ssl: this.getSslConfig(),
         max: parseInt(process.env.PG_MAX_POOL_SIZE || '10'),
         idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000'),
-        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '10000'),
+        connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '30000'), // タイムアウト値を延長
+        statement_timeout: parseInt(process.env.PG_STATEMENT_TIMEOUT || '60000'), // クエリ実行タイムアウトを追加
       });
       console.log(`Connected to PostgreSQL database at ${process.env.PGHOST || 'localhost'}`);
     }
@@ -327,94 +329,163 @@ export class PostgresDatabase implements IDatabaseAdapter {
    * @returns The matching seller data if found
    */
   public async queryJsonBSellerById(domain: string, sellerId: string): Promise<any> {
-    // 正規化されたドメインとセラーIDを使用
-    const normalizedDomain = domain.toLowerCase().trim();
-    const normalizedSellerId = sellerId.toString().trim();
-    
-    // ドメインが存在し有効なデータを持っているか確認
-    const domainCheckSql = `
-      SELECT id, domain, status, status_code, error_message, content, created_at, updated_at 
-      FROM sellers_json_cache 
-      WHERE domain = $1 AND status = 'success'
-    `;
-
-    const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
-
-    if (domainResult.rows.length === 0) {
-      return null; // Domain not found or not successful status
-    }
-
-    const cacheRecord = domainResult.rows[0];
-
-    // JSONBオペレータを使用して、マッチするセラーをデータベースから直接抽出
-    const sellerSql = `
-      SELECT 
-        sj.id,
-        sj.domain,
-        sj.status, 
-        sj.status_code,
-        sj.error_message,
-        sj.created_at,
-        sj.updated_at,
-        jsonb_extract_path(sj.content, 'version') as version,
-        jsonb_extract_path(sj.content, 'contact_email') as contact_email,
-        jsonb_extract_path(sj.content, 'contact_address') as contact_address,
-        jsonb_extract_path(sj.content, 'identifiers') as identifiers,
-        (
-          SELECT jsonb_agg(s) 
-          FROM jsonb_array_elements(sj.content->'sellers') s 
-          WHERE s->>'seller_id' = $2
-        ) as matching_sellers,
-        (
-          SELECT COUNT(*) 
-          FROM jsonb_array_elements(sj.content->'sellers')
-        ) as seller_count
-      FROM sellers_json_cache sj
-      WHERE sj.id = $1
-    `;
-
-    const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, normalizedSellerId]);
-
-    if (sellerResult.rows.length === 0) {
+    try {
+      // 正規化されたドメインとセラーIDを使用
+      const normalizedDomain = domain.toLowerCase().trim();
+      const normalizedSellerId = sellerId.toString().trim();
+      
+      // 最適化されたLATERAL JOINを使用したクエリ(相関サブクエリよりも効率的)
+      // 1. 早期フィルタリングを最大化
+      // 2. コンテント全体の走査を最小限に
+      // 3. 関数ベースのインデックスサポート
+      const optimizedSql = `
+        WITH RECURSIVE 
+        base_data AS (
+          -- 基本情報の高速取得（インデックスを活用）
+          SELECT 
+            id,
+            domain,
+            status,
+            status_code,
+            error_message,
+            created_at,
+            updated_at,
+            content
+          FROM sellers_json_cache
+          WHERE domain = $1 AND status = 'success'
+          LIMIT 1
+        ),
+        metadata AS (
+          -- メタデータの抽出（インデックス済みパスアクセス）
+          SELECT 
+            b.id,
+            b.domain,
+            b.status,
+            b.status_code,
+            b.error_message,
+            b.created_at,
+            b.updated_at,
+            jsonb_extract_path_text(b.content, 'version') as version,
+            jsonb_extract_path_text(b.content, 'contact_email') as contact_email,
+            jsonb_extract_path_text(b.content, 'contact_address') as contact_address,
+            b.content->'identifiers' as identifiers,
+            COALESCE(
+              (SELECT jsonb_array_length(b.content->'sellers')),
+              0
+            ) as seller_count
+          FROM base_data b
+        )
+        SELECT 
+          m.id,
+          m.domain,
+          m.status,
+          m.status_code,
+          m.error_message,
+          m.created_at,
+          m.updated_at,
+          m.version,
+          m.contact_email,
+          m.contact_address,
+          m.identifiers,
+          m.seller_count,
+          -- 効率的なLATERAL JOINを使用 (相関サブクエリよりもパフォーマンスが良い)
+          s.matching_seller
+        FROM 
+          metadata m
+        LEFT JOIN LATERAL (
+          -- 唯一のセラーを効率的に抽出 (LIMIT 1によるパフォーマンス向上)
+          SELECT 
+            s as matching_seller
+          FROM 
+            jsonb_array_elements((
+              SELECT content->'sellers' FROM base_data LIMIT 1
+            )) s
+          WHERE 
+            LOWER(s->>'seller_id') = LOWER($2) OR 
+            LOWER(TRIM(BOTH FROM s->>'seller_id')) = LOWER($2)
+          LIMIT 1
+        ) s ON true
+        /* EXPLAIN ANALYZE出力を解析して最適化するヒント */
+      `;
+      
+      // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
+      let originalTimeout;
+      const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
+      
+      // クライアントを取得して時間のかかるクエリに最適化
+      const client = await this.pool.connect();
+      
+      try {
+        // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
+        originalTimeout = await client.query('SHOW statement_timeout');
+        await client.query(`SET statement_timeout = '${extendedTimeout}'`);
+        
+        // クエリの実行（準備されたステートメントを使用）
+        const result = await client.query({
+          text: optimizedSql,
+          values: [normalizedDomain, normalizedSellerId],
+          rowMode: 'array'
+        });
+        
+        // 結果がない場合
+        if (result.rows.length === 0) {
+          return null;
+        }
+        
+        const rowData = result.rows[0];
+        const columnNames = [
+          'id', 'domain', 'status', 'status_code', 'error_message', 'created_at', 'updated_at',
+          'version', 'contact_email', 'contact_address', 'identifiers', 'seller_count', 'matching_seller'
+        ];
+        
+        // 列名と値をマッピングして結果オブジェクトを構築
+        const row: Record<string, any> = {};
+        columnNames.forEach((name, i) => {
+          row[name] = rowData[i];
+        });
+        
+        // cacheRecordオブジェクトを構築
+        const cacheRecord = {
+          id: row.id,
+          domain: row.domain,
+          status: row.status,
+          status_code: row.status_code,
+          error_message: row.error_message,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
+        
+        // セラー情報を安全に処理
+        const matchingSeller = row.matching_seller;
+        const hasValidSeller = !!matchingSeller;
+        
+        // 結果を統一された形式で返す
+        return {
+          cacheRecord,
+          metadata: {
+            version: row.version,
+            contact_email: row.contact_email,
+            contact_address: row.contact_address,
+            identifiers: row.identifiers,
+            seller_count: typeof row.seller_count === 'string' ? 
+              parseInt(row.seller_count, 10) : row.seller_count || 0,
+          },
+          seller: hasValidSeller ? matchingSeller : null,
+          found: hasValidSeller,
+        };
+      } finally {
+        // タイムアウト設定を元に戻す
+        if (originalTimeout?.rows?.[0]?.statement_timeout) {
+          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+        }
+        // クライアントを解放
+        client.release();
+      }
+    } catch (error) {
+      console.error(`Error in queryJsonBSellerById for domain ${domain}, sellerId ${sellerId}:`, error);
+      // エラー発生時はnullを返して呼び出し元で処理
       return null;
     }
-
-    const result = sellerResult.rows[0];
-    
-    // PostgreSQLのJSONB結果を確実にパース
-    let matchingSellers: any[] | null = null;
-    if (result.matching_sellers) {
-      try {
-        // 文字列の場合はJSONとしてパース
-        if (typeof result.matching_sellers === 'string') {
-          matchingSellers = JSON.parse(result.matching_sellers);
-        } 
-        // 既にオブジェクトの場合はそのまま使用
-        else {
-          matchingSellers = result.matching_sellers as any[];
-        }
-      } catch (e) {
-        matchingSellers = null;
-      }
-    }
-    
-    const hasValidSellers = matchingSellers !== null && 
-                           Array.isArray(matchingSellers) && 
-                           matchingSellers.length > 0;
-    
-    // 結果を統一された形式で返す
-    return {
-      cacheRecord,
-      metadata: {
-        version: result.version,
-        contact_email: result.contact_email,
-        contact_address: result.contact_address,
-        identifiers: result.identifiers,
-        seller_count: parseInt(result.seller_count || '0', 10),
-      },
-      seller: hasValidSellers && matchingSellers ? matchingSellers[0] : null,
-      found: hasValidSellers,
-    };
   }
 
   /**
@@ -429,89 +500,144 @@ export class PostgresDatabase implements IDatabaseAdapter {
       // 正規化されたドメインを使用
       const normalizedDomain = domain.toLowerCase().trim();
       
-      // ドメインが存在し有効なデータを持っているか確認
-      const domainCheckSql = `
-        SELECT id, domain, status, updated_at 
-        FROM sellers_json_cache 
-        WHERE domain = $1 AND status = 'success'
+      // 新しい最適化クエリ: パーティション化スキャン & メモリ効率の向上
+      const optimizedSql = `
+        -- 指定されたドメインデータを高速に取得
+        WITH base_query AS (
+          SELECT 
+            id,
+            domain,
+            status,
+            updated_at,
+            content
+          FROM sellers_json_cache 
+          WHERE domain = $1 AND status = 'success'
+          LIMIT 1
+        ),
+        -- 基本メタデータの効率的な抽出
+        metadata_extract AS (
+          SELECT 
+            bq.id,
+            bq.domain,
+            bq.status,
+            bq.updated_at,
+            jsonb_extract_path_text(bq.content, 'version') as version,
+            jsonb_extract_path_text(bq.content, 'contact_email') as contact_email
+          FROM base_query bq
+        ),
+        -- 大規模データセット用に最適化された集計クエリ
+        sellers_stats AS (
+          SELECT
+            -- JSONB配列をストリーミング処理して、インデックスで実行可能なSUM集計を使用
+            COUNT(*) as seller_count,
+            SUM(CASE WHEN UPPER(s->>'seller_type') = 'PUBLISHER' THEN 1 ELSE 0 END) as publisher_count,
+            SUM(CASE WHEN UPPER(s->>'seller_type') = 'INTERMEDIARY' THEN 1 ELSE 0 END) as intermediary_count,
+            SUM(CASE WHEN UPPER(s->>'seller_type') = 'BOTH' THEN 1 ELSE 0 END) as both_count,
+            SUM(CASE WHEN UPPER(s->>'seller_type') NOT IN ('PUBLISHER', 'INTERMEDIARY', 'BOTH') THEN 1 ELSE 0 END) as other_count,
+            SUM(CASE 
+              WHEN (s->>'is_confidential')::boolean = true THEN 1
+              WHEN s->>'is_confidential' = '1' THEN 1
+              WHEN s->>'is_confidential' = 'true' THEN 1
+              WHEN (s->>'is_confidential')::numeric = 1 THEN 1
+              ELSE 0 END) as confidential_count
+          FROM base_query bq,
+          LATERAL jsonb_array_elements(bq.content->'sellers') s
+          WHERE bq.id IS NOT NULL
+        )
+        -- メタデータと統計情報の結合
+        SELECT
+          m.id,
+          m.domain,
+          m.status,
+          m.updated_at,
+          m.version,
+          m.contact_email,
+          s.seller_count,
+          s.publisher_count,
+          s.intermediary_count,
+          s.both_count,
+          s.other_count,
+          s.confidential_count
+        FROM metadata_extract m
+        LEFT JOIN sellers_stats s ON true
+        /* StatementTimeout拡張適用 */
       `;
 
-      const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
+      // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
+      let originalTimeout;
+      const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
+      
+      // クライアントを取得して時間のかかるクエリに最適化
+      const client = await this.pool.connect();
+      
+      try {
+        // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
+        originalTimeout = await client.query('SHOW statement_timeout');
+        await client.query(`SET statement_timeout = '${extendedTimeout}'`);
+        
+        // クエリの実行（キャッシュを活用するためにプリペアドステートメントを使用）
+        const result = await client.query({
+          text: optimizedSql,
+          values: [normalizedDomain],
+          name: 'get_sellers_json_summary' // ステートメントキャッシュのための名前
+        });
 
-      if (domainResult.rows.length === 0) {
-        return null; // Domain not found or not successful status
+        if (result.rows.length === 0) {
+          return null;
+        }
+
+        const row = result.rows[0];
+        
+        // 結果を統一された形式で返す
+        return {
+          domainInfo: {
+            id: row.id,
+            domain: row.domain,
+            status: row.status,
+            updated_at: row.updated_at,
+          },
+          metadata: {
+            version: row.version,
+            contact_email: row.contact_email,
+            seller_count: this.parseIntSafe(row.seller_count, 0),
+          },
+          sellersSummary: {
+            publisherCount: this.parseIntSafe(row.publisher_count, 0),
+            intermediaryCount: this.parseIntSafe(row.intermediary_count, 0),
+            bothCount: this.parseIntSafe(row.both_count, 0),
+            otherCount: this.parseIntSafe(row.other_count, 0),
+            confidentialCount: this.parseIntSafe(row.confidential_count, 0),
+          },
+          isCacheMiss: false
+        };
+      } finally {
+        // タイムアウト設定を元に戻す
+        if (originalTimeout?.rows?.[0]?.statement_timeout) {
+          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+        }
+        // クライアントを解放
+        client.release();
       }
-
-      const cacheRecord = domainResult.rows[0];
-
-      // JSONBオペレータを使用してメタデータとサマリーを取得
-      const summarySql = `
-        SELECT 
-          jsonb_extract_path(content, 'version') as version,
-          jsonb_extract_path(content, 'contact_email') as contact_email,
-          (SELECT COUNT(*) FROM jsonb_array_elements(content->'sellers')) as seller_count,
-          (
-            SELECT COUNT(*) 
-            FROM jsonb_array_elements(content->'sellers') s
-            WHERE s->>'seller_type' = 'PUBLISHER'
-          ) as publisher_count,
-          (
-            SELECT COUNT(*) 
-            FROM jsonb_array_elements(content->'sellers') s
-            WHERE s->>'seller_type' = 'INTERMEDIARY'
-          ) as intermediary_count,
-          (
-            SELECT COUNT(*) 
-            FROM jsonb_array_elements(content->'sellers') s
-            WHERE s->>'seller_type' = 'BOTH'
-          ) as both_count,
-          (
-            SELECT COUNT(*) 
-            FROM jsonb_array_elements(content->'sellers') s
-            WHERE s->>'seller_type' NOT IN ('PUBLISHER', 'INTERMEDIARY', 'BOTH')
-          ) as other_count,
-          (
-            SELECT COUNT(*) 
-            FROM jsonb_array_elements(content->'sellers') s
-            WHERE (s->>'is_confidential')::boolean = true
-          ) as confidential_count
-        FROM sellers_json_cache
-        WHERE id = $1
-      `;
-
-      const summaryResult = await this.pool.query(summarySql, [cacheRecord.id]);
-
-      if (summaryResult.rows.length === 0) {
-        return null;
-      }
-
-      const summary = summaryResult.rows[0];
-
-      // 結果を統一された形式で返す
-      return {
-        domainInfo: {
-          id: cacheRecord.id,
-          domain: cacheRecord.domain,
-          status: cacheRecord.status,
-          updated_at: cacheRecord.updated_at,
-        },
-        metadata: {
-          version: typeof summary.version === 'string' ? JSON.parse(summary.version) : summary.version,
-          contact_email: typeof summary.contact_email === 'string' ? JSON.parse(summary.contact_email) : summary.contact_email,
-          seller_count: parseInt(summary.seller_count || '0', 10),
-        },
-        sellersSummary: {
-          publisherCount: parseInt(summary.publisher_count || '0', 10),
-          intermediaryCount: parseInt(summary.intermediary_count || '0', 10),
-          bothCount: parseInt(summary.both_count || '0', 10),
-          otherCount: parseInt(summary.other_count || '0', 10),
-          confidentialCount: parseInt(summary.confidential_count || '0', 10),
-        },
-        isCacheMiss: false
-      };
     } catch (error) {
+      console.error(`Error in queryJsonBSummary for domain ${domain}:`, error);
       return null;
     }
+  }
+  
+  /**
+   * 整数値の安全なパース
+   * @param value パースする値
+   * @param defaultValue デフォルト値
+   * @returns パースした整数値
+   */
+  private parseIntSafe(value: any, defaultValue: number = 0): number {
+    if (value === null || value === undefined) return defaultValue;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+    return defaultValue;
   }
 
   /**
@@ -531,77 +657,134 @@ export class PostgresDatabase implements IDatabaseAdapter {
       // 正規化されたドメインを使用
       const normalizedDomain = domain.toLowerCase().trim();
       
-      // ドメインが存在し有効なデータを持っているか確認
-      const domainCheckSql = `
-        SELECT id, domain, status, updated_at 
-        FROM sellers_json_cache 
-        WHERE domain = $1 AND status = 'success'
-      `;
-
-      const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
-
-      if (domainResult.rows.length === 0) {
-        return null; // Domain not found or not successful status
-      }
-
-      const cacheRecord = domainResult.rows[0];
-
-      // 基本的なメタデータを取得
-      const metadataSql = `
-        SELECT 
-          jsonb_extract_path(content, 'version') as version,
-          jsonb_extract_path(content, 'contact_email') as contact_email
-        FROM sellers_json_cache
-        WHERE id = $1
-      `;
-
-      const metadataResult = await this.pool.query(metadataSql, [cacheRecord.id]);
-      const metadata = metadataResult.rows[0] || {};
-
-      // 指定されたアカウントIDに一致するセラーのみを取得
-      // 全セラーをロードするより効率的
-      const accountIdsParam = accountIds.map((id) => id.toString().toLowerCase());
-
-      const sellerSql = `
-        WITH matching_sellers AS (
-          SELECT jsonb_array_elements(content->'sellers') as seller
+      // アカウントIDを正規化
+      const normalizedAccountIds = accountIds.map(id => id.toString().toLowerCase().trim());
+      
+      // 非常に大きなsellers.jsonファイル(例: Google)用に完全に最適化されたクエリ
+      // LATERAL JOINとハッシュマッチング技術を使用
+      const optimizedSql = `
+        WITH 
+        -- 高速ドメインルックアップ（インデックス使用）
+        base_data AS (
+          SELECT 
+            id,
+            domain,
+            status,
+            updated_at,
+            content
           FROM sellers_json_cache
-          WHERE id = $1
+          WHERE domain = $1 AND status = 'success'
+          LIMIT 1
+        ),
+        -- メタデータの効率的な抽出（インデックス使用）
+        metadata AS (
+          SELECT
+            id,
+            domain,
+            status,
+            updated_at,
+            jsonb_extract_path_text(content, 'version') as version,
+            jsonb_extract_path_text(content, 'contact_email') as contact_email
+          FROM base_data
+        ),
+        -- アカウントIDをテーブルとして作成（効率的なハッシュ結合を可能に）
+        account_ids AS (
+          SELECT unnest($2::text[]) as account_id
+        ),
+        -- 効率的なLATERAL JOINを使用したセラーマッチング
+        -- (大きな配列を一度だけ走査し、複数の高速ハッシュマッチングをPG内で実行)
+        matched_sellers AS (
+          SELECT 
+            jsonb_agg(s) as sellers
+          FROM 
+            base_data b,
+            LATERAL jsonb_array_elements(b.content->'sellers') s
+          WHERE 
+            EXISTS (
+              SELECT 1 FROM account_ids a 
+              WHERE 
+                LOWER(s->>'seller_id') = a.account_id OR
+                LOWER(TRIM(BOTH FROM s->>'seller_id')) = a.account_id
+            )
         )
-        SELECT seller
-        FROM matching_sellers
-        WHERE LOWER(seller->>'seller_id') = ANY($2)
+        -- 結果の結合
+        SELECT
+          m.id,
+          m.domain,
+          m.status,
+          m.updated_at,
+          m.version,
+          m.contact_email,
+          s.sellers as matching_sellers
+        FROM metadata m
+        LEFT JOIN matched_sellers s ON true
       `;
-
-      const sellersResult = await this.pool.query(sellerSql, [cacheRecord.id, accountIdsParam]);
-
-      // 結果処理の強化
-      const matchingSellers = sellersResult.rows.map((row) => {
-        // 文字列の場合はJSONとしてパース
-        if (typeof row.seller === 'string') {
+      
+      // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
+      let originalTimeout;
+      const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
+      
+      // クライアントを取得して時間のかかるクエリに最適化
+      const client = await this.pool.connect();
+      
+      try {
+        // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
+        originalTimeout = await client.query('SHOW statement_timeout');
+        await client.query(`SET statement_timeout = '${extendedTimeout}'`);
+        
+        // 配列パラメータを使用して準備済みステートメントでクエリを実行
+        const result = await client.query({
+          text: optimizedSql,
+          values: [normalizedDomain, normalizedAccountIds],
+          name: 'get_specific_sellers' // クエリキャッシュのための名前
+        });
+        
+        if (result.rows.length === 0) {
+          return null;
+        }
+        
+        const row = result.rows[0];
+        
+        // 安全に結果を処理
+        let matchingSellers: any[] = [];
+        if (row.matching_sellers) {
           try {
-            return JSON.parse(row.seller);
-          } catch {
-            return row.seller;
+            if (typeof row.matching_sellers === 'string') {
+              const parsed = JSON.parse(row.matching_sellers);
+              if (Array.isArray(parsed)) {
+                matchingSellers = parsed.filter(s => s !== null);
+              }
+            } else if (Array.isArray(row.matching_sellers)) {
+              matchingSellers = row.matching_sellers.filter(s => s !== null);
+            }
+          } catch (e) {
+            console.error('Error processing matching_sellers:', e);
           }
         }
-        return row.seller;
-      });
 
-      return {
-        domainInfo: {
-          id: cacheRecord.id,
-          domain: cacheRecord.domain,
-          status: cacheRecord.status,
-          updated_at: cacheRecord.updated_at,
-        },
-        metadata: {
-          version: typeof metadata.version === 'string' ? JSON.parse(metadata.version) : metadata.version,
-          contact_email: typeof metadata.contact_email === 'string' ? JSON.parse(metadata.contact_email) : metadata.contact_email,
-        },
-        matchingSellers,
-      };
+        return {
+          domainInfo: {
+            id: row.id,
+            domain: row.domain,
+            status: row.status,
+            updated_at: row.updated_at,
+          },
+          metadata: {
+            version: row.version,
+            contact_email: row.contact_email,
+          },
+          matchingSellers: matchingSellers,
+        };
+      } finally {
+        // タイムアウト設定を元に戻す
+        if (originalTimeout?.rows?.[0]?.statement_timeout) {
+          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+        }
+        // クライアントを解放
+        client.release();
+      }
     } catch (error) {
+      console.error(`Error in queryJsonBSpecificSellers for domain ${domain}:`, error);
       return null;
     }
   }

@@ -6,6 +6,36 @@ import { t } from '../../i18n/translations';
 import { AdsTxtRecord, ParsedAdsTxtRecord, SellersJsonSellerResponse } from '../../models';
 import WarningPopover from '../common/WarningPopover';
 
+/**
+ * 様々な形式のis_confidential値を評価する関数
+ * sellers.jsonでは整数値0/1が規格だが、実装によっては文字列や真偽値で格納されている場合がある
+ * 
+ * @param value is_confidentialの値
+ * @returns true if confidential (value is 1, '1', or true), false otherwise
+ */
+function isConfidentialValue(value: any): boolean {
+  // nullやundefinedの場合はfalse
+  if (value == null) return false;
+  
+  // 文字列型の場合
+  if (typeof value === 'string') {
+    return value === '1' || value.toLowerCase() === 'true';
+  }
+  
+  // 数値型の場合
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  // 真偽値型の場合
+  if (typeof value === 'boolean') {
+    return value === true;
+  }
+  
+  // その他の型はfalse
+  return false;
+}
+
 interface AdsTxtRecordItemProps {
   record: AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string });
   showValidation?: boolean;
@@ -212,8 +242,8 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           {!loading && sellerInfo && sellerInfo.seller && (
             <Card variation="elevated" padding="0.75rem" backgroundColor="#f8f8f8">
               <Flex direction="column" gap="0.5rem">
-                {/* Seller details */}
-                {sellerInfo.seller.is_confidential ? (
+                {/* Seller details - 型安全に様々な形式のis_confidentialを評価 */}
+                {isConfidentialValue(sellerInfo.seller.is_confidential) ? (
                   <Text>{t('adsTxt.recordItem.confidentialInfo', language)}</Text>
                 ) : (
                   <>
