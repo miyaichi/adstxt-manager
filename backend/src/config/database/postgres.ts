@@ -327,15 +327,17 @@ export class PostgresDatabase implements IDatabaseAdapter {
    * @returns The matching seller data if found
    */
   public async queryJsonBSellerById(domain: string, sellerId: string): Promise<any> {
-    // First check if the domain exists and has valid data
+    // 正規化されたドメインとセラーIDを使用
+    const normalizedDomain = domain.toLowerCase().trim();
+    const normalizedSellerId = sellerId.toString().trim();
+    
+    // ドメインが存在し有効なデータを持っているか確認
     const domainCheckSql = `
       SELECT id, domain, status, status_code, error_message, content, created_at, updated_at 
       FROM sellers_json_cache 
       WHERE domain = $1 AND status = 'success'
     `;
 
-    // 正規化されたドメインを使用
-    const normalizedDomain = domain.toLowerCase().trim();
     const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
 
     if (domainResult.rows.length === 0) {
@@ -344,8 +346,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
     const cacheRecord = domainResult.rows[0];
 
-    // Now use JSONB operators to extract only the matching seller directly from the database
-    // This is much more efficient than loading all sellers and filtering in code
+    // JSONBオペレータを使用して、マッチするセラーをデータベースから直接抽出
     const sellerSql = `
       SELECT 
         sj.id,
@@ -372,8 +373,6 @@ export class PostgresDatabase implements IDatabaseAdapter {
       WHERE sj.id = $1
     `;
 
-    // sellerId を正規化して空白をトリム
-    const normalizedSellerId = sellerId.toString().trim();
     const sellerResult = await this.pool.query(sellerSql, [cacheRecord.id, normalizedSellerId]);
 
     if (sellerResult.rows.length === 0) {
@@ -381,14 +380,6 @@ export class PostgresDatabase implements IDatabaseAdapter {
     }
 
     const result = sellerResult.rows[0];
-
-    // Return formatted result with metadata and seller information
-    // デバッグログを追加
-    console.log(`[DEBUG] queryJsonBSellerById raw result: ${JSON.stringify({
-      hasMatchingSellers: result.matching_sellers ? 'yes' : 'no',
-      matchingSellersType: result.matching_sellers ? typeof result.matching_sellers : 'undefined',
-      matchingSellersValue: result.matching_sellers ? JSON.stringify(result.matching_sellers) : 'null'
-    })}`);
     
     // PostgreSQLのJSONB結果を確実にパース
     let matchingSellers: any[] | null = null;
@@ -403,7 +394,6 @@ export class PostgresDatabase implements IDatabaseAdapter {
           matchingSellers = result.matching_sellers as any[];
         }
       } catch (e) {
-        console.error(`[ERROR] Failed to parse matching_sellers: ${e}`);
         matchingSellers = null;
       }
     }
@@ -411,14 +401,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
     const hasValidSellers = matchingSellers !== null && 
                            Array.isArray(matchingSellers) && 
                            matchingSellers.length > 0;
-
-    // デバッグ: 最終的な結果を確認
-    console.log(`[DEBUG] Final processed result: ${JSON.stringify({
-      hasValidSellers,
-      matchingSellers: matchingSellers ? JSON.stringify(matchingSellers) : 'null'
-    })}`);
     
-    // 重要: PostgreSQLでの結果を正規化して返す形式を統一
+    // 結果を統一された形式で返す
     return {
       cacheRecord,
       metadata: {
@@ -428,9 +412,6 @@ export class PostgresDatabase implements IDatabaseAdapter {
         identifiers: result.identifiers,
         seller_count: parseInt(result.seller_count || '0', 10),
       },
-      // 重要: 結果をSellersJsonCacheモデルに渡すために明示的に含める
-      matching_sellers: matchingSellers,
-      // 適切にパースされたセラー情報を使用
       seller: hasValidSellers && matchingSellers ? matchingSellers[0] : null,
       found: hasValidSellers,
     };
@@ -445,14 +426,17 @@ export class PostgresDatabase implements IDatabaseAdapter {
    */
   public async queryJsonBSummary(domain: string): Promise<any> {
     try {
-      // First check if the domain exists and has valid data
+      // 正規化されたドメインを使用
+      const normalizedDomain = domain.toLowerCase().trim();
+      
+      // ドメインが存在し有効なデータを持っているか確認
       const domainCheckSql = `
         SELECT id, domain, status, updated_at 
         FROM sellers_json_cache 
         WHERE domain = $1 AND status = 'success'
       `;
 
-      const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+      const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
 
       if (domainResult.rows.length === 0) {
         return null; // Domain not found or not successful status
@@ -460,7 +444,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
       const cacheRecord = domainResult.rows[0];
 
-      // Now use JSONB operators to get metadata and summary
+      // JSONBオペレータを使用してメタデータとサマリーを取得
       const summarySql = `
         SELECT 
           jsonb_extract_path(content, 'version') as version,
@@ -503,7 +487,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
       const summary = summaryResult.rows[0];
 
-      // Return formatted summary
+      // 結果を統一された形式で返す
       return {
         domainInfo: {
           id: cacheRecord.id,
@@ -512,8 +496,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
           updated_at: cacheRecord.updated_at,
         },
         metadata: {
-          version: summary.version,
-          contact_email: summary.contact_email,
+          version: typeof summary.version === 'string' ? JSON.parse(summary.version) : summary.version,
+          contact_email: typeof summary.contact_email === 'string' ? JSON.parse(summary.contact_email) : summary.contact_email,
           seller_count: parseInt(summary.seller_count || '0', 10),
         },
         sellersSummary: {
@@ -523,9 +507,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
           otherCount: parseInt(summary.other_count || '0', 10),
           confidentialCount: parseInt(summary.confidential_count || '0', 10),
         },
+        isCacheMiss: false
       };
     } catch (error) {
-      console.error('Error in queryJsonBSummary:', error);
       return null;
     }
   }
@@ -544,14 +528,17 @@ export class PostgresDatabase implements IDatabaseAdapter {
     }
 
     try {
-      // First check if the domain exists and has valid data
+      // 正規化されたドメインを使用
+      const normalizedDomain = domain.toLowerCase().trim();
+      
+      // ドメインが存在し有効なデータを持っているか確認
       const domainCheckSql = `
         SELECT id, domain, status, updated_at 
         FROM sellers_json_cache 
         WHERE domain = $1 AND status = 'success'
       `;
 
-      const domainResult = await this.pool.query(domainCheckSql, [domain.toLowerCase()]);
+      const domainResult = await this.pool.query(domainCheckSql, [normalizedDomain]);
 
       if (domainResult.rows.length === 0) {
         return null; // Domain not found or not successful status
@@ -559,7 +546,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
       const cacheRecord = domainResult.rows[0];
 
-      // Get basic metadata
+      // 基本的なメタデータを取得
       const metadataSql = `
         SELECT 
           jsonb_extract_path(content, 'version') as version,
@@ -571,8 +558,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
       const metadataResult = await this.pool.query(metadataSql, [cacheRecord.id]);
       const metadata = metadataResult.rows[0] || {};
 
-      // Get only sellers matching the specified account IDs
-      // This is more efficient than loading all sellers
+      // 指定されたアカウントIDに一致するセラーのみを取得
+      // 全セラーをロードするより効率的
       const accountIdsParam = accountIds.map((id) => id.toString().toLowerCase());
 
       const sellerSql = `
@@ -588,7 +575,18 @@ export class PostgresDatabase implements IDatabaseAdapter {
 
       const sellersResult = await this.pool.query(sellerSql, [cacheRecord.id, accountIdsParam]);
 
-      const matchingSellers = sellersResult.rows.map((row) => row.seller);
+      // 結果処理の強化
+      const matchingSellers = sellersResult.rows.map((row) => {
+        // 文字列の場合はJSONとしてパース
+        if (typeof row.seller === 'string') {
+          try {
+            return JSON.parse(row.seller);
+          } catch {
+            return row.seller;
+          }
+        }
+        return row.seller;
+      });
 
       return {
         domainInfo: {
@@ -598,13 +596,12 @@ export class PostgresDatabase implements IDatabaseAdapter {
           updated_at: cacheRecord.updated_at,
         },
         metadata: {
-          version: metadata.version,
-          contact_email: metadata.contact_email,
+          version: typeof metadata.version === 'string' ? JSON.parse(metadata.version) : metadata.version,
+          contact_email: typeof metadata.contact_email === 'string' ? JSON.parse(metadata.contact_email) : metadata.contact_email,
         },
         matchingSellers,
       };
     } catch (error) {
-      console.error('Error in queryJsonBSpecificSellers:', error);
       return null;
     }
   }

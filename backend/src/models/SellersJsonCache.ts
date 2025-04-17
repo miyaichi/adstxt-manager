@@ -394,63 +394,12 @@ class SellersJsonCacheModel {
         `[SellersJsonCache] Found optimized result for ${normalizedSellerId} in ${normalizedDomain}`
       );
 
-      // PostgreSQLからの結果をより堅牢に処理
-      // 結果のデバッグログを追加
-      logger.info(`[SellersJsonCache] Raw result from DB: ${JSON.stringify({
-        // 注意: PostgreSQL固有の返り値を確認
-        hasMatchingSellersProp: result.matching_sellers !== undefined,
-        hasExplicitSeller: result.seller !== undefined,
-        hasExplicitFound: result.found !== undefined
-      })}`);
-
-      // PostgreSQLアダプタから直接返ってきたセラー情報とfound状態を利用
-      if (result.seller !== undefined && result.found !== undefined) {
-        logger.info(`[SellersJsonCache] Using explicit seller and found from DB result`);
-        return {
-          cacheRecord: result.cacheRecord,
-          metadata: result.metadata,
-          seller: result.seller,
-          found: result.found
-        };
-      }
-
-      // 後方互換性のため、matching_sellersからセラー情報を抽出する処理も維持
-      logger.info(`[SellersJsonCache] Processing matching_sellers from result`);
-      
-      // 文字列からオブジェクトへの変換を保証
-      let parsedSellers: any[] | null = null;
-      
-      if (result.matching_sellers) {
-        try {
-          // 文字列の場合はJSONとしてパース
-          if (typeof result.matching_sellers === 'string') {
-            parsedSellers = JSON.parse(result.matching_sellers);
-          }
-          // 既にオブジェクトの場合はそのまま使用
-          else if (Array.isArray(result.matching_sellers)) {
-            parsedSellers = result.matching_sellers;
-          }
-          // その他の場合、オブジェクトを配列に変換
-          else if (typeof result.matching_sellers === 'object') {
-            parsedSellers = [result.matching_sellers];
-          }
-        } catch (e) {
-          logger.error(`[SellersJsonCache] Error parsing matching_sellers: ${e}`);
-        }
-      }
-      
-      // 有効なセラー情報があるかを確認
-      const hasValidSellers = parsedSellers !== null && 
-                            Array.isArray(parsedSellers) && 
-                            parsedSellers.length > 0;
-                            
-      logger.info(`[SellersJsonCache] Final check: hasValidSellers=${hasValidSellers}, parsedSellers=${parsedSellers ? JSON.stringify(parsedSellers) : 'null'}`);
-      
+      // PostgreSQLアダプタからの結果を直接利用
       return {
         cacheRecord: result.cacheRecord,
         metadata: result.metadata,
-        seller: hasValidSellers && parsedSellers ? parsedSellers[0] : null,
-        found: hasValidSellers
+        seller: result.seller,
+        found: result.found
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);
