@@ -1,6 +1,7 @@
 import {
   Alert,
   Badge,
+  Breadcrumbs,
   Button,
   Card,
   Divider,
@@ -314,6 +315,13 @@ const OptimizerPage: React.FC = () => {
   return (
     <View padding={{ base: '1rem', medium: '2rem' }}>
       <Flex direction="column" gap="2rem">
+        <Breadcrumbs
+          items={[
+            { label: t('common.home', language), href: '/' },
+            { label: t('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }), isCurrent: true },
+          ]}
+        />
+        
         <Heading level={1}>{t('optimizerPage.title', language)}</Heading>
         <Text>{t('optimizerPage.description', language)}</Text>
 
