@@ -383,6 +383,35 @@ export class PostgresDatabase implements IDatabaseAdapter {
     const result = sellerResult.rows[0];
 
     // Return formatted result with metadata and seller information
+    // デバッグログを追加
+    console.log(`[DEBUG] queryJsonBSellerById raw result: ${JSON.stringify({
+      hasMatchingSellers: result.matching_sellers ? 'yes' : 'no',
+      matchingSellersType: result.matching_sellers ? typeof result.matching_sellers : 'undefined',
+      matchingSellersValue: result.matching_sellers ? JSON.stringify(result.matching_sellers) : 'null'
+    })}`);
+    
+    // PostgreSQLのJSONB結果を確実にパース
+    let matchingSellers: any[] | null = null;
+    if (result.matching_sellers) {
+      try {
+        // 文字列の場合はJSONとしてパース
+        if (typeof result.matching_sellers === 'string') {
+          matchingSellers = JSON.parse(result.matching_sellers);
+        } 
+        // 既にオブジェクトの場合はそのまま使用
+        else {
+          matchingSellers = result.matching_sellers as any[];
+        }
+      } catch (e) {
+        console.error(`[ERROR] Failed to parse matching_sellers: ${e}`);
+        matchingSellers = null;
+      }
+    }
+    
+    const hasValidSellers = matchingSellers !== null && 
+                           Array.isArray(matchingSellers) && 
+                           matchingSellers.length > 0;
+    
     return {
       cacheRecord,
       metadata: {
@@ -392,12 +421,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
         identifiers: result.identifiers,
         seller_count: parseInt(result.seller_count || '0', 10),
       },
-      // Extract the first (and should be only) matching seller if any
-      seller:
-        result.matching_sellers && result.matching_sellers.length > 0
-          ? result.matching_sellers[0]
-          : null,
-      found: result.matching_sellers && result.matching_sellers.length > 0,
+      // 適切にパースされたセラー情報を使用
+      seller: hasValidSellers && matchingSellers ? matchingSellers[0] : null,
+      found: hasValidSellers,
     };
   }
 
