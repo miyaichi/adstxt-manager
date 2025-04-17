@@ -55,7 +55,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // The default timeout is 15 seconds
+  timeout: 30000, // Increased timeout to 30 seconds for all API calls (especially for large sellers.json)
 });
 
 // Add request interceptor to update language on each request
@@ -370,7 +370,10 @@ export const sellersJsonApi = {
   // Get only metadata from a domain's sellers.json (new optimized endpoint)
   async getMetadata(domain: string): Promise<ApiResponse<SellersJsonMetadataResponse>> {
     const url = `/sellersJson/${encodeURIComponent(domain)}/metadata`;
-    const response = await api.get<ApiResponse<SellersJsonMetadataResponse>>(url);
+    // Use longer timeout for metadata retrieval from large files
+    const response = await api.get<ApiResponse<SellersJsonMetadataResponse>>(url, {
+      timeout: 30000 // 30 seconds timeout for metadata retrieval
+    });
     return response.data;
   },
 
@@ -383,7 +386,10 @@ export const sellersJsonApi = {
     logger.debug('Fetching seller data:', { domain, sellerId, url });
 
     try {
-      const response = await api.get<ApiResponse<SellersJsonSellerResponse>>(url);
+      // Use longer timeout (45 seconds) for seller lookups in large sellers.json files
+      const response = await api.get<ApiResponse<SellersJsonSellerResponse>>(url, {
+        timeout: 45000  // 45 seconds timeout for large sellers.json files like Google's
+      });
       logger.debug('Seller data response:', response.data);
       return response.data;
     } catch (error) {
