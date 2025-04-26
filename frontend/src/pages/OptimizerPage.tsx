@@ -23,6 +23,7 @@ const OptimizerPage: React.FC = () => {
   const { language } = useApp();
   const [domain, setDomain] = useState<string>('');
   const [optimizationLevel, setOptimizationLevel] = useState<string>('level1');
+  const [fileType, setFileType] = useState<'ads.txt' | 'app-ads.txt'>('ads.txt');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -76,6 +77,11 @@ const OptimizerPage: React.FC = () => {
     setOptimizationLevel(e.target.value);
     resetMessages();
   };
+  
+  const handleFileTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileType(e.target.value as 'ads.txt' | 'app-ads.txt');
+    resetMessages();
+  };
 
   const handleDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -103,8 +109,8 @@ const OptimizerPage: React.FC = () => {
       setCurrentPhase(phases.fetchingAdsTxt);
       setProgressValue(20);
 
-      // Fetch ads.txt from domain
-      const response = await adsTxtApi.getAdsTxtFromDomain(domain, true);
+      // Fetch ads.txt or app-ads.txt from domain
+      const response = await adsTxtApi.getAdsTxtFromDomain(domain, true, fileType);
 
       if (signal?.aborted) {
         console.log('Fetch operation was aborted');
@@ -275,7 +281,7 @@ const OptimizerPage: React.FC = () => {
       const element = document.createElement('a');
       const file = new Blob([optimizedContent], { type: 'text/plain' });
       element.href = URL.createObjectURL(file);
-      element.download = 'optimized_ads.txt';
+      element.download = fileType === 'ads.txt' ? 'optimized_ads.txt' : 'optimized_app-ads.txt';
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -287,11 +293,11 @@ const OptimizerPage: React.FC = () => {
     switch (currentPhase) {
       case phases.fetchingAdsTxt:
         return t('optimizerPage.phase.fetchingAdsTxt', language, {
-          defaultValue: 'Fetching ads.txt from domain...',
+          defaultValue: `Fetching ${fileType} from domain...`,
         });
       case phases.parsingAdsTxt:
         return t('optimizerPage.phase.parsingAdsTxt', language, {
-          defaultValue: 'Parsing ads.txt content...',
+          defaultValue: `Parsing ${fileType} content...`,
         });
       case phases.fetchingSellersJson:
         return t('optimizerPage.phase.fetchingSellersJson', language, {
@@ -340,6 +346,35 @@ const OptimizerPage: React.FC = () => {
               isDisabled={isLoading} // Input field is disabled while loading
               isRequired={true}
             />
+
+            <RadioGroupField
+              label={t('optimizerPage.fileType.label', language, { defaultValue: 'File Type' })}
+              name="fileType"
+              value={fileType}
+              onChange={handleFileTypeChange}
+              isDisabled={isLoading}
+            >
+              <Radio value="ads.txt">
+                <Flex direction="column">
+                  <Text fontWeight="bold">
+                    {t('optimizerPage.fileType.adsTxt.title', language, { defaultValue: 'ads.txt (Websites)' })}
+                  </Text>
+                  <Text fontSize="small">
+                    {t('optimizerPage.fileType.adsTxt.description', language, { defaultValue: 'For web publishers' })}
+                  </Text>
+                </Flex>
+              </Radio>
+              <Radio value="app-ads.txt">
+                <Flex direction="column">
+                  <Text fontWeight="bold">
+                    {t('optimizerPage.fileType.appAdsTxt.title', language, { defaultValue: 'app-ads.txt (Mobile Apps)' })}
+                  </Text>
+                  <Text fontSize="small">
+                    {t('optimizerPage.fileType.appAdsTxt.description', language, { defaultValue: 'For app developers' })}
+                  </Text>
+                </Flex>
+              </Radio>
+            </RadioGroupField>
 
             <RadioGroupField
               label={t('optimizerPage.optimizationLevels.label', language)}

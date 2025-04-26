@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import { DatabaseRecord, IDatabaseAdapter } from '../config/database/index';
 
 export type AdsTxtCacheStatus = 'success' | 'error' | 'not_found' | 'invalid_format';
+export type FileType = 'ads.txt' | 'app-ads.txt';
 
 export interface AdsTxtCache extends DatabaseRecord {
   id: string;
@@ -12,6 +13,7 @@ export interface AdsTxtCache extends DatabaseRecord {
   status: AdsTxtCacheStatus;
   status_code: number | null;
   error_message: string | null;
+  file_type: FileType;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +25,7 @@ export interface AdsTxtCacheDTO {
   status: AdsTxtCacheStatus;
   status_code: number | null;
   error_message: string | null;
+  file_type: FileType;
 }
 
 // Use the exported database instance, which implements IDatabaseAdapter
@@ -32,30 +35,31 @@ class AdsTxtCacheModel {
   private readonly tableName = 'ads_txt_cache';
 
   /**
-   * Get an ads.txt cache entry by domain
+   * Get an ads.txt cache entry by domain and file type
    * @param domain The domain to retrieve
+   * @param fileType The file type ('ads.txt' or 'app-ads.txt'), defaults to 'ads.txt'
    * @returns The cache entry or null if not found
    */
-  async getByDomain(domain: string): Promise<AdsTxtCache | null> {
+  async getByDomain(domain: string, fileType: FileType = 'ads.txt'): Promise<AdsTxtCache | null> {
     try {
       // Ensure domain is properly lowercase for consistent lookup
       const normalizedDomain = domain.toLowerCase();
 
-      logger.info(`[AdsTxtCache] Looking up domain: ${normalizedDomain}`);
+      logger.info(`[AdsTxtCache] Looking up ${fileType} for domain: ${normalizedDomain}`);
 
       // Using custom SQL with the database adapter
       const results = await db.query(this.tableName, {
-        where: { domain: normalizedDomain },
+        where: { domain: normalizedDomain, file_type: fileType },
         order: { field: 'updated_at', direction: 'DESC' },
       });
 
       logger.info(
-        `[AdsTxtCache] Query results for ${normalizedDomain}: ${results.length} records found`
+        `[AdsTxtCache] Query results for ${normalizedDomain} (${fileType}): ${results.length} records found`
       );
 
       return results.length > 0 ? (results[0] as AdsTxtCache) : null;
     } catch (error) {
-      logger.error('Error fetching ads.txt cache:', error);
+      logger.error(`Error fetching ${fileType} cache:`, error);
       throw error;
     }
   }
@@ -76,7 +80,7 @@ class AdsTxtCacheModel {
   }
 
   /**
-   * Save or update an ads.txt cache entry
+   * Save or update an ads.txt or app-ads.txt cache entry
    * @param data The data to save
    * @returns The saved cache entry
    */
@@ -86,14 +90,16 @@ class AdsTxtCacheModel {
 
       // Ensure domain is properly lowercase for consistent storage
       const normalizedDomain = data.domain.toLowerCase();
-      logger.info(`[AdsTxtCache] Saving cache for domain: ${normalizedDomain}`);
+      const fileType = data.file_type || 'ads.txt'; // Default to ads.txt if not specified
+      
+      logger.info(`[AdsTxtCache] Saving ${fileType} cache for domain: ${normalizedDomain}`);
 
-      const existingCache = await this.getByDomain(normalizedDomain);
+      const existingCache = await this.getByDomain(normalizedDomain, fileType);
 
       if (existingCache) {
         // Update existing entry
         logger.info(
-          `[AdsTxtCache] Updating existing cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
+          `[AdsTxtCache] Updating existing ${fileType} cache for domain: ${normalizedDomain}, id: ${existingCache.id}`
         );
         const updatedCache = await db.update(this.tableName, existingCache.id, {
           content: data.content,
@@ -101,18 +107,19 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
+          file_type: fileType,
           updated_at: now,
         });
 
         if (!updatedCache) {
-          throw new Error(`Failed to update ads.txt cache for domain: ${normalizedDomain}`);
+          throw new Error(`Failed to update ${fileType} cache for domain: ${normalizedDomain}`);
         }
 
         return updatedCache as AdsTxtCache;
       } else {
         // Create a new entry with UUID
         const { v4: uuidv4 } = require('uuid');
-        logger.info(`[AdsTxtCache] Creating new cache entry for domain: ${normalizedDomain}`);
+        logger.info(`[AdsTxtCache] Creating new ${fileType} cache entry for domain: ${normalizedDomain}`);
 
         const newEntry: AdsTxtCache = {
           id: uuidv4(),
@@ -122,6 +129,7 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
+          file_type: fileType,
           created_at: now,
           updated_at: now,
         };
@@ -129,7 +137,7 @@ class AdsTxtCacheModel {
         return (await db.insert(this.tableName, newEntry)) as AdsTxtCache;
       }
     } catch (error) {
-      logger.error('Error saving ads.txt cache:', error);
+      logger.error(`Error saving ${data.file_type || 'ads.txt'} cache:`, error);
       throw error;
     }
   }

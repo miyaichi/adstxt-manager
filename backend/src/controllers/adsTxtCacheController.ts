@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
-import AdsTxtCacheModel, { AdsTxtCacheDTO, AdsTxtCacheStatus } from '../models/AdsTxtCache';
+import AdsTxtCacheModel, { AdsTxtCacheDTO, AdsTxtCacheStatus, FileType } from '../models/AdsTxtCache';
 import { logger } from '../utils/logger';
 import i18next from '../i18n';
 import psl from 'psl';
@@ -36,14 +36,17 @@ function extractRootDomain(domain: string): string {
 }
 
 /**
- * Get ads.txt for a domain
- * If the ads.txt is cached and not expired, return the cached version
+ * Get ads.txt or app-ads.txt for a domain
+ * If the file is cached and not expired, return the cached version
  * Otherwise, fetch it from the domain and update the cache
  * @route GET /api/adsTxtCache/domain/:domain
  * @force Query parameter 'force=true' will bypass the cache and fetch a fresh copy
+ * @fileType Query parameter 'fileType=app-ads.txt' to fetch app-ads.txt instead of ads.txt
  */
 export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
   const { domain: rawDomain } = req.params;
+  // Get the file type from query param, default to 'ads.txt'
+  const fileType = (req.query.fileType === 'app-ads.txt' ? 'app-ads.txt' : 'ads.txt') as FileType;
 
   if (!rawDomain) {
     throw new ApiError(400, i18next.t('errors:domain_required'));
@@ -51,18 +54,18 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
 
   // Clean and normalize the domain
   const domain = extractRootDomain(rawDomain).toLowerCase(); // Ensure consistent lowercase
-  logger.info(`[AdsTxtManager] Getting ads.txt for domain: ${domain}`);
-  console.log(`Getting ads.txt for domain: ${domain}`);
+  logger.info(`[AdsTxtManager] Getting ${fileType} for domain: ${domain}`);
+  console.log(`Getting ${fileType} for domain: ${domain}`);
 
-  // Try to get the cached ads.txt
-  const cachedAdsTxt = await AdsTxtCacheModel.getByDomain(domain);
+  // Try to get the cached entry
+  const cachedAdsTxt = await AdsTxtCacheModel.getByDomain(domain, fileType);
 
   // Check for force refresh parameter
   const forceRefresh = req.query.force === 'true';
 
   // If we have a cache and it's not expired and not forced to refresh, return it
   if (cachedAdsTxt && !AdsTxtCacheModel.isCacheExpired(cachedAdsTxt.updated_at) && !forceRefresh) {
-    logger.info(`[AdsTxtManager] Serving cached ads.txt for domain: ${domain}`);
+    logger.info(`[AdsTxtManager] Serving cached ${fileType} for domain: ${domain}`);
     return res.status(200).json({
       success: true,
       data: {
@@ -71,6 +74,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
         url: cachedAdsTxt.url,
         status: cachedAdsTxt.status,
         status_code: cachedAdsTxt.status_code,
+        file_type: cachedAdsTxt.file_type,
         created_at: cachedAdsTxt.created_at,
         updated_at: cachedAdsTxt.updated_at,
       },
@@ -79,15 +83,17 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
 
   // Log if we're forcing a refresh
   if (forceRefresh) {
-    logger.info(`[AdsTxtManager] Force refreshing ads.txt for domain: ${domain}`);
+    logger.info(`[AdsTxtManager] Force refreshing ${fileType} for domain: ${domain}`);
   }
 
-  // Cache is expired or doesn't exist, fetch fresh ads.txt
-  logger.info(`[AdsTxtManager] Fetching ads.txt for domain: ${domain}`);
-  console.log(`Cache expired or not found, fetching fresh ads.txt for: ${domain}`);
+  // Cache is expired or doesn't exist, fetch fresh file
+  logger.info(`[AdsTxtManager] Fetching ${fileType} for domain: ${domain}`);
+  console.log(`Cache expired or not found, fetching fresh ${fileType} for: ${domain}`);
 
-  // Try common URLs for ads.txt
-  const urls = [`https://${domain}/ads.txt`, `https://www.${domain}/ads.txt`];
+  // Try common URLs for ads.txt or app-ads.txt
+  const urls = fileType === 'ads.txt'
+    ? [`https://${domain}/ads.txt`, `https://www.${domain}/ads.txt`]
+    : [`https://${domain}/app-ads.txt`, `https://www.${domain}/app-ads.txt`];
 
   let content: string | null = null;
   let url: string | null = null;
@@ -186,6 +192,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
     status,
     status_code: statusCode,
     error_message: errorMessage,
+    file_type: fileType,
   };
 
   const updatedCache = await AdsTxtCacheModel.saveCache(cacheData);
@@ -200,6 +207,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       status: updatedCache.status,
       status_code: updatedCache.status_code,
       error_message: updatedCache.error_message,
+      file_type: updatedCache.file_type,
       created_at: updatedCache.created_at,
       updated_at: updatedCache.updated_at,
     },

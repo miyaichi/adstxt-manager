@@ -138,6 +138,7 @@ export interface AdsTxtCacheResponse {
   status: 'success' | 'error' | 'not_found' | 'invalid_format';
   status_code: number | null;
   error_message: string | null;
+  file_type?: 'ads.txt' | 'app-ads.txt';
   cached: boolean;
   updated_at: string;
 }

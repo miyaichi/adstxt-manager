@@ -310,13 +310,25 @@ export const adsTxtApi = {
     return response.data;
   },
 
-  // Fetch ads.txt from a domain
+  // Fetch ads.txt or app-ads.txt from a domain
   async getAdsTxtFromDomain(
     domain: string,
-    force: boolean = false
+    force: boolean = false,
+    fileType: 'ads.txt' | 'app-ads.txt' = 'ads.txt'
   ): Promise<ApiResponse<AdsTxtCacheResponse>> {
-    console.log(`Fetching ads.txt from domain: ${domain}${force ? ' (force refresh)' : ''}`);
-    const url = `/adsTxtCache/domain/${encodeURIComponent(domain)}${force ? '?force=true' : ''}`;
+    console.log(`Fetching ${fileType} from domain: ${domain}${force ? ' (force refresh)' : ''}`);
+    let url = `/adsTxtCache/domain/${encodeURIComponent(domain)}`;
+    
+    // Build query parameters
+    const params = [];
+    if (force) params.push('force=true');
+    if (fileType === 'app-ads.txt') params.push('fileType=app-ads.txt');
+    
+    // Add query parameters if any exist
+    if (params.length > 0) {
+      url += `?${params.join('&')}`;
+    }
+    
     const response = await api.get<ApiResponse<AdsTxtCacheResponse>>(url);
     console.log('Response received:', response.data);
     return response.data;
