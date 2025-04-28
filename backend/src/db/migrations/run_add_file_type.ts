@@ -27,7 +27,7 @@ export const runAddFileTypeMigration = async (): Promise<void> => {
       ) as exists`
     );
     
-    const columnExists = columnCheckResult[0]?.exists;
+    const columnExists = columnCheckResult && columnCheckResult[0]?.exists;
 
     logger.info(
       `AdsTxt cache file_type column migration executed successfully. Column exists: ${columnExists}`
