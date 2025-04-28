@@ -1244,8 +1244,8 @@ export const translations = {
         ja: 'クリップボードにコピーしました！',
       },
       optimizeSuccess: {
-        en: 'Ads.txt successfully optimized!',
-        ja: 'Ads.txtの最適化に成功しました！',
+        en: '{{fileType}} successfully optimized!',
+        ja: '{{fileType}}の最適化に成功しました！',
       },
       operationCancelled: {
         en: 'Operation cancelled',

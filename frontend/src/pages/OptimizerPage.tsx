@@ -243,7 +243,7 @@ const OptimizerPage: React.FC = () => {
 
         setCurrentPhase(phases.completed);
         setProgressValue(100);
-        setSuccess(t('optimizerPage.success.optimizeSuccess', language));
+        setSuccess(t('optimizerPage.success.optimizeSuccess', language, { fileType: fileType }));
       } else {
         console.error('Optimization failed:', response.error);
         setError(t('optimizerPage.errors.optimizeFailed', language));
