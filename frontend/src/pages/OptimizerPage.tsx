@@ -294,10 +294,12 @@ const OptimizerPage: React.FC = () => {
       case phases.fetchingAdsTxt:
         return t('optimizerPage.phase.fetchingAdsTxt', language, {
           defaultValue: `Fetching ${fileType} from domain...`,
+          fileType: fileType,
         });
       case phases.parsingAdsTxt:
         return t('optimizerPage.phase.parsingAdsTxt', language, {
           defaultValue: `Parsing ${fileType} content...`,
+          fileType: fileType,
         });
       case phases.fetchingSellersJson:
         return t('optimizerPage.phase.fetchingSellersJson', language, {
@@ -305,7 +307,8 @@ const OptimizerPage: React.FC = () => {
         });
       case phases.optimizingAdsTxt:
         return t('optimizerPage.phase.optimizingAdsTxt', language, {
-          defaultValue: 'Optimizing ads.txt content...',
+          defaultValue: `Optimizing ${fileType} content...`,
+          fileType: fileType,
         });
       case phases.completed:
         return t('optimizerPage.phase.completed', language, {
