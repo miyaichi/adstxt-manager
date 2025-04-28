@@ -20,14 +20,11 @@ export const runAddFileTypeMigration = async (): Promise<void> => {
     await db.execute(sql);
 
     // Check if the table has file_type column after migration
-    const columnCheckResult = await db.execute<{ exists: boolean }>(
-      `SELECT EXISTS (
-        SELECT FROM information_schema.columns 
-        WHERE table_name = 'ads_txt_cache' AND column_name = 'file_type'
-      ) as exists`
+    const columnCheckResult = await db.execute<{ name: string }[]>(
+      `SELECT name FROM pragma_table_info('ads_txt_cache') WHERE name = 'file_type'`
     );
     
-    const columnExists = columnCheckResult && columnCheckResult[0]?.exists;
+    const columnExists = columnCheckResult && columnCheckResult.length > 0;
 
     logger.info(
       `AdsTxt cache file_type column migration executed successfully. Column exists: ${columnExists}`
