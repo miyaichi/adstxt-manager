@@ -1192,20 +1192,20 @@ export const translations = {
     },
     phase: {
       fetchingAdsTxt: {
-        en: 'Fetching {fileType} from domain...',
-        ja: 'ドメインから{fileType}を取得中...',
+        en: 'Fetching {{fileType}} from domain...',
+        ja: 'ドメインから{{fileType}}を取得中...',
       },
       parsingAdsTxt: {
-        en: 'Parsing {fileType} content...',
-        ja: '{fileType}を解析中...',
+        en: 'Parsing {{fileType}} content...',
+        ja: '{{fileType}}を解析中...',
       },
       fetchingSellersJson: {
         en: 'Fetching sellers.json data...',
         ja: 'sellers.jsonデータを取得中...',
       },
       optimizingAdsTxt: {
-        en: 'Optimizing {fileType} content...',
-        ja: '{fileType}を最適化中...',
+        en: 'Optimizing {{fileType}} content...',
+        ja: '{{fileType}}を最適化中...',
       },
       completed: {
         en: 'Optimization completed!',
