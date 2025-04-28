@@ -19,12 +19,14 @@ interface AdsTxtTextInputProps {
   onRecordsSelected: (records: AdsTxtRecord[]) => void;
   onHasInvalidRecords?: (hasInvalid: boolean) => void;
   initialRecords?: AdsTxtRecord[]; // 初期レコードのプロパティを追加
+  fileType?: 'ads.txt' | 'app-ads.txt'; // ファイルタイプのプロパティを追加
 }
 
 const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
   onRecordsSelected,
   onHasInvalidRecords,
   initialRecords,
+  fileType = 'ads.txt',
 }) => {
   const { language } = useApp();
   const [adsTxtContent, setAdsTxtContent] = useState<string>('');
@@ -190,26 +192,47 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
   };
 
   const handlePasteExample = () => {
-    // Add common Ads.txt format example
-    const example = `# Ads.txt example format
+    // Add example based on file type
+    if (fileType === 'ads.txt') {
+      // Standard Ads.txt format example
+      const example = `# Ads.txt example format
 example.com, pub-id123456789, DIRECT, f08c47fec0942fa0
 google.com, pub-1234567891234567, RESELLER, f08c47fec0942fa0
 openx.com, 123456789, RESELLER
 appnexus.com, 1234, DIRECT
 `;
-    setAdsTxtContent(example);
+      setAdsTxtContent(example);
+    } else {
+      // App-Ads.txt format example
+      const example = `# App-Ads.txt example format
+example.com, pub-id123456789, DIRECT, f08c47fec0942fa0
+google.com, pub-1234567891234567, RESELLER, f08c47fec0942fa0
+mopub.com, 123456789, RESELLER
+unity3d.com, 1234, DIRECT
+`;
+      setAdsTxtContent(example);
+    }
     setError(null);
   };
 
   return (
     <Card variation="outlined" padding="1.5rem">
       <Heading level={3} marginBottom="1rem">
-        {t('adsTxt.input.title', language) || 'Ads.txt Input'}
+        {fileType === 'ads.txt' 
+          ? (t('adsTxt.input.title', language) || 'Ads.txt Input')
+          : (t('adsTxt.input.appTitle', language, { defaultValue: 'App-Ads.txt Input' }))
+        }
       </Heading>
 
       <TextAreaField
-        label={t('adsTxt.input.label', language) || 'Ads.txt Content'}
-        placeholder={t('adsTxt.input.placeholder', language) || 'Enter Ads.txt content here...'}
+        label={fileType === 'ads.txt'
+          ? (t('adsTxt.input.label', language) || 'Ads.txt Content')
+          : (t('adsTxt.input.appLabel', language, { defaultValue: 'App-Ads.txt Content' }))
+        }
+        placeholder={fileType === 'ads.txt'
+          ? (t('adsTxt.input.placeholder', language) || 'Enter Ads.txt content here...')
+          : (t('adsTxt.input.appPlaceholder', language, { defaultValue: 'Enter App-Ads.txt content here...' }))
+        }
         rows={10}
         value={adsTxtContent}
         onChange={handleInputChange}

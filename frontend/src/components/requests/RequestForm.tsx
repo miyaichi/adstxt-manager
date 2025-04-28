@@ -48,6 +48,9 @@ const RequestForm: React.FC = () => {
     publisher_name: '',
     publisher_domain: '',
   });
+  
+  // Add file type state
+  const [fileType, setFileType] = useState<'ads.txt' | 'app-ads.txt'>('ads.txt');
 
   const [records, setRecords] = useState<AdsTxtRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,8 +92,9 @@ const RequestForm: React.FC = () => {
     // Start validation
     setIsDomainValidating(true);
     try {
-      const response = await adsTxtApi.getAdsTxtFromDomain(domain);
-      logger.debug('Domain validation response:', response);
+      // Use the selected file type
+      const response = await adsTxtApi.getAdsTxtFromDomain(domain, false, fileType);
+      logger.debug(`${fileType} validation response:`, response);
 
       if (response.success) {
         const { status } = response.data;
@@ -111,7 +115,7 @@ const RequestForm: React.FC = () => {
         );
       }
     } catch (err) {
-      logger.error('Domain validation error:', err);
+      logger.error(`${fileType} validation error:`, err);
       setDomainValidationStatus('error');
       setDomainValidationMessage(t('requests.form.domainValidation.error', language));
     } finally {
@@ -123,9 +127,23 @@ const RequestForm: React.FC = () => {
   const debouncedValidateDomain = useRef(
     debounce((domain: string) => validateDomain(domain), 1000)
   ).current;
+  
+  // Re-validate domain when file type changes
+  useEffect(() => {
+    if (formData.publisher_domain) {
+      validateDomain(formData.publisher_domain);
+    }
+  }, [fileType]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Handle file type radio button
+    if (name === 'fileType') {
+      setFileType(value as 'ads.txt' | 'app-ads.txt');
+      return;
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -309,6 +327,44 @@ const RequestForm: React.FC = () => {
               }
             />
 
+            <Flex direction="column" gap="0.5rem" marginTop="1rem">
+              <Text fontWeight="bold">{t('optimizerPage.fileType.label', language)}</Text>
+              <Flex direction="row" gap="1rem">
+                <Flex direction="row" alignItems="center" gap="0.5rem">
+                  <input
+                    type="radio"
+                    id="fileType-ads-txt"
+                    name="fileType"
+                    value="ads.txt"
+                    checked={fileType === 'ads.txt'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="fileType-ads-txt">
+                    <Text>
+                      <Text fontWeight="bold">{t('optimizerPage.fileType.adsTxt.title', language)}</Text>
+                      <Text fontSize="small">{t('optimizerPage.fileType.adsTxt.description', language)}</Text>
+                    </Text>
+                  </label>
+                </Flex>
+                <Flex direction="row" alignItems="center" gap="0.5rem">
+                  <input
+                    type="radio"
+                    id="fileType-app-ads-txt"
+                    name="fileType"
+                    value="app-ads.txt"
+                    checked={fileType === 'app-ads.txt'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="fileType-app-ads-txt">
+                    <Text>
+                      <Text fontWeight="bold">{t('optimizerPage.fileType.appAdsTxt.title', language)}</Text>
+                      <Text fontSize="small">{t('optimizerPage.fileType.appAdsTxt.description', language)}</Text>
+                    </Text>
+                  </label>
+                </Flex>
+              </Flex>
+            </Flex>
+
             <TextField
               name="requester_email"
               label={t('requests.form.requesterEmail', language)}
@@ -337,6 +393,7 @@ const RequestForm: React.FC = () => {
               <AdsTxtTextInput
                 onRecordsSelected={handleRecordsSelected}
                 onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)}
+                fileType={fileType}
               />
             </TabItem>
 
