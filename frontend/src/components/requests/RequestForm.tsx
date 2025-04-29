@@ -14,7 +14,7 @@ import {
   View,
   useTheme,
 } from '@aws-amplify/ui-react';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adsTxtApi, requestApi } from '../../api';
 import { useApp } from '../../context/AppContext';
