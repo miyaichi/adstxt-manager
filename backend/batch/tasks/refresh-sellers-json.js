@@ -224,8 +224,6 @@ async function saveToCache(cacheRecord) {
       return { success: true, status: cacheRecord.status, id: result[0].id };
     } else {
       // Create new record
-      const now = new Date().toISOString();
-
       // Use the global flag set during database initialization
       const uuidAvailable = global.uuidExtensionAvailable === true;
       logger.debug(`Using ${uuidAvailable ? 'uuid_generate_v4()' : 'md5-based UUID generation'}`);
@@ -234,11 +232,11 @@ async function saveToCache(cacheRecord) {
       const insertQuery = uuidAvailable
         ? `INSERT INTO sellers_json_cache 
            (id, domain, content, status, status_code, error_message, created_at, updated_at) 
-           VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $6)
+           VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING id`
         : `INSERT INTO sellers_json_cache 
            (id, domain, content, status, status_code, error_message, created_at, updated_at) 
-           VALUES (md5(random()::text || clock_timestamp()::text)::uuid, $1, $2, $3, $4, $5, $6, $6)
+           VALUES (md5(random()::text || clock_timestamp()::text)::uuid, $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING id`;
 
       const params = [
@@ -247,7 +245,6 @@ async function saveToCache(cacheRecord) {
         cacheRecord.status,
         cacheRecord.status_code,
         cacheRecord.error_message,
-        now,
       ];
 
       const result = await db.executeQuery(insertQuery, params);
