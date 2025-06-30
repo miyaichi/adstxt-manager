@@ -341,7 +341,7 @@ async function refreshSellersJson(domain) {
  * @param {number} options.age - Process records older than specified days
  */
 async function run(options = {}) {
-  const { limit = 100, age = 1 } = options;
+  const { limit = 500, age = 1 } = options;
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
