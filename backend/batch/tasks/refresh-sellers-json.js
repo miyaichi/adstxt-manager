@@ -345,6 +345,7 @@ async function run(options = {}) {
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
+  const startTime = Date.now(); // Start timer
 
   try {
     logger.info('Starting sellers.json cache refresh task', { limit, age });
@@ -388,11 +389,13 @@ async function run(options = {}) {
     logger.error('Error during sellers.json cache refresh task', { error: error.message });
     throw error;
   } finally {
+    const durationInSeconds = (Date.now() - startTime) / 1000;
     // Log summary statistics
     logger.info('sellers.json cache refresh task summary', {
       processed,
       succeeded,
       failed,
+      duration_seconds: durationInSeconds,
     });
 
     // Close database connection
