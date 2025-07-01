@@ -59,9 +59,6 @@ function getSellersJsonRequestConfig() {
     },
     // Allow significantly more redirects (some sites have many redirects)
     maxRedirects: 10,
-    // Ensure redirects are followed
-    followRedirect: true,
-    followAllRedirects: true,
     // Don't throw on 4xx or 5xx responses
     validateStatus: function (status) {
       return status >= 200 && status < 600; // Accept all responses between 200-599
