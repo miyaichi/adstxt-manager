@@ -50,12 +50,14 @@ function getSellersJsonRequestConfig() {
     maxContentLength: 200 * 1024 * 1024, // 200MB for large files
     decompress: true, // Handle gzipped responses
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       Accept: 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
       Connection: 'keep-alive',
-      'Cache-Control': 'max-age=0',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Site': 'cross-site',
     },
     // Allow significantly more redirects (some sites have many redirects)
     maxRedirects: 10,
