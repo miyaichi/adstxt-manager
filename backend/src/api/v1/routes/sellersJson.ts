@@ -40,76 +40,7 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     domain:
- *                       type: string
- *                       example: google.com
- *                     seller:
- *                       type: object
- *                       nullable: true
- *                       properties:
- *                         seller_id:
- *                           type: string
- *                           example: pub-1234567890123456
- *                         name:
- *                           type: string
- *                           example: Google AdSense
- *                         seller_type:
- *                           type: string
- *                           enum: [PUBLISHER, INTERMEDIARY, BOTH]
- *                           example: PUBLISHER
- *                     found:
- *                       type: boolean
- *                       example: true
- *                     key:
- *                       type: string
- *                       nullable: true
- *                       example: null
- *                     params:
- *                       type: object
- *                       nullable: true
- *                       example: null
- *                     metadata:
- *                       type: object
- *                       properties:
- *                         contact_email:
- *                           type: string
- *                           example: contact@google.com
- *                         contact_address:
- *                           type: string
- *                           example: 1600 Amphitheatre Parkway, Mountain View, CA 94043
- *                         version:
- *                           type: string
- *                           example: "1.0"
- *                         seller_count:
- *                           type: integer
- *                           example: 1
- *                     cache:
- *                       type: object
- *                       properties:
- *                         is_cached:
- *                           type: boolean
- *                           example: true
- *                         last_updated:
- *                           type: string
- *                           format: date-time
- *                           example: "2023-01-01T00:00:00Z"
- *                         status:
- *                           type: string
- *                           enum: [success, not_found, error, invalid_format]
- *                           example: success
- *                         expires_at:
- *                           type: string
- *                           format: date-time
- *                           nullable: true
- *                           example: "2023-01-02T00:00:00Z"
+ *               $ref: '#/components/schemas/SellerResponse'
  *       400:
  *         description: Bad request - Invalid parameters
  *         content:

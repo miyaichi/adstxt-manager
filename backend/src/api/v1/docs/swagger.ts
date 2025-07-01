@@ -40,7 +40,7 @@ const options = {
       },
     ],
   },
-  apis: ['./src/api/v1/routes/*.ts'],
+  apis: ['./src/api/v1/routes/*.ts', './dist/api/v1/routes/*.js'],
 };
 
 export const specs = swaggerJsdoc(options);
