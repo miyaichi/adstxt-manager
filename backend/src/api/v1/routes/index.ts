@@ -1,5 +1,6 @@
 import express from 'express';
 import requestsRoutes from './requests';
+import sellersJsonRoutes from './sellersJson';
 import { validateApiKey } from '../middleware/auth';
 
 const router = express.Router();
@@ -63,5 +64,6 @@ router.get('/status', validateApiKey, (req, res) => {
 
 // Mount sub-routers
 router.use('/requests', requestsRoutes);
+router.use('/sellersjson', sellersJsonRoutes);
 
 export default router;

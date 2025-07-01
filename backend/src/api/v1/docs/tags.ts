@@ -10,4 +10,8 @@ export const tags = [
     name: 'Status',
     description: 'API status and health information',
   },
+  {
+    name: 'SellersJson',
+    description: 'Operations related to sellers.json data retrieval',
+  },
 ];
