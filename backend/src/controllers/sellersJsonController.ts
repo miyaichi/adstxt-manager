@@ -628,6 +628,149 @@ function getExpiryTime(updatedAt: string): string {
 }
 
 /**
+ * Get multiple sellers from a domain's sellers.json in a single request
+ * @route POST /api/v1/sellersjson/:domain/sellers/batch
+ */
+export const batchGetSellers = asyncHandler(async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  let { domain } = req.params;
+  const { sellerIds, force = false } = req.body;
+
+  if (!domain) {
+    throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
+  }
+
+  // Normalize domain to lowercase and trim whitespace
+  domain = domain.toLowerCase().trim();
+
+  // Validate sellerIds array
+  if (!Array.isArray(sellerIds) || sellerIds.length === 0) {
+    throw new ApiError(
+      400,
+      'sellerIds must be a non-empty array',
+      'INVALID_SELLER_IDS',
+      { details: `Received ${Array.isArray(sellerIds) ? sellerIds.length : 'non-array'} seller IDs, expected 1-100` }
+    );
+  }
+
+  if (sellerIds.length > 100) {
+    throw new ApiError(
+      400,
+      'Maximum 100 seller IDs allowed per request',
+      'TOO_MANY_SELLER_IDS',
+      { details: `Received ${sellerIds.length} seller IDs` }
+    );
+  }
+
+  // Validate and normalize seller IDs
+  const normalizedSellerIds = sellerIds.map((id: any) => {
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      throw new ApiError(
+        400,
+        'All seller IDs must be non-empty strings',
+        'INVALID_SELLER_ID_FORMAT',
+        { details: `Invalid seller ID: ${id}` }
+      );
+    }
+    return String(id).trim();
+  });
+
+  // Remove duplicates while preserving order
+  const uniqueSellerIds = [...new Set(normalizedSellerIds)];
+
+  try {
+    logger.info(`Batch lookup for ${uniqueSellerIds.length} sellers from ${domain}`);
+
+    // 共通関数を使用してsellers.jsonデータを取得
+    const forceRefresh = force === true;
+    const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
+
+    // キャッシュ情報をフォーマット
+    const formattedCacheInfo = {
+      is_cached: cacheInfo.isCached,
+      last_updated: cacheInfo.updatedAt,
+      status: cacheInfo.status,
+      expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
+    };
+
+    const results: any[] = [];
+    let foundCount = 0;
+
+    // データがない場合（not_foundやerror）
+    if (!sellersJsonData) {
+      logger.info(`No sellers.json data available for ${domain} (status: ${cacheInfo.status})`);
+      
+      // すべてのsellerIdについて「見つからない」結果を返す
+      for (const sellerId of uniqueSellerIds) {
+        results.push({
+          sellerId,
+          seller: null,
+          found: false,
+          error: 'sellers.json not found for domain',
+          source: cacheInfo.isCached ? 'cache' : 'fresh'
+        });
+      }
+    } else {
+      // データがある場合、各sellerIdを検索
+      const sellers = sellersJsonData.sellers || [];
+      
+      // パフォーマンス向上のため、sellersをMapに変換
+      const sellersMap = new Map();
+      sellers.forEach((seller: any) => {
+        if (seller.seller_id) {
+          sellersMap.set(String(seller.seller_id).trim(), seller);
+        }
+      });
+
+      for (const sellerId of uniqueSellerIds) {
+        const seller = sellersMap.get(sellerId);
+        if (seller) {
+          foundCount++;
+          results.push({
+            sellerId,
+            seller,
+            found: true,
+            source: cacheInfo.isCached ? 'cache' : 'fresh'
+          });
+        } else {
+          results.push({
+            sellerId,
+            seller: null,
+            found: false,
+            error: 'Seller not found in sellers.json',
+            source: cacheInfo.isCached ? 'cache' : 'fresh'
+          });
+        }
+      }
+    }
+
+    // メタデータを抽出
+    const metadata = extractMetadata(sellersJsonData);
+
+    const processingTime = Date.now() - startTime;
+
+    logger.info(`Batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        domain,
+        requested_count: uniqueSellerIds.length,
+        found_count: foundCount,
+        results,
+        metadata,
+        cache: formattedCacheInfo,
+        processing_time_ms: processingTime
+      }
+    });
+
+  } catch (error: any) {
+    logger.error(`Batch lookup error for ${domain}:`, error);
+    return handleSellersJsonError(domain, error);
+  }
+});
+
+/**
  * Get a specific seller from a domain's sellers.json by seller_id
  * @route GET /api/sellersjson/:domain/seller/:sellerId
  */

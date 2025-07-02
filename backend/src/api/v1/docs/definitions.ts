@@ -220,4 +220,187 @@ export const definitions = {
       },
     },
   },
+  BatchSellersResponse: {
+    type: 'object',
+    description: 'Response containing multiple seller results',
+    required: ['success', 'data'],
+    properties: {
+      success: {
+        type: 'boolean',
+        description: 'Indicates if the request was successful',
+        example: true,
+      },
+      data: {
+        type: 'object',
+        description: 'Response data containing seller results',
+        required: ['domain', 'requested_count', 'found_count', 'results'],
+        properties: {
+          domain: {
+            type: 'string',
+            description: 'The domain that was queried',
+            example: 'impact-ad.jp',
+          },
+          requested_count: {
+            type: 'integer',
+            description: 'Total number of seller IDs requested',
+            example: 3,
+            minimum: 1,
+            maximum: 100,
+          },
+          found_count: {
+            type: 'integer',
+            description: 'Number of sellers found in sellers.json',
+            example: 2,
+            minimum: 0,
+          },
+          results: {
+            type: 'array',
+            description: 'Array of seller results, one per requested seller ID',
+            items: {
+              $ref: '#/components/schemas/SellerResult',
+            },
+            minItems: 1,
+            maxItems: 100,
+          },
+          metadata: {
+            $ref: '#/components/schemas/SellersJsonMetadata',
+          },
+          cache: {
+            $ref: '#/components/schemas/CacheInfo',
+          },
+          processing_time_ms: {
+            type: 'integer',
+            description: 'Server-side processing time in milliseconds',
+            example: 45,
+            minimum: 0,
+          },
+        },
+      },
+    },
+  },
+  SellerResult: {
+    type: 'object',
+    description: 'Result for a single seller ID lookup',
+    required: ['sellerId', 'found'],
+    properties: {
+      sellerId: {
+        type: 'string',
+        description: 'The seller ID that was requested',
+        example: '3305',
+      },
+      seller: {
+        $ref: '#/components/schemas/Seller',
+      },
+      found: {
+        type: 'boolean',
+        description: 'Whether the seller was found in sellers.json',
+        example: true,
+      },
+      source: {
+        type: 'string',
+        enum: ['cache', 'fresh'],
+        description: 'Whether the data came from cache or was freshly fetched',
+        example: 'cache',
+      },
+      error: {
+        type: 'string',
+        description: 'Error message if the seller lookup failed',
+        example: 'Seller not found in sellers.json',
+      },
+    },
+  },
+  Seller: {
+    type: 'object',
+    description: 'Seller information from sellers.json',
+    required: ['seller_id', 'seller_type'],
+    properties: {
+      seller_id: {
+        type: 'string',
+        description: 'Unique seller identifier',
+        example: '3305',
+      },
+      name: {
+        type: 'string',
+        description: 'Human-readable name of the seller',
+        example: '株式会社日本経済新聞社',
+      },
+      domain: {
+        type: 'string',
+        description: 'Domain associated with the seller',
+        example: 'nikkei.co.jp',
+      },
+      seller_type: {
+        type: 'string',
+        enum: ['PUBLISHER', 'INTERMEDIARY', 'BOTH'],
+        description: 'Type of seller: PUBLISHER, INTERMEDIARY, or BOTH',
+        example: 'PUBLISHER',
+      },
+    },
+  },
+  SellersJsonMetadata: {
+    type: 'object',
+    description: 'Metadata from the sellers.json file',
+    properties: {
+      version: {
+        type: 'string',
+        description: 'Version of the sellers.json specification',
+        example: '1.0',
+      },
+      contact_email: {
+        type: 'string',
+        format: 'email',
+        description: 'Contact email for the sellers.json file',
+        example: 'y1support@platform-one.co.jp',
+      },
+      contact_address: {
+        type: 'string',
+        description: 'Physical address of the organization',
+        example: 'Platform One Inc, Yebisu Garden Place Tower 33F, 4-20-3 Ebisu, Shibuya-ku Tokyo, Japan',
+      },
+      seller_count: {
+        type: 'integer',
+        description: 'Total number of sellers in the sellers.json file',
+        example: 1316,
+        minimum: 0,
+      },
+      identifiers: {
+        type: 'array',
+        items: {
+          type: 'object',
+        },
+        description: 'Additional identifiers for the organization',
+        nullable: true,
+      },
+    },
+  },
+  CacheInfo: {
+    type: 'object',
+    description: 'Information about cache status',
+    required: ['is_cached', 'status'],
+    properties: {
+      is_cached: {
+        type: 'boolean',
+        description: 'Whether the response came from cache',
+        example: true,
+      },
+      last_updated: {
+        type: 'string',
+        format: 'date-time',
+        description: 'When the cached data was last updated',
+        example: '2025-07-02T21:07:57.127Z',
+      },
+      status: {
+        type: 'string',
+        enum: ['success', 'error', 'stale'],
+        description: 'Cache status',
+        example: 'success',
+      },
+      expires_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'When the cached data expires',
+        example: '2025-07-03T21:07:57.127Z',
+      },
+    },
+  },
 };
