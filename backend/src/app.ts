@@ -22,15 +22,49 @@ const app = express();
 const corsOptions =
   process.env.NODE_ENV === 'production'
     ? {
-        // In production, only allow same-origin requests or specified domains
-        origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+        // In production, allow specified domains and Chrome extension origins
+        origin: (origin, callback) => {
+          // Allow requests with no origin (e.g., mobile apps, Postman)
+          if (!origin) return callback(null, true);
+          
+          // Check if it's a Chrome extension
+          if (origin.startsWith('chrome-extension://')) {
+            return callback(null, true);
+          }
+          
+          // Check allowed origins from environment variable
+          const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+          if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+          
+          // Reject if not allowed
+          return callback(new Error('Not allowed by CORS'));
+        },
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
         optionsSuccessStatus: 204,
       }
     : {
-        // In development, allow localhost origins
-        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        // In development, allow localhost origins and Chrome extensions
+        origin: (origin, callback) => {
+          // Allow requests with no origin (e.g., mobile apps, Postman)
+          if (!origin) return callback(null, true);
+          
+          // Check if it's a Chrome extension
+          if (origin.startsWith('chrome-extension://')) {
+            return callback(null, true);
+          }
+          
+          // Allow localhost origins
+          const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+          if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+          
+          // Reject if not allowed
+          return callback(new Error('Not allowed by CORS'));
+        },
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
         optionsSuccessStatus: 204,
