@@ -33,10 +33,14 @@ const corsOptions =
           }
           
           // Check allowed origins from environment variable
-          const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+          const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : 
+                                process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
           if (allowedOrigins.includes(origin)) {
             return callback(null, true);
           }
+          
+          // Log the rejected origin for debugging
+          console.warn(`CORS rejected origin in production: ${origin}`);
           
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
@@ -57,10 +61,18 @@ const corsOptions =
           }
           
           // Allow localhost origins
-          const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+          const allowedOrigins = [
+            'http://localhost:3000', 
+            'http://127.0.0.1:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3001'
+          ];
           if (allowedOrigins.includes(origin)) {
             return callback(null, true);
           }
+          
+          // Log the rejected origin for debugging
+          console.warn(`CORS rejected origin: ${origin}`);
           
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
