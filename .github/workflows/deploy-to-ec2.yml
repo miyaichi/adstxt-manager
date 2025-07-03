@@ -169,6 +169,7 @@ jobs:
 
           # Additional configurations
           echo "CORS_ORIGIN=${{ vars.CORS_ORIGIN || vars.REACT_APP_API_URL }}" >> backend/.env
+          echo "ALLOWED_CHROME_EXTENSIONS=${{ vars.ALLOWED_CHROME_EXTENSIONS }}" >> backend/.env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
           echo "SMTP_HOST=${{ vars.SMTP_HOST }}" >> backend/.env
           echo "SMTP_PORT=${{ vars.SMTP_PORT || '587' }}" >> backend/.env

@@ -29,7 +29,25 @@ const corsOptions =
 
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
-            return callback(null, true);
+            // Get allowed extension IDs from environment variable
+            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
+              process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
+            
+            if (allowedExtensions.length === 0) {
+              // If no specific extensions are configured, allow all Chrome extensions (less secure)
+              console.warn(`Chrome extension access allowed without ID verification: ${origin}`);
+              return callback(null, true);
+            }
+            
+            // Check if the extension ID is in the allowed list
+            const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
+            if (allowedExtensions.includes(extensionId)) {
+              console.log(`Authorized Chrome extension access: ${extensionId}`);
+              return callback(null, true);
+            } else {
+              console.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
+              return callback(new Error('Chrome extension not authorized'));
+            }
           }
 
           // Check allowed origins from environment variable
@@ -56,7 +74,25 @@ const corsOptions =
 
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
-            return callback(null, true);
+            // Get allowed extension IDs from environment variable
+            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
+              process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
+            
+            if (allowedExtensions.length === 0) {
+              // If no specific extensions are configured, allow all Chrome extensions (less secure)
+              console.warn(`Chrome extension access allowed without ID verification: ${origin}`);
+              return callback(null, true);
+            }
+            
+            // Check if the extension ID is in the allowed list
+            const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
+            if (allowedExtensions.includes(extensionId)) {
+              console.log(`Authorized Chrome extension access: ${extensionId}`);
+              return callback(null, true);
+            } else {
+              console.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
+              return callback(new Error('Chrome extension not authorized'));
+            }
           }
 
           // Allow localhost origins
