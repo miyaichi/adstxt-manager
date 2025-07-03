@@ -396,9 +396,14 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
     const performanceTimer = createPerformanceTimer();
     const { logStep, getElapsedTime } = performanceTimer;
 
+    logger.info(
+      `Starting ads.txt optimization - Content length: ${content.length}, Level: ${level || 'level1'}, Domain: ${publisher_domain || 'none'}`
+    );
+
     // Check the content length - allow large files but set a limit
     if (content.length > MAX_FILE_SIZE) {
       // Refuse files larger than 5MB
+      logger.error(`File too large: ${content.length} bytes (max: ${MAX_FILE_SIZE})`);
       throw new ApiError(400, 'File too large (max 5MB)', 'errors:fileTooLarge');
     }
 
@@ -437,31 +442,40 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
 
     // レベル2の場合はセラーズJSON連携による補完と詳細分類を行う
     if (level === 'level2') {
-      // 1. 最適化されたコンテンツを解析
-      const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
-      logStep('Contents analysis');
+      try {
+        logger.info('Starting level 2 optimization with sellers.json integration');
+        
+        // 1. 最適化されたコンテンツを解析
+        logger.debug('Parsing ads.txt content...');
+        const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
+        logStep('Contents analysis');
+        logger.info(`Parsed ${parsedEntries.length} total entries`);
 
-      // 2. レコードエントリのみを処理
-      const recordEntries = parsedEntries.filter(
-        (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
-      );
-      logStep('Record filtering');
+        // 2. レコードエントリのみを処理
+        logger.debug('Filtering record entries...');
+        const recordEntries = parsedEntries.filter(
+          (entry) => 'domain' in entry && 'account_id' in entry && 'relationship' in entry
+        );
+        logStep('Record filtering');
+        logger.info(`Found ${recordEntries.length} record entries for optimization`);
 
-      // 3. ドメインを抽出し、sellers.json を並列取得
-      const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
-      const domainSellersJsonCache: Map<string, any> = new Map();
+        // 3. ドメインを抽出し、sellers.json を並列取得
+        logger.debug('Importing SellersJsonCacheModel...');
+        const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+        const domainSellersJsonCache: Map<string, any> = new Map();
 
-      // レコードからユニークなドメインを抽出
-      const uniqueDomains = new Set<string>();
-      for (const record of recordEntries) {
-        if ('domain' in record && record.domain) {
-          // Always normalize domain to lowercase for consistent lookups
-          uniqueDomains.add(record.domain.toLowerCase());
+        // レコードからユニークなドメインを抽出
+        logger.debug('Extracting unique domains from records...');
+        const uniqueDomains = new Set<string>();
+        for (const record of recordEntries) {
+          if ('domain' in record && record.domain) {
+            // Always normalize domain to lowercase for consistent lookups
+            uniqueDomains.add(record.domain.toLowerCase());
+          }
         }
-      }
-      logStep('Unique domain extraction');
+        logStep('Unique domain extraction');
 
-      logger.info(`Found ${uniqueDomains.size} unique domains for sellers.json lookup`);
+        logger.info(`Found ${uniqueDomains.size} unique domains for sellers.json lookup: ${Array.from(uniqueDomains).slice(0, 5).join(', ')}${uniqueDomains.size > 5 ? '...' : ''}`);
 
       // 並列処理の最大値をコントロールする関数
       async function fetchWithConcurrencyLimit<T, R>(
@@ -917,6 +931,28 @@ Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounte
           })),
         },
       });
+      } catch (level2Error) {
+        const errorMessage = level2Error instanceof Error ? level2Error.message : String(level2Error);
+        logger.error(`Level 2 optimization failed: ${errorMessage}`);
+        if (level2Error instanceof Error && level2Error.stack) {
+          logger.debug(`Level 2 optimization error stack: ${level2Error.stack}`);
+        }
+        
+        // Fall back to level 1 optimization on error
+        logger.info('Falling back to level 1 optimization due to level 2 error');
+        const totalTime = getElapsedTime();
+        return res.status(200).json({
+          success: true,
+          data: {
+            optimized_content: optimizedContent,
+            original_length: content.length,
+            optimized_length: optimizedContent.length,
+            optimization_level: 'level1',
+            execution_time_ms: totalTime.ms,
+            warning: 'Level 2 optimization failed, returned level 1 result',
+          },
+        });
+      }
     }
 
     // Process as level 1 for unknown optimization levels
