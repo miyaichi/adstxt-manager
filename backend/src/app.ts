@@ -3,14 +3,14 @@ import dotenv from 'dotenv';
 import express from 'express';
 import i18nextMiddleware from 'i18next-http-middleware';
 import swaggerUi from 'swagger-ui-express';
+import { specs } from './api/v1/docs/swagger';
+import apiV1Routes from './api/v1/routes';
 import { initializeDatabase } from './config/database';
 import db from './config/database/index';
 import { isCloudEnvironment } from './config/environment';
 import i18next from './i18n';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import apiRoutes from './routes';
-import apiV1Routes from './api/v1/routes';
-import { specs } from './api/v1/docs/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -26,22 +26,21 @@ const corsOptions =
         origin: (origin, callback) => {
           // Allow requests with no origin (e.g., mobile apps, Postman)
           if (!origin) return callback(null, true);
-          
+
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
             return callback(null, true);
           }
-          
+
           // Check allowed origins from environment variable
-          const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : 
-                                process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+          const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
           if (allowedOrigins.includes(origin)) {
             return callback(null, true);
           }
-          
+
           // Log the rejected origin for debugging
           console.warn(`CORS rejected origin in production: ${origin}`);
-          
+
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
         },
@@ -54,26 +53,26 @@ const corsOptions =
         origin: (origin, callback) => {
           // Allow requests with no origin (e.g., mobile apps, Postman)
           if (!origin) return callback(null, true);
-          
+
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
             return callback(null, true);
           }
-          
+
           // Allow localhost origins
           const allowedOrigins = [
-            'http://localhost:3000', 
+            'http://localhost:3000',
             'http://127.0.0.1:3000',
             'http://localhost:3001',
-            'http://127.0.0.1:3001'
+            'http://127.0.0.1:3001',
           ];
           if (allowedOrigins.includes(origin)) {
             return callback(null, true);
           }
-          
+
           // Log the rejected origin for debugging
           console.warn(`CORS rejected origin: ${origin}`);
-          
+
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
         },

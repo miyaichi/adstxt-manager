@@ -378,7 +378,9 @@ class SellersJsonCacheModel {
           return null;
         }
       } catch (implError) {
-        logger.error(`[SellersJsonCache] Error accessing database implementation for seller lookup: ${implError}`);
+        logger.error(
+          `[SellersJsonCache] Error accessing database implementation for seller lookup: ${implError}`
+        );
         return null;
       }
 
@@ -409,7 +411,7 @@ class SellersJsonCacheModel {
         cacheRecord: result.cacheRecord,
         metadata: result.metadata,
         seller: result.seller,
-        found: result.found
+        found: result.found,
       };
     } catch (error) {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);
@@ -518,10 +520,12 @@ class SellersJsonCacheModel {
               throw new Error('Database implementation not available');
             }
           } catch (implError) {
-            logger.error(`[SellersJsonCache] Error accessing database implementation for summary: ${implError}`);
+            logger.error(
+              `[SellersJsonCache] Error accessing database implementation for summary: ${implError}`
+            );
             throw implError;
           }
-          
+
           if (postgres.queryJsonBSummary) {
             const result = await postgres.queryJsonBSummary(domain);
             if (result) {
@@ -638,7 +642,7 @@ class SellersJsonCacheModel {
     try {
       // Ensure domain is properly lowercase and trimmed for consistent lookup
       const normalizedDomain = domain.toLowerCase().trim();
-      const normalizedSellerIds = sellerIds.map(id => id.toString().trim());
+      const normalizedSellerIds = sellerIds.map((id) => id.toString().trim());
 
       logger.info(
         `[SellersJsonCache] Batch lookup for ${normalizedSellerIds.length} sellers in ${normalizedDomain} with optimization`
@@ -653,8 +657,13 @@ class SellersJsonCacheModel {
       }
 
       // Additional check for cloud environment
-      const isCloudEnv = process.env.NODE_ENV === 'production' || process.env.IS_CLOUD === 'true' || !!process.env.DATABASE_URL;
-      logger.debug(`[SellersJsonCache] Cloud environment: ${isCloudEnv}, DB_PROVIDER: ${dbProvider}`);
+      const isCloudEnv =
+        process.env.NODE_ENV === 'production' ||
+        process.env.IS_CLOUD === 'true' ||
+        !!process.env.DATABASE_URL;
+      logger.debug(
+        `[SellersJsonCache] Cloud environment: ${isCloudEnv}, DB_PROVIDER: ${dbProvider}`
+      );
 
       // Get the PostgreSQL database instance
       let postgres;
@@ -761,14 +770,18 @@ class SellersJsonCacheModel {
           try {
             postgres = (db as any).implementation as any;
             if (!postgres) {
-              logger.warn('[SellersJsonCache] Database implementation not available for specific sellers');
+              logger.warn(
+                '[SellersJsonCache] Database implementation not available for specific sellers'
+              );
               throw new Error('Database implementation not available');
             }
           } catch (implError) {
-            logger.error(`[SellersJsonCache] Error accessing database implementation for specific sellers: ${implError}`);
+            logger.error(
+              `[SellersJsonCache] Error accessing database implementation for specific sellers: ${implError}`
+            );
             throw implError;
           }
-          
+
           if (postgres.queryJsonBSpecificSellers) {
             const result = await postgres.queryJsonBSpecificSellers(
               normalizedDomain,
@@ -785,7 +798,9 @@ class SellersJsonCacheModel {
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${errorMessage}`);
+          logger.error(
+            `[SellersJsonCache] Error in PostgreSQL specific sellers query: ${errorMessage}`
+          );
           // Fall back to normal processing on error
         }
       }

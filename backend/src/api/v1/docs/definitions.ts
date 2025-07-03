@@ -355,7 +355,8 @@ export const definitions = {
       contact_address: {
         type: 'string',
         description: 'Physical address of the organization',
-        example: 'Platform One Inc, Yebisu Garden Place Tower 33F, 4-20-3 Ebisu, Shibuya-ku Tokyo, Japan',
+        example:
+          'Platform One Inc, Yebisu Garden Place Tower 33F, 4-20-3 Ebisu, Shibuya-ku Tokyo, Japan',
       },
       seller_count: {
         type: 'integer',

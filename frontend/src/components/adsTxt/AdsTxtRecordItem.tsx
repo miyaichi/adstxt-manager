@@ -10,29 +10,29 @@ import WarningPopover from '../common/WarningPopover';
 /**
  * 様々な形式のis_confidential値を評価する関数
  * sellers.jsonでは整数値0/1が規格だが、実装によっては文字列や真偽値で格納されている場合がある
- * 
+ *
  * @param value is_confidentialの値
  * @returns true if confidential (value is 1, '1', or true), false otherwise
  */
 function isConfidentialValue(value: any): boolean {
   // nullやundefinedの場合はfalse
   if (value == null) return false;
-  
+
   // 文字列型の場合
   if (typeof value === 'string') {
     return value === '1' || value.toLowerCase() === 'true';
   }
-  
+
   // 数値型の場合
   if (typeof value === 'number') {
     return value === 1;
   }
-  
+
   // 真偽値型の場合
   if (typeof value === 'boolean') {
     return value === true;
   }
-  
+
   // その他の型はfalse
   return false;
 }
@@ -129,17 +129,17 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     let isMounted = true;
     let retryCount = 0;
     const MAX_RETRIES = 1; // 最大1回のリトライを許可
-    
+
     const fetchSellerInfo = () => {
       setLoading(true);
       setError(false);
-      
+
       // Direct API call to backend
       api.sellersJson
         .getSellerById(domain, record.account_id)
         .then((response) => {
           if (!isMounted) return;
-  
+
           if (response.success && response.data) {
             if (response.error || (response.data.key && !response.data.found)) {
               // API succeeded but returned an error
@@ -154,7 +154,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             } else if (!response.data.found) {
               // sellers.json file found but seller_id doesn't exist
               console.warn(`[${requestId}] Seller ID ${record.account_id} not found in ${domain}`);
-  
+
               // パブリッシャードメインでセラーが見つからない場合は直接エラーとする
               setError(true);
               setSellerInfo(null);
@@ -189,26 +189,28 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         })
         .catch((err) => {
           if (!isMounted) return;
-          
+
           console.error(`[${requestId}] Error fetching seller info:`, err);
-          
+
           // タイムアウトエラーの場合のみリトライ (ECONNABORTED はタイムアウトコード)
           const isTimeout = axios.isAxiosError(err) && err.code === 'ECONNABORTED';
-          
+
           if (isTimeout && retryCount < MAX_RETRIES) {
-            console.log(`[${requestId}] Timeout occurred, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+            console.log(
+              `[${requestId}] Timeout occurred, retrying (${retryCount + 1}/${MAX_RETRIES})...`
+            );
             retryCount++;
             // 少し待ってからリトライ
             setTimeout(fetchSellerInfo, 1000);
             return;
           }
-          
+
           setError(true);
           setSellerInfo(null);
           setLoading(false);
         });
     };
-    
+
     // 初回の呼び出し
     fetchSellerInfo();
 

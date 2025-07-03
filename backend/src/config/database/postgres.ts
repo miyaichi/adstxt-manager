@@ -333,7 +333,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
       // 正規化されたドメインとセラーIDを使用
       const normalizedDomain = domain.toLowerCase().trim();
       const normalizedSellerId = sellerId.toString().trim();
-      
+
       // 最適化されたLATERAL JOINを使用したクエリ(相関サブクエリよりも効率的)
       // 1. 早期フィルタリングを最大化
       // 2. コンテント全体の走査を最小限に
@@ -407,43 +407,54 @@ export class PostgresDatabase implements IDatabaseAdapter {
         ) s ON true
         /* EXPLAIN ANALYZE出力を解析して最適化するヒント */
       `;
-      
+
       // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
       let originalTimeout;
       const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
-      
+
       // クライアントを取得して時間のかかるクエリに最適化
       const client = await this.pool.connect();
-      
+
       try {
         // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
         originalTimeout = await client.query('SHOW statement_timeout');
         await client.query(`SET statement_timeout = '${extendedTimeout}'`);
-        
+
         // クエリの実行（準備されたステートメントを使用）
         const result = await client.query({
           text: optimizedSql,
           values: [normalizedDomain, normalizedSellerId],
-          rowMode: 'array'
+          rowMode: 'array',
         });
-        
+
         // 結果がない場合
         if (result.rows.length === 0) {
           return null;
         }
-        
+
         const rowData = result.rows[0];
         const columnNames = [
-          'id', 'domain', 'status', 'status_code', 'error_message', 'created_at', 'updated_at',
-          'version', 'contact_email', 'contact_address', 'identifiers', 'seller_count', 'matching_seller'
+          'id',
+          'domain',
+          'status',
+          'status_code',
+          'error_message',
+          'created_at',
+          'updated_at',
+          'version',
+          'contact_email',
+          'contact_address',
+          'identifiers',
+          'seller_count',
+          'matching_seller',
         ];
-        
+
         // 列名と値をマッピングして結果オブジェクトを構築
         const row: Record<string, any> = {};
         columnNames.forEach((name, i) => {
           row[name] = rowData[i];
         });
-        
+
         // cacheRecordオブジェクトを構築
         const cacheRecord = {
           id: row.id,
@@ -452,13 +463,13 @@ export class PostgresDatabase implements IDatabaseAdapter {
           status_code: row.status_code,
           error_message: row.error_message,
           created_at: row.created_at,
-          updated_at: row.updated_at
+          updated_at: row.updated_at,
         };
-        
+
         // セラー情報を安全に処理
         const matchingSeller = row.matching_seller;
         const hasValidSeller = !!matchingSeller;
-        
+
         // 結果を統一された形式で返す
         return {
           cacheRecord,
@@ -467,8 +478,10 @@ export class PostgresDatabase implements IDatabaseAdapter {
             contact_email: row.contact_email,
             contact_address: row.contact_address,
             identifiers: row.identifiers,
-            seller_count: typeof row.seller_count === 'string' ? 
-              parseInt(row.seller_count, 10) : row.seller_count || 0,
+            seller_count:
+              typeof row.seller_count === 'string'
+                ? parseInt(row.seller_count, 10)
+                : row.seller_count || 0,
           },
           seller: hasValidSeller ? matchingSeller : null,
           found: hasValidSeller,
@@ -476,13 +489,18 @@ export class PostgresDatabase implements IDatabaseAdapter {
       } finally {
         // タイムアウト設定を元に戻す
         if (originalTimeout?.rows?.[0]?.statement_timeout) {
-          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+          await client.query(
+            `SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`
+          );
         }
         // クライアントを解放
         client.release();
       }
     } catch (error) {
-      console.error(`Error in queryJsonBSellerById for domain ${domain}, sellerId ${sellerId}:`, error);
+      console.error(
+        `Error in queryJsonBSellerById for domain ${domain}, sellerId ${sellerId}:`,
+        error
+      );
       // エラー発生時はnullを返して呼び出し元で処理
       return null;
     }
@@ -499,7 +517,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
     try {
       // 正規化されたドメインを使用
       const normalizedDomain = domain.toLowerCase().trim();
-      
+
       // 新しい最適化クエリ: パーティション化スキャン & メモリ効率の向上
       const optimizedSql = `
         -- 指定されたドメインデータを高速に取得
@@ -566,20 +584,20 @@ export class PostgresDatabase implements IDatabaseAdapter {
       // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
       let originalTimeout;
       const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
-      
+
       // クライアントを取得して時間のかかるクエリに最適化
       const client = await this.pool.connect();
-      
+
       try {
         // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
         originalTimeout = await client.query('SHOW statement_timeout');
         await client.query(`SET statement_timeout = '${extendedTimeout}'`);
-        
+
         // クエリの実行（キャッシュを活用するためにプリペアドステートメントを使用）
         const result = await client.query({
           text: optimizedSql,
           values: [normalizedDomain],
-          name: 'get_sellers_json_summary' // ステートメントキャッシュのための名前
+          name: 'get_sellers_json_summary', // ステートメントキャッシュのための名前
         });
 
         if (result.rows.length === 0) {
@@ -587,7 +605,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
         }
 
         const row = result.rows[0];
-        
+
         // 結果を統一された形式で返す
         return {
           domainInfo: {
@@ -608,12 +626,14 @@ export class PostgresDatabase implements IDatabaseAdapter {
             otherCount: this.parseIntSafe(row.other_count, 0),
             confidentialCount: this.parseIntSafe(row.confidential_count, 0),
           },
-          isCacheMiss: false
+          isCacheMiss: false,
         };
       } finally {
         // タイムアウト設定を元に戻す
         if (originalTimeout?.rows?.[0]?.statement_timeout) {
-          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+          await client.query(
+            `SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`
+          );
         }
         // クライアントを解放
         client.release();
@@ -623,7 +643,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
       return null;
     }
   }
-  
+
   /**
    * 整数値の安全なパース
    * @param value パースする値
@@ -656,10 +676,10 @@ export class PostgresDatabase implements IDatabaseAdapter {
     try {
       // 正規化されたドメインを使用
       const normalizedDomain = domain.toLowerCase().trim();
-      
+
       // セラーIDを正規化
-      const normalizedSellerIds = sellerIds.map(id => id.toString().trim());
-      
+      const normalizedSellerIds = sellerIds.map((id) => id.toString().trim());
+
       // 超高速バッチクエリ - 大規模sellers.json対応
       const optimizedBatchSql = `
         WITH 
@@ -746,32 +766,32 @@ export class PostgresDatabase implements IDatabaseAdapter {
         FROM metadata m
         CROSS JOIN batch_results br
       `;
-      
+
       // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
       let originalTimeout;
       const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
-      
+
       // クライアントを取得して時間のかかるクエリに最適化
       const client = await this.pool.connect();
-      
+
       try {
         // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
         originalTimeout = await client.query('SHOW statement_timeout');
         await client.query(`SET statement_timeout = '${extendedTimeout}'`);
-        
+
         // 配列パラメータを使用して準備済みステートメントでクエリを実行
         const result = await client.query({
           text: optimizedBatchSql,
           values: [normalizedDomain, normalizedSellerIds],
-          name: 'batch_get_sellers' // クエリキャッシュのための名前
+          name: 'batch_get_sellers', // クエリキャッシュのための名前
         });
-        
+
         if (result.rows.length === 0) {
           return null;
         }
-        
+
         const row = result.rows[0];
-        
+
         // cacheRecordオブジェクトを構築
         const cacheRecord = {
           id: row.id,
@@ -780,9 +800,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
           status_code: row.status_code,
           error_message: row.error_message,
           created_at: row.created_at,
-          updated_at: row.updated_at
+          updated_at: row.updated_at,
         };
-        
+
         // 安全に結果を処理
         let results: any[] = [];
         if (row.results) {
@@ -808,12 +828,14 @@ export class PostgresDatabase implements IDatabaseAdapter {
             seller_count: this.parseIntSafe(row.seller_count, 0),
           },
           results,
-          foundCount: this.parseIntSafe(row.found_count, 0)
+          foundCount: this.parseIntSafe(row.found_count, 0),
         };
       } finally {
         // タイムアウト設定を元に戻す
         if (originalTimeout?.rows?.[0]?.statement_timeout) {
-          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+          await client.query(
+            `SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`
+          );
         }
         // クライアントを解放
         client.release();
@@ -840,10 +862,10 @@ export class PostgresDatabase implements IDatabaseAdapter {
     try {
       // 正規化されたドメインを使用
       const normalizedDomain = domain.toLowerCase().trim();
-      
+
       // アカウントIDを正規化
-      const normalizedAccountIds = accountIds.map(id => id.toString().toLowerCase().trim());
-      
+      const normalizedAccountIds = accountIds.map((id) => id.toString().toLowerCase().trim());
+
       // 非常に大きなsellers.jsonファイル(例: Google)用に完全に最適化されたクエリ
       // LATERAL JOINとハッシュマッチング技術を使用
       const optimizedSql = `
@@ -903,32 +925,32 @@ export class PostgresDatabase implements IDatabaseAdapter {
         FROM metadata m
         LEFT JOIN matched_sellers s ON true
       `;
-      
+
       // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
       let originalTimeout;
       const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
-      
+
       // クライアントを取得して時間のかかるクエリに最適化
       const client = await this.pool.connect();
-      
+
       try {
         // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
         originalTimeout = await client.query('SHOW statement_timeout');
         await client.query(`SET statement_timeout = '${extendedTimeout}'`);
-        
+
         // 配列パラメータを使用して準備済みステートメントでクエリを実行
         const result = await client.query({
           text: optimizedSql,
           values: [normalizedDomain, normalizedAccountIds],
-          name: 'get_specific_sellers' // クエリキャッシュのための名前
+          name: 'get_specific_sellers', // クエリキャッシュのための名前
         });
-        
+
         if (result.rows.length === 0) {
           return null;
         }
-        
+
         const row = result.rows[0];
-        
+
         // 安全に結果を処理
         let matchingSellers: any[] = [];
         if (row.matching_sellers) {
@@ -936,10 +958,10 @@ export class PostgresDatabase implements IDatabaseAdapter {
             if (typeof row.matching_sellers === 'string') {
               const parsed = JSON.parse(row.matching_sellers);
               if (Array.isArray(parsed)) {
-                matchingSellers = parsed.filter(s => s !== null);
+                matchingSellers = parsed.filter((s) => s !== null);
               }
             } else if (Array.isArray(row.matching_sellers)) {
-              matchingSellers = row.matching_sellers.filter(s => s !== null);
+              matchingSellers = row.matching_sellers.filter((s) => s !== null);
             }
           } catch (e) {
             console.error('Error processing matching_sellers:', e);
@@ -962,7 +984,9 @@ export class PostgresDatabase implements IDatabaseAdapter {
       } finally {
         // タイムアウト設定を元に戻す
         if (originalTimeout?.rows?.[0]?.statement_timeout) {
-          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+          await client.query(
+            `SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`
+          );
         }
         // クライアントを解放
         client.release();

@@ -136,7 +136,7 @@ async function classifyRecords(
 
     const domainGroup = domainAccountGroups.get(normalizedDomain)!;
     domainGroup.accountIds.add(accountId);
-    
+
     if (!domainGroup.records.has(accountId)) {
       domainGroup.records.set(accountId, []);
     }
@@ -144,22 +144,29 @@ async function classifyRecords(
   }
 
   // 3. Batch processing function for each domain with all its accountIds
-  const processDomainBatch = async (domain: string, domainGroup: { accountIds: Set<string>; records: Map<string, any[]> }) => {
+  const processDomainBatch = async (
+    domain: string,
+    domainGroup: { accountIds: Set<string>; records: Map<string, any[]> }
+  ) => {
     const normalizedDomain = domain.toLowerCase().trim();
     const accountIds = Array.from(domainGroup.accountIds);
     const foundCertId = domainCertIds.get(normalizedDomain) || null;
     const sellersJsonData = domainSellersJsonCache.get(normalizedDomain);
 
-    logger.debug(`Processing domain ${normalizedDomain} with ${accountIds.length} unique account IDs`);
+    logger.debug(
+      `Processing domain ${normalizedDomain} with ${accountIds.length} unique account IDs`
+    );
 
     // Handle missing or invalid sellers.json data
     if (!sellersJsonData) {
       logger.debug(`No sellers.json data for ${normalizedDomain}`);
       return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
-    } 
-    
+    }
+
     if (sellersJsonData.__status && sellersJsonData.__status !== 'success') {
-      logger.debug(`Invalid sellers.json status for ${normalizedDomain}: ${sellersJsonData.__status}`);
+      logger.debug(
+        `Invalid sellers.json status for ${normalizedDomain}: ${sellersJsonData.__status}`
+      );
       return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
     }
 
@@ -168,17 +175,30 @@ async function classifyRecords(
       try {
         // **BATCH OPTIMIZATION**: Use batch query for all accountIds at once
         const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
-        
+
         // Try JSONB batch optimization first
         try {
-          const batchResults = await SellersJsonCacheModel.batchGetSellersOptimized(normalizedDomain, accountIds);
+          const batchResults = await SellersJsonCacheModel.batchGetSellersOptimized(
+            normalizedDomain,
+            accountIds
+          );
           if (batchResults) {
-            logger.debug(`Using JSONB batch optimization for ${normalizedDomain} (${batchResults.foundCount}/${accountIds.length} found)`);
-            return processBatchResults(domainGroup.records, batchResults, foundCertId, sellersJsonData);
+            logger.debug(
+              `Using JSONB batch optimization for ${normalizedDomain} (${batchResults.foundCount}/${accountIds.length} found)`
+            );
+            return processBatchResults(
+              domainGroup.records,
+              batchResults,
+              foundCertId,
+              sellersJsonData
+            );
           }
         } catch (batchError) {
-          const errorMessage = batchError instanceof Error ? batchError.message : String(batchError);
-          logger.warn(`JSONB batch optimization failed for ${normalizedDomain}, falling back to standard batch: ${errorMessage}`);
+          const errorMessage =
+            batchError instanceof Error ? batchError.message : String(batchError);
+          logger.warn(
+            `JSONB batch optimization failed for ${normalizedDomain}, falling back to standard batch: ${errorMessage}`
+          );
           // Log additional error details for debugging
           if (batchError instanceof Error && batchError.stack) {
             logger.debug(`JSONB batch optimization stack trace: ${batchError.stack}`);
@@ -192,8 +212,10 @@ async function classifyRecords(
         );
 
         if (specificSellers && specificSellers.matchingSellers) {
-          logger.debug(`Using standard batch query for ${normalizedDomain} (${specificSellers.matchingSellers.length}/${accountIds.length} found)`);
-          
+          logger.debug(
+            `Using standard batch query for ${normalizedDomain} (${specificSellers.matchingSellers.length}/${accountIds.length} found)`
+          );
+
           // Create a map for faster lookup
           const sellersMap = new Map();
           specificSellers.matchingSellers.forEach((seller: any) => {
@@ -202,7 +224,12 @@ async function classifyRecords(
             }
           });
 
-          return processAccountsWithSellersMap(domainGroup.records, sellersMap, foundCertId, sellersJsonData);
+          return processAccountsWithSellersMap(
+            domainGroup.records,
+            sellersMap,
+            foundCertId,
+            sellersJsonData
+          );
         } else {
           logger.debug(`No matching sellers found for ${normalizedDomain}`);
           return processAccountsWithStatus(domainGroup.records, 'missingSellerId', foundCertId);
@@ -214,8 +241,10 @@ async function classifyRecords(
     }
 
     // Legacy processing - search sellers array directly
-    if (!Array.isArray(sellersJsonData.sellers) || 
-        (sellersJsonData.status && sellersJsonData.status !== 'success')) {
+    if (
+      !Array.isArray(sellersJsonData.sellers) ||
+      (sellersJsonData.status && sellersJsonData.status !== 'success')
+    ) {
       return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
     }
 
@@ -227,13 +256,18 @@ async function classifyRecords(
       }
     });
 
-    return processAccountsWithSellersMap(domainGroup.records, sellersMap, foundCertId, sellersJsonData);
+    return processAccountsWithSellersMap(
+      domainGroup.records,
+      sellersMap,
+      foundCertId,
+      sellersJsonData
+    );
   };
 
   // Helper function to process batch results from JSONB optimization
   const processBatchResults = (
-    recordsMap: Map<string, any[]>, 
-    batchResults: any, 
+    recordsMap: Map<string, any[]>,
+    batchResults: any,
     foundCertId: string | null,
     sellersJsonData: any
   ) => {
@@ -254,20 +288,22 @@ async function classifyRecords(
     batchResults.results.forEach((result: any) => {
       const accountId = result.sellerId;
       const records = recordsMap.get(accountId) || [];
-      
+
       let category = 'other';
       if (!result.found) {
         category = 'missingSellerId';
       } else if (result.seller) {
         // Check confidentiality flag
-        if (result.seller.is_confidential === true ||
-            (typeof result.seller.is_confidential === 'number' && result.seller.is_confidential === 1)) {
+        if (
+          result.seller.is_confidential === true ||
+          (typeof result.seller.is_confidential === 'number' && result.seller.is_confidential === 1)
+        ) {
           category = 'confidential';
         }
       }
 
       // Apply results to all records for this accountId
-      records.forEach(record => {
+      records.forEach((record) => {
         const enhancedRecord = { ...record };
         if (certId) enhancedRecord.certification_authority_id = certId;
         results.push({ record: enhancedRecord, category });
@@ -279,8 +315,8 @@ async function classifyRecords(
 
   // Helper function to process accounts with sellers map
   const processAccountsWithSellersMap = (
-    recordsMap: Map<string, any[]>, 
-    sellersMap: Map<string, any>, 
+    recordsMap: Map<string, any[]>,
+    sellersMap: Map<string, any>,
     foundCertId: string | null,
     sellersJsonData: any
   ) => {
@@ -307,7 +343,7 @@ async function classifyRecords(
         category = 'confidential';
       }
 
-      records.forEach(record => {
+      records.forEach((record) => {
         const enhancedRecord = { ...record };
         if (certId) enhancedRecord.certification_authority_id = certId;
         results.push({ record: enhancedRecord, category });
@@ -319,14 +355,14 @@ async function classifyRecords(
 
   // Helper function to process accounts with a fixed status
   const processAccountsWithStatus = (
-    recordsMap: Map<string, any[]>, 
-    status: string, 
+    recordsMap: Map<string, any[]>,
+    status: string,
     foundCertId: string | null
   ) => {
     const results: Array<{ record: any; category: string }> = [];
-    
+
     recordsMap.forEach((records) => {
-      records.forEach(record => {
+      records.forEach((record) => {
         const enhancedRecord = { ...record };
         if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
         results.push({ record: enhancedRecord, category: status });
@@ -444,7 +480,7 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
     if (level === 'level2') {
       try {
         logger.info('Starting level 2 optimization with sellers.json integration');
-        
+
         // 1. 最適化されたコンテンツを解析
         logger.debug('Parsing ads.txt content...');
         const parsedEntries = parseAdsTxtContent(optimizedContent, publisher_domain);
@@ -475,255 +511,259 @@ export const optimizeAdsTxtContent = asyncHandler(async (req: Request, res: Resp
         }
         logStep('Unique domain extraction');
 
-        logger.info(`Found ${uniqueDomains.size} unique domains for sellers.json lookup: ${Array.from(uniqueDomains).slice(0, 5).join(', ')}${uniqueDomains.size > 5 ? '...' : ''}`);
-
-      // 並列処理の最大値をコントロールする関数
-      async function fetchWithConcurrencyLimit<T, R>(
-        items: T[],
-        fetchFn: (item: T) => Promise<R>,
-        concurrencyLimit: number
-      ): Promise<R[]> {
-        const results: R[] = [];
-        const chunks: T[][] = [];
-
-        // itemsを指定した並列数のチャンクに分割
-        for (let i = 0; i < items.length; i += concurrencyLimit) {
-          chunks.push(items.slice(i, i + concurrencyLimit));
-        }
-
         logger.info(
-          `Processing ${items.length} items in ${chunks.length} chunks of max ${concurrencyLimit} each`
+          `Found ${uniqueDomains.size} unique domains for sellers.json lookup: ${Array.from(uniqueDomains).slice(0, 5).join(', ')}${uniqueDomains.size > 5 ? '...' : ''}`
         );
 
-        // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-          logger.debug(`Processing chunk ${i + 1}/${chunks.length} with ${chunk.length} items`);
+        // 並列処理の最大値をコントロールする関数
+        async function fetchWithConcurrencyLimit<T, R>(
+          items: T[],
+          fetchFn: (item: T) => Promise<R>,
+          concurrencyLimit: number
+        ): Promise<R[]> {
+          const results: R[] = [];
+          const chunks: T[][] = [];
 
-          const chunkPromises = chunk.map((item) => fetchFn(item));
-          const chunkResults = await Promise.all(chunkPromises);
-          results.push(...chunkResults);
-
-          // チャンク完了後の統計情報ログ
-          if (chunks.length > 1) {
-            const processed = Math.min(items.length, (i + 1) * concurrencyLimit);
-            const percentComplete = Math.round((processed / items.length) * 100);
-            logger.info(
-              `Completed ${i + 1}/${chunks.length} chunks (${percentComplete}% done, ${processed}/${items.length} items)`
-            );
-
-            // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
-            // チャンクの中間時のみ遅延をいれる (最後のチャンクでは不要)
-            if (i < chunks.length - 1) {
-              await new Promise((resolve) => setTimeout(resolve, 100));
-            }
+          // itemsを指定した並列数のチャンクに分割
+          for (let i = 0; i < items.length; i += concurrencyLimit) {
+            chunks.push(items.slice(i, i + concurrencyLimit));
           }
-        }
 
-        return results;
-      }
-
-      // Log the maximum number of concurrent sellers.json fetches
-      logger.info(`Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`);
-
-      // Function to fetch sellers.json for each domain - memory optimized version
-      const fetchSellersJson = async (domain: string) => {
-        try {
-          // Use normalized domain name
-          const normalizedDomain = domain.toLowerCase().trim();
-          logger.debug(
-            `Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`
+          logger.info(
+            `Processing ${items.length} items in ${chunks.length} chunks of max ${concurrencyLimit} each`
           );
 
-          // メモリ最適化：最初にメタデータだけを取得
-          // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
-          const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+          // チャンク単位で処理を実行（チャンク内は並列、チャンク間は逐次）
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            logger.debug(`Processing chunk ${i + 1}/${chunks.length} with ${chunk.length} items`);
 
-          // メタデータとseller typeの統計情報だけを取得
-          const metadataSummary =
-            await SellersJsonCacheModel.getMetadataAndSummarizedSellers(normalizedDomain);
+            const chunkPromises = chunk.map((item) => fetchFn(item));
+            const chunkResults = await Promise.all(chunkPromises);
+            results.push(...chunkResults);
 
-          if (metadataSummary) {
-            // キャッシュの情報を確認して適切に処理
-            const status = metadataSummary.domainInfo.status;
-            const isCacheMiss = metadataSummary.isCacheMiss;
-
-            // キャッシュデータをメモリに保持 (not_found や error でも保存)
-            domainSellersJsonCache.set(normalizedDomain, {
-              // 完全なsellers配列の代わりに必要な情報だけ保持
-              __metadata: metadataSummary.metadata,
-              __summary: metadataSummary.sellersSummary,
-              __domainInfo: metadataSummary.domainInfo,
-              __status: status,
-            });
-
-            // キャッシュミスでない場合はステータスに関わらず使用する
-            if (!isCacheMiss) {
-              const description =
-                status === 'success'
-                  ? `with ${metadataSummary.metadata.seller_count} sellers, ${metadataSummary.sellersSummary.confidentialCount} confidential`
-                  : `with status '${status}'`;
-
-              logger.debug(
-                `Using memory-optimized cache for ${normalizedDomain} ${description} (updated: ${metadataSummary.domainInfo.updated_at})`
+            // チャンク完了後の統計情報ログ
+            if (chunks.length > 1) {
+              const processed = Math.min(items.length, (i + 1) * concurrencyLimit);
+              const percentComplete = Math.round((processed / items.length) * 100);
+              logger.info(
+                `Completed ${i + 1}/${chunks.length} chunks (${percentComplete}% done, ${processed}/${items.length} items)`
               );
 
-              return {
-                domain: normalizedDomain,
-                success: true,
-                fromCache: true,
-                memoryOptimized: true,
-                status: status,
-              };
+              // オプション: チャンク間に短い遅延を入れることでサーバー負荷をさらに分散
+              // チャンクの中間時のみ遅延をいれる (最後のチャンクでは不要)
+              if (i < chunks.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
             }
           }
 
-          // キャッシュミスの場合のみ従来の方法で取得を試みる
-          logger.debug(`Cache miss for ${normalizedDomain}, falling back to regular method`);
-          const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
-            normalizedDomain,
-            false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
-          );
+          return results;
+        }
 
-          if (fetchedData) {
-            domainSellersJsonCache.set(normalizedDomain, fetchedData);
+        // Log the maximum number of concurrent sellers.json fetches
+        logger.info(
+          `Using concurrency limit of ${MAX_CONCURRENT_FETCHES} for sellers.json fetches`
+        );
+
+        // Function to fetch sellers.json for each domain - memory optimized version
+        const fetchSellersJson = async (domain: string) => {
+          try {
+            // Use normalized domain name
+            const normalizedDomain = domain.toLowerCase().trim();
             logger.debug(
-              `Found sellers.json data for ${normalizedDomain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
+              `Looking up sellers.json for domain (memory-optimized): ${normalizedDomain}`
             );
-          } else {
-            logger.debug(
-              `No valid sellers.json data available for ${normalizedDomain} (status: ${cacheInfo.status})`
+
+            // メモリ最適化：最初にメタデータだけを取得
+            // これにより全体のsellers.jsonデータをメモリに読み込まずに情報を取得
+            const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
+
+            // メタデータとseller typeの統計情報だけを取得
+            const metadataSummary =
+              await SellersJsonCacheModel.getMetadataAndSummarizedSellers(normalizedDomain);
+
+            if (metadataSummary) {
+              // キャッシュの情報を確認して適切に処理
+              const status = metadataSummary.domainInfo.status;
+              const isCacheMiss = metadataSummary.isCacheMiss;
+
+              // キャッシュデータをメモリに保持 (not_found や error でも保存)
+              domainSellersJsonCache.set(normalizedDomain, {
+                // 完全なsellers配列の代わりに必要な情報だけ保持
+                __metadata: metadataSummary.metadata,
+                __summary: metadataSummary.sellersSummary,
+                __domainInfo: metadataSummary.domainInfo,
+                __status: status,
+              });
+
+              // キャッシュミスでない場合はステータスに関わらず使用する
+              if (!isCacheMiss) {
+                const description =
+                  status === 'success'
+                    ? `with ${metadataSummary.metadata.seller_count} sellers, ${metadataSummary.sellersSummary.confidentialCount} confidential`
+                    : `with status '${status}'`;
+
+                logger.debug(
+                  `Using memory-optimized cache for ${normalizedDomain} ${description} (updated: ${metadataSummary.domainInfo.updated_at})`
+                );
+
+                return {
+                  domain: normalizedDomain,
+                  success: true,
+                  fromCache: true,
+                  memoryOptimized: true,
+                  status: status,
+                };
+              }
+            }
+
+            // キャッシュミスの場合のみ従来の方法で取得を試みる
+            logger.debug(`Cache miss for ${normalizedDomain}, falling back to regular method`);
+            const { sellersJsonData: fetchedData, cacheInfo } = await fetchSellersJsonWithCache(
+              normalizedDomain,
+              false // forceRefreshはfalseのまま（期限切れの場合のみ取得）
             );
+
+            if (fetchedData) {
+              domainSellersJsonCache.set(normalizedDomain, fetchedData);
+              logger.debug(
+                `Found sellers.json data for ${normalizedDomain} in cache (status: ${cacheInfo.status}, updated: ${cacheInfo.updatedAt})`
+              );
+            } else {
+              logger.debug(
+                `No valid sellers.json data available for ${normalizedDomain} (status: ${cacheInfo.status})`
+              );
+            }
+
+            return {
+              domain: normalizedDomain,
+              success: true,
+              fromCache: cacheInfo.isCached,
+              status: cacheInfo.status,
+            };
+          } catch (error) {
+            logger.error(`Error retrieving sellers.json for ${domain}:`, error);
+            return { domain, success: false, error, status: 'error' };
+          }
+        };
+
+        // 統計情報とデバッグ用の収集オブジェクト
+        const stats = {
+          uniqueDomains: uniqueDomains.size,
+          uniqueAccountIds: 0,
+          processingStart: Date.now(),
+          cacheHits: 0,
+          cacheMisses: 0,
+          memoryOptimized: 0,
+          failedRequests: 0,
+          duplicateRequests: 0, // 重複リクエストの数
+          processedDomains: new Set<string>(), // 処理済みドメインの追跡
+          statusCounts: {
+            success: 0,
+            not_found: 0,
+            error: 0,
+            invalid_format: 0,
+            pending: 0,
+            unknown: 0,
+          },
+          inProgressFetches: new Map<string, Promise<any>>(), // 実行中のfetchを追跡
+        };
+
+        // ステップ1: まずaccountIdの一覧を取得（重複を除く）
+        // メモリ効率のためには、あとでSeller ID別の検索を最適化するために必要
+        const uniqueAccountIds = new Set<string>();
+        for (const record of recordEntries) {
+          if ('account_id' in record && record.account_id) {
+            uniqueAccountIds.add(record.account_id.toString().toLowerCase());
+          }
+        }
+        stats.uniqueAccountIds = uniqueAccountIds.size;
+
+        // ログレベルはdebugに設定
+        logger.debug(`Found ${stats.uniqueAccountIds} unique account IDs in ads.txt records`);
+
+        // 並列フェッチを効率化するカスタム関数（実行中のPromiseを再利用）
+        const optimizedFetchWithCache = async (domain: string) => {
+          // 正規化したドメイン名
+          const normalizedDomain = domain.toLowerCase().trim();
+
+          // ドメインを処理済みとして記録
+          stats.processedDomains.add(normalizedDomain);
+
+          // すでに実行中のリクエストがあれば再利用
+          if (stats.inProgressFetches.has(normalizedDomain)) {
+            logger.debug(`Reusing in-progress fetch for ${normalizedDomain}`);
+            stats.duplicateRequests++;
+            return stats.inProgressFetches.get(normalizedDomain);
           }
 
-          return {
-            domain: normalizedDomain,
-            success: true,
-            fromCache: cacheInfo.isCached,
-            status: cacheInfo.status,
-          };
-        } catch (error) {
-          logger.error(`Error retrieving sellers.json for ${domain}:`, error);
-          return { domain, success: false, error, status: 'error' };
-        }
-      };
+          // 新しいfetchを作成して追跡
+          const fetchPromise = fetchSellersJson(domain).then((result) => {
+            // 完了したらマップから削除
+            stats.inProgressFetches.delete(normalizedDomain);
 
-      // 統計情報とデバッグ用の収集オブジェクト
-      const stats = {
-        uniqueDomains: uniqueDomains.size,
-        uniqueAccountIds: 0,
-        processingStart: Date.now(),
-        cacheHits: 0,
-        cacheMisses: 0,
-        memoryOptimized: 0,
-        failedRequests: 0,
-        duplicateRequests: 0, // 重複リクエストの数
-        processedDomains: new Set<string>(), // 処理済みドメインの追跡
-        statusCounts: {
-          success: 0,
-          not_found: 0,
-          error: 0,
-          invalid_format: 0,
-          pending: 0,
-          unknown: 0,
-        },
-        inProgressFetches: new Map<string, Promise<any>>(), // 実行中のfetchを追跡
-      };
-
-      // ステップ1: まずaccountIdの一覧を取得（重複を除く）
-      // メモリ効率のためには、あとでSeller ID別の検索を最適化するために必要
-      const uniqueAccountIds = new Set<string>();
-      for (const record of recordEntries) {
-        if ('account_id' in record && record.account_id) {
-          uniqueAccountIds.add(record.account_id.toString().toLowerCase());
-        }
-      }
-      stats.uniqueAccountIds = uniqueAccountIds.size;
-
-      // ログレベルはdebugに設定
-      logger.debug(`Found ${stats.uniqueAccountIds} unique account IDs in ads.txt records`);
-
-      // 並列フェッチを効率化するカスタム関数（実行中のPromiseを再利用）
-      const optimizedFetchWithCache = async (domain: string) => {
-        // 正規化したドメイン名
-        const normalizedDomain = domain.toLowerCase().trim();
-
-        // ドメインを処理済みとして記録
-        stats.processedDomains.add(normalizedDomain);
-
-        // すでに実行中のリクエストがあれば再利用
-        if (stats.inProgressFetches.has(normalizedDomain)) {
-          logger.debug(`Reusing in-progress fetch for ${normalizedDomain}`);
-          stats.duplicateRequests++;
-          return stats.inProgressFetches.get(normalizedDomain);
-        }
-
-        // 新しいfetchを作成して追跡
-        const fetchPromise = fetchSellersJson(domain).then((result) => {
-          // 完了したらマップから削除
-          stats.inProgressFetches.delete(normalizedDomain);
-
-          // 統計情報を更新
-          if (result.success) {
-            if (result.fromCache) {
-              stats.cacheHits++;
-              if (result.status) {
-                stats.statusCounts[result.status]++;
+            // 統計情報を更新
+            if (result.success) {
+              if (result.fromCache) {
+                stats.cacheHits++;
+                if (result.status) {
+                  stats.statusCounts[result.status]++;
+                } else {
+                  // ステータスが未定義の場合は未知として集計
+                  stats.statusCounts.unknown++;
+                }
               } else {
-                // ステータスが未定義の場合は未知として集計
-                stats.statusCounts.unknown++;
+                stats.cacheMisses++;
+                if (result.status) {
+                  stats.statusCounts[result.status]++;
+                }
+              }
+
+              if (result.memoryOptimized) {
+                stats.memoryOptimized++;
               }
             } else {
-              stats.cacheMisses++;
-              if (result.status) {
-                stats.statusCounts[result.status]++;
-              }
+              // 取得に失敗した場合
+              stats.failedRequests++;
+              stats.statusCounts.error++;
             }
 
-            if (result.memoryOptimized) {
-              stats.memoryOptimized++;
-            }
-          } else {
-            // 取得に失敗した場合
-            stats.failedRequests++;
-            stats.statusCounts.error++;
-          }
+            return result;
+          });
 
-          return result;
-        });
+          // マップに追加
+          stats.inProgressFetches.set(normalizedDomain, fetchPromise);
+          return fetchPromise;
+        };
 
-        // マップに追加
-        stats.inProgressFetches.set(normalizedDomain, fetchPromise);
-        return fetchPromise;
-      };
+        // ステップ2: ドメインごとに並列処理を制限してsellers.jsonのメタデータ取得
+        logger.debug(
+          `Starting memory-optimized sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`
+        );
 
-      // ステップ2: ドメインごとに並列処理を制限してsellers.jsonのメタデータ取得
-      logger.debug(
-        `Starting memory-optimized sellers.json lookup with concurrency limit of ${MAX_CONCURRENT_FETCHES}`
-      );
+        const fetchResults = await fetchWithConcurrencyLimit(
+          Array.from(uniqueDomains),
+          optimizedFetchWithCache, // 最適化されたフェッチ関数を使用
+          MAX_CONCURRENT_FETCHES
+        );
+        logStep('sellers.json retrieval complete');
 
-      const fetchResults = await fetchWithConcurrencyLimit(
-        Array.from(uniqueDomains),
-        optimizedFetchWithCache, // 最適化されたフェッチ関数を使用
-        MAX_CONCURRENT_FETCHES
-      );
-      logStep('sellers.json retrieval complete');
+        // 処理完了時間を記録
+        const processingTimeMs = Date.now() - stats.processingStart;
 
-      // 処理完了時間を記録
-      const processingTimeMs = Date.now() - stats.processingStart;
+        // 処理済みドメイン数と不一致があれば詳細を調査
+        const processedDomainsCount = stats.processedDomains.size;
+        const unaccountedDomains =
+          stats.uniqueDomains - (stats.cacheHits + stats.cacheMisses + stats.failedRequests);
+        const isDomainCountMismatch = processedDomainsCount !== stats.uniqueDomains;
 
-      // 処理済みドメイン数と不一致があれば詳細を調査
-      const processedDomainsCount = stats.processedDomains.size;
-      const unaccountedDomains =
-        stats.uniqueDomains - (stats.cacheHits + stats.cacheMisses + stats.failedRequests);
-      const isDomainCountMismatch = processedDomainsCount !== stats.uniqueDomains;
+        // 検証ステップ: 重複リクエスト数と未カウントドメイン数が一致するか確認
+        const duplicatesMatchUnaccounted = stats.duplicateRequests === unaccountedDomains;
 
-      // 検証ステップ: 重複リクエスト数と未カウントドメイン数が一致するか確認
-      const duplicatesMatchUnaccounted = stats.duplicateRequests === unaccountedDomains;
-
-      // 結果サマリーをログに出力
-      logger.info(
-        `
+        // 結果サマリーをログに出力
+        logger.info(
+          `
 ------- Sellers.json Processing Summary -------
 Timing: ${(processingTimeMs / 1000).toFixed(2)}s (${processingTimeMs}ms)
 Domains: ${stats.uniqueDomains} unique domains processed
@@ -747,197 +787,198 @@ Verification: Hits(${stats.cacheHits}) + Misses(${stats.cacheMisses}) + Failed($
 Duplicate check: ${duplicatesMatchUnaccounted ? '✓ Duplicates match unaccounted domains' : "✗ Duplicates don't match unaccounted domains"}
 ----------------------------------------------
       `.trim()
-      );
+        );
 
-      // 不一致があり、詳細ログが必要な場合
-      if (isDomainCountMismatch || unaccountedDomains > 0) {
-        if (duplicatesMatchUnaccounted) {
-          logger.info(
-            `Mismatch explained: ${unaccountedDomains} domains are duplicates and correctly tracked as duplicateRequests.`
-          );
-        } else {
-          logger.warn(
-            `Domain count mismatch detected. This could indicate tracking issues in the code.`
-          );
-          logger.warn(`- Unique domains found: ${stats.uniqueDomains}`);
-          logger.warn(`- Domains tracked as processed: ${processedDomainsCount}`);
-          logger.warn(
-            `- Domains with result status: ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}`
-          );
-          logger.warn(`- Duplicate requests detected: ${stats.duplicateRequests}`);
-          logger.warn(`- Unaccounted for domains: ${unaccountedDomains}`);
+        // 不一致があり、詳細ログが必要な場合
+        if (isDomainCountMismatch || unaccountedDomains > 0) {
+          if (duplicatesMatchUnaccounted) {
+            logger.info(
+              `Mismatch explained: ${unaccountedDomains} domains are duplicates and correctly tracked as duplicateRequests.`
+            );
+          } else {
+            logger.warn(
+              `Domain count mismatch detected. This could indicate tracking issues in the code.`
+            );
+            logger.warn(`- Unique domains found: ${stats.uniqueDomains}`);
+            logger.warn(`- Domains tracked as processed: ${processedDomainsCount}`);
+            logger.warn(
+              `- Domains with result status: ${stats.cacheHits + stats.cacheMisses + stats.failedRequests}`
+            );
+            logger.warn(`- Duplicate requests detected: ${stats.duplicateRequests}`);
+            logger.warn(`- Unaccounted for domains: ${unaccountedDomains}`);
+          }
         }
-      }
 
-      // Step 3: Classify and enhance records
+        // Step 3: Classify and enhance records
 
-      // Process flow overview:
-      // 1. For level 2 optimization, we attempt to fetch sellers.json for all domains listed in ads.txt
-      // 2. If a record exists in sellers_json_cache (regardless of status) and is not expired, we use that information
-      // 3. If the record doesn't exist or is expired, we fetch a new sellers.json
+        // Process flow overview:
+        // 1. For level 2 optimization, we attempt to fetch sellers.json for all domains listed in ads.txt
+        // 2. If a record exists in sellers_json_cache (regardless of status) and is not expired, we use that information
+        // 3. If the record doesn't exist or is expired, we fetch a new sellers.json
 
-      // Start record classification process
-      logStep('Start classification');
+        // Start record classification process
+        logStep('Start classification');
 
-      // Call the classification function to execute the process
-      const {
-        enhancedRecords,
-        otherRecords,
-        confidentialRecords,
-        missingSellerIdRecords,
-        noSellerJsonRecords,
-      } = await classifyRecords(recordEntries, domainSellersJsonCache);
+        // Call the classification function to execute the process
+        const {
+          enhancedRecords,
+          otherRecords,
+          confidentialRecords,
+          missingSellerIdRecords,
+          noSellerJsonRecords,
+        } = await classifyRecords(recordEntries, domainSellersJsonCache);
 
-      // Sort records within each category (domain → relationship)
-      const sortRecords = (records: any[]) => {
-        return records.sort((a, b) => {
-          // Sort by domain first
-          const domainComparison = a.domain.localeCompare(b.domain);
-          if (domainComparison !== 0) return domainComparison;
+        // Sort records within each category (domain → relationship)
+        const sortRecords = (records: any[]) => {
+          return records.sort((a, b) => {
+            // Sort by domain first
+            const domainComparison = a.domain.localeCompare(b.domain);
+            if (domainComparison !== 0) return domainComparison;
 
-          // For same domain, put DIRECT before RESELLER
-          if (a.relationship === 'DIRECT' && b.relationship === 'RESELLER') return -1;
-          if (a.relationship === 'RESELLER' && b.relationship === 'DIRECT') return 1;
+            // For same domain, put DIRECT before RESELLER
+            if (a.relationship === 'DIRECT' && b.relationship === 'RESELLER') return -1;
+            if (a.relationship === 'RESELLER' && b.relationship === 'DIRECT') return 1;
 
-          // Finally sort by account ID
-          return a.account_id.localeCompare(b.account_id);
-        });
-      };
-
-      // Sort records in all categories
-      const sortedOtherRecords = sortRecords(otherRecords);
-      const sortedConfidentialRecords = sortRecords(confidentialRecords);
-      const sortedMissingSellerIdRecords = sortRecords(missingSellerIdRecords);
-      const sortedNoSellerJsonRecords = sortRecords(noSellerJsonRecords);
-
-      logStep('Classification complete');
-
-      // ステップ4: 新しい最適化されたコンテンツを作成
-      // 変数と余分な行を取得
-      const variableEntries = parsedEntries.filter((entry) => 'variable_type' in entry);
-
-      // 最終的なコンテンツを構築
-      let enhancedContent = '';
-
-      // 変数セクションを先に追加
-      if (variableEntries.length > 0) {
-        const variablesByType = variableEntries.reduce((acc: any, entry: any) => {
-          const type = entry.variable_type;
-          if (!acc[type]) acc[type] = [];
-          acc[type].push(entry);
-          return acc;
-        }, {});
-
-        Object.keys(variablesByType)
-          .sort()
-          .forEach((type) => {
-            enhancedContent += `# ${type} Variables\n`;
-            variablesByType[type].forEach((variable: any) => {
-              enhancedContent += `${variable.variable_type}=${variable.value}\n`;
-            });
-            enhancedContent += '\n';
+            // Finally sort by account ID
+            return a.account_id.localeCompare(b.account_id);
           });
-      }
+        };
 
-      // 他のセクションに適切なヘッダーとコンテンツを追加
-      enhancedContent += '# Advertising System Records\n';
+        // Sort records in all categories
+        const sortedOtherRecords = sortRecords(otherRecords);
+        const sortedConfidentialRecords = sortRecords(confidentialRecords);
+        const sortedMissingSellerIdRecords = sortRecords(missingSellerIdRecords);
+        const sortedNoSellerJsonRecords = sortRecords(noSellerJsonRecords);
 
-      // 分類1: その他
-      sortedOtherRecords.forEach((record) => {
-        let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-        if (record.certification_authority_id) {
-          line += `, ${record.certification_authority_id}`;
+        logStep('Classification complete');
+
+        // ステップ4: 新しい最適化されたコンテンツを作成
+        // 変数と余分な行を取得
+        const variableEntries = parsedEntries.filter((entry) => 'variable_type' in entry);
+
+        // 最終的なコンテンツを構築
+        let enhancedContent = '';
+
+        // 変数セクションを先に追加
+        if (variableEntries.length > 0) {
+          const variablesByType = variableEntries.reduce((acc: any, entry: any) => {
+            const type = entry.variable_type;
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(entry);
+            return acc;
+          }, {});
+
+          Object.keys(variablesByType)
+            .sort()
+            .forEach((type) => {
+              enhancedContent += `# ${type} Variables\n`;
+              variablesByType[type].forEach((variable: any) => {
+                enhancedContent += `${variable.variable_type}=${variable.value}\n`;
+              });
+              enhancedContent += '\n';
+            });
         }
-        enhancedContent += line + '\n';
-      });
 
-      // 分類2: 機密性のあるレコード
-      if (sortedConfidentialRecords.length > 0) {
-        enhancedContent += '\n# Confidential Sellers\n';
-        sortedConfidentialRecords.forEach((record) => {
+        // 他のセクションに適切なヘッダーとコンテンツを追加
+        enhancedContent += '# Advertising System Records\n';
+
+        // 分類1: その他
+        sortedOtherRecords.forEach((record) => {
           let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
           if (record.certification_authority_id) {
             line += `, ${record.certification_authority_id}`;
           }
           enhancedContent += line + '\n';
         });
-      }
 
-      // 分類3: sellers.jsonに記載のないレコード
-      if (sortedMissingSellerIdRecords.length > 0) {
-        enhancedContent += '\n# Records Not Found in Sellers.json\n';
-        sortedMissingSellerIdRecords.forEach((record) => {
-          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-          if (record.certification_authority_id) {
-            line += `, ${record.certification_authority_id}`;
-          }
-          enhancedContent += line + '\n';
+        // 分類2: 機密性のあるレコード
+        if (sortedConfidentialRecords.length > 0) {
+          enhancedContent += '\n# Confidential Sellers\n';
+          sortedConfidentialRecords.forEach((record) => {
+            let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+            if (record.certification_authority_id) {
+              line += `, ${record.certification_authority_id}`;
+            }
+            enhancedContent += line + '\n';
+          });
+        }
+
+        // 分類3: sellers.jsonに記載のないレコード
+        if (sortedMissingSellerIdRecords.length > 0) {
+          enhancedContent += '\n# Records Not Found in Sellers.json\n';
+          sortedMissingSellerIdRecords.forEach((record) => {
+            let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+            if (record.certification_authority_id) {
+              line += `, ${record.certification_authority_id}`;
+            }
+            enhancedContent += line + '\n';
+          });
+        }
+
+        // 分類4: sellers.jsonが提供されていない広告システム
+        if (sortedNoSellerJsonRecords.length > 0) {
+          enhancedContent += '\n# Systems Without Sellers.json\n';
+          sortedNoSellerJsonRecords.forEach((record) => {
+            let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+            if (record.certification_authority_id) {
+              line += `, ${record.certification_authority_id}`;
+            }
+            enhancedContent += line + '\n';
+          });
+        }
+
+        logStep('Final content generation');
+
+        // Final timing measurement
+        const totalTime = getElapsedTime();
+
+        logger.info(
+          `Level 2 optimization complete. Result length: ${enhancedContent.length} characters. Total time: ${totalTime.seconds}s (${totalTime.minutes}m)`
+        );
+        logger.info(
+          `Categories breakdown - Other: ${sortedOtherRecords.length}, Confidential: ${sortedConfidentialRecords.length}, Missing: ${sortedMissingSellerIdRecords.length}, No sellers.json: ${sortedNoSellerJsonRecords.length}`
+        );
+
+        // Calculate time spent on each step
+        const stepTimes = performanceTimer.calculateStepTimes();
+
+        // Log the time breakdown for each step
+        logger.info('Step timing breakdown:', {
+          steps: stepTimes.map(
+            (s) => `${s.name}: ${(s.duration / 1000).toFixed(2)}s (${s.percentage})`
+          ),
         });
-      }
 
-      // 分類4: sellers.jsonが提供されていない広告システム
-      if (sortedNoSellerJsonRecords.length > 0) {
-        enhancedContent += '\n# Systems Without Sellers.json\n';
-        sortedNoSellerJsonRecords.forEach((record) => {
-          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-          if (record.certification_authority_id) {
-            line += `, ${record.certification_authority_id}`;
-          }
-          enhancedContent += line + '\n';
-        });
-      }
-
-      logStep('Final content generation');
-
-      // Final timing measurement
-      const totalTime = getElapsedTime();
-
-      logger.info(
-        `Level 2 optimization complete. Result length: ${enhancedContent.length} characters. Total time: ${totalTime.seconds}s (${totalTime.minutes}m)`
-      );
-      logger.info(
-        `Categories breakdown - Other: ${sortedOtherRecords.length}, Confidential: ${sortedConfidentialRecords.length}, Missing: ${sortedMissingSellerIdRecords.length}, No sellers.json: ${sortedNoSellerJsonRecords.length}`
-      );
-
-      // Calculate time spent on each step
-      const stepTimes = performanceTimer.calculateStepTimes();
-
-      // Log the time breakdown for each step
-      logger.info('Step timing breakdown:', {
-        steps: stepTimes.map(
-          (s) => `${s.name}: ${(s.duration / 1000).toFixed(2)}s (${s.percentage})`
-        ),
-      });
-
-      // Return the results
-      return res.status(200).json({
-        success: true,
-        data: {
-          optimized_content: enhancedContent,
-          original_length: content.length,
-          optimized_length: enhancedContent.length,
-          optimization_level: 'level2',
-          categories: {
-            other: sortedOtherRecords.length,
-            confidential: sortedConfidentialRecords.length,
-            missing_seller_id: sortedMissingSellerIdRecords.length,
-            no_seller_json: sortedNoSellerJsonRecords.length,
+        // Return the results
+        return res.status(200).json({
+          success: true,
+          data: {
+            optimized_content: enhancedContent,
+            original_length: content.length,
+            optimized_length: enhancedContent.length,
+            optimization_level: 'level2',
+            categories: {
+              other: sortedOtherRecords.length,
+              confidential: sortedConfidentialRecords.length,
+              missing_seller_id: sortedMissingSellerIdRecords.length,
+              no_seller_json: sortedNoSellerJsonRecords.length,
+            },
+            execution_time_ms: totalTime.ms,
+            execution_steps: stepTimes.map((s) => ({
+              name: s.name,
+              duration_ms: s.duration,
+              percentage: s.percentage,
+            })),
           },
-          execution_time_ms: totalTime.ms,
-          execution_steps: stepTimes.map((s) => ({
-            name: s.name,
-            duration_ms: s.duration,
-            percentage: s.percentage,
-          })),
-        },
-      });
+        });
       } catch (level2Error) {
-        const errorMessage = level2Error instanceof Error ? level2Error.message : String(level2Error);
+        const errorMessage =
+          level2Error instanceof Error ? level2Error.message : String(level2Error);
         logger.error(`Level 2 optimization failed: ${errorMessage}`);
         if (level2Error instanceof Error && level2Error.stack) {
           logger.debug(`Level 2 optimization error stack: ${level2Error.stack}`);
         }
-        
+
         // Fall back to level 1 optimization on error
         logger.info('Falling back to level 1 optimization due to level 2 error');
         const totalTime = getElapsedTime();

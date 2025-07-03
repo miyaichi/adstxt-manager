@@ -372,7 +372,7 @@ export const sellersJsonApi = {
     const url = `/sellersJson/${encodeURIComponent(domain)}/metadata`;
     // Use longer timeout for metadata retrieval from large files
     const response = await api.get<ApiResponse<SellersJsonMetadataResponse>>(url, {
-      timeout: 30000 // 30 seconds timeout for metadata retrieval
+      timeout: 30000, // 30 seconds timeout for metadata retrieval
     });
     return response.data;
   },
@@ -388,7 +388,7 @@ export const sellersJsonApi = {
     try {
       // Use longer timeout (45 seconds) for seller lookups in large sellers.json files
       const response = await api.get<ApiResponse<SellersJsonSellerResponse>>(url, {
-        timeout: 45000  // 45 seconds timeout for large sellers.json files like Google's
+        timeout: 45000, // 45 seconds timeout for large sellers.json files like Google's
       });
       logger.debug('Seller data response:', response.data);
       return response.data;

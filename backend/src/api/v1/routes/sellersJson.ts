@@ -11,13 +11,13 @@ const router = express.Router();
  *     summary: Get multiple sellers from a domain's sellers.json in a single request
  *     description: |
  *       Fetches multiple seller entries from a domain's sellers.json file in one HTTP request.
- *       
+ *
  *       **Performance Benefits:**
  *       - Reduces HTTP overhead (multiple requests → single request)
  *       - Minimizes connection establishment overhead
  *       - Reduces total response time by 70-80%
  *       - Optimal for Chrome Extension environment with connection limits
- *       
+ *
  *       **Rate Limits:**
  *       - Maximum 100 seller IDs per request
  *       - 1000 requests per hour per API key

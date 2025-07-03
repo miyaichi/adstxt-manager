@@ -318,10 +318,13 @@ const OptimizerPage: React.FC = () => {
         <Breadcrumbs
           items={[
             { label: t('common.home', language), href: '/' },
-            { label: t('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }), isCurrent: true },
+            {
+              label: t('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }),
+              isCurrent: true,
+            },
           ]}
         />
-        
+
         <Heading level={1}>{t('optimizerPage.title', language)}</Heading>
         <Text>{t('optimizerPage.description', language)}</Text>
 

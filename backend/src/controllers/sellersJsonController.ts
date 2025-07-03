@@ -645,21 +645,15 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
 
   // Validate sellerIds array
   if (!Array.isArray(sellerIds) || sellerIds.length === 0) {
-    throw new ApiError(
-      400,
-      'sellerIds must be a non-empty array',
-      'INVALID_SELLER_IDS',
-      { details: `Received ${Array.isArray(sellerIds) ? sellerIds.length : 'non-array'} seller IDs, expected 1-100` }
-    );
+    throw new ApiError(400, 'sellerIds must be a non-empty array', 'INVALID_SELLER_IDS', {
+      details: `Received ${Array.isArray(sellerIds) ? sellerIds.length : 'non-array'} seller IDs, expected 1-100`,
+    });
   }
 
   if (sellerIds.length > 100) {
-    throw new ApiError(
-      400,
-      'Maximum 100 seller IDs allowed per request',
-      'TOO_MANY_SELLER_IDS',
-      { details: `Received ${sellerIds.length} seller IDs` }
-    );
+    throw new ApiError(400, 'Maximum 100 seller IDs allowed per request', 'TOO_MANY_SELLER_IDS', {
+      details: `Received ${sellerIds.length} seller IDs`,
+    });
   }
 
   // Validate and normalize seller IDs
@@ -691,7 +685,7 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
       // JSONB最適化が成功した場合、その結果を使用
       if (optimizedResult) {
         logger.info(`Using optimized JSONB batch query for ${domain}`);
-        
+
         // キャッシュ情報をフォーマット
         const formattedCacheInfo = {
           is_cached: true, // JSONB最適化はキャッシュから取得
@@ -705,10 +699,12 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
         // JSONB結果をフォーマット（sourceフィールドを追加）
         const formattedResults = optimizedResult.results.map((result: any) => ({
           ...result,
-          source: 'cache' // JSONB最適化はキャッシュから取得
+          source: 'cache', // JSONB最適化はキャッシュから取得
         }));
 
-        logger.info(`JSONB batch lookup completed: ${optimizedResult.foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`);
+        logger.info(
+          `JSONB batch lookup completed: ${optimizedResult.foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`
+        );
 
         return res.status(200).json({
           success: true,
@@ -719,8 +715,8 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
             results: formattedResults,
             metadata: optimizedResult.metadata,
             cache: formattedCacheInfo,
-            processing_time_ms: processingTime
-          }
+            processing_time_ms: processingTime,
+          },
         });
       }
     } catch (optimizationError) {
@@ -748,7 +744,7 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
     // データがない場合（not_foundやerror）
     if (!sellersJsonData) {
       logger.info(`No sellers.json data available for ${domain} (status: ${cacheInfo.status})`);
-      
+
       // すべてのsellerIdについて「見つからない」結果を返す
       for (const sellerId of uniqueSellerIds) {
         results.push({
@@ -756,13 +752,13 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
           seller: null,
           found: false,
           error: 'sellers.json not found for domain',
-          source: cacheInfo.isCached ? 'cache' : 'fresh'
+          source: cacheInfo.isCached ? 'cache' : 'fresh',
         });
       }
     } else {
       // データがある場合、各sellerIdを検索
       const sellers = sellersJsonData.sellers || [];
-      
+
       // パフォーマンス向上のため、sellersをMapに変換
       const sellersMap = new Map();
       sellers.forEach((seller: any) => {
@@ -779,7 +775,7 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
             sellerId,
             seller,
             found: true,
-            source: cacheInfo.isCached ? 'cache' : 'fresh'
+            source: cacheInfo.isCached ? 'cache' : 'fresh',
           });
         } else {
           results.push({
@@ -787,7 +783,7 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
             seller: null,
             found: false,
             error: 'Seller not found in sellers.json',
-            source: cacheInfo.isCached ? 'cache' : 'fresh'
+            source: cacheInfo.isCached ? 'cache' : 'fresh',
           });
         }
       }
@@ -798,7 +794,9 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
 
     const processingTime = Date.now() - startTime;
 
-    logger.info(`Batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`);
+    logger.info(
+      `Batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`
+    );
 
     return res.status(200).json({
       success: true,
@@ -809,10 +807,9 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
         results,
         metadata,
         cache: formattedCacheInfo,
-        processing_time_ms: processingTime
-      }
+        processing_time_ms: processingTime,
+      },
     });
-
   } catch (error: any) {
     logger.error(`Batch lookup error for ${domain}:`, error);
     return handleSellersJsonError(domain, error);

@@ -16,6 +16,7 @@ export const tags = [
   },
   {
     name: 'SellersJson Batch',
-    description: 'High-performance batch operations for sellers.json data retrieval. Key Features: Retrieve up to 100 sellers in a single request, Significant performance improvement over individual requests, Built-in caching with force refresh option, Detailed metadata and cache information, Comprehensive error handling. Performance improvement: ~80% faster than individual requests.',
+    description:
+      'High-performance batch operations for sellers.json data retrieval. Key Features: Retrieve up to 100 sellers in a single request, Significant performance improvement over individual requests, Built-in caching with force refresh option, Detailed metadata and cache information, Comprehensive error handling. Performance improvement: ~80% faster than individual requests.',
   },
 ];
