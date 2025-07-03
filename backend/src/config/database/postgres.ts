@@ -641,6 +641,190 @@ export class PostgresDatabase implements IDatabaseAdapter {
   }
 
   /**
+   * Query for multiple sellers by seller IDs using optimized JSONB operators
+   * High-performance batch lookup for memory efficiency
+   *
+   * @param domain The domain to search in
+   * @param sellerIds Array of seller IDs to find
+   * @returns Object with batch results and metadata
+   */
+  public async queryJsonBBatchSellers(domain: string, sellerIds: string[]): Promise<any> {
+    if (!sellerIds || sellerIds.length === 0) {
+      return null;
+    }
+
+    try {
+      // 正規化されたドメインを使用
+      const normalizedDomain = domain.toLowerCase().trim();
+      
+      // セラーIDを正規化
+      const normalizedSellerIds = sellerIds.map(id => id.toString().trim());
+      
+      // 超高速バッチクエリ - 大規模sellers.json対応
+      const optimizedBatchSql = `
+        WITH 
+        -- 高速ドメインルックアップ（インデックス使用）
+        base_data AS (
+          SELECT 
+            id,
+            domain,
+            status,
+            status_code,
+            error_message,
+            created_at,
+            updated_at,
+            content
+          FROM sellers_json_cache
+          WHERE domain = $1 AND status = 'success'
+          LIMIT 1
+        ),
+        -- メタデータの効率的な抽出
+        metadata AS (
+          SELECT
+            id,
+            domain,
+            status,
+            status_code,
+            error_message,
+            created_at,
+            updated_at,
+            jsonb_extract_path_text(content, 'version') as version,
+            jsonb_extract_path_text(content, 'contact_email') as contact_email,
+            jsonb_extract_path_text(content, 'contact_address') as contact_address,
+            content->'identifiers' as identifiers,
+            COALESCE(jsonb_array_length(content->'sellers'), 0) as seller_count
+          FROM base_data
+        ),
+        -- リクエストされたセラーIDをテーブルとして作成
+        requested_ids AS (
+          SELECT unnest($2::text[]) as seller_id
+        ),
+        -- 効率的なLATERAL JOINでセラーをマッチング
+        seller_matches AS (
+          SELECT 
+            r.seller_id as requested_id,
+            s.seller_data,
+            CASE WHEN s.seller_data IS NOT NULL THEN true ELSE false END as found
+          FROM requested_ids r
+          LEFT JOIN LATERAL (
+            SELECT s as seller_data
+            FROM base_data b,
+                 LATERAL jsonb_array_elements(b.content->'sellers') s
+            WHERE LOWER(TRIM(BOTH FROM s->>'seller_id')) = LOWER(r.seller_id)
+            LIMIT 1
+          ) s ON true
+        ),
+        -- バッチ結果の集約
+        batch_results AS (
+          SELECT 
+            jsonb_agg(
+              jsonb_build_object(
+                'sellerId', sm.requested_id,
+                'seller', sm.seller_data,
+                'found', sm.found
+              ) ORDER BY array_position($2::text[], sm.requested_id)
+            ) as results,
+            COUNT(*) FILTER (WHERE sm.found = true) as found_count
+          FROM seller_matches sm
+        )
+        -- 最終結果の結合
+        SELECT
+          m.id,
+          m.domain,
+          m.status,
+          m.status_code,
+          m.error_message,
+          m.created_at,
+          m.updated_at,
+          m.version,
+          m.contact_email,
+          m.contact_address,
+          m.identifiers,
+          m.seller_count,
+          br.results,
+          br.found_count
+        FROM metadata m
+        CROSS JOIN batch_results br
+      `;
+      
+      // 設定されたステートメントタイムアウトを確認し、必要に応じて一時的に拡張
+      let originalTimeout;
+      const extendedTimeout = parseInt(process.env.PG_EXTENDED_TIMEOUT || '120000');
+      
+      // クライアントを取得して時間のかかるクエリに最適化
+      const client = await this.pool.connect();
+      
+      try {
+        // 大きなSellers.jsonファイルのためにステートメントタイムアウトを一時的に延長
+        originalTimeout = await client.query('SHOW statement_timeout');
+        await client.query(`SET statement_timeout = '${extendedTimeout}'`);
+        
+        // 配列パラメータを使用して準備済みステートメントでクエリを実行
+        const result = await client.query({
+          text: optimizedBatchSql,
+          values: [normalizedDomain, normalizedSellerIds],
+          name: 'batch_get_sellers' // クエリキャッシュのための名前
+        });
+        
+        if (result.rows.length === 0) {
+          return null;
+        }
+        
+        const row = result.rows[0];
+        
+        // cacheRecordオブジェクトを構築
+        const cacheRecord = {
+          id: row.id,
+          domain: row.domain,
+          status: row.status,
+          status_code: row.status_code,
+          error_message: row.error_message,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
+        
+        // 安全に結果を処理
+        let results: any[] = [];
+        if (row.results) {
+          try {
+            if (typeof row.results === 'string') {
+              results = JSON.parse(row.results);
+            } else if (Array.isArray(row.results)) {
+              results = row.results;
+            }
+          } catch (e) {
+            console.error('Error processing batch results:', e);
+            results = [];
+          }
+        }
+
+        return {
+          cacheRecord,
+          metadata: {
+            version: row.version,
+            contact_email: row.contact_email,
+            contact_address: row.contact_address,
+            identifiers: row.identifiers,
+            seller_count: this.parseIntSafe(row.seller_count, 0),
+          },
+          results,
+          foundCount: this.parseIntSafe(row.found_count, 0)
+        };
+      } finally {
+        // タイムアウト設定を元に戻す
+        if (originalTimeout?.rows?.[0]?.statement_timeout) {
+          await client.query(`SET statement_timeout = '${originalTimeout.rows[0].statement_timeout}'`);
+        }
+        // クライアントを解放
+        client.release();
+      }
+    } catch (error) {
+      console.error(`Error in queryJsonBBatchSellers for domain ${domain}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Query for specific sellers by account IDs using JSONB operators
    * Memory-efficient way to get only the needed sellers
    *

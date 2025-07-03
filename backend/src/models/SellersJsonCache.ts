@@ -596,6 +596,75 @@ class SellersJsonCacheModel {
   > = new Map();
 
   /**
+   * Get multiple sellers from the cache by seller_ids using optimized PostgreSQL JSONB queries
+   * @param domain The domain to search in
+   * @param sellerIds Array of seller IDs to search for
+   * @returns The cache record, metadata and batch results if available
+   */
+  async batchGetSellersOptimized(
+    domain: string,
+    sellerIds: string[]
+  ): Promise<{
+    cacheRecord: SellersJsonCache;
+    metadata: any;
+    results: Array<{
+      sellerId: string;
+      seller: any;
+      found: boolean;
+    }>;
+    foundCount: number;
+  } | null> {
+    try {
+      // Ensure domain is properly lowercase and trimmed for consistent lookup
+      const normalizedDomain = domain.toLowerCase().trim();
+      const normalizedSellerIds = sellerIds.map(id => id.toString().trim());
+
+      logger.info(
+        `[SellersJsonCache] Batch lookup for ${normalizedSellerIds.length} sellers in ${normalizedDomain} with optimization`
+      );
+
+      // Check if we're using PostgreSQL
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+
+      if (dbProvider !== 'postgres') {
+        logger.info('[SellersJsonCache] Not using PostgreSQL, skipping JSONB batch optimization');
+        return null;
+      }
+
+      // Get the PostgreSQL database instance
+      const postgres = (db as any).implementation as any;
+
+      // Check if it has our custom JSONB batch query method
+      if (!postgres.queryJsonBBatchSellers) {
+        logger.warn(
+          '[SellersJsonCache] PostgreSQL instance does not have queryJsonBBatchSellers method'
+        );
+        return null;
+      }
+
+      // Call the optimized batch method
+      const result = await postgres.queryJsonBBatchSellers(normalizedDomain, normalizedSellerIds);
+
+      if (!result) {
+        logger.info(
+          `[SellersJsonCache] No optimized batch result found for ${normalizedSellerIds.length} sellers in ${normalizedDomain}`
+        );
+        return null;
+      }
+
+      logger.info(
+        `[SellersJsonCache] Found optimized batch result for ${result.foundCount}/${normalizedSellerIds.length} sellers in ${normalizedDomain}`
+      );
+
+      return result;
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error in batchGetSellersOptimized: ${error}`);
+      // On error, return null to fall back to the standard method
+      return null;
+    }
+  }
+
+  /**
    * Get specific seller entries matching the provided account IDs
    * This is more memory-efficient than getting all sellers when only a few are needed
    *

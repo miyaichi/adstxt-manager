@@ -681,7 +681,56 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
   try {
     logger.info(`Batch lookup for ${uniqueSellerIds.length} sellers from ${domain}`);
 
-    // 共通関数を使用してsellers.jsonデータを取得
+    // データがある場合、JSONB最適化を試す
+    try {
+      const optimizedResult = await SellersJsonCacheModel.batchGetSellersOptimized(
+        domain,
+        uniqueSellerIds
+      );
+
+      // JSONB最適化が成功した場合、その結果を使用
+      if (optimizedResult) {
+        logger.info(`Using optimized JSONB batch query for ${domain}`);
+        
+        // キャッシュ情報をフォーマット
+        const formattedCacheInfo = {
+          is_cached: true, // JSONB最適化はキャッシュから取得
+          last_updated: optimizedResult.cacheRecord.updated_at,
+          status: optimizedResult.cacheRecord.status,
+          expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
+        };
+
+        const processingTime = Date.now() - startTime;
+
+        // JSONB結果をフォーマット（sourceフィールドを追加）
+        const formattedResults = optimizedResult.results.map((result: any) => ({
+          ...result,
+          source: 'cache' // JSONB最適化はキャッシュから取得
+        }));
+
+        logger.info(`JSONB batch lookup completed: ${optimizedResult.foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`);
+
+        return res.status(200).json({
+          success: true,
+          data: {
+            domain,
+            requested_count: uniqueSellerIds.length,
+            found_count: optimizedResult.foundCount,
+            results: formattedResults,
+            metadata: optimizedResult.metadata,
+            cache: formattedCacheInfo,
+            processing_time_ms: processingTime
+          }
+        });
+      }
+    } catch (optimizationError) {
+      logger.warn(
+        `Optimized JSONB batch query failed, falling back to standard method: ${optimizationError}`
+      );
+      // 標準メソッドにフォールバック
+    }
+
+    // 共通関数を使用してsellers.jsonデータを取得（フォールバック）
     const forceRefresh = force === true;
     const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
 
