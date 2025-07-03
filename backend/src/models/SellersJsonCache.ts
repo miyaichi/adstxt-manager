@@ -370,7 +370,17 @@ class SellersJsonCacheModel {
       }
 
       // Get the PostgreSQL database instance
-      const postgres = (db as any).implementation as any;
+      let postgres;
+      try {
+        postgres = (db as any).implementation as any;
+        if (!postgres) {
+          logger.warn('[SellersJsonCache] Database implementation not available for seller lookup');
+          return null;
+        }
+      } catch (implError) {
+        logger.error(`[SellersJsonCache] Error accessing database implementation for seller lookup: ${implError}`);
+        return null;
+      }
 
       // Check if it has our custom JSONB query method
       if (!postgres.queryJsonBSellerById) {
@@ -500,7 +510,18 @@ class SellersJsonCacheModel {
       if (dbProvider === 'postgres') {
         try {
           // Use optimized PostgreSQL query for metadata and summary
-          const postgres = (db as any).implementation as any;
+          let postgres;
+          try {
+            postgres = (db as any).implementation as any;
+            if (!postgres) {
+              logger.warn('[SellersJsonCache] Database implementation not available for summary');
+              throw new Error('Database implementation not available');
+            }
+          } catch (implError) {
+            logger.error(`[SellersJsonCache] Error accessing database implementation for summary: ${implError}`);
+            throw implError;
+          }
+          
           if (postgres.queryJsonBSummary) {
             const result = await postgres.queryJsonBSummary(domain);
             if (result) {
@@ -627,12 +648,26 @@ class SellersJsonCacheModel {
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
 
       if (dbProvider !== 'postgres') {
-        logger.info('[SellersJsonCache] Not using PostgreSQL, skipping JSONB batch optimization');
+        logger.debug('[SellersJsonCache] Not using PostgreSQL, skipping JSONB batch optimization');
         return null;
       }
 
+      // Additional check for cloud environment
+      const isCloudEnv = process.env.NODE_ENV === 'production' || process.env.IS_CLOUD === 'true' || !!process.env.DATABASE_URL;
+      logger.debug(`[SellersJsonCache] Cloud environment: ${isCloudEnv}, DB_PROVIDER: ${dbProvider}`);
+
       // Get the PostgreSQL database instance
-      const postgres = (db as any).implementation as any;
+      let postgres;
+      try {
+        postgres = (db as any).implementation as any;
+        if (!postgres) {
+          logger.warn('[SellersJsonCache] Database implementation not available');
+          return null;
+        }
+      } catch (implError) {
+        logger.error(`[SellersJsonCache] Error accessing database implementation: ${implError}`);
+        return null;
+      }
 
       // Check if it has our custom JSONB batch query method
       if (!postgres.queryJsonBBatchSellers) {
@@ -722,7 +757,18 @@ class SellersJsonCacheModel {
       if (dbProvider === 'postgres' && normalizedIds.length > 0) {
         try {
           // Use optimized PostgreSQL query for specific sellers
-          const postgres = (db as any).implementation as any;
+          let postgres;
+          try {
+            postgres = (db as any).implementation as any;
+            if (!postgres) {
+              logger.warn('[SellersJsonCache] Database implementation not available for specific sellers');
+              throw new Error('Database implementation not available');
+            }
+          } catch (implError) {
+            logger.error(`[SellersJsonCache] Error accessing database implementation for specific sellers: ${implError}`);
+            throw implError;
+          }
+          
           if (postgres.queryJsonBSpecificSellers) {
             const result = await postgres.queryJsonBSpecificSellers(
               normalizedDomain,
@@ -738,7 +784,7 @@ class SellersJsonCacheModel {
             }
           }
         } catch (error) {
-          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${error}`);
+          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${error.message || error}`);
           // Fall back to normal processing on error
         }
       }

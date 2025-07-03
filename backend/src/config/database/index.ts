@@ -67,6 +67,7 @@ class DatabaseAdapter implements IDatabaseAdapter {
     }
 
     console.log(`Using database provider: ${this.implementation.constructor.name}`);
+    console.log(`Environment: NODE_ENV=${env.NODE_ENV}, DB_PROVIDER=${dbProvider}`);
   }
 
   /**
