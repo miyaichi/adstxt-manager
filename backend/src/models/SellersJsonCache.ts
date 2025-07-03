@@ -784,7 +784,8 @@ class SellersJsonCacheModel {
             }
           }
         } catch (error) {
-          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${error.message || error}`);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`[SellersJsonCache] Error in PostgreSQL specific sellers query: ${errorMessage}`);
           // Fall back to normal processing on error
         }
       }

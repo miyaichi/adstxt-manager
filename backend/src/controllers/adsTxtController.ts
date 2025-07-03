@@ -177,9 +177,10 @@ async function classifyRecords(
             return processBatchResults(domainGroup.records, batchResults, foundCertId, sellersJsonData);
           }
         } catch (batchError) {
-          logger.warn(`JSONB batch optimization failed for ${normalizedDomain}, falling back to standard batch: ${batchError.message || batchError}`);
+          const errorMessage = batchError instanceof Error ? batchError.message : String(batchError);
+          logger.warn(`JSONB batch optimization failed for ${normalizedDomain}, falling back to standard batch: ${errorMessage}`);
           // Log additional error details for debugging
-          if (batchError.stack) {
+          if (batchError instanceof Error && batchError.stack) {
             logger.debug(`JSONB batch optimization stack trace: ${batchError.stack}`);
           }
         }
