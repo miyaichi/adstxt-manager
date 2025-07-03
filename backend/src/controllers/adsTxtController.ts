@@ -109,14 +109,13 @@ async function classifyRecords(
     }
   }
 
-  // 2. Optimization: Group records by domain+accountId combinations
-  // This prevents multiple database queries for the same combination
-  const recordGroups = new Map<
+  // 2. Optimization: Group records by domain and collect all accountIds per domain
+  // This enables batch queries instead of individual lookups
+  const domainAccountGroups = new Map<
     string,
     {
-      records: any[];
-      domain: string;
-      accountId: string;
+      accountIds: Set<string>;
+      records: Map<string, any[]>; // accountId -> records
     }
   >();
 
@@ -127,117 +126,220 @@ async function classifyRecords(
     // Always normalize domain to lowercase and trim whitespace for consistent lookups
     const normalizedDomain = domain.toLowerCase().trim();
     const accountId = record.account_id?.toString() || '';
-    const key = `${normalizedDomain}:${accountId}`;
 
-    if (!recordGroups.has(key)) {
-      recordGroups.set(key, {
-        records: [],
-        domain: normalizedDomain, // Use normalized domain
-        accountId,
+    if (!domainAccountGroups.has(normalizedDomain)) {
+      domainAccountGroups.set(normalizedDomain, {
+        accountIds: new Set(),
+        records: new Map(),
       });
     }
-    recordGroups.get(key)?.records.push(record);
+
+    const domainGroup = domainAccountGroups.get(normalizedDomain)!;
+    domainGroup.accountIds.add(accountId);
+    
+    if (!domainGroup.records.has(accountId)) {
+      domainGroup.records.set(accountId, []);
+    }
+    domainGroup.records.get(accountId)!.push(record);
   }
 
-  // 3. Function to process each domain+accountId pair
-  // This ensures we only query each unique combination once
-  const processDomainAccountPair = async (domain: string, accountId: string, records: any[]) => {
-    // Find Certification Authority ID (once per group) - normalize domain for consistent lookup
+  // 3. Batch processing function for each domain with all its accountIds
+  const processDomainBatch = async (domain: string, domainGroup: { accountIds: Set<string>; records: Map<string, any[]> }) => {
     const normalizedDomain = domain.toLowerCase().trim();
-    const foundCertId = domainCertIds.get(normalizedDomain) || domainCertIds.get(domain) || null;
-    const sellersJsonData =
-      domainSellersJsonCache.get(normalizedDomain) || domainSellersJsonCache.get(domain);
+    const accountIds = Array.from(domainGroup.accountIds);
+    const foundCertId = domainCertIds.get(normalizedDomain) || null;
+    const sellersJsonData = domainSellersJsonCache.get(normalizedDomain);
 
-    let category = 'other';
-    let certId = foundCertId;
+    logger.debug(`Processing domain ${normalizedDomain} with ${accountIds.length} unique account IDs`);
 
     // Handle missing or invalid sellers.json data
     if (!sellersJsonData) {
-      category = 'noSellerJson';
-    } else if (sellersJsonData.__status && sellersJsonData.__status !== 'success') {
-      // Handle domains with cache entries that indicate no valid sellers.json
-      category = 'noSellerJson';
-    } else if (sellersJsonData.__metadata && sellersJsonData.__summary) {
-      // Memory-optimized data processing - execute query only once
+      logger.debug(`No sellers.json data for ${normalizedDomain}`);
+      return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
+    } 
+    
+    if (sellersJsonData.__status && sellersJsonData.__status !== 'success') {
+      logger.debug(`Invalid sellers.json status for ${normalizedDomain}: ${sellersJsonData.__status}`);
+      return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
+    }
+
+    // Memory-optimized batch processing
+    if (sellersJsonData.__metadata && sellersJsonData.__summary) {
       try {
-        // Share query results across all records in the group
+        // **BATCH OPTIMIZATION**: Use batch query for all accountIds at once
         const SellersJsonCacheModel = (await import('../models/SellersJsonCache')).default;
-        const specificSeller = await SellersJsonCacheModel.getSpecificSellers(
-          domain.toLowerCase(),
-          [accountId.toString()]
+        
+        // Try JSONB batch optimization first
+        try {
+          const batchResults = await SellersJsonCacheModel.batchGetSellersOptimized(normalizedDomain, accountIds);
+          if (batchResults) {
+            logger.debug(`Using JSONB batch optimization for ${normalizedDomain} (${batchResults.foundCount}/${accountIds.length} found)`);
+            return processBatchResults(domainGroup.records, batchResults, foundCertId, sellersJsonData);
+          }
+        } catch (batchError) {
+          logger.warn(`JSONB batch optimization failed for ${normalizedDomain}, falling back to standard batch: ${batchError}`);
+        }
+
+        // Fallback to standard batch query
+        const specificSellers = await SellersJsonCacheModel.getSpecificSellers(
+          normalizedDomain,
+          accountIds
         );
 
-        if (
-          specificSeller &&
-          specificSeller.matchingSellers &&
-          specificSeller.matchingSellers.length > 0
-        ) {
-          const seller = specificSeller.matchingSellers[0];
+        if (specificSellers && specificSellers.matchingSellers) {
+          logger.debug(`Using standard batch query for ${normalizedDomain} (${specificSellers.matchingSellers.length}/${accountIds.length} found)`);
+          
+          // Create a map for faster lookup
+          const sellersMap = new Map();
+          specificSellers.matchingSellers.forEach((seller: any) => {
+            if (seller.seller_id) {
+              sellersMap.set(seller.seller_id.toString(), seller);
+            }
+          });
 
-          // Check confidentiality flag (support both boolean and number)
-          if (
-            seller.is_confidential === true ||
-            (typeof seller.is_confidential === 'number' && seller.is_confidential === 1)
-          ) {
-            category = 'confidential';
-          } else {
-            category = 'other';
-          }
+          return processAccountsWithSellersMap(domainGroup.records, sellersMap, foundCertId, sellersJsonData);
         } else {
-          category = 'missingSellerId';
+          logger.debug(`No matching sellers found for ${normalizedDomain}`);
+          return processAccountsWithStatus(domainGroup.records, 'missingSellerId', foundCertId);
         }
       } catch (error) {
-        logger.error(`Error fetching specific seller data for ${domain}/${accountId}:`, error);
-        category = 'noSellerJson';
-      }
-    } else if (
-      !Array.isArray(sellersJsonData.sellers) ||
-      (sellersJsonData.status && sellersJsonData.status !== 'success')
-    ) {
-      category = 'noSellerJson';
-    } else {
-      // Legacy processing - search sellers array
-      const matchingSeller = sellersJsonData.sellers.find(
-        (seller: any) => seller.seller_id && seller.seller_id.toString() === accountId
-      );
-
-      if (!matchingSeller) {
-        category = 'missingSellerId';
-      } else if (matchingSeller.is_confidential === 1) {
-        category = 'confidential';
-      } else {
-        category = 'other';
-
-        // Look for TAG-ID (once per group)
-        if (!certId && sellersJsonData.identifiers && Array.isArray(sellersJsonData.identifiers)) {
-          const tagIdEntry = sellersJsonData.identifiers.find(
-            (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
-          );
-
-          if (tagIdEntry && tagIdEntry.value) {
-            certId = tagIdEntry.value;
-          }
-        }
+        logger.error(`Error in batch processing for ${normalizedDomain}:`, error);
+        return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
       }
     }
 
-    // Apply results to all records in the group
-    return records.map((record) => {
-      const enhancedRecord = { ...record };
-      if (certId) enhancedRecord.certification_authority_id = certId;
-      return { record: enhancedRecord, category };
+    // Legacy processing - search sellers array directly
+    if (!Array.isArray(sellersJsonData.sellers) || 
+        (sellersJsonData.status && sellersJsonData.status !== 'success')) {
+      return processAccountsWithStatus(domainGroup.records, 'noSellerJson', foundCertId);
+    }
+
+    // Create sellers map for legacy processing
+    const sellersMap = new Map();
+    sellersJsonData.sellers.forEach((seller: any) => {
+      if (seller.seller_id) {
+        sellersMap.set(seller.seller_id.toString(), seller);
+      }
     });
+
+    return processAccountsWithSellersMap(domainGroup.records, sellersMap, foundCertId, sellersJsonData);
   };
 
-  // 4. Process all groups in parallel and combine results
-  const groupResults = await Promise.all(
-    Array.from(recordGroups.values()).map(({ domain, accountId, records }) =>
-      processDomainAccountPair(domain, accountId, records)
+  // Helper function to process batch results from JSONB optimization
+  const processBatchResults = (
+    recordsMap: Map<string, any[]>, 
+    batchResults: any, 
+    foundCertId: string | null,
+    sellersJsonData: any
+  ) => {
+    const results: Array<{ record: any; category: string }> = [];
+    let certId = foundCertId;
+
+    // Look for TAG-ID in sellers.json if not already found
+    if (!certId && sellersJsonData.identifiers && Array.isArray(sellersJsonData.identifiers)) {
+      const tagIdEntry = sellersJsonData.identifiers.find(
+        (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
+      );
+      if (tagIdEntry && tagIdEntry.value) {
+        certId = tagIdEntry.value;
+      }
+    }
+
+    // Process each result from batch query
+    batchResults.results.forEach((result: any) => {
+      const accountId = result.sellerId;
+      const records = recordsMap.get(accountId) || [];
+      
+      let category = 'other';
+      if (!result.found) {
+        category = 'missingSellerId';
+      } else if (result.seller) {
+        // Check confidentiality flag
+        if (result.seller.is_confidential === true ||
+            (typeof result.seller.is_confidential === 'number' && result.seller.is_confidential === 1)) {
+          category = 'confidential';
+        }
+      }
+
+      // Apply results to all records for this accountId
+      records.forEach(record => {
+        const enhancedRecord = { ...record };
+        if (certId) enhancedRecord.certification_authority_id = certId;
+        results.push({ record: enhancedRecord, category });
+      });
+    });
+
+    return results;
+  };
+
+  // Helper function to process accounts with sellers map
+  const processAccountsWithSellersMap = (
+    recordsMap: Map<string, any[]>, 
+    sellersMap: Map<string, any>, 
+    foundCertId: string | null,
+    sellersJsonData: any
+  ) => {
+    const results: Array<{ record: any; category: string }> = [];
+    let certId = foundCertId;
+
+    // Look for TAG-ID if not already found
+    if (!certId && sellersJsonData.identifiers && Array.isArray(sellersJsonData.identifiers)) {
+      const tagIdEntry = sellersJsonData.identifiers.find(
+        (id: any) => id.name && id.name.toLowerCase().includes('tag-id')
+      );
+      if (tagIdEntry && tagIdEntry.value) {
+        certId = tagIdEntry.value;
+      }
+    }
+
+    recordsMap.forEach((records, accountId) => {
+      const seller = sellersMap.get(accountId);
+      let category = 'other';
+
+      if (!seller) {
+        category = 'missingSellerId';
+      } else if (seller.is_confidential === true || seller.is_confidential === 1) {
+        category = 'confidential';
+      }
+
+      records.forEach(record => {
+        const enhancedRecord = { ...record };
+        if (certId) enhancedRecord.certification_authority_id = certId;
+        results.push({ record: enhancedRecord, category });
+      });
+    });
+
+    return results;
+  };
+
+  // Helper function to process accounts with a fixed status
+  const processAccountsWithStatus = (
+    recordsMap: Map<string, any[]>, 
+    status: string, 
+    foundCertId: string | null
+  ) => {
+    const results: Array<{ record: any; category: string }> = [];
+    
+    recordsMap.forEach((records) => {
+      records.forEach(record => {
+        const enhancedRecord = { ...record };
+        if (foundCertId) enhancedRecord.certification_authority_id = foundCertId;
+        results.push({ record: enhancedRecord, category: status });
+      });
+    });
+
+    return results;
+  };
+
+  // 4. Process all domains in parallel using batch queries
+  const domainResults = await Promise.all(
+    Array.from(domainAccountGroups.entries()).map(([domain, domainGroup]) =>
+      processDomainBatch(domain, domainGroup)
     )
   );
 
   // 5. Flatten results
-  const enhancedRecords = groupResults.flat();
+  const enhancedRecords = domainResults.flat();
 
   // Add records without domain attribute
   for (const record of recordEntries) {
