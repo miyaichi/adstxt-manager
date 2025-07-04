@@ -1684,12 +1684,12 @@ export const translations = {
         ja: 'Ad Refreshとは、パブリッシャーで広告がリフレッシュされるまでの平均表示時間（秒）のことです。\nSincera の仮装ユーザーは、指定された URL で待機し、リフレッシュイベント間の秒数をカウントします。これは、コストはかかるものの、広告のリフレッシュを非常に正確に測定できる方法です。\nAd Refreshが速すぎると、キャンペーンのパフォーマンスが低下し、パブリッシャーの評判が損なわれるリスクがあります。購入者は、このような広告プレースメントでの掲載は避けるべきであり、パブリッシャーは、リフレッシュの遅い広告ユニット全体に、リフレッシュの速い広告プレースメントを混ぜて使用することは避けるべきです。',
       },
       totalUniqueGpids: {
-        en: 'Total number of unique Global Publisher Identifiers (GPIDs) associated with the publisher',
-        ja: 'パブリッシャーに関連付けられた一意のグローバルパブリッシャー識別子（GPID）の総数',
+        en: 'Total number of unique Global Publisher Identifiers (GPIDs) associated with the publisher.',
+        ja: 'パブリッシャーに関連付けられた一意のグローバルパブリッシャー識別子（GPID）の総数。',
       },
       idAbsorptionRate: {
-        en: 'The identifier absorption rate, a metric developed by Sincera, measures how effectively SSPs append identifiers to their outgoing bid requests. It focuses on the success rate when an identifier is already present, not the overall enrichment rate. A higher score indicates that a larger proportion of real-time bidding (RTB) traffic includes user identifiers.',
-        ja: 'Sinceraが開発した指標である Identifier absorption rate は、SSPが送信する入札リクエストに識別子を付加する効果を測定します。この指標は、識別子が既に存在する場合の成功率に焦点を当てており、全体の識別子付加率ではありません。スコアが高いほど、リアルタイム入札（RTB）トラフィックにユーザー識別子が含まれる割合が高くなります。',
+        en: 'The Id Absorption Rate, a metric developed by Sincera, measures how effectively SSPs append identifiers to their outgoing bid requests. It focuses on the success rate when an identifier is already present, not the overall enrichment rate. A higher score indicates that a larger proportion of real-time bidding (RTB) traffic includes user identifiers.',
+        ja: 'Sinceraが開発した指標である Id Absorption Rate は、SSPが送信する入札リクエストに識別子を付加する効果を測定します。この指標は、識別子が既に存在する場合の成功率に焦点を当てており、全体の識別子付加率ではありません。スコアが高いほど、リアルタイム入札（RTB）トラフィックにユーザー識別子が含まれる割合が高くなります。',
       },
       avgPageWeight: {
         en: 'The average file size in MB for a given URL, which is a signal that inversely correlates with ad performance.',
@@ -1701,15 +1701,15 @@ export const translations = {
       },
       totalSupplyPaths: {
         en: 'The total number of supply paths an ad takes from the advertiser to the publisher\'s website or app where it is displayed. It includes the series of intermediaries involved in the selling and delivery of the ad inventory, such as ad exchanges, SSPs, and other resellers.',
-        ja: '広告が広告主からパブリッシャーのウェブサイトやアプリに表示されるまでの供給経路の総数。広告インベントリの販売と配信に関与する一連の中間業者（広告交換、SSP、その他のリセラーなど）を含みます。',
+        ja: '広告が広告主からパブリッシャーのウェブサイトやアプリに表示されるまでのサプライパスの総数。広告インベントリの販売と配信に関与する一連の中間業者（広告交換、SSP、その他のリセラーなど）を含みます。',
       },
       resellerCount: {
-        en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain',
-        ja: 'パブリッシャーの広告サプライチェーンに関わるリセラーまたは中間業者の数',
+        en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain.',
+        ja: 'パブリッシャーの広告サプライチェーンに関わるリセラーまたは中間業者の数。',
       },
       slug: {
-        en: 'URL-friendly identifier or slug for the publisher',
-        ja: 'パブリッシャーのURL対応識別子またはスラッグ',
+        en: 'URL-friendly identifier or slug for the publisher.',
+        ja: 'パブリッシャーのURL対応識別子またはスラッグ。',
       },
     },
     errors: {
