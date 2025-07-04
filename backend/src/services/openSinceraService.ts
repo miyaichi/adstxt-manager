@@ -5,7 +5,7 @@ import logger from '../utils/logger';
 
 export interface OpenSinceraConfig {
   baseUrl: string;
-  apiKey: string;
+  apiKey: string | undefined;
   timeout: number;
 }
 
@@ -60,7 +60,7 @@ export class OpenSinceraService {
       baseURL: this.config.baseUrl,
       timeout: this.config.timeout,
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        'Authorization': `Bearer ${this.config.apiKey!}`,
         'User-Agent': 'Ads.txt Manager/1.0',
       },
       httpsAgent: new https.Agent({
