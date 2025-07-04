@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import config from '../../../config/api';
+import { logger } from '../../../utils/logger';
 
 /**
  * Middleware to validate API keys for external API access
@@ -72,9 +73,10 @@ export const validateChromeExtension = (req: Request, res: Response, next: NextF
   }
 
   // Get allowed extension IDs from environment variable
-  const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
-    process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
-  
+  const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS
+    ? process.env.ALLOWED_CHROME_EXTENSIONS.split(',')
+    : [];
+
   if (allowedExtensions.length === 0) {
     return res.status(503).json({
       success: false,
@@ -84,12 +86,12 @@ export const validateChromeExtension = (req: Request, res: Response, next: NextF
       },
     });
   }
-  
+
   // Extract extension ID from origin
   const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
-  
+
   if (!allowedExtensions.includes(extensionId)) {
-    console.warn(`Unauthorized Chrome extension access attempt: ${extensionId}`);
+    logger.warn(`Unauthorized Chrome extension access attempt: ${extensionId}`);
     return res.status(403).json({
       success: false,
       error: {
@@ -100,7 +102,7 @@ export const validateChromeExtension = (req: Request, res: Response, next: NextF
     });
   }
 
-  console.log(`Authorized Chrome extension access: ${extensionId}`);
+  logger.info(`Authorized Chrome extension access: ${extensionId}`);
   next();
 };
 
@@ -124,19 +126,20 @@ export const validateApiKeyOrExtension = (req: Request, res: Response, next: Nex
 
   // Try API key authentication first
   if (apiKey && config.api.validApiKeys.includes(apiKey.toString())) {
-    console.log('Authenticated via API key');
+    logger.debug('Authenticated via API key');
     return next();
   }
 
   // Try Chrome extension authentication
   if (origin && origin.startsWith('chrome-extension://')) {
-    const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
-      process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
-    
+    const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS
+      ? process.env.ALLOWED_CHROME_EXTENSIONS.split(',')
+      : [];
+
     if (allowedExtensions.length > 0) {
       const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
       if (allowedExtensions.includes(extensionId)) {
-        console.log(`Authenticated via Chrome extension: ${extensionId}`);
+        logger.debug(`Authenticated via Chrome extension: ${extensionId}`);
         return next();
       }
     }

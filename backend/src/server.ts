@@ -1,6 +1,7 @@
 import http from 'http';
 import app from './app';
 import config from './config/config';
+import { logger } from './utils/logger';
 
 const PORT = config.server.port;
 
@@ -12,5 +13,5 @@ const server = http.createServer(app);
 server.timeout = 300000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with timeout: ${server.timeout}ms`);
+  logger.info(`Server running on port ${PORT} with timeout: ${server.timeout}ms`);
 });

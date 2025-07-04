@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import { DatabaseRecord, DatabaseQuery, IDatabaseAdapter } from './index';
+import { logger } from '../../utils/logger';
 
 // Import migration scripts
 import { runAdsTxtCacheMigration } from '../../db/migrations/run_ads_txt_cache';
@@ -25,7 +26,7 @@ export class PostgresDatabase implements IDatabaseAdapter {
         connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '30000'), // タイムアウト値を延長
         statement_timeout: parseInt(process.env.PG_STATEMENT_TIMEOUT || '60000'), // クエリ実行タイムアウトを追加
       });
-      console.log('Connected to PostgreSQL database using connection string');
+      logger.info('Connected to PostgreSQL database using connection string');
     } else {
       // Use individual connection parameters
       this.pool = new Pool({
@@ -40,12 +41,12 @@ export class PostgresDatabase implements IDatabaseAdapter {
         connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '30000'), // タイムアウト値を延長
         statement_timeout: parseInt(process.env.PG_STATEMENT_TIMEOUT || '60000'), // クエリ実行タイムアウトを追加
       });
-      console.log(`Connected to PostgreSQL database at ${process.env.PGHOST || 'localhost'}`);
+      logger.info(`Connected to PostgreSQL database at ${process.env.PGHOST || 'localhost'}`);
     }
 
     // Register error handler for connection pool
     this.pool.on('error', (err) => {
-      console.error('Unexpected error on idle PostgreSQL client', err);
+      logger.error('Unexpected error on idle PostgreSQL client', err);
       // Don't crash the server on connection errors, just log them
       // process.exit(1); - removed to improve resilience
     });

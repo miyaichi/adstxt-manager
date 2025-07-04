@@ -2,6 +2,7 @@ import { getEnvironment } from '../environment';
 import { SqliteDatabase } from './sqlite';
 import { PostgresDatabase } from './postgres';
 import { MockDatabase } from './mock-database';
+import { logger } from '../../utils/logger';
 
 // Database provider names
 export enum DatabaseProvider {
@@ -66,8 +67,8 @@ class DatabaseAdapter implements IDatabaseAdapter {
       this.implementation = SqliteDatabase.getInstance();
     }
 
-    console.log(`Using database provider: ${this.implementation.constructor.name}`);
-    console.log(`Environment: NODE_ENV=${env.NODE_ENV}, DB_PROVIDER=${dbProvider}`);
+    logger.info(`Using database provider: ${this.implementation.constructor.name}`);
+    logger.debug(`Environment: NODE_ENV=${env.NODE_ENV}, DB_PROVIDER=${dbProvider}`);
   }
 
   /**

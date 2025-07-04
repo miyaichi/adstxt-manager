@@ -11,6 +11,7 @@ import {
   isAdsTxtRecord,
   isAdsTxtVariable,
 } from '../utils/validation';
+import logger from '../utils/logger';
 
 /**
  * Create a new request
@@ -44,7 +45,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         recordsArray = req.body.records;
       }
     } catch (error) {
-      console.error('Error parsing records JSON:', error);
+      logger.error('Error parsing records JSON:', error);
     }
   }
 
@@ -145,7 +146,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
   const userLanguage = queryLang || req.language || 'en';
 
   // For debugging
-  console.log('Request notification language:', {
+  logger.debug('Request notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
@@ -178,7 +179,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       ),
     ]);
   } catch (error) {
-    console.error('Error sending emails:', error);
+    logger.error('Error sending emails:', error);
     // Continue even if emails fail - we'll log but not fail the request
   }
 
@@ -323,7 +324,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
       : null;
   const userLanguage = queryLang || req.language || 'en';
 
-  console.log('Status update notification language:', {
+  logger.debug('Status update notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
@@ -344,7 +345,7 @@ export const updateRequestStatus = asyncHandler(async (req: Request, res: Respon
       request.publisher_name || ''
     );
   } catch (error) {
-    console.error('Error sending status update email:', error);
+    logger.error('Error sending status update email:', error);
     // Continue even if emails fail
   }
 
@@ -427,12 +428,12 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
 
   // If token is provided, verify it before returning requests
   if (token && typeof token === 'string') {
-    console.log(`Validating token for access to requests: ${token}`);
+    logger.debug(`Validating token for access to requests: ${token}`);
     const isValidToken = tokenService.verifyEmailToken(email, token);
-    console.log(`Token validation result: ${isValidToken ? 'valid' : 'invalid'}`);
+    logger.debug(`Token validation result: ${isValidToken ? 'valid' : 'invalid'}`);
 
     if (!isValidToken) {
-      console.log(`Token validation failed for ${email}`);
+      logger.debug(`Token validation failed for ${email}`);
       throw new ApiError(
         401,
         'Invalid or expired verification token',
@@ -440,10 +441,10 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
       );
     }
 
-    console.log(`Token validated successfully for ${email}`);
+    logger.debug(`Token validated successfully for ${email}`);
   } else {
     // トークンが提供されていない場合は、検証メールを送信
-    console.log(`No token provided for ${email}, initiating email verification flow`);
+    logger.debug(`No token provided for ${email}, initiating email verification flow`);
 
     try {
       // 検証トークンを生成
@@ -467,7 +468,7 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
         i18nKey: 'errors:emailVerification.verificationRequired',
       });
     } catch (error) {
-      console.error('Error sending verification email:', error);
+      logger.error('Error sending verification email:', error);
       throw new ApiError(500, 'Error sending verification email', 'errors:server.error');
     }
   }
@@ -493,7 +494,7 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
         const records = await AdsTxtRecordModel.getByRequestId(request.id);
         const recordCount = records.length;
 
-        console.log(`Request ${request.id}: Simple count - ${recordCount} records`);
+        logger.debug(`Request ${request.id}: Simple count - ${recordCount} records`);
 
         // シンプルなリクエスト情報を返す
         return {
@@ -501,7 +502,7 @@ export const getRequestsByEmail = asyncHandler(async (req: Request, res: Respons
           records_count: recordCount,
         };
       } catch (error) {
-        console.error(`Error getting record count for request ${request.id}:`, error);
+        logger.error(`Error getting record count for request ${request.id}:`, error);
         // エラーが発生した場合でもリクエスト情報は返す
         return {
           ...request,
@@ -593,7 +594,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       const deleteResult = await AdsTxtRecordModel.deleteByRequestId(id);
 
       if (!deleteResult) {
-        console.error(`Failed to delete records for request ${id}`);
+        logger.error(`Failed to delete records for request ${id}`);
         throw new ApiError(500, 'Failed to update records', 'errors:failedToDeleteRecords');
       }
 
@@ -601,13 +602,13 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       const newRecords = await AdsTxtRecordModel.bulkCreate(recordsData);
 
       if (!newRecords || newRecords.length === 0) {
-        console.error(`Failed to create new records for request ${id}`);
+        logger.error(`Failed to create new records for request ${id}`);
         throw new ApiError(500, 'Failed to create new records', 'errors:failedToCreateRecords');
       }
 
-      console.log(`Successfully updated ${newRecords.length} records for request ${id}`);
+      logger.info(`Successfully updated ${newRecords.length} records for request ${id}`);
     } catch (error) {
-      console.error('Error updating records:', error);
+      logger.error('Error updating records:', error);
       throw new ApiError(500, 'Failed to update records', 'errors:failedToUpdateRecords');
     }
   }
@@ -624,7 +625,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       : null;
   const userLanguage = queryLang || req.language || 'en';
 
-  console.log('Request update notification language:', {
+  logger.debug('Request update notification language:', {
     requestLanguage: req.language,
     query: req.query.lang,
     headerLanguage: req.headers['accept-language'] || '',
@@ -645,7 +646,7 @@ export const updateRequest = asyncHandler(async (req: Request, res: Response) =>
       existingRequest.publisher_name || ''
     );
   } catch (error) {
-    console.error('Error sending update notification email:', error);
+    logger.error('Error sending update notification email:', error);
     // Continue even if email fails
   }
 

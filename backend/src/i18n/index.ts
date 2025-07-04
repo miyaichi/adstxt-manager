@@ -4,6 +4,7 @@ import Backend from 'i18next-fs-backend';
 import middleware from 'i18next-http-middleware';
 import fs from 'fs';
 import path from 'path';
+import logger from '../utils/logger';
 
 // 開発環境と本番環境で正しいパスを取得する関数
 function getLocalesPath() {
@@ -17,12 +18,12 @@ function getLocalesPath() {
     join(process.cwd(), 'src/i18n/locales'),
   ];
 
-  console.log('[i18n] Looking for locales in the following paths:');
+  logger.debug('[i18n] Looking for locales in the following paths:');
 
   // 最初に見つかったパスを使用
   for (const p of possiblePaths) {
     try {
-      console.log(`[i18n] Checking: ${p}`);
+      logger.debug(`[i18n] Checking: ${p}`);
       // ディレクトリが存在するか確認
       if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
         // en と ja の両方のディレクトリがあるか確認
@@ -30,13 +31,13 @@ function getLocalesPath() {
         const hasJa = fs.existsSync(join(p, 'ja'));
 
         if (hasEn && hasJa) {
-          console.log(`[i18n] ✅ Found valid locales directory: ${p}`);
+          logger.info(`[i18n] ✅ Found valid locales directory: ${p}`);
           // en/email.json が存在するか確認
           const hasEmailJson = fs.existsSync(join(p, 'en/email.json'));
           if (hasEmailJson) {
-            console.log('[i18n] ✅ Found email.json file');
+            logger.info('[i18n] ✅ Found email.json file');
           } else {
-            console.log('[i18n] ⚠️ email.json file not found');
+            logger.warn('[i18n] ⚠️ email.json file not found');
           }
           return p;
         }
@@ -47,7 +48,7 @@ function getLocalesPath() {
   }
 
   // 見つからなかった場合はデフォルトパスを返す
-  console.log('[i18n] ⚠️ No valid locales directory found, using default path');
+  logger.warn('[i18n] ⚠️ No valid locales directory found, using default path');
   return join(__dirname, '/locales');
 }
 
@@ -81,11 +82,11 @@ i18next
     },
   })
   .then(() => {
-    console.log('[i18n] Successfully initialized with languages:', i18next.languages);
-    console.log('[i18n] Using locales path:', localesPath);
+    logger.info('[i18n] Successfully initialized with languages:', i18next.languages);
+    logger.info('[i18n] Using locales path:', localesPath);
   })
   .catch((err) => {
-    console.error('[i18n] Failed to initialize:', err);
+    logger.error('[i18n] Failed to initialize:', err);
   });
 
 export default i18next;

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import config from '../config/config';
+import { logger } from '../utils/logger';
 
 /**
  * Role type for token generation
@@ -96,7 +97,7 @@ class TokenService {
    * @returns A secure token for email verification
    */
   generateEmailVerificationToken(email: string): string {
-    console.log(`Generating secure email verification token for ${email}`);
+    logger.debug(`Generating secure email verification token for ${email}`);
 
     // 1. メールアドレスを正規化 (小文字化、余分なスペース削除)
     const normalizedEmail = email.toLowerCase().trim();
@@ -116,7 +117,7 @@ class TokenService {
     // 有効期限は基数36で表現して短くする
     const token = `${expiryTime.toString(36)}.${digest}`;
 
-    console.log(
+    logger.debug(
       `Generated token for ${normalizedEmail}, expires: ${new Date(expiryTime).toISOString()}`
     );
     return token;
@@ -129,27 +130,27 @@ class TokenService {
    * @returns Boolean indicating if the token is valid
    */
   verifyEmailToken(email: string, token: string): boolean {
-    console.log(`Verifying secure email token for ${email}`);
+    logger.debug(`Verifying secure email token for ${email}`);
 
     try {
       // 1. トークンのフォーマットを検証 (期限.署名の形式か)
       const parts = token.split('.');
       if (parts.length !== 2) {
-        console.log('Invalid token format: parts mismatch');
+        logger.debug('Invalid token format: parts mismatch');
         return false;
       }
 
       // 2. 有効期限を解析
       const expiryTime = parseInt(parts[0], 36);
       if (isNaN(expiryTime)) {
-        console.log('Invalid token format: expiry time not a number');
+        logger.debug('Invalid token format: expiry time not a number');
         return false;
       }
 
       // 3. 有効期限をチェック
       const now = Date.now();
       if (expiryTime < now) {
-        console.log(
+        logger.debug(
           `Token expired at ${new Date(expiryTime).toISOString()}, current time: ${new Date(now).toISOString()}`
         );
         return false;
@@ -170,14 +171,14 @@ class TokenService {
       const receivedDigest = parts[1];
       const isValid = expectedDigest === receivedDigest;
 
-      console.log(`Token validation result: ${isValid ? 'valid' : 'invalid'}`);
+      logger.debug(`Token validation result: ${isValid ? 'valid' : 'invalid'}`);
       if (!isValid) {
-        console.log('Signature verification failed');
+        logger.debug('Signature verification failed');
       }
 
       return isValid;
     } catch (error) {
-      console.error('Error verifying email token:', error);
+      logger.error('Error verifying email token:', error);
       return false;
     }
   }

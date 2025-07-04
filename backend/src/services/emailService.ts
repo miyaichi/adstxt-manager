@@ -1,6 +1,7 @@
 import config from '../config/config';
 import transporter from '../config/email';
 import i18next from '../i18n';
+import logger from '../utils/logger';
 
 /**
  * Service to handle email sending functionality
@@ -32,7 +33,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Publisher notification language: ${validLanguage}`, {
+    logger.debug(`Email service - Publisher notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
@@ -115,7 +116,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Requester confirmation language: ${validLanguage}`, {
+    logger.debug(`Email service - Requester confirmation language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       requesterEmail,
@@ -197,7 +198,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Status update notification language: ${validLanguage}`, {
+    logger.debug(`Email service - Status update notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       email,
@@ -273,7 +274,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Message notification language: ${validLanguage}`, {
+    logger.debug(`Email service - Message notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       recipientEmail: email,
@@ -308,7 +309,7 @@ class EmailService {
       }),
     };
 
-    console.log('Email translations:', translations);
+    logger.debug('Email translations:', translations);
 
     const subject = translations.subject;
     const html = `
@@ -355,7 +356,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Request update notification language: ${validLanguage}`, {
+    logger.debug(`Email service - Request update notification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       publisherEmail,
@@ -451,7 +452,7 @@ class EmailService {
     const validLanguage = ['en', 'ja'].includes(language) ? language : 'en';
 
     // Debug language selection
-    console.log(`Email service - Email verification language: ${validLanguage}`, {
+    logger.debug(`Email service - Email verification language: ${validLanguage}`, {
       originalLanguage: language,
       validatedLanguage: validLanguage,
       email,
@@ -468,7 +469,7 @@ class EmailService {
     const verificationUrl = `${config.server.appUrl}/requests?email=${encodedEmail}&token=${encodedToken}${langParam}`;
 
     // デバッグログ
-    console.log(`Verification URL: ${verificationUrl}`);
+    logger.debug(`Verification URL: ${verificationUrl}`);
 
     const subject = 'メールアドレス確認 - Ads.txt Manager';
     const html = `
@@ -487,7 +488,7 @@ class EmailService {
       html,
     };
 
-    console.log(`Sending verification email to ${email}`);
+    logger.info(`Sending verification email to ${email}`);
     return transporter.sendMail(mailOptions);
   }
 }

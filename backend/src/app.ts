@@ -11,6 +11,7 @@ import { isCloudEnvironment } from './config/environment';
 import i18next from './i18n';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import apiRoutes from './routes';
+import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -30,22 +31,23 @@ const corsOptions =
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
             // Get allowed extension IDs from environment variable
-            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
-              process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
-            
+            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS
+              ? process.env.ALLOWED_CHROME_EXTENSIONS.split(',')
+              : [];
+
             if (allowedExtensions.length === 0) {
               // If no specific extensions are configured, allow all Chrome extensions (less secure)
-              console.warn(`Chrome extension access allowed without ID verification: ${origin}`);
+              logger.warn(`Chrome extension access allowed without ID verification: ${origin}`);
               return callback(null, true);
             }
-            
+
             // Check if the extension ID is in the allowed list
             const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
             if (allowedExtensions.includes(extensionId)) {
-              console.log(`Authorized Chrome extension access: ${extensionId}`);
+              logger.info(`Authorized Chrome extension access: ${extensionId}`);
               return callback(null, true);
             } else {
-              console.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
+              logger.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
               return callback(new Error('Chrome extension not authorized'));
             }
           }
@@ -57,7 +59,7 @@ const corsOptions =
           }
 
           // Log the rejected origin for debugging
-          console.warn(`CORS rejected origin in production: ${origin}`);
+          logger.warn(`CORS rejected origin in production: ${origin}`);
 
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
@@ -75,22 +77,23 @@ const corsOptions =
           // Check if it's a Chrome extension
           if (origin.startsWith('chrome-extension://')) {
             // Get allowed extension IDs from environment variable
-            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS ? 
-              process.env.ALLOWED_CHROME_EXTENSIONS.split(',') : [];
-            
+            const allowedExtensions = process.env.ALLOWED_CHROME_EXTENSIONS
+              ? process.env.ALLOWED_CHROME_EXTENSIONS.split(',')
+              : [];
+
             if (allowedExtensions.length === 0) {
               // If no specific extensions are configured, allow all Chrome extensions (less secure)
-              console.warn(`Chrome extension access allowed without ID verification: ${origin}`);
+              logger.warn(`Chrome extension access allowed without ID verification: ${origin}`);
               return callback(null, true);
             }
-            
+
             // Check if the extension ID is in the allowed list
             const extensionId = origin.replace('chrome-extension://', '').split('/')[0];
             if (allowedExtensions.includes(extensionId)) {
-              console.log(`Authorized Chrome extension access: ${extensionId}`);
+              logger.info(`Authorized Chrome extension access: ${extensionId}`);
               return callback(null, true);
             } else {
-              console.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
+              logger.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
               return callback(new Error('Chrome extension not authorized'));
             }
           }
@@ -107,7 +110,7 @@ const corsOptions =
           }
 
           // Log the rejected origin for debugging
-          console.warn(`CORS rejected origin: ${origin}`);
+          logger.warn(`CORS rejected origin: ${origin}`);
 
           // Reject if not allowed
           return callback(new Error('Not allowed by CORS'));
@@ -158,7 +161,7 @@ const statusHandler = async (req: express.Request, res: express.Response) => {
         dbConnected = true;
       }
     } catch (error) {
-      console.error('Database connection check failed:', error);
+      logger.error('Database connection check failed:', error);
     }
 
     res.status(200).json({
@@ -170,7 +173,7 @@ const statusHandler = async (req: express.Request, res: express.Response) => {
       environment: getFilteredEnvVars(),
     });
   } catch (error) {
-    console.error('Status endpoint error:', error);
+    logger.error('Status endpoint error:', error);
     res.status(500).json({
       status: 'NG',
       time: new Date().toISOString(),
@@ -229,23 +232,23 @@ if (process.env.NODE_ENV === 'production') {
         const indexPath = path.join(potentialPath, 'index.html');
         try {
           fs.accessSync(indexPath, fs.constants.R_OK);
-          console.log(`Found valid static files path with index.html: ${potentialPath}`);
-          console.log(`Permissions: ${stats.mode.toString(8)}`);
+          logger.info(`Found valid static files path with index.html: ${potentialPath}`);
+          logger.debug(`Permissions: ${stats.mode.toString(8)}`);
           break; // Found a valid path with index.html
         } catch (indexErr) {
-          console.log(`Found directory but no readable index.html at: ${potentialPath}`);
+          logger.debug(`Found directory but no readable index.html at: ${potentialPath}`);
         }
       }
     } catch (err) {
-      console.log(`Static path not valid: ${potentialPath}`);
+      logger.debug(`Static path not valid: ${potentialPath}`);
     }
   }
 
   if (!publicPath) {
-    console.error('Could not find any valid static files path! Falling back to current directory.');
+    logger.error('Could not find any valid static files path! Falling back to current directory.');
     publicPath = path.resolve('.');
   } else {
-    console.log(`Using static files path: ${publicPath}`);
+    logger.info(`Using static files path: ${publicPath}`);
   }
 
   // Ensure publicPath is not null for TypeScript
@@ -279,20 +282,20 @@ if (process.env.NODE_ENV === 'production') {
     const indexPath = path.join(publicPath, 'index.html');
 
     // Log the request to help with debugging
-    console.log(`Serving SPA index.html for: ${req.url}`);
+    logger.debug(`Serving SPA index.html for: ${req.url}`);
 
     // First try sendFile (most efficient)
     res.sendFile(indexPath, (err) => {
       if (err) {
-        console.error(`Error serving index.html from ${indexPath}:`, err);
+        logger.error(`Error serving index.html from ${indexPath}:`, err);
 
         // Second try readFile and send content
         try {
           const content = fs.readFileSync(indexPath, 'utf8');
           res.contentType('text/html').send(content);
-          console.log(`Served index.html using readFile from: ${indexPath}`);
+          logger.debug(`Served index.html using readFile from: ${indexPath}`);
         } catch (readErr) {
-          console.error(`Failed to read index.html:`, readErr);
+          logger.error(`Failed to read index.html:`, readErr);
 
           // If everything fails, send a basic HTML response
           res.status(200).contentType('text/html').send(`
@@ -313,7 +316,7 @@ if (process.env.NODE_ENV === 'production') {
           `);
         }
       } else {
-        console.log(`Successfully served index.html for: ${req.url}`);
+        logger.debug(`Successfully served index.html for: ${req.url}`);
       }
     });
   });
@@ -330,10 +333,10 @@ app.use(errorHandler);
 // Initialize database on application startup
 initializeDatabase()
   .then(() => {
-    console.log('Database initialized successfully');
+    logger.info('Database initialized successfully');
   })
   .catch((err: Error) => {
-    console.error('Database initialization failed:', err);
+    logger.error('Database initialization failed:', err);
     process.exit(1);
   });
 
