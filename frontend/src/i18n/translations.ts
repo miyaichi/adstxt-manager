@@ -1688,20 +1688,20 @@ export const translations = {
         ja: 'パブリッシャーに関連付けられた一意のグローバルパブリッシャー識別子（GPID）の総数',
       },
       idAbsorptionRate: {
-        en: 'Rate at which the publisher absorbs or processes identity information',
-        ja: 'パブリッシャーがID情報を吸収または処理する率',
+        en: 'The identifier absorption rate, a metric developed by Sincera, measures how effectively SSPs append identifiers to their outgoing bid requests. It focuses on the success rate when an identifier is already present, not the overall enrichment rate. A higher score indicates that a larger proportion of real-time bidding (RTB) traffic includes user identifiers.',
+        ja: 'Sinceraが開発した指標である Identifier absorption rate は、SSPが送信する入札リクエストに識別子を付加する効果を測定します。この指標は、識別子が既に存在する場合の成功率に焦点を当てており、全体の識別子付加率ではありません。スコアが高いほど、リアルタイム入札（RTB）トラフィックにユーザー識別子が含まれる割合が高くなります。',
       },
       avgPageWeight: {
-        en: 'Average total size of pages including content, images, and advertisements (in KB or MB)',
-        ja: 'コンテンツ、画像、広告を含むページの平均総サイズ（KB または MB）',
+        en: 'The average file size in MB for a given URL, which is a signal that inversely correlates with ad performance.',
+        ja: 'コンテンツ、画像、広告を含むページの平均総サイズ（KB または MB）。これは、広告パフォーマンスと逆相関する指標です。',
       },
       avgCpu: {
-        en: 'Average CPU usage or processing requirements for rendering pages',
-        ja: 'ページレンダリングのための平均CPU使用率または処理要件',
+        en: 'The average CPU usage for a given URL, which is a signal that inversely correlates with ad performance. CPU usage is measured in seconds.',
+        ja: 'ページレンダリングのための平均CPU使用率または処理要件。これは、広告パフォーマンスと逆相関する指標です。CPU使用率は秒単位で測定されます。',
       },
       totalSupplyPaths: {
-        en: 'Total number of supply paths or channels through which inventory is made available',
-        ja: 'インベントリが利用可能になるサプライパスまたはチャネルの総数',
+        en: 'The total number of supply paths an ad takes from the advertiser to the publisher\'s website or app where it is displayed. It includes the series of intermediaries involved in the selling and delivery of the ad inventory, such as ad exchanges, SSPs, and other resellers.',
+        ja: '広告が広告主からパブリッシャーのウェブサイトやアプリに表示されるまでの供給経路の総数。広告インベントリの販売と配信に関与する一連の中間業者（広告交換、SSP、その他のリセラーなど）を含みます。',
       },
       resellerCount: {
         en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain',
