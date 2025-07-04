@@ -5,9 +5,12 @@ import {
   ApiResponse,
   CreateMessageData,
   CreateRequestData,
+  GetPublisherMetadataRequest,
+  GetPublisherMetadataResponse,
   Message,
   OptimizeAdsTxtResponse,
   ProcessAdsTxtResponse,
+  PublisherMetadata,
   Request,
   RequestResponse,
   RequestWithRecords,
@@ -420,6 +423,93 @@ export const statusApi = {
   },
 };
 
+// OpenSincera API calls
+export const openSinceraApi = {
+  // Health check for OpenSincera API
+  async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
+    const url = '/opensincera/health';
+    logger.debug('Checking OpenSincera API health:', { url });
+
+    try {
+      const response = await api.get<ApiResponse<{ status: string; timestamp: string }>>(url);
+      logger.debug('OpenSincera health check response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Error checking OpenSincera API health:', error);
+      throw error;
+    }
+  },
+
+  // Get publisher metadata
+  async getPublisherMetadata(
+    request: GetPublisherMetadataRequest
+  ): Promise<ApiResponse<GetPublisherMetadataResponse>> {
+    const url = '/opensincera/publishers/metadata';
+    logger.debug('Fetching publisher metadata:', { request, url });
+
+    try {
+      const params: Record<string, any> = {};
+      
+      if (request.publisherId) {
+        params.publisherId = request.publisherId;
+      }
+      
+      if (request.publisherDomain) {
+        params.publisherDomain = request.publisherDomain;
+      }
+      
+      if (request.limit !== undefined) {
+        params.limit = request.limit;
+      }
+      
+      if (request.offset !== undefined) {
+        params.offset = request.offset;
+      }
+      
+      if (request.includeInactive !== undefined) {
+        params.includeInactive = request.includeInactive;
+      }
+
+      const response = await api.get<ApiResponse<GetPublisherMetadataResponse>>(url, { params });
+      logger.debug('Publisher metadata response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching publisher metadata:', error);
+      throw error;
+    }
+  },
+
+  // Get publisher by domain
+  async getPublisherByDomain(domain: string): Promise<ApiResponse<PublisherMetadata | null>> {
+    const url = `/opensincera/publishers/domain/${encodeURIComponent(domain)}`;
+    logger.debug('Fetching publisher by domain:', { domain, url });
+
+    try {
+      const response = await api.get<ApiResponse<PublisherMetadata>>(url);
+      logger.debug('Publisher by domain response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching publisher by domain:', error);
+      throw error;
+    }
+  },
+
+  // Get publisher by ID
+  async getPublisherById(publisherId: string): Promise<ApiResponse<PublisherMetadata | null>> {
+    const url = `/opensincera/publishers/${encodeURIComponent(publisherId)}`;
+    logger.debug('Fetching publisher by ID:', { publisherId, url });
+
+    try {
+      const response = await api.get<ApiResponse<PublisherMetadata>>(url);
+      logger.debug('Publisher by ID response:', response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching publisher by ID:', error);
+      throw error;
+    }
+  },
+};
+
 // Export API as a named constant
 const apiClient = {
   request: requestApi,
@@ -427,6 +517,7 @@ const apiClient = {
   adsTxt: adsTxtApi,
   sellersJson: sellersJsonApi,
   status: statusApi,
+  openSincera: openSinceraApi,
 };
 
 export default apiClient;

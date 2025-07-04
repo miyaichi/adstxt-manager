@@ -239,6 +239,10 @@ export const translations = {
       en: 'Search',
       ja: '検索',
     },
+    value: {
+      en: 'Value',
+      ja: '値',
+    },
     email: {
       en: 'Email',
       ja: 'メールアドレス',
@@ -786,6 +790,20 @@ export const translations = {
       button: {
         en: 'Go to Optimizer',
         ja: '最適化ツールへ',
+      },
+    },
+    siteAnalysis: {
+      title: {
+        en: 'Site Analysis',
+        ja: 'サイト分析',
+      },
+      description: {
+        en: 'Analyze publisher metadata using the OpenSincera API. Get detailed information about publisher verification status, categories, and operational data.',
+        ja: 'OpenSincera APIを使用してパブリッシャーメタデータを分析します。パブリッシャーの認証ステータス、カテゴリ、運用データの詳細情報を取得できます。',
+      },
+      button: {
+        en: 'Go to Site Analysis',
+        ja: 'サイト分析へ',
       },
     },
     errors: {
@@ -1454,6 +1472,272 @@ export const translations = {
       version: {
         en: 'Version',
         ja: 'バージョン',
+      },
+    },
+  },
+  siteAnalysis: {
+    pageTitle: {
+      en: 'Site Analysis',
+      ja: 'サイト分析',
+    },
+    subtitle: {
+      en: 'Analyze publisher metadata using OpenSincera API',
+      ja: 'OpenSincera APIを使用してパブリッシャーメタデータを分析',
+    },
+    searchForm: {
+      title: {
+        en: 'Search Publisher Information',
+        ja: 'パブリッシャー情報を検索',
+      },
+      domainLabel: {
+        en: 'Publisher Domain',
+        ja: 'パブリッシャードメイン',
+      },
+      domainPlaceholder: {
+        en: 'Enter domain (e.g., example.com)',
+        ja: 'ドメインを入力 (例: example.com)',
+      },
+      publisherIdLabel: {
+        en: 'Publisher ID',
+        ja: 'パブリッシャーID',
+      },
+      publisherIdPlaceholder: {
+        en: 'Enter publisher ID',
+        ja: 'パブリッシャーIDを入力',
+      },
+      searchButton: {
+        en: 'Search',
+        ja: '検索',
+      },
+      clearButton: {
+        en: 'Clear',
+        ja: 'クリア',
+      },
+      searchType: {
+        en: 'Search by',
+        ja: '検索方法',
+      },
+      searchByDomain: {
+        en: 'Domain',
+        ja: 'ドメイン',
+      },
+      searchByPublisherId: {
+        en: 'Publisher ID',
+        ja: 'パブリッシャーID',
+      },
+    },
+    results: {
+      title: {
+        en: 'Publisher Information',
+        ja: 'パブリッシャー情報',
+      },
+      noResults: {
+        en: 'No publisher information found for the specified criteria.',
+        ja: '指定された条件でパブリッシャー情報が見つかりませんでした。',
+      },
+      publisherId: {
+        en: 'Publisher ID',
+        ja: 'パブリッシャーID',
+      },
+      publisherName: {
+        en: 'Publisher Name',
+        ja: 'パブリッシャー名',
+      },
+      publisherDomain: {
+        en: 'Publisher Domain',
+        ja: 'パブリッシャードメイン',
+      },
+      status: {
+        en: 'Status',
+        ja: 'ステータス',
+      },
+      verificationStatus: {
+        en: 'Verification Status',
+        ja: '認証ステータス',
+      },
+      lastUpdated: {
+        en: 'Last Updated',
+        ja: '最終更新',
+      },
+      contactEmail: {
+        en: 'Contact Email',
+        ja: '連絡先メール',
+      },
+      categories: {
+        en: 'Categories',
+        ja: 'カテゴリ',
+      },
+      additionalMetadata: {
+        en: 'Additional Metadata',
+        ja: '追加メタデータ',
+      },
+    },
+    fieldDescriptions: {
+      publisherId: {
+        en: 'Unique identifier for the publisher in the OpenSincera system',
+        ja: 'OpenSinceraシステム内でのパブリッシャーの一意識別子',
+      },
+      publisherName: {
+        en: 'Display name of the publisher or website',
+        ja: 'パブリッシャーまたはウェブサイトの表示名',
+      },
+      publisherDomain: {
+        en: 'Primary domain associated with the publisher',
+        ja: 'パブリッシャーに関連付けられたプライマリドメイン',
+      },
+      status: {
+        en: 'Current operational status of the publisher account',
+        ja: 'パブリッシャーアカウントの現在の運用ステータス',
+      },
+      verificationStatus: {
+        en: 'Verification level indicating the reliability of publisher information',
+        ja: 'パブリッシャー情報の信頼性を示す認証レベル',
+      },
+      lastUpdated: {
+        en: 'Date and time when the publisher information was last modified',
+        ja: 'パブリッシャー情報が最後に更新された日時',
+      },
+      contactEmail: {
+        en: 'Email address for contacting the publisher',
+        ja: 'パブリッシャーへの連絡用メールアドレス',
+      },
+      categories: {
+        en: 'Content categories or industry verticals associated with the publisher',
+        ja: 'パブリッシャーに関連付けられたコンテンツカテゴリまたは業界セクター',
+      },
+    },
+    statusValues: {
+      active: {
+        en: 'Active',
+        ja: 'アクティブ',
+      },
+      inactive: {
+        en: 'Inactive',
+        ja: '非アクティブ',
+      },
+      suspended: {
+        en: 'Suspended',
+        ja: '停止中',
+      },
+    },
+    verificationValues: {
+      verified: {
+        en: 'Verified',
+        ja: '認証済み',
+      },
+      pending: {
+        en: 'Pending',
+        ja: '認証待ち',
+      },
+      unverified: {
+        en: 'Unverified',
+        ja: '未認証',
+      },
+    },
+    statusDescriptions: {
+      active: {
+        en: 'The publisher account is currently active and operational',
+        ja: 'パブリッシャーアカウントは現在アクティブで運用中です',
+      },
+      inactive: {
+        en: 'The publisher account is inactive and not currently operational',
+        ja: 'パブリッシャーアカウントは非アクティブで現在運用されていません',
+      },
+      suspended: {
+        en: 'The publisher account has been suspended and requires attention',
+        ja: 'パブリッシャーアカウントは停止されており、対応が必要です',
+      },
+    },
+    verificationDescriptions: {
+      verified: {
+        en: 'Publisher information has been verified and confirmed as accurate',
+        ja: 'パブリッシャー情報は認証済みで正確であることが確認されています',
+      },
+      pending: {
+        en: 'Publisher verification is currently in progress',
+        ja: 'パブリッシャーの認証は現在進行中です',
+      },
+      unverified: {
+        en: 'Publisher information has not been verified',
+        ja: 'パブリッシャー情報は認証されていません',
+      },
+    },
+    metadataDescriptions: {
+      description: {
+        en: 'Description or summary of the publisher\'s content and services',
+        ja: 'パブリッシャーのコンテンツとサービスの説明または概要',
+      },
+      primarySupplyType: {
+        en: 'Primary type of advertising inventory supply (e.g., web, mobile, video)',
+        ja: '広告インベントリサプライの主要タイプ（例：ウェブ、モバイル、ビデオ）',
+      },
+      avgAdsToContentRatio: {
+        en: 'Average ratio of advertisements to content on the publisher\'s pages',
+        ja: 'パブリッシャーのページにおける広告とコンテンツの平均比率',
+      },
+      avgAdsInView: {
+        en: 'Average number of advertisements visible in the viewport at any given time',
+        ja: '任意の時点でビューポートに表示される広告の平均数',
+      },
+      avgAdRefresh: {
+        en: 'Average frequency of advertisement refresh or rotation on pages',
+        ja: 'ページ上での広告の更新またはローテーションの平均頻度',
+      },
+      totalUniqueGpids: {
+        en: 'Total number of unique Global Publisher Identifiers (GPIDs) associated with the publisher',
+        ja: 'パブリッシャーに関連付けられた一意のグローバルパブリッシャー識別子（GPID）の総数',
+      },
+      idAbsorptionRate: {
+        en: 'Rate at which the publisher absorbs or processes identity information',
+        ja: 'パブリッシャーがID情報を吸収または処理する率',
+      },
+      avgPageWeight: {
+        en: 'Average total size of pages including content, images, and advertisements (in KB or MB)',
+        ja: 'コンテンツ、画像、広告を含むページの平均総サイズ（KB または MB）',
+      },
+      avgCpu: {
+        en: 'Average CPU usage or processing requirements for rendering pages',
+        ja: 'ページレンダリングのための平均CPU使用率または処理要件',
+      },
+      totalSupplyPaths: {
+        en: 'Total number of supply paths or channels through which inventory is made available',
+        ja: 'インベントリが利用可能になる供給パスまたはチャネルの総数',
+      },
+      resellerCount: {
+        en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain',
+        ja: 'パブリッシャーの広告サプライチェーンに関わるリセラーまたは中間業者の数',
+      },
+      slug: {
+        en: 'URL-friendly identifier or slug for the publisher',
+        ja: 'パブリッシャーのURL対応識別子またはスラッグ',
+      },
+    },
+    errors: {
+      searchRequired: {
+        en: 'Please enter either a domain or publisher ID to search',
+        ja: '検索するにはドメインまたはパブリッシャーIDを入力してください',
+      },
+      invalidDomain: {
+        en: 'Please enter a valid domain format (e.g., example.com)',
+        ja: '有効なドメイン形式を入力してください (例: example.com)',
+      },
+      searchFailed: {
+        en: 'Search failed. Please try again later.',
+        ja: '検索に失敗しました。後でもう一度お試しください。',
+      },
+      networkError: {
+        en: 'Network error. Please check your connection and try again.',
+        ja: 'ネットワークエラー。接続を確認してもう一度お試しください。',
+      },
+      apiError: {
+        en: 'API error: {{message}}',
+        ja: 'APIエラー: {{message}}',
+      },
+    },
+    loading: {
+      searching: {
+        en: 'Searching publisher information...',
+        ja: 'パブリッシャー情報を検索中...',
       },
     },
   },

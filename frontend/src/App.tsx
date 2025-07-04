@@ -15,6 +15,7 @@ import StatusPage from './pages/StatusPage';
 import HelpPage from './pages/HelpPage';
 import EditRequestPage from './pages/EditRequestPage';
 import OptimizerPage from './pages/OptimizerPage';
+import SiteAnalysisPage from './pages/SiteAnalysisPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import ContactPage from './pages/ContactPage';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/request/:id/edit" element={<EditRequestPage />} />
               <Route path="/requests" element={<RequestListPage />} />
               <Route path="/optimizer" element={<OptimizerPage />} />
+              <Route path="/site-analysis" element={<SiteAnalysisPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />

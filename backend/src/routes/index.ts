@@ -5,6 +5,7 @@ import requestRoutes from './requests';
 import sellersJsonRoutes from './sellersJson';
 import adsTxtCacheRoutes from './adsTxtCache';
 import contactRoutes from './contact';
+import openSinceraRoutes from './openSincera';
 
 const router = express.Router();
 
@@ -15,5 +16,6 @@ router.use('/adsTxt', adsTxtRoutes);
 router.use('/sellersJson', sellersJsonRoutes);
 router.use('/adsTxtCache', adsTxtCacheRoutes);
 router.use('/contact', contactRoutes);
+router.use('/opensincera', openSinceraRoutes);
 
 export default router;

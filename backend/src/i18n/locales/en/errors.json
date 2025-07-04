@@ -21,5 +21,12 @@
   "parsingError": "Error parsing Ads.txt file: {{message}}",
   "domainRequired": "Domain parameter is required",
   "sellersFetchError": "Error fetching sellers.json: {{message}}",
-  "adsTxtFetchError": "Error fetching ads.txt: {{message}}"
+  "adsTxtFetchError": "Error fetching ads.txt: {{message}}",
+  "EXTERNAL_API_ERROR": "External API error occurred",
+  "AUTHENTICATION_ERROR": "API authentication failed",
+  "RATE_LIMIT_EXCEEDED": "API rate limit exceeded",
+  "PUBLISHER_NOT_FOUND": "Publisher not found",
+  "INVALID_PARAMETER": "Invalid parameter provided",
+  "MISSING_PARAMETER": "Required parameter is missing",
+  "INVALID_DOMAIN_FORMAT": "Invalid domain format"
 }

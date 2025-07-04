@@ -179,6 +179,11 @@ jobs:
           echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> backend/.env
           echo "AWS_REGION=${{ vars.AWS_REGION }}" >> backend/.env
           echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
+          
+          # OpenSincera API configuration
+          echo "OPENSINCERA_API_KEY=${{ secrets.OPENSINCERA_API_KEY }}" >> backend/.env
+          echo "OPENSINCERA_BASE_URL=${{ vars.OPENSINCERA_BASE_URL || 'https://open.sincera.io/api' }}" >> backend/.env
+          echo "OPENSINCERA_TIMEOUT=${{ vars.OPENSINCERA_TIMEOUT || '10000' }}" >> backend/.env
 
       - name: Create deployment package
         run: |

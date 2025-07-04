@@ -91,15 +91,26 @@ const HomePage: React.FC = () => {
             </Card>
           </Flex>
 
-          {/* Second row: Optimization card full width */}
-          <Card variation="outlined" width="100%">
-            <Heading level={3}>{t('homePage.optimizeAdsTxt.title', language)}</Heading>
-            <Divider marginBlock="1rem" />
-            <Text marginBottom="1rem">{t('homePage.optimizeAdsTxt.description', language)}</Text>
-            <Button as={Link} to="/optimizer" variation="primary" width="auto">
-              {t('homePage.optimizeAdsTxt.button', language)}
-            </Button>
-          </Card>
+          {/* Second row: Tool cards side by side */}
+          <Flex direction={{ base: 'column', medium: 'row' }} gap="2rem" width="100%">
+            <Card variation="outlined" flex="1">
+              <Heading level={3}>{t('homePage.optimizeAdsTxt.title', language)}</Heading>
+              <Divider marginBlock="1rem" />
+              <Text marginBottom="1rem">{t('homePage.optimizeAdsTxt.description', language)}</Text>
+              <Button as={Link} to="/optimizer" variation="primary" width="auto">
+                {t('homePage.optimizeAdsTxt.button', language)}
+              </Button>
+            </Card>
+
+            <Card variation="outlined" flex="1">
+              <Heading level={3}>{t('homePage.siteAnalysis.title', language)}</Heading>
+              <Divider marginBlock="1rem" />
+              <Text marginBottom="1rem">{t('homePage.siteAnalysis.description', language)}</Text>
+              <Button as={Link} to="/site-analysis" variation="primary" width="auto">
+                {t('homePage.siteAnalysis.button', language)}
+              </Button>
+            </Card>
+          </Flex>
         </Flex>
       </Flex>
     </View>

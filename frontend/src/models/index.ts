@@ -203,6 +203,39 @@ export interface SellersJsonMetadataResponse {
   cache: SellersJsonCacheInfo;
 }
 
+// OpenSincera Models
+export interface PublisherMetadata {
+  publisherId: string;
+  publisherName: string;
+  publisherDomain: string;
+  status: 'active' | 'inactive' | 'suspended';
+  lastUpdated: string;
+  contactEmail?: string;
+  categories?: string[];
+  verificationStatus: 'verified' | 'pending' | 'unverified';
+  metadata?: Record<string, any>;
+}
+
+export interface GetPublisherMetadataRequest {
+  publisherId?: string;
+  publisherDomain?: string;
+  limit?: number;
+  offset?: number;
+  includeInactive?: boolean;
+}
+
+export interface GetPublisherMetadataResponse {
+  publishers: PublisherMetadata[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export interface OpenSinceraApiError {
+  code: string;
+  message: string;
+  details?: Record<string, any>;
+}
+
 // API Response Wrappers
 export interface ApiResponse<T> {
   success: boolean;

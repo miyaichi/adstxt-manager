@@ -27,4 +27,9 @@ export default {
   database: {
     path: process.env.DB_PATH || './src/db/database.sqlite',
   },
+  openSincera: {
+    baseUrl: process.env.OPENSINCERA_BASE_URL || 'https://open.sincera.io/api',
+    apiKey: process.env.OPENSINCERA_API_KEY,
+    timeout: parseInt(process.env.OPENSINCERA_TIMEOUT || '10000', 10),
+  },
 };

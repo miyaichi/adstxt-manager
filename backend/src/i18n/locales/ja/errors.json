@@ -21,5 +21,12 @@
   "parsingError": "Ads.txtファイルの解析エラー: {{message}}",
   "domainRequired": "ドメインパラメータが必要です",
   "sellersFetchError": "sellers.jsonの取得エラー: {{message}}",
-  "adsTxtFetchError": "ads.txtの取得エラー: {{message}}"
+  "adsTxtFetchError": "ads.txtの取得エラー: {{message}}",
+  "EXTERNAL_API_ERROR": "外部APIエラーが発生しました",
+  "AUTHENTICATION_ERROR": "API認証に失敗しました",
+  "RATE_LIMIT_EXCEEDED": "APIレート制限を超過しました",
+  "PUBLISHER_NOT_FOUND": "パブリッシャーが見つかりません",
+  "INVALID_PARAMETER": "無効なパラメータが提供されました",
+  "MISSING_PARAMETER": "必須パラメータが不足しています",
+  "INVALID_DOMAIN_FORMAT": "無効なドメイン形式です"
 }
