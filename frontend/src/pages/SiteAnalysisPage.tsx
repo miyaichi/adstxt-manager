@@ -263,7 +263,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.publisherId', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.publisherId', language)}
                   </Text>
                 </TableCell>
@@ -277,7 +277,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.publisherName', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.publisherName', language)}
                   </Text>
                 </TableCell>
@@ -291,7 +291,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.publisherDomain', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.publisherDomain', language)}
                   </Text>
                 </TableCell>
@@ -305,7 +305,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.status', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.status', language)}
                   </Text>
                 </TableCell>
@@ -314,7 +314,7 @@ const SiteAnalysisPage: React.FC = () => {
                     <Badge variation={getStatusBadgeVariation(publisherData.status)}>
                       {t(`siteAnalysis.statusValues.${publisherData.status}`, language)}
                     </Badge>
-                    <Text fontSize="small" color="font.secondary">
+                    <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {t(`siteAnalysis.statusDescriptions.${publisherData.status}`, language)}
                     </Text>
                   </Flex>
@@ -326,7 +326,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.verificationStatus', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.verificationStatus', language)}
                   </Text>
                 </TableCell>
@@ -335,7 +335,7 @@ const SiteAnalysisPage: React.FC = () => {
                     <Badge variation={getVerificationBadgeVariation(publisherData.verificationStatus)}>
                       {t(`siteAnalysis.verificationValues.${publisherData.verificationStatus}`, language)}
                     </Badge>
-                    <Text fontSize="small" color="font.secondary">
+                    <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {t(`siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`, language)}
                     </Text>
                   </Flex>
@@ -347,7 +347,7 @@ const SiteAnalysisPage: React.FC = () => {
                   <Text fontWeight="bold">
                     {t('siteAnalysis.results.lastUpdated', language)}
                   </Text>
-                  <Text fontSize="small" color="font.secondary">
+                  <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.lastUpdated', language)}
                   </Text>
                 </TableCell>
@@ -362,7 +362,7 @@ const SiteAnalysisPage: React.FC = () => {
                     <Text fontWeight="bold">
                       {t('siteAnalysis.results.contactEmail', language)}
                     </Text>
-                    <Text fontSize="small" color="font.secondary">
+                    <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {t('siteAnalysis.fieldDescriptions.contactEmail', language)}
                     </Text>
                   </TableCell>
@@ -378,7 +378,7 @@ const SiteAnalysisPage: React.FC = () => {
                     <Text fontWeight="bold">
                       {t('siteAnalysis.results.categories', language)}
                     </Text>
-                    <Text fontSize="small" color="font.secondary">
+                    <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {t('siteAnalysis.fieldDescriptions.categories', language)}
                     </Text>
                   </TableCell>
@@ -424,7 +424,7 @@ const SiteAnalysisPage: React.FC = () => {
                             {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                           </Text>
                           {hasDescription && (
-                            <Text fontSize="small" color="font.secondary">
+                            <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                               {t(translationKey, language)}
                             </Text>
                           )}
