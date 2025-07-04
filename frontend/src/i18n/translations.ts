@@ -1672,16 +1672,16 @@ export const translations = {
         ja: '広告インベントリサプライの主要タイプ（例：ウェブ、モバイル、ビデオ）',
       },
       avgAdsToContentRatio: {
-        en: 'Ads to Content Ratio(A2CR) measures the percentage of the viewport that is dedicated to ads versus the percentage dedicated to content. The number shown is the max value found on the publisher.A2CR is calculated when a Synthetic User visits a property or streaming channel and measures the total ad-renderable real estate (in pixels) as a percentage of the visible content. Synthetic Users scroll and interact with content to ensure the A2CR reflects the typical user experience.Campaigns that run on high A2CR properties have significantly worse performance. By overloading the Ad Experience (and increasing A2CRs) publishers annoy users, but will risk being optimized off of a media plan.',
-        ja: 'Ads to Content Ratio(A2CR) は、ビューポートのうち、広告に割り当てられている割合とコンテンツに割り当てられている割合の比率です。表示されている数値は、パブリッシャーで検出された最大値です。<br>A2CR は、合成ユーザーがプロパティまたはストリーミングチャンネルを訪問したときに計算され、表示可能な広告の合計面積（ピクセル単位）を、表示されているコンテンツの割合として測定します。合成ユーザーは、A2CR が一般的なユーザーエクスペリエンスを確実に反映するように、コンテンツをスクロールして操作します。<br>A2CR の高いプロパティで実行されるキャンペーンは、パフォーマンスが大幅に低下します。広告エクスペリエンスに過負荷をかけ（A2CR を増加させる）、パブリッシャーはユーザーに不快感を与えるだけでなく、メディアプランから最適化の対象から外されるリスクも生じます。'
+        en: 'Ads to Content Ratio(A2CR) measures the percentage of the viewport that is dedicated to ads versus the percentage dedicated to content. The number shown is the max value found on the publisher.\nA2CR is calculated when a Synthetic User visits a property or streaming channel and measures the total ad-renderable real estate (in pixels) as a percentage of the visible content. Synthetic Users scroll and interact with content to ensure the A2CR reflects the typical user experience.\nCampaigns that run on high A2CR properties have significantly worse performance. By overloading the Ad Experience (and increasing A2CRs) publishers annoy users, but will risk being optimized off of a media plan.',
+        ja: 'Ads to Content Ratio(A2CR) は、ビューポートのうち、広告に割り当てられている割合とコンテンツに割り当てられている割合の比率です。表示されている数値は、パブリッシャーで検出された最大値です。\nA2CR は、仮想ユーザーがプロパティまたはストリーミングチャンネルを訪問したときに計算され、表示可能な広告の合計面積（ピクセル単位）を、表示されているコンテンツの割合として測定します。仮想ユーザーは、A2CR が一般的なユーザーエクスペリエンスを確実に反映するように、コンテンツをスクロールして操作します。\nA2CR の高いプロパティで実行されるキャンペーンは、パフォーマンスが大幅に低下します。広告エクスペリエンスに過負荷をかけ（A2CR を増加させる）、パブリッシャーはユーザーに不快感を与えるだけでなく、メディアプランから最適化の対象から外されるリスクも生じます。'
       },
       avgAdsInView: {
-        en: 'Average number of advertisements visible in the viewport at any given time',
-        ja: '任意の時点でビューポートに表示される広告の平均数',
+        en: 'Ads in View tracks how many ads are "viewable" by the user. This number changes as the user scrolls through a webpage and the ad experience adjusts. Sincera provides initial, average, and maximum values to capture these changes.\nAs the Synthetic User scrolls the content on a URL, it notes how many ad units are in the viewport. Sincera takes this data and creates an average across multiple visits to the publisher.\nCrowded ad environments hurt Click, Conversion, and Recall rates. Consumers find them off-putting, and buyers risk their message getting lost.',
+        ja: 'Ads in View は、ユーザーによって「表示可能」な広告の数を追跡します。この数は、ユーザーがウェブページをスクロールし、広告の表示が調整されるにつれて変化します。Sincera は、これらの変化を把握するために、初期値、平均値、および最大値を提供します。\n仮想ユーザーは、URL のコンテンツをスクロールしながら、ビューポート内に表示されている広告ユニットの数を記録します。Sincera はこのデータを使用して、パブリッシャーへの複数の訪問の平均値を算出します。\n広告が密集した環境は、クリック率、コンバージョン率、リコール率を低下させます。消費者はこれらを不快に感じ、広告主はメッセージが埋もれてしまうリスクがあります。',
       },
       avgAdRefresh: {
-        en: 'Average frequency of advertisement refresh or rotation on pages',
-        ja: 'ページ上での広告の更新またはローテーションの平均頻度',
+        en: 'Ad Refresh is the average of time, in seconds, an ad will display on a publisher before refreshing.\nSincera\'s Synthetic User will wait on a given URL and count the seconds between refresh events - a costly, but highly accurate way of determining ad refresh.\nFast ad refresh rates hurt campaign performance and carry reputational risk for publishers. Buyers should avoid running on these ad placements, and publishers should avoid blending fast-refreshing ad placements among overall slower refresh ad units.',
+        ja: 'Ad Refreshとは、パブリッシャーで広告がリフレッシュされるまでの平均表示時間（秒）のことです。\nSincera の仮装ユーザーは、指定された URL で待機し、リフレッシュイベント間の秒数をカウントします。これは、コストはかかるものの、広告のリフレッシュを非常に正確に測定できる方法です。\nAd Refreshが速すぎると、キャンペーンのパフォーマンスが低下し、パブリッシャーの評判が損なわれるリスクがあります。購入者は、このような広告プレースメントでの掲載は避けるべきであり、パブリッシャーは、リフレッシュの遅い広告ユニット全体に、リフレッシュの速い広告プレースメントを混ぜて使用することは避けるべきです。',
       },
       totalUniqueGpids: {
         en: 'Total number of unique Global Publisher Identifiers (GPIDs) associated with the publisher',
@@ -1701,7 +1701,7 @@ export const translations = {
       },
       totalSupplyPaths: {
         en: 'Total number of supply paths or channels through which inventory is made available',
-        ja: 'インベントリが利用可能になる供給パスまたはチャネルの総数',
+        ja: 'インベントリが利用可能になるサプライパスまたはチャネルの総数',
       },
       resellerCount: {
         en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain',
