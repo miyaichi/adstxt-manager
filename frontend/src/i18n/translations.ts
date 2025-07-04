@@ -1672,8 +1672,8 @@ export const translations = {
         ja: '広告インベントリサプライの主要タイプ（例：ウェブ、モバイル、ビデオ）',
       },
       avgAdsToContentRatio: {
-        en: 'Average ratio of advertisements to content on the publisher\'s pages',
-        ja: 'パブリッシャーのページにおける広告とコンテンツの平均比率',
+        en: 'Ads to Content Ratio(A2CR) measures the percentage of the viewport that is dedicated to ads versus the percentage dedicated to content. The number shown is the max value found on the publisher.A2CR is calculated when a Synthetic User visits a property or streaming channel and measures the total ad-renderable real estate (in pixels) as a percentage of the visible content. Synthetic Users scroll and interact with content to ensure the A2CR reflects the typical user experience.Campaigns that run on high A2CR properties have significantly worse performance. By overloading the Ad Experience (and increasing A2CRs) publishers annoy users, but will risk being optimized off of a media plan.',
+        ja: 'Ads to Content Ratio(A2CR) は、ビューポートのうち、広告に割り当てられている割合とコンテンツに割り当てられている割合の比率です。表示されている数値は、パブリッシャーで検出された最大値です。<br>A2CR は、合成ユーザーがプロパティまたはストリーミングチャンネルを訪問したときに計算され、表示可能な広告の合計面積（ピクセル単位）を、表示されているコンテンツの割合として測定します。合成ユーザーは、A2CR が一般的なユーザーエクスペリエンスを確実に反映するように、コンテンツをスクロールして操作します。<br>A2CR の高いプロパティで実行されるキャンペーンは、パフォーマンスが大幅に低下します。広告エクスペリエンスに過負荷をかけ（A2CR を増加させる）、パブリッシャーはユーザーに不快感を与えるだけでなく、メディアプランから最適化の対象から外されるリスクも生じます。'
       },
       avgAdsInView: {
         en: 'Average number of advertisements visible in the viewport at any given time',
