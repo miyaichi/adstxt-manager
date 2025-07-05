@@ -21,6 +21,7 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 - **対話型インターフェース**: パブリッシャーと依頼者間のメッセージング機能
 - **Ads.txt管理**: パブリッシャー側での効率的なレコード追加・管理
 - **Ads.txt最適化機能**: 重複除去、フォーマット標準化、Certification ID補完
+- **サイト分析機能**: OpenSincera APIを使用したパブリッシャーメタデータ分析
 
 ## 設計原則
 
@@ -287,6 +288,9 @@ JWT_SECRET=your-secure-jwt-secret
 # メール設定
 EMAIL_USER=noreply@example.com
 EMAIL_PASSWORD=your-email-password
+
+# OpenSincera API設定
+OPENSINCERA_API_KEY=your-opensincera-api-key
 ```
 
 **Variables** (環境設定):
@@ -307,6 +311,10 @@ DB_MAX_POOL_SIZE=20
 DB_CONNECTION_TIMEOUT=15000
 DB_IDLE_TIMEOUT=60000
 DB_HEALTH_CHECK_INTERVAL=60000
+
+# OpenSincera API設定
+OPENSINCERA_BASE_URL=https://open.sincera.io/api
+OPENSINCERA_TIMEOUT=10000
 ```
 
 ## 使用例
@@ -336,6 +344,28 @@ DB_HEALTH_CHECK_INTERVAL=60000
    - sellers.jsonが提供されていない広告システム
 4. **プログレスインジケーター**: 最適化プロセスの各フェーズ（取得、解析、sellers.jsonの取得、最適化）の進捗を表示
 5. **キャンセル機能**: 長時間の処理を中断できるキャンセルボタン
+
+### サイト分析機能：
+1. **パブリッシャーメタデータ分析**: OpenSincera APIを使用してパブリッシャーの詳細情報を取得・表示
+2. **検索方法**:
+   - **ドメイン検索**: パブリッシャーのドメイン名で検索
+   - **パブリッシャーID検索**: OpenSinceraのパブリッシャーIDで検索
+3. **表示情報**:
+   - **基本情報**: パブリッシャーID、名前、ドメイン、認証ステータス、最終更新日時
+   - **運用ステータス**: アクティブ、非アクティブ、停止中の詳細説明付き
+   - **認証レベル**: 認証済み、認証待ち、未認証の詳細説明付き
+   - **追加メタデータ**: 詳細な運用指標と解説
+4. **詳細メタデータ**（OpenSinceraで提供される場合）:
+   - **Ads to Content Ratio (A2CR)**: 広告とコンテンツの比率分析
+   - **Ads in View**: ビューポート内の広告数とユーザーエクスペリエンス指標
+   - **Ad Refresh Rate**: 広告更新頻度とパフォーマンス影響
+   - **Global Publisher Identifiers (GPIDs)**: インベントリ透明性指標
+   - **ID Absorption Rate**: 識別子付加効率とターゲティング効果
+   - **Page Weight & CPU Usage**: ページパフォーマンス指標
+   - **Supply Path Analysis**: サプライチェーン透明性とコスト効率
+   - **Reseller Count**: 中間業者数と収益効率
+5. **多言語対応**: 全ての説明文とメタデータの詳細解説が日本語・英語で利用可能
+6. **エラーハンドリング**: API制限、ネットワークエラー、データ未発見時の適切な処理
 
 ## ライセンス
 
