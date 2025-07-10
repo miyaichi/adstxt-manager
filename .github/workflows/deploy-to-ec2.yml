@@ -28,17 +28,6 @@ jobs:
           echo "REACT_APP_API_URL=${{ vars.REACT_APP_API_URL }}" > frontend/.env
           echo "REACT_APP_ENVIRONMENT=${{ vars.REACT_APP_ENVIRONMENT }}" >> frontend/.env
 
-      - name: Install monorepo dependencies
-        run: |
-          # Install root dependencies first to set up workspaces
-          npm install
-
-      - name: Build ads-txt-validator package
-        run: |
-          cd packages/ads-txt-validator
-          npm install
-          npm run build
-
       - name: Install and build backend
         run: |
           cd backend
@@ -200,71 +189,11 @@ jobs:
         run: |
           # Create app directories
           mkdir -p deploy
-          # Copy the compiled files from backend/dist, avoiding nested backend/src structure
-          if [ -f backend/dist/server.js ]; then
-            cp backend/dist/server.js deploy/
-          else
-            cp backend/dist/backend/src/server.js deploy/
-          fi
-          if [ -f backend/dist/app.js ]; then
-            cp backend/dist/app.js deploy/
-          else
-            cp backend/dist/backend/src/app.js deploy/
-          fi
-          if [ -d backend/dist/config ]; then
-            cp -r backend/dist/config deploy/
-          else
-            cp -r backend/dist/backend/src/config deploy/
-          fi
-          if [ -d backend/dist/controllers ]; then
-            cp -r backend/dist/controllers deploy/
-          else
-            cp -r backend/dist/backend/src/controllers deploy/
-          fi
-          if [ -d backend/dist/db ]; then
-            cp -r backend/dist/db deploy/
-          else
-            cp -r backend/dist/backend/src/db deploy/
-          fi
-          if [ -d backend/dist/i18n ]; then
-            cp -r backend/dist/i18n deploy/
-          else
-            cp -r backend/dist/backend/src/i18n deploy/
-          fi
-          if [ -d backend/dist/middleware ]; then
-            cp -r backend/dist/middleware deploy/
-          else
-            cp -r backend/dist/backend/src/middleware deploy/
-          fi
-          if [ -d backend/dist/models ]; then
-            cp -r backend/dist/models deploy/
-          else
-            cp -r backend/dist/backend/src/models deploy/
-          fi
-          if [ -d backend/dist/routes ]; then
-            cp -r backend/dist/routes deploy/
-          else
-            cp -r backend/dist/backend/src/routes deploy/
-          fi
-          if [ -d backend/dist/services ]; then
-            cp -r backend/dist/services deploy/
-          else
-            cp -r backend/dist/backend/src/services deploy/
-          fi
-          if [ -d backend/dist/utils ]; then
-            cp -r backend/dist/utils deploy/
-          else
-            cp -r backend/dist/backend/src/utils deploy/
-          fi
+          cp -r backend/dist deploy/
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
-          # Copy package-lock.json if it exists
-          if [ -f backend/package-lock.json ]; then
-            cp backend/package-lock.json deploy/
-          fi
+          cp backend/package-lock.json deploy/
           cp Procfile deploy/
-          # Copy packages directory for monorepo dependencies
-          cp -r packages deploy/
 
           # Add API integration settings to .env file
           echo "" >> backend/.env
