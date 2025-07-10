@@ -301,28 +301,41 @@ jobs:
           if [ -n "${{ vars.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
             echo "Creating CodeDeploy deployment..."
             
-            # Check for existing active deployments
+            # Check for existing active deployments (with permission handling)
             echo "Checking for existing active deployments..."
-            EXISTING_DEPLOYMENTS=$(aws deploy list-deployments \
+            EXISTING_DEPLOYMENTS=""
+            if aws deploy list-deployments \
               --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
               --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
               --include-only-statuses Created InProgress Queued Ready \
-              --query 'deployments' --output text)
+              --query 'deployments' --output text 2>/dev/null; then
+              
+              EXISTING_DEPLOYMENTS=$(aws deploy list-deployments \
+                --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
+                --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+                --include-only-statuses Created InProgress Queued Ready \
+                --query 'deployments' --output text 2>/dev/null)
+            else
+              echo "⚠️ Unable to check existing deployments (permission denied or other error)"
+              echo "Attempting to create deployment anyway..."
+              echo "If this fails with DeploymentLimitExceededException, please check the CodeDeploy console:"
+              echo "🔗 https://${{ vars.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/applications/${{ vars.CODEDEPLOY_APP_NAME }}/deployment-groups/${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}/deployments"
+            fi
             
             if [ -n "$EXISTING_DEPLOYMENTS" ] && [ "$EXISTING_DEPLOYMENTS" != "None" ]; then
               echo "⚠️ Found existing active deployment(s): $EXISTING_DEPLOYMENTS"
               echo "Waiting for existing deployments to complete..."
               
-              # Wait for existing deployments to complete (max 10 minutes)
+              # Wait for existing deployments to complete (max 5 minutes when we can check)
               WAIT_COUNT=0
-              MAX_WAIT=60  # 10 minutes in 10-second intervals
+              MAX_WAIT=30  # 5 minutes in 10-second intervals
               
               while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
                 ACTIVE_DEPLOYMENTS=$(aws deploy list-deployments \
                   --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
                   --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
                   --include-only-statuses Created InProgress Queued Ready \
-                  --query 'deployments' --output text)
+                  --query 'deployments' --output text 2>/dev/null)
                 
                 if [ -z "$ACTIVE_DEPLOYMENTS" ] || [ "$ACTIVE_DEPLOYMENTS" = "None" ]; then
                   echo "✅ All active deployments completed"
