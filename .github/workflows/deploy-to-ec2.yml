@@ -197,7 +197,10 @@ jobs:
           cp -r backend/dist deploy/
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
-          cp backend/package-lock.json deploy/
+          # Copy package-lock.json if it exists
+          if [ -f backend/package-lock.json ]; then
+            cp backend/package-lock.json deploy/
+          fi
           cp Procfile deploy/
           # Copy packages directory for monorepo dependencies
           cp -r packages deploy/
