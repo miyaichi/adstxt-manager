@@ -200,18 +200,62 @@ jobs:
         run: |
           # Create app directories
           mkdir -p deploy
-          # Copy only the root level files from backend/dist (not the nested backend/src structure)
-          cp backend/dist/server.js deploy/
-          cp -r backend/dist/config deploy/
-          cp -r backend/dist/controllers deploy/
-          cp -r backend/dist/db deploy/
-          cp -r backend/dist/i18n deploy/
-          cp -r backend/dist/middleware deploy/
-          cp -r backend/dist/models deploy/
-          cp -r backend/dist/routes deploy/
-          cp -r backend/dist/services deploy/
-          cp -r backend/dist/utils deploy/
-          cp backend/dist/app.js deploy/
+          # Copy the compiled files from backend/dist, avoiding nested backend/src structure
+          if [ -f backend/dist/server.js ]; then
+            cp backend/dist/server.js deploy/
+          else
+            cp backend/dist/backend/src/server.js deploy/
+          fi
+          if [ -f backend/dist/app.js ]; then
+            cp backend/dist/app.js deploy/
+          else
+            cp backend/dist/backend/src/app.js deploy/
+          fi
+          if [ -d backend/dist/config ]; then
+            cp -r backend/dist/config deploy/
+          else
+            cp -r backend/dist/backend/src/config deploy/
+          fi
+          if [ -d backend/dist/controllers ]; then
+            cp -r backend/dist/controllers deploy/
+          else
+            cp -r backend/dist/backend/src/controllers deploy/
+          fi
+          if [ -d backend/dist/db ]; then
+            cp -r backend/dist/db deploy/
+          else
+            cp -r backend/dist/backend/src/db deploy/
+          fi
+          if [ -d backend/dist/i18n ]; then
+            cp -r backend/dist/i18n deploy/
+          else
+            cp -r backend/dist/backend/src/i18n deploy/
+          fi
+          if [ -d backend/dist/middleware ]; then
+            cp -r backend/dist/middleware deploy/
+          else
+            cp -r backend/dist/backend/src/middleware deploy/
+          fi
+          if [ -d backend/dist/models ]; then
+            cp -r backend/dist/models deploy/
+          else
+            cp -r backend/dist/backend/src/models deploy/
+          fi
+          if [ -d backend/dist/routes ]; then
+            cp -r backend/dist/routes deploy/
+          else
+            cp -r backend/dist/backend/src/routes deploy/
+          fi
+          if [ -d backend/dist/services ]; then
+            cp -r backend/dist/services deploy/
+          else
+            cp -r backend/dist/backend/src/services deploy/
+          fi
+          if [ -d backend/dist/utils ]; then
+            cp -r backend/dist/utils deploy/
+          else
+            cp -r backend/dist/backend/src/utils deploy/
+          fi
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
           # Copy package-lock.json if it exists
