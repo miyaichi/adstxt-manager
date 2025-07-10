@@ -1664,7 +1664,7 @@ export const translations = {
     },
     metadataDescriptions: {
       description: {
-        en: 'Description or summary of the publisher\'s content and services',
+        en: "Description or summary of the publisher's content and services",
         ja: 'パブリッシャーのコンテンツとサービスの説明または概要',
       },
       primarySupplyType: {
@@ -1673,14 +1673,14 @@ export const translations = {
       },
       avgAdsToContentRatio: {
         en: 'Ads to Content Ratio(A2CR) measures the percentage of the viewport that is dedicated to ads versus the percentage dedicated to content. The number shown is the max value found on the publisher.\nA2CR is calculated when a Synthetic User visits a property or streaming channel and measures the total ad-renderable real estate (in pixels) as a percentage of the visible content. Synthetic Users scroll and interact with content to ensure the A2CR reflects the typical user experience.\n\nCampaigns that run on high A2CR properties have significantly worse performance. By overloading the Ad Experience (and increasing A2CRs) publishers annoy users, but will risk being optimized off of a media plan.',
-        ja: 'Ads to Content Ratio(A2CR) は、ビューポートのうち、広告に割り当てられている割合とコンテンツに割り当てられている割合の比率です。表示されている数値は、パブリッシャーで検出された最大値です。\nA2CR は、仮想ユーザーがプロパティまたはストリーミングチャンネルを訪問したときに計算され、表示可能な広告の合計面積（ピクセル単位）を、表示されているコンテンツの割合として測定します。仮想ユーザーは、A2CR が一般的なユーザーエクスペリエンスを確実に反映するように、コンテンツをスクロールして操作します。\n\nA2CR の高いプロパティで実行されるキャンペーンは、パフォーマンスが大幅に低下します。広告エクスペリエンスに過負荷をかけ（A2CR を増加させる）、パブリッシャーはユーザーに不快感を与えるだけでなく、メディアプランから最適化の対象から外されるリスクも生じます。'
+        ja: 'Ads to Content Ratio(A2CR) は、ビューポートのうち、広告に割り当てられている割合とコンテンツに割り当てられている割合の比率です。表示されている数値は、パブリッシャーで検出された最大値です。\nA2CR は、仮想ユーザーがプロパティまたはストリーミングチャンネルを訪問したときに計算され、表示可能な広告の合計面積（ピクセル単位）を、表示されているコンテンツの割合として測定します。仮想ユーザーは、A2CR が一般的なユーザーエクスペリエンスを確実に反映するように、コンテンツをスクロールして操作します。\n\nA2CR の高いプロパティで実行されるキャンペーンは、パフォーマンスが大幅に低下します。広告エクスペリエンスに過負荷をかけ（A2CR を増加させる）、パブリッシャーはユーザーに不快感を与えるだけでなく、メディアプランから最適化の対象から外されるリスクも生じます。',
       },
       avgAdsInView: {
         en: 'Ads in View tracks how many ads are "viewable" by the user. This number changes as the user scrolls through a webpage and the ad experience adjusts. Sincera provides initial, average, and maximum values to capture these changes.\nAs the Synthetic User scrolls the content on a URL, it notes how many ad units are in the viewport. Sincera takes this data and creates an average across multiple visits to the publisher.\n\nCrowded ad environments hurt Click, Conversion, and Recall rates. Consumers find them off-putting, and buyers risk their message getting lost.',
         ja: 'Ads in View は、ユーザーによって「表示可能」な広告の数を追跡します。この数は、ユーザーがウェブページをスクロールし、広告の表示が調整されるにつれて変化します。Sincera は、これらの変化を把握するために、初期値、平均値、および最大値を提供します。\n仮想ユーザーは、URL のコンテンツをスクロールしながら、ビューポート内に表示されている広告ユニットの数を記録します。Sincera はこのデータを使用して、パブリッシャーへの複数の訪問の平均値を算出します。\n\n広告が密集した環境は、クリック率、コンバージョン率、リコール率を低下させます。消費者はこれらを不快に感じ、広告主はメッセージが埋もれてしまうリスクがあります。',
       },
       avgAdRefresh: {
-        en: 'Ad Refresh is the average of time, in seconds, an ad will display on a publisher before refreshing.\nSincera\'s Synthetic User will wait on a given URL and count the seconds between refresh events - a costly, but highly accurate way of determining ad refresh.\n\nFast ad refresh rates hurt campaign performance and carry reputational risk for publishers. Buyers should avoid running on these ad placements, and publishers should avoid blending fast-refreshing ad placements among overall slower refresh ad units.',
+        en: "Ad Refresh is the average of time, in seconds, an ad will display on a publisher before refreshing.\nSincera's Synthetic User will wait on a given URL and count the seconds between refresh events - a costly, but highly accurate way of determining ad refresh.\n\nFast ad refresh rates hurt campaign performance and carry reputational risk for publishers. Buyers should avoid running on these ad placements, and publishers should avoid blending fast-refreshing ad placements among overall slower refresh ad units.",
         ja: 'Ad Refreshとは、パブリッシャーで広告がリフレッシュされるまでの平均表示時間（秒）のことです。\nSincera の仮装ユーザーは、指定された URL で待機し、リフレッシュイベント間の秒数をカウントします。これは、コストはかかるものの、広告のリフレッシュを非常に正確に測定できる方法です。\n\nAd Refreshが速すぎると、キャンペーンのパフォーマンスが低下し、パブリッシャーの評判が損なわれるリスクがあります。購入者は、このような広告プレースメントでの掲載は避けるべきであり、パブリッシャーは、リフレッシュの遅い広告ユニット全体に、リフレッシュの速い広告プレースメントを混ぜて使用することは避けるべきです。',
       },
       totalUniqueGpids: {
@@ -1700,11 +1700,11 @@ export const translations = {
         ja: 'ページレンダリングのための平均CPU使用率または処理要件。これは、広告パフォーマンスと逆相関する指標です。CPU使用率は秒単位で測定されます。\n\n高いCPU使用率は、デバイスの動作を遅くし、特にモバイルデバイスでバッテリー寿命を短縮する可能性があるリソース集約的なページを示します。低いCPU使用率により、より良いユーザーエクスペリエンス、向上した広告パフォーマンスが保証され、異なるデバイス性能とインターネット速度にわたるアクセシビリティがサポートされます。',
       },
       totalSupplyPaths: {
-        en: 'The total number of supply paths an ad takes from the advertiser to the publisher\'s website or app where it is displayed. It includes the series of intermediaries involved in the selling and delivery of the ad inventory, such as ad exchanges, SSPs, and other resellers.\n\nMultiple supply paths can increase costs and reduce transparency in the advertising supply chain. Publishers with fewer, more direct supply paths offer better value for advertisers and clearer attribution, promoting a more efficient and trustworthy programmatic advertising ecosystem.',
+        en: "The total number of supply paths an ad takes from the advertiser to the publisher's website or app where it is displayed. It includes the series of intermediaries involved in the selling and delivery of the ad inventory, such as ad exchanges, SSPs, and other resellers.\n\nMultiple supply paths can increase costs and reduce transparency in the advertising supply chain. Publishers with fewer, more direct supply paths offer better value for advertisers and clearer attribution, promoting a more efficient and trustworthy programmatic advertising ecosystem.",
         ja: '広告が広告主からパブリッシャーのウェブサイトやアプリに表示されるまでのサプライパスの総数。広告インベントリの販売と配信に関与する一連の中間業者（広告交換、SSP、その他のリセラーなど）を含みます。\n\n複数のサプライパスは、広告サプライチェーンにおけるコストの増加と透明性の低下を招く可能性があります。より少ない、より直接的なサプライパスを持つパブリッシャーは、広告主により良い価値を提供し、より明確な属性分析を可能にし、より効率的で信頼できるプログラマティック広告エコシステムを促進します。',
       },
       resellerCount: {
-        en: 'Number of resellers or intermediaries involved in the publisher\'s advertising supply chain.\n\nFewer intermediaries mean lower fees, better transparency, and more revenue flowing to content creators. Publishers with streamlined supply chains offer better value to advertisers and contribute to a more direct, efficient, and sustainable advertising ecosystem that benefits both buyers and sellers.',
+        en: "Number of resellers or intermediaries involved in the publisher's advertising supply chain.\n\nFewer intermediaries mean lower fees, better transparency, and more revenue flowing to content creators. Publishers with streamlined supply chains offer better value to advertisers and contribute to a more direct, efficient, and sustainable advertising ecosystem that benefits both buyers and sellers.",
         ja: 'パブリッシャーの広告サプライチェーンに関わるリセラーまたは中間業者の数。\n\n中間業者が少ないほど、手数料が低くなり、透明性が向上し、コンテンツクリエイターにより多くの収益が流れます。合理化されたサプライチェーンを持つパブリッシャーは、広告主により良い価値を提供し、買い手と売り手の両方に利益をもたらす、より直接的で効率的かつ持続可能な広告エコシステムに貢献します。',
       },
       slug: {

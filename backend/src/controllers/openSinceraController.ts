@@ -13,7 +13,11 @@ export const getPublisherMetadata = asyncHandler(async (req: Request, res: Respo
   const { publisherId, publisherDomain, limit, offset, includeInactive } = req.query;
 
   if (!publisherId && !publisherDomain) {
-    throw new ApiError(400, 'Either publisherId or publisherDomain is required', 'MISSING_PARAMETER');
+    throw new ApiError(
+      400,
+      'Either publisherId or publisherDomain is required',
+      'MISSING_PARAMETER'
+    );
   }
 
   const request: GetPublisherMetadataRequest = {};
@@ -49,7 +53,7 @@ export const getPublisherMetadata = asyncHandler(async (req: Request, res: Respo
   try {
     logger.info('Fetching publisher metadata from OpenSincera API', request);
     const result = await openSinceraService.getPublisherMetadata(request);
-    
+
     logger.info('Successfully fetched publisher metadata', {
       publisherCount: result.publishers.length,
       totalCount: result.totalCount,
@@ -95,7 +99,8 @@ export const getPublisherByDomain = asyncHandler(async (req: Request, res: Respo
   }
 
   // Basic domain validation
-  const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
+  const domainRegex =
+    /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
   if (!domainRegex.test(domain)) {
     throw new ApiError(400, 'Invalid domain format', 'INVALID_DOMAIN_FORMAT');
   }
@@ -103,7 +108,7 @@ export const getPublisherByDomain = asyncHandler(async (req: Request, res: Respo
   try {
     logger.info('Fetching publisher metadata by domain', { domain });
     const publisher = await openSinceraService.getPublisherByDomain(domain);
-    
+
     if (!publisher) {
       throw new ApiError(404, 'Publisher not found for domain', 'PUBLISHER_NOT_FOUND');
     }
@@ -154,7 +159,7 @@ export const getPublisherById = asyncHandler(async (req: Request, res: Response)
   try {
     logger.info('Fetching publisher metadata by ID', { publisherId });
     const publisher = await openSinceraService.getPublisherById(publisherId);
-    
+
     if (!publisher) {
       throw new ApiError(404, 'Publisher not found', 'PUBLISHER_NOT_FOUND');
     }
@@ -199,7 +204,7 @@ export const healthCheck = asyncHandler(async (req: Request, res: Response) => {
   try {
     logger.info('Performing OpenSincera API health check');
     const isHealthy = await openSinceraService.healthCheck();
-    
+
     res.json({
       success: true,
       data: {

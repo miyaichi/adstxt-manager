@@ -1,4 +1,4 @@
-import { crossCheckAdsTxtRecords, parseAdsTxtLine, isAdsTxtRecord } from './validation';
+import { crossCheckAdsTxtRecords, parseAdsTxtLine, isAdsTxtRecord } from '../index';
 
 // Test function to validate a fixed record
 async function testFixedValidation() {

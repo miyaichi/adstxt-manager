@@ -10,7 +10,7 @@
  */
 
 // Import the module after building the project
-import { crossCheckAdsTxtRecords, parseAdsTxtContent } from './validation';
+import { crossCheckAdsTxtRecords, parseAdsTxtContent } from '../index';
 
 // Format validation results for cleaner output
 function formatValidationResult(record: any) {

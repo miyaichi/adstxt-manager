@@ -60,7 +60,7 @@ export class OpenSinceraService {
       baseURL: this.config.baseUrl,
       timeout: this.config.timeout,
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey!}`,
+        Authorization: `Bearer ${this.config.apiKey!}`,
         'User-Agent': 'Ads.txt Manager/1.0',
       },
       httpsAgent: new https.Agent({
@@ -132,7 +132,7 @@ export class OpenSinceraService {
         baseUrl: this.config.baseUrl,
         endpoint,
         headers: {
-          'Authorization': this.config.apiKey ? 'Bearer [REDACTED]' : 'No API key',
+          Authorization: this.config.apiKey ? 'Bearer [REDACTED]' : 'No API key',
         },
       });
 
@@ -149,18 +149,17 @@ export class OpenSinceraService {
 
       if (response.status === 200) {
         const responseData = response.data;
-        
+
         // Handle both array and object responses
         let publisherData: any = null;
-        
+
         if (Array.isArray(responseData) && responseData.length > 0) {
           publisherData = responseData[0];
         } else if (responseData && typeof responseData === 'object' && responseData.publisher_id) {
           publisherData = responseData;
         }
-        
+
         if (publisherData) {
-          
           // Map OpenSincera fields to our interface
           const mappedPublisher: PublisherMetadata = {
             publisherId: publisherData.publisher_id || publisherData.id || '',
@@ -169,8 +168,8 @@ export class OpenSinceraService {
             status: this.mapStatus(publisherData.status),
             lastUpdated: publisherData.updated_at || new Date().toISOString(),
             contactEmail: publisherData.contact_email,
-            categories: Array.isArray(publisherData.categories) 
-              ? publisherData.categories 
+            categories: Array.isArray(publisherData.categories)
+              ? publisherData.categories
               : publisherData.categories?.split(';') || [],
             verificationStatus: publisherData.visit_enabled ? 'verified' : 'unverified',
             metadata: {
@@ -229,7 +228,10 @@ export class OpenSinceraService {
       });
 
       // Log network connectivity errors for debugging
-      if (axios.isAxiosError(error) && (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED')) {
+      if (
+        axios.isAxiosError(error) &&
+        (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED')
+      ) {
         logger.error('OpenSincera API network error - check endpoint URL and connectivity', {
           domain: request.publisherDomain,
           publisherId: request.publisherId,
@@ -243,7 +245,9 @@ export class OpenSinceraService {
           const apiError = error.response.data.error as OpenSinceraApiError;
           throw new Error(`OpenSincera API Error: ${apiError.message} (${apiError.code})`);
         }
-        throw new Error(`HTTP ${error.response?.status}: ${error.response?.statusText || errorMessage}`);
+        throw new Error(
+          `HTTP ${error.response?.status}: ${error.response?.statusText || errorMessage}`
+        );
       }
 
       throw error;
@@ -262,7 +266,6 @@ export class OpenSinceraService {
     }
     return 'inactive';
   }
-
 
   async getPublisherByDomain(domain: string): Promise<PublisherMetadata | null> {
     try {
@@ -293,23 +296,26 @@ export class OpenSinceraService {
       const response = await this.client.get('/publishers?domain=test.invalid', {
         timeout: 5000,
       });
-      
+
       // Any response (including 404 or empty results) indicates API is available
       return response.status < 500;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // Network errors indicate API is not available
-      if (axios.isAxiosError(error) && (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED')) {
-        logger.error('OpenSincera API not reachable', { 
+      if (
+        axios.isAxiosError(error) &&
+        (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED')
+      ) {
+        logger.error('OpenSincera API not reachable', {
           error: errorMessage,
           baseUrl: this.config.baseUrl,
         });
         return false;
       }
-      
+
       // Other errors (like 401, 429) indicate API is available but there's an issue
-      logger.warn('OpenSincera API health check encountered error but API appears reachable', { 
+      logger.warn('OpenSincera API health check encountered error but API appears reachable', {
         error: errorMessage,
         baseUrl: this.config.baseUrl,
       });
@@ -327,8 +333,9 @@ const createOpenSinceraService = () => {
 };
 
 // Only instantiate if not in test environment
-const openSinceraService = process.env.NODE_ENV === 'test' 
-  ? null as any as OpenSinceraService
-  : createOpenSinceraService();
+const openSinceraService =
+  process.env.NODE_ENV === 'test'
+    ? (null as any as OpenSinceraService)
+    : createOpenSinceraService();
 
 export default openSinceraService;

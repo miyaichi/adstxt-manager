@@ -1,9 +1,9 @@
 /**
  * Reset sellers.json cache entries for specific domains
- * 
+ *
  * Usage:
  * node reset-sellers-json-cache.js [domain1] [domain2] ... [domainN]
- * 
+ *
  * Example:
  * node reset-sellers-json-cache.js 33across.com
  */
@@ -34,15 +34,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
 const placeholders = domains.map(() => '?').join(',');
 
 // Delete the cache entries for the specified domains
-db.run(`DELETE FROM sellers_json_cache WHERE domain IN (${placeholders})`, domains, function(err) {
+db.run(`DELETE FROM sellers_json_cache WHERE domain IN (${placeholders})`, domains, function (err) {
   if (err) {
     console.error('Error deleting cache entries:', err.message);
     db.close();
     process.exit(1);
   }
-  
-  console.log(`Successfully deleted ${this.changes} cache entries for domains: ${domains.join(', ')}`);
-  
+
+  console.log(
+    `Successfully deleted ${this.changes} cache entries for domains: ${domains.join(', ')}`
+  );
+
   // Close the database connection
   db.close((err) => {
     if (err) {

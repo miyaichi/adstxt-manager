@@ -1,4 +1,4 @@
-import { parseAdsTxtLine } from './validation';
+import { parseAdsTxtLine } from '../index';
 
 // Test cases for domain validation
 const testCases = [

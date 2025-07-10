@@ -32,6 +32,80 @@ export const VALIDATION_KEYS = {
 // For backward compatibility
 export const ERROR_KEYS = VALIDATION_KEYS;
 
+// New efficient sellers.json provider interface
+export interface SellersJsonProvider {
+  /**
+   * Get specific sellers by seller IDs for a domain
+   * @param domain - The domain to fetch sellers for
+   * @param sellerIds - Array of seller IDs to fetch
+   * @returns Promise resolving to batch sellers result
+   */
+  batchGetSellers(domain: string, sellerIds: string[]): Promise<BatchSellersResult>;
+
+  /**
+   * Get metadata for a domain's sellers.json
+   * @param domain - The domain to fetch metadata for
+   * @returns Promise resolving to sellers.json metadata
+   */
+  getMetadata(domain: string): Promise<SellersJsonMetadata>;
+
+  /**
+   * Check if a domain has a sellers.json file
+   * @param domain - The domain to check
+   * @returns Promise resolving to boolean indicating existence
+   */
+  hasSellerJson(domain: string): Promise<boolean>;
+
+  /**
+   * Get cache information for a domain
+   * @param domain - The domain to get cache info for
+   * @returns Promise resolving to cache information
+   */
+  getCacheInfo(domain: string): Promise<CacheInfo>;
+}
+
+// Interfaces aligned with backend API definitions
+export interface BatchSellersResult {
+  domain: string;
+  requested_count: number;
+  found_count: number;
+  results: SellerResult[];
+  metadata: SellersJsonMetadata;
+  cache: CacheInfo;
+}
+
+export interface SellerResult {
+  sellerId: string;
+  seller: Seller | null;
+  found: boolean;
+  source: 'cache' | 'fresh';
+  error?: string;
+}
+
+export interface Seller {
+  seller_id: string;
+  name?: string;
+  domain?: string;
+  seller_type?: 'PUBLISHER' | 'INTERMEDIARY' | 'BOTH';
+  is_confidential?: 0 | 1;
+  [key: string]: any;
+}
+
+export interface SellersJsonMetadata {
+  version?: string;
+  contact_email?: string;
+  contact_address?: string;
+  seller_count?: number;
+  identifiers?: any[];
+}
+
+export interface CacheInfo {
+  is_cached: boolean;
+  last_updated?: string;
+  status: 'success' | 'error' | 'stale';
+  expires_at?: string;
+}
+
 // Common base interface for both record and variable entries
 export interface ParsedAdsTxtEntryBase {
   line_number: number;
@@ -472,18 +546,37 @@ export interface CrossCheckValidationResult {
   error?: string;
 }
 
+
 /**
- * Cross-check parsed Ads.txt records against publisher domain and sellers.json data
- * This function checks both duplicate entries between submitted records and
- * existing ads.txt records, and also validates against sellers.json specifications
- *
- * @param publisherDomain - The publisher's domain for cross-checking
- * @param parsedEntries - The parsed Ads.txt entries to check
- * @returns The validated/filtered entries with duplicate entries and sellers.json validation results
+ * Optimized cross-check function using SellersJsonProvider
+ * This is the new preferred method for performance-critical applications
  */
 export async function crossCheckAdsTxtRecords(
   publisherDomain: string | undefined,
-  parsedEntries: ParsedAdsTxtEntry[]
+  parsedEntries: ParsedAdsTxtEntry[],
+  cachedAdsTxtContent: string | null,
+  sellersJsonProvider: SellersJsonProvider
+): Promise<ParsedAdsTxtEntry[]>;
+
+/**
+ * Legacy cross-check function for backward compatibility
+ * @deprecated Use the SellersJsonProvider version for better performance
+ */
+export async function crossCheckAdsTxtRecords(
+  publisherDomain: string | undefined,
+  parsedEntries: ParsedAdsTxtEntry[],
+  cachedAdsTxtContent: string | null,
+  getSellersJson: (domain: string) => Promise<any | null>
+): Promise<ParsedAdsTxtEntry[]>;
+
+/**
+ * Implementation for both overloads
+ */
+export async function crossCheckAdsTxtRecords(
+  publisherDomain: string | undefined,
+  parsedEntries: ParsedAdsTxtEntry[],
+  cachedAdsTxtContent: string | null,
+  sellersJsonProviderOrGetSellersJson: SellersJsonProvider | ((domain: string) => Promise<any | null>)
 ): Promise<ParsedAdsTxtEntry[]> {
   const logger = createLogger();
 
@@ -498,10 +591,6 @@ export async function crossCheckAdsTxtRecords(
   }
 
   try {
-    // Import needed modules here to avoid circular dependencies
-    const { default: AdsTxtCacheModel } = await import('../models/AdsTxtCache');
-    const { default: SellersJsonCacheModel } = await import('../models/SellersJsonCache');
-
     // Separate variable entries from record entries using the type guards
     const variableEntries = parsedEntries.filter(isAdsTxtVariable);
     const recordEntries = parsedEntries.filter(isAdsTxtRecord);
@@ -510,15 +599,15 @@ export async function crossCheckAdsTxtRecords(
     let resultRecords = await checkForDuplicates(
       publisherDomain,
       recordEntries,
-      AdsTxtCacheModel,
+      cachedAdsTxtContent,
       logger
     );
 
     // Step 2: Validate against sellers.json data (only for non-variable records)
-    const validatedRecords = await validateAgainstSellersJson(
+    const validatedRecords = await validateAgainstSellersJsonOptimized(
       publisherDomain,
       resultRecords,
-      SellersJsonCacheModel,
+      sellersJsonProviderOrGetSellersJson,
       logger,
       parsedEntries // Pass all entries including variables for domain validation
     );
@@ -538,7 +627,7 @@ export async function crossCheckAdsTxtRecords(
 export async function checkForDuplicates(
   publisherDomain: string,
   parsedRecords: ParsedAdsTxtRecord[], // Note: This expects only record entries, not variables
-  AdsTxtCacheModel: any,
+  cachedAdsTxtContent: string | null,
   logger: Logger
 ): Promise<ParsedAdsTxtRecord[]> {
   logger.info(`Starting cross-check with publisher domain: ${publisherDomain}`);
@@ -546,20 +635,15 @@ export async function checkForDuplicates(
   // Log sample of input records
   logSampleRecords(parsedRecords, logger);
 
-  // Attempt to get cached ads.txt for the publisher domain
-  logger.info(`Fetching cached ads.txt data for ${publisherDomain}`);
-  const cachedData = await AdsTxtCacheModel.getByDomain(publisherDomain);
-  logger.info(`Cached data found: ${!!cachedData}, status: ${cachedData?.status}`);
-
   // Create result array that we'll populate with validation results
   let resultRecords = [...parsedRecords];
 
   // Check for duplicates if we have valid cached data
-  if (cachedData && cachedData.status === 'success' && cachedData.content) {
-    logger.info(`Cached content length: ${cachedData.content.length}`);
+  if (cachedAdsTxtContent) {
+    logger.info(`Cached content length: ${cachedAdsTxtContent.length}`);
 
     // Parse the cached ads.txt content
-    const existingRecords = parseAdsTxtContent(cachedData.content);
+    const existingRecords = parseAdsTxtContent(cachedAdsTxtContent);
 
     // Log sample of existing records
     logger.info("Sample of records from publisher's ads.txt:");
@@ -684,7 +768,7 @@ function findDuplicateRecords(
 async function validateAgainstSellersJson(
   publisherDomain: string,
   records: ParsedAdsTxtRecord[],
-  SellersJsonCacheModel: any,
+  getSellersJson: (domain: string) => Promise<any | null>,
   logger: Logger,
   allEntries: ParsedAdsTxtEntry[] = [] // Add allEntries parameter to pass all entries including variables
 ): Promise<ParsedAdsTxtRecord[]> {
@@ -705,7 +789,7 @@ async function validateAgainstSellersJson(
           publisherDomain,
           sellersJsonCache,
           domainSellerIdCountsMap,
-          SellersJsonCacheModel,
+          getSellersJson,
           logger,
           allEntries // Pass all entries including variables
         );
@@ -739,6 +823,220 @@ async function validateAgainstSellersJson(
   return recordsWithSellerValidation;
 }
 
+/**
+ * Optimized validation function that uses SellersJsonProvider for efficient queries
+ */
+async function validateAgainstSellersJsonOptimized(
+  publisherDomain: string,
+  records: ParsedAdsTxtRecord[],
+  sellersJsonProviderOrGetSellersJson: SellersJsonProvider | ((domain: string) => Promise<any | null>),
+  logger: Logger,
+  allEntries: ParsedAdsTxtEntry[] = []
+): Promise<ParsedAdsTxtRecord[]> {
+  // Check if we have the new optimized provider
+  const isOptimizedProvider = typeof sellersJsonProviderOrGetSellersJson === 'object' && 
+    'batchGetSellers' in sellersJsonProviderOrGetSellersJson;
+
+  if (isOptimizedProvider) {
+    const provider = sellersJsonProviderOrGetSellersJson as SellersJsonProvider;
+    return await validateWithOptimizedProvider(publisherDomain, records, provider, logger, allEntries);
+  } else {
+    // Fall back to legacy function for backward compatibility
+    const getSellersJson = sellersJsonProviderOrGetSellersJson as (domain: string) => Promise<any | null>;
+    return await validateAgainstSellersJson(publisherDomain, records, getSellersJson, logger, allEntries);
+  }
+}
+
+/**
+ * Validate records using the optimized SellersJsonProvider
+ */
+async function validateWithOptimizedProvider(
+  publisherDomain: string,
+  records: ParsedAdsTxtRecord[],
+  provider: SellersJsonProvider,
+  logger: Logger,
+  allEntries: ParsedAdsTxtEntry[] = []
+): Promise<ParsedAdsTxtRecord[]> {
+  logger.info(`Starting optimized sellers.json validation for ${records.length} records`);
+
+  // Group records by domain and collect required seller IDs
+  const domainToSellerIds = new Map<string, string[]>();
+  const domainToRecords = new Map<string, ParsedAdsTxtRecord[]>();
+
+  records.forEach(record => {
+    if (!record.is_valid) return; // Skip invalid records
+
+    const domain = record.domain.toLowerCase();
+    
+    // Initialize arrays if not exists
+    if (!domainToSellerIds.has(domain)) {
+      domainToSellerIds.set(domain, []);
+      domainToRecords.set(domain, []);
+    }
+    
+    // Add seller ID and record to respective maps
+    domainToSellerIds.get(domain)!.push(record.account_id);
+    domainToRecords.get(domain)!.push(record);
+  });
+
+  // Batch fetch sellers for all domains
+  const domainSellersMap = new Map<string, Map<string, Seller>>();
+  const domainMetadataMap = new Map<string, SellersJsonMetadata>();
+
+  for (const [domain, sellerIds] of domainToSellerIds) {
+    try {
+      logger.info(`Fetching ${sellerIds.length} sellers for domain: ${domain}`);
+      
+      // Check if domain has sellers.json first
+      const hasSellerJson = await provider.hasSellerJson(domain);
+      if (!hasSellerJson) {
+        logger.info(`No sellers.json found for domain: ${domain}`);
+        domainSellersMap.set(domain, new Map());
+        domainMetadataMap.set(domain, {});
+        continue;
+      }
+
+      // Batch fetch sellers
+      const batchResult = await provider.batchGetSellers(domain, sellerIds);
+      
+      // Convert to Map for efficient lookup
+      const sellersMap = new Map<string, Seller>();
+      batchResult.results.forEach(result => {
+        if (result.found && result.seller) {
+          sellersMap.set(result.sellerId, result.seller);
+        }
+      });
+      
+      domainSellersMap.set(domain, sellersMap);
+      domainMetadataMap.set(domain, batchResult.metadata);
+      
+      logger.info(`Found ${batchResult.found_count}/${batchResult.requested_count} sellers for domain: ${domain}`);
+    } catch (error) {
+      logger.error(`Error fetching sellers for domain ${domain}:`, error);
+      domainSellersMap.set(domain, new Map());
+      domainMetadataMap.set(domain, {});
+    }
+  }
+
+  // Validate each record using the fetched data
+  const validatedRecords = await Promise.all(
+    records.map(async record => {
+      if (!record.is_valid) {
+        return record; // Skip invalid records
+      }
+
+      const domain = record.domain.toLowerCase();
+      const sellersMap = domainSellersMap.get(domain) || new Map();
+      const metadata = domainMetadataMap.get(domain) || {};
+
+      return await validateSingleRecordOptimized(
+        record,
+        publisherDomain,
+        sellersMap,
+        metadata,
+        allEntries,
+        logger
+      );
+    })
+  );
+
+  logger.info(
+    `After optimized sellers.json validation: ${validatedRecords.length} records, ${validatedRecords.filter((r) => r.has_warning).length} with warnings`
+  );
+
+  return validatedRecords;
+}
+
+/**
+ * Validate a single record using optimized data structures
+ */
+async function validateSingleRecordOptimized(
+  record: ParsedAdsTxtRecord,
+  publisherDomain: string,
+  sellersMap: Map<string, Seller>,
+  metadata: SellersJsonMetadata,
+  allEntries: ParsedAdsTxtEntry[],
+  logger: Logger
+): Promise<ParsedAdsTxtRecord> {
+  // Initialize validation result
+  const validationResult = createInitialValidationResult();
+  
+  // Check if sellers.json exists for this domain
+  validationResult.hasSellerJson = sellersMap.size > 0 || Object.keys(metadata).length > 0;
+  
+  if (!validationResult.hasSellerJson) {
+    return createWarningRecord(
+      record,
+      VALIDATION_KEYS.NO_SELLERS_JSON,
+      { domain: record.domain },
+      Severity.WARNING,
+      { validation_results: validationResult }
+    );
+  }
+
+  // Find matching seller
+  const normalizedAccountId = record.account_id.toString().trim();
+  const matchingSeller = sellersMap.get(normalizedAccountId);
+  validationResult.sellerData = matchingSeller || null;
+
+  // Set account ID match results
+  validationResult.directAccountIdInSellersJson = !!matchingSeller;
+
+  // Create seller ID counts map from metadata for uniqueness validation
+  const sellerIdCounts = new Map<string, number>();
+  if (metadata.seller_count && metadata.seller_count > 0) {
+    // For optimized validation, we assume each seller ID appears once
+    // unless we have specific count information
+    sellersMap.forEach((seller, sellerId) => {
+      sellerIdCounts.set(sellerId, 1);
+    });
+  }
+
+  // Run relationship-specific validations
+  if (record.relationship === 'DIRECT') {
+    validateDirectRelationship(
+      validationResult,
+      matchingSeller,
+      publisherDomain,
+      normalizedAccountId,
+      sellerIdCounts,
+      allEntries
+    );
+  } else if (record.relationship === 'RESELLER') {
+    validateResellerRelationship(
+      validationResult,
+      matchingSeller,
+      publisherDomain,
+      normalizedAccountId,
+      sellerIdCounts,
+      allEntries
+    );
+  }
+
+  // Generate warnings based on validation results
+  const warnings = generateWarnings(record, validationResult, publisherDomain);
+
+  // Add warnings to record if any found
+  if (warnings.length > 0) {
+    return {
+      ...record,
+      has_warning: true,
+      warning: warnings[0].key, // Primary warning key (legacy)
+      warning_params: warnings[0].params, // Parameters for primary warning
+      validation_key: warnings[0].key, // New field
+      severity: warnings[0].severity || Severity.WARNING, // New field
+      all_warnings: warnings, // Store all warnings with params
+      validation_results: validationResult, // Store all validation details
+    };
+  }
+
+  // No warnings, but still attach the validation results
+  return {
+    ...record,
+    validation_results: validationResult,
+  };
+}
+
 // Legacy function removed and replaced with enhanced version at line ~870
 
 /**
@@ -749,7 +1047,7 @@ async function validateSingleRecord(
   publisherDomain: string,
   sellersJsonCache: Map<string, any>,
   domainSellerIdCountsMap: Map<string, Map<string, number>>,
-  SellersJsonCacheModel: any,
+  getSellersJson: (domain: string) => Promise<any | null>,
   logger: Logger,
   allEntries: ParsedAdsTxtEntry[] = [] // Add allEntries parameter
 ): Promise<ParsedAdsTxtRecord> {
@@ -763,7 +1061,7 @@ async function validateSingleRecord(
   const sellersJsonData = await getSellersJsonData(
     adSystemDomain,
     sellersJsonCache,
-    SellersJsonCacheModel,
+    getSellersJson,
     validationResult,
     logger
   );
@@ -869,7 +1167,7 @@ function createInitialValidationResult(): CrossCheckValidationResult {
 async function getSellersJsonData(
   adSystemDomain: string,
   sellersJsonCache: Map<string, any>,
-  SellersJsonCacheModel: any,
+  getSellersJson: (domain: string) => Promise<any | null>,
   validationResult: CrossCheckValidationResult,
   logger: Logger
 ): Promise<any> {
@@ -878,11 +1176,9 @@ async function getSellersJsonData(
   }
 
   logger.info(`Fetching sellers.json for domain: ${adSystemDomain}`);
-  const cachedSellersJson = await SellersJsonCacheModel.getByDomain(adSystemDomain);
+  const sellersJsonData = await getSellersJson(adSystemDomain);
 
-  let sellersJsonData = null;
-  if (cachedSellersJson && cachedSellersJson.status === 'success' && cachedSellersJson.content) {
-    sellersJsonData = SellersJsonCacheModel.parseContent(cachedSellersJson.content);
+  if (sellersJsonData) {
     validationResult.hasSellerJson = true;
   } else {
     validationResult.hasSellerJson = false;

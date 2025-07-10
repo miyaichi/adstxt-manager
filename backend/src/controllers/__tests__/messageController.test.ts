@@ -3,14 +3,14 @@ import * as messageController from '../messageController';
 import MessageModel from '../../models/Message';
 import RequestModel from '../../models/Request';
 import emailService from '../../services/emailService';
-import { isValidEmail } from '../../utils/validation';
+import { isValidEmail } from '@adstxt-manager/ads-txt-validator';
 import { ApiError } from '../../middleware/errorHandler';
 
 // Mock the models and services
 jest.mock('../../models/Message');
 jest.mock('../../models/Request');
 jest.mock('../../services/emailService');
-jest.mock('../../utils/validation');
+jest.mock('@adstxt-manager/ads-txt-validator');
 
 // Mock the asyncHandler middleware
 jest.mock('../../middleware/errorHandler', () => {

@@ -1,8 +1,5 @@
 declare module 'sqlite' {
-  export function open(config: {
-    filename: string;
-    driver: any;
-  }): Promise<Database>;
+  export function open(config: { filename: string; driver: any }): Promise<Database>;
 
   export interface Database {
     all<T = any>(sql: string, params?: any[]): Promise<T[]>;

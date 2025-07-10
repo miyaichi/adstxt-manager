@@ -4,7 +4,7 @@ import MessageModel, { CreateMessageDTO } from '../models/Message';
 import RequestModel from '../models/Request';
 import emailService from '../services/emailService';
 import { createLogger } from '../utils/logger';
-import { isValidEmail } from '../utils/validation';
+import { isValidEmail } from '@adstxt-manager/ads-txt-validator';
 
 /**
  * Create a new message

@@ -30,7 +30,7 @@ async function runMigration() {
     console.log('Applying migration...');
     await client.query(sql);
     console.log('Migration completed successfully!');
-    
+
     // Verify table structure
     const result = await client.query(`
       SELECT column_name, data_type 
@@ -38,12 +38,11 @@ async function runMigration() {
       WHERE table_name = 'ads_txt_cache'
       ORDER BY ordinal_position
     `);
-    
+
     console.log('Current ads_txt_cache table structure:');
-    result.rows.forEach(row => {
+    result.rows.forEach((row) => {
       console.log(`${row.column_name}: ${row.data_type}`);
     });
-    
   } catch (error) {
     console.error('Error applying migration:', error);
   } finally {

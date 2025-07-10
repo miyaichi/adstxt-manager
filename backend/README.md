@@ -88,7 +88,7 @@ The application uses a database abstraction layer with the following features:
 
 The database provider is automatically selected based on the environment:
 
-- `NODE_ENV=development` or `NODE_ENV=production`: 
+- `NODE_ENV=development` or `NODE_ENV=production`:
   - Uses SQLite by default
   - Uses PostgreSQL if `DB_PROVIDER=postgres` is set in the environment
 - `NODE_ENV=test`: Uses the Mock Database
@@ -98,6 +98,7 @@ The database provider is automatically selected based on the environment:
 To use PostgreSQL instead of SQLite:
 
 1. Create a PostgreSQL database:
+
    ```bash
    # PostgreSQLにログイン
    psql -U postgres
@@ -109,6 +110,7 @@ To use PostgreSQL instead of SQLite:
 2. Configure the environment variables in your `.env` file:
 
    **Local Development PostgreSQL:**
+
    ```
    DB_PROVIDER=postgres
    PGHOST=localhost
@@ -120,24 +122,25 @@ To use PostgreSQL instead of SQLite:
    ```
 
    **AWS RDS or Other Cloud Database:**
+
    ```
    DB_PROVIDER=postgres
-   
+
    # Option 1: Using connection string (recommended for cloud environments)
    DATABASE_URL=postgres://username:password@your-rds-endpoint.rds.amazonaws.com:5432/adstxt_manager
-   
+
    # Option 2: Individual parameters
    PGHOST=your-rds-endpoint.rds.amazonaws.com
    PGPORT=5432
    PGDATABASE=adstxt_manager
    PGUSER=username
    PGPASSWORD=password
-   
+
    # SSL Configuration (typically required for AWS RDS)
    PG_SSL_REQUIRED=true
    # For self-signed certificates or development:
    PG_SSL_REJECT_UNAUTHORIZED=false
-   
+
    # Advanced connection pool settings
    PG_MAX_POOL_SIZE=20
    PG_IDLE_TIMEOUT=60000
@@ -146,15 +149,17 @@ To use PostgreSQL instead of SQLite:
    ```
 
 3. Initialize the PostgreSQL database structure:
+
    ```bash
    npm run migrate:pg
    ```
 
 4. Optionally migrate existing data from SQLite to PostgreSQL:
+
    ```bash
    # Interactive mode (will ask for confirmation)
    npm run migrate:pg
-   
+
    # Force migration without confirmation
    npm run migrate:pg:force
    ```

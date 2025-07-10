@@ -26,7 +26,7 @@ router.post(
   // Use multer conditionally when there's a file
   (req, res, next) => {
     if (req.headers['content-type']?.includes('multipart/form-data')) {
-      upload.single('adsTxtFile')(req, res, next);
+      upload.single('adsTxtFile')(req as any, res as any, next);
     } else {
       next();
     }

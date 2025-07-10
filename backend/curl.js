@@ -19,13 +19,13 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 // Allowed hosts - security restriction
 // For testing, we'll allow any domain
 const ALLOWED_HOSTS = [
-  'localhost:3001',     // backend API
-  'localhost:3000',     // frontend dev server
-  '127.0.0.1:3001',     // backend API alternative
-  '127.0.0.1:3000',     // frontend dev server alternative
-  'itmedia.co.jp',      // Testing ITmedia
-  'www.itmedia.co.jp',  // Testing ITmedia with www
-  '*'                   // Allow any host for testing
+  'localhost:3001', // backend API
+  'localhost:3000', // frontend dev server
+  '127.0.0.1:3001', // backend API alternative
+  '127.0.0.1:3000', // frontend dev server alternative
+  'itmedia.co.jp', // Testing ITmedia
+  'www.itmedia.co.jp', // Testing ITmedia with www
+  '*', // Allow any host for testing
 ];
 
 // Parse arguments
@@ -72,8 +72,14 @@ if (!urlArg) {
 
 // Security check
 const parsedUrl = url.parse(urlArg);
-if (parsedUrl.host !== '*' && !ALLOWED_HOSTS.includes(parsedUrl.host) && !ALLOWED_HOSTS.includes('*')) {
-  console.warn(`Warning: Host ${parsedUrl.host} not explicitly allowed, but continuing anyway for testing`);
+if (
+  parsedUrl.host !== '*' &&
+  !ALLOWED_HOSTS.includes(parsedUrl.host) &&
+  !ALLOWED_HOSTS.includes('*')
+) {
+  console.warn(
+    `Warning: Host ${parsedUrl.host} not explicitly allowed, but continuing anyway for testing`
+  );
 }
 
 let db = null;

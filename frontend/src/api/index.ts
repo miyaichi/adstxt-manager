@@ -449,23 +449,23 @@ export const openSinceraApi = {
 
     try {
       const params: Record<string, any> = {};
-      
+
       if (request.publisherId) {
         params.publisherId = request.publisherId;
       }
-      
+
       if (request.publisherDomain) {
         params.publisherDomain = request.publisherDomain;
       }
-      
+
       if (request.limit !== undefined) {
         params.limit = request.limit;
       }
-      
+
       if (request.offset !== undefined) {
         params.offset = request.offset;
       }
-      
+
       if (request.includeInactive !== undefined) {
         params.includeInactive = request.includeInactive;
       }

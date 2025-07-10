@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import * as adsTxtController from '../adsTxtController';
 import AdsTxtRecordModel from '../../models/AdsTxtRecord';
 import RequestModel from '../../models/Request';
-import { parseAdsTxtContent } from '../../utils/validation';
+import { parseAdsTxtContent } from '@adstxt-manager/ads-txt-validator';
 import { ApiError } from '../../middleware/errorHandler';
 
 // Mock the models and utils
 jest.mock('../../models/AdsTxtRecord');
 jest.mock('../../models/Request');
-jest.mock('../../utils/validation');
+jest.mock('@adstxt-manager/ads-txt-validator');
 
 // Mock the asyncHandler middleware
 jest.mock('../../middleware/errorHandler', () => {

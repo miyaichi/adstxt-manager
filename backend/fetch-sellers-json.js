@@ -444,7 +444,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
                 'success',
                 statusCode,
                 now,
-                checkResult.rows[0].id
+                checkResult.rows[0].id,
               ]
             );
           } else {
@@ -456,17 +456,13 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
                   status_code = $3, 
                   updated_at = $4 
               WHERE id = $5`,
-              [
-                JSON.stringify(sellersJsonData),
-                'success',
-                statusCode,
-                now,
-                checkResult.rows[0].id
-              ]
+              [JSON.stringify(sellersJsonData), 'success', statusCode, now, checkResult.rows[0].id]
             );
           }
 
-          console.log(`📝 Updated sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
+          console.log(
+            `📝 Updated sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`
+          );
         } else {
           // Insert new record
           const newId = uuidv4();
@@ -484,16 +480,7 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
               `INSERT INTO sellers_json_cache 
               (id, domain, content, status, status_code, error_message, created_at, updated_at)
               VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8)`,
-              [
-                newId,
-                lowercaseDomain,
-                sellersJsonData,
-                'success',
-                statusCode,
-                null,
-                now,
-                now
-              ]
+              [newId, lowercaseDomain, sellersJsonData, 'success', statusCode, null, now, now]
             );
           } else {
             // If the column is TEXT, convert the JSON object to a string
@@ -509,18 +496,20 @@ async function saveToDatabase(domain, data, url, statusCode = 200) {
                 statusCode,
                 null,
                 now,
-                now
+                now,
               ]
             );
           }
 
-          console.log(`📝 Stored new sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`);
+          console.log(
+            `📝 Stored new sellers.json for ${domain} with ${sellersJsonData.sellers.length} sellers in PostgreSQL`
+          );
         }
 
         // Show sample seller IDs for verification
         if (sellersJsonData.sellers.length > 0) {
           const sampleCount = Math.min(3, sellersJsonData.sellers.length);
-          const sampleIds = sellersJsonData.sellers.slice(0, sampleCount).map(s => s.seller_id);
+          const sampleIds = sellersJsonData.sellers.slice(0, sampleCount).map((s) => s.seller_id);
           console.log(`📊 Sample seller IDs: ${sampleIds.join(', ')}...`);
         }
 

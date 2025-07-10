@@ -2,11 +2,17 @@ import { Request, Response } from 'express';
 import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import AdsTxtRecordModel from '../models/AdsTxtRecord';
 import RequestModel from '../models/Request';
-import { crossCheckAdsTxtRecords, optimizeAdsTxt, parseAdsTxtContent } from '../utils/validation';
+import {
+  optimizeAdsTxt,
+  parseAdsTxtContent,
+  crossCheckAdsTxtRecords,
+} from '@adstxt-manager/ads-txt-validator';
 
 // Import the shared fetch function for sellers.json data
 import { fetchSellersJsonWithCache } from '../controllers/sellersJsonController';
 import { createLogger } from '../utils/logger';
+import AdsTxtCache from '../models/AdsTxtCache';
+import SellersJsonCache from '../models/SellersJsonCache';
 
 // Create logger for AdsTxt optimization
 const logger = createLogger('AdsTxtOptimizer');
@@ -1092,7 +1098,17 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
       // If publisher domain is provided, perform duplicate check (as warnings)
       const publisherDomain = req.body.publisherDomain;
       if (publisherDomain) {
-        parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+        const cachedAdsTxt = await AdsTxtCache.getByDomain(publisherDomain);
+        const getSellersJson = async (domain: string) => {
+          const sellersJson = await SellersJsonCache.getByDomain(domain);
+          return sellersJson ? SellersJsonCache.parseContent(sellersJson.content) : null;
+        };
+        parsedRecords = await crossCheckAdsTxtRecords(
+          publisherDomain,
+          parsedRecords,
+          cachedAdsTxt ? cachedAdsTxt.content : null,
+          getSellersJson
+        );
       }
 
       res.status(200).json({
@@ -1177,14 +1193,33 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
           }
         }
 
-        parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+        const getSellersJson = async (domain: string) => {
+          const sellersJson = await SellersJsonCache.getByDomain(domain);
+          return sellersJson ? SellersJsonCache.parseContent(sellersJson.content) : null;
+        };
+        parsedRecords = await crossCheckAdsTxtRecords(
+          publisherDomain,
+          parsedRecords,
+          cachedData ? cachedData.content : null,
+          getSellersJson
+        );
         logger.info(`Processed ${parsedRecords.length} records after cross-check`);
         logger.info(`Found ${parsedRecords.filter((r) => r.has_warning).length} duplicates`);
       } catch (err) {
         logger.error(`Failed to perform cross-check: ${err}`);
         // Continue with cross-check even if force fetch fails
         try {
-          parsedRecords = await crossCheckAdsTxtRecords(publisherDomain, parsedRecords);
+          const cachedAdsTxt = await AdsTxtCache.getByDomain(publisherDomain);
+          const getSellersJson = async (domain: string) => {
+            const sellersJson = await SellersJsonCache.getByDomain(domain);
+            return sellersJson ? SellersJsonCache.parseContent(sellersJson.content) : null;
+          };
+          parsedRecords = await crossCheckAdsTxtRecords(
+            publisherDomain,
+            parsedRecords,
+            cachedAdsTxt ? cachedAdsTxt.content : null,
+            getSellersJson
+          );
         } catch (crossCheckErr) {
           logger.error(`Cross-check also failed: ${crossCheckErr}`);
         }

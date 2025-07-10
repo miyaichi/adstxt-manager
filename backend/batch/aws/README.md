@@ -94,6 +94,7 @@ Monitor the execution of the batch process in:
 ## Updating Task Resources
 
 The task definition has been updated to allocate more resources for handling larger JSON data:
+
 - CPU: 1024 (1 vCPU)
 - Memory: 2048MB (2GB)
 
@@ -102,12 +103,14 @@ These values are optimized for processing large sellers.json files (like Google'
 To apply these changes:
 
 1. Register the updated task definition:
+
    ```bash
    chmod +x register-task-definition.sh
    ./register-task-definition.sh
    ```
 
 2. Update the service to use the new task definition:
+
    ```bash
    TASK_DEF=$(aws ecs describe-task-definition --task-definition adstxt-manager-batch --query 'taskDefinition.taskDefinitionArn' --output text)
    aws ecs update-service --cluster adstxt-manager --service adstxt-manager-batch --task-definition $TASK_DEF

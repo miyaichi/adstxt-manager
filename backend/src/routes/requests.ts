@@ -20,7 +20,7 @@ const upload = multer({
 });
 
 // Routes
-router.post('/', upload.single('adsTxtFile'), createRequest);
+router.post('/', upload.single('adsTxtFile') as any, createRequest);
 router.get('/:id', getRequest);
 router.patch('/:id/status', updateRequestStatus);
 router.patch('/:id/publisher', updatePublisherInfo);

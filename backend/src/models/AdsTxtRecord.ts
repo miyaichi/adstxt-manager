@@ -217,7 +217,10 @@ class AdsTxtRecordModel {
       stats.valid += records.filter((record) => record.status === 'pending').length;
 
       // We need to dynamically compute warnings by validating records
-      const { parseAdsTxtContent, crossCheckAdsTxtRecords } = require('../utils/validation');
+      const {
+        parseAdsTxtContent,
+        crossCheckAdsTxtRecords,
+      } = require('@adstxt-manager/ads-txt-validator');
 
       // Generate ads.txt content from records for validation
       const adsTxtContent = records
@@ -280,7 +283,10 @@ class AdsTxtRecordModel {
       }
 
       // Import validation functions
-      const { parseAdsTxtContent, crossCheckAdsTxtRecords } = require('../utils/validation');
+      const {
+        parseAdsTxtContent,
+        crossCheckAdsTxtRecords,
+      } = require('@adstxt-manager/ads-txt-validator');
 
       // Generate ads.txt content from records for validation
       const adsTxtContent = records

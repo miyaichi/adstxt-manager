@@ -34,7 +34,8 @@ const SiteAnalysisPage: React.FC = () => {
 
   // バリデーション関数
   const validateDomain = (value: string): boolean => {
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
+    const domainRegex =
+      /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/;
     return domainRegex.test(value);
   };
 
@@ -77,7 +78,7 @@ const SiteAnalysisPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      
+
       if (err.response?.status === 404) {
         setError(t('siteAnalysis.results.noResults', language));
       } else if (err.response?.status === 429) {
@@ -181,9 +182,7 @@ const SiteAnalysisPage: React.FC = () => {
           }}
           marginBottom="1rem"
         >
-          <Radio value="domain">
-            {t('siteAnalysis.searchForm.searchByDomain', language)}
-          </Radio>
+          <Radio value="domain">{t('siteAnalysis.searchForm.searchByDomain', language)}</Radio>
           <Radio value="publisherId">
             {t('siteAnalysis.searchForm.searchByPublisherId', language)}
           </Radio>
@@ -226,11 +225,7 @@ const SiteAnalysisPage: React.FC = () => {
             {t('siteAnalysis.searchForm.searchButton', language)}
           </Button>
 
-          <Button
-            onClick={handleClear}
-            variation="link"
-            isDisabled={isLoading}
-          >
+          <Button onClick={handleClear} variation="link" isDisabled={isLoading}>
             {t('siteAnalysis.searchForm.clearButton', language)}
           </Button>
         </Flex>
@@ -260,9 +255,7 @@ const SiteAnalysisPage: React.FC = () => {
             <TableBody>
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">
-                    {t('siteAnalysis.results.publisherId', language)}
-                  </Text>
+                  <Text fontWeight="bold">{t('siteAnalysis.results.publisherId', language)}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.publisherId', language)}
                   </Text>
@@ -274,9 +267,7 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">
-                    {t('siteAnalysis.results.publisherName', language)}
-                  </Text>
+                  <Text fontWeight="bold">{t('siteAnalysis.results.publisherName', language)}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.publisherName', language)}
                   </Text>
@@ -302,9 +293,7 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">
-                    {t('siteAnalysis.results.status', language)}
-                  </Text>
+                  <Text fontWeight="bold">{t('siteAnalysis.results.status', language)}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.status', language)}
                   </Text>
@@ -332,11 +321,19 @@ const SiteAnalysisPage: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Flex direction="column" gap="0.5rem">
-                    <Badge variation={getVerificationBadgeVariation(publisherData.verificationStatus)}>
-                      {t(`siteAnalysis.verificationValues.${publisherData.verificationStatus}`, language)}
+                    <Badge
+                      variation={getVerificationBadgeVariation(publisherData.verificationStatus)}
+                    >
+                      {t(
+                        `siteAnalysis.verificationValues.${publisherData.verificationStatus}`,
+                        language
+                      )}
                     </Badge>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {t(`siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`, language)}
+                      {t(
+                        `siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`,
+                        language
+                      )}
                     </Text>
                   </Flex>
                 </TableCell>
@@ -344,9 +341,7 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">
-                    {t('siteAnalysis.results.lastUpdated', language)}
-                  </Text>
+                  <Text fontWeight="bold">{t('siteAnalysis.results.lastUpdated', language)}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {t('siteAnalysis.fieldDescriptions.lastUpdated', language)}
                   </Text>
@@ -375,9 +370,7 @@ const SiteAnalysisPage: React.FC = () => {
               {publisherData.categories && publisherData.categories.length > 0 && (
                 <TableRow>
                   <TableCell>
-                    <Text fontWeight="bold">
-                      {t('siteAnalysis.results.categories', language)}
-                    </Text>
+                    <Text fontWeight="bold">{t('siteAnalysis.results.categories', language)}</Text>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {t('siteAnalysis.fieldDescriptions.categories', language)}
                     </Text>
@@ -393,7 +386,6 @@ const SiteAnalysisPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
               )}
-
             </TableBody>
           </Table>
 
@@ -403,7 +395,7 @@ const SiteAnalysisPage: React.FC = () => {
               <Heading level={4} marginTop="2rem" marginBottom="1rem">
                 {t('siteAnalysis.results.additionalMetadata', language)}
               </Heading>
-              
+
               <Table caption="">
                 <TableHead>
                   <TableRow>
@@ -416,12 +408,14 @@ const SiteAnalysisPage: React.FC = () => {
                     // 翻訳キーとしてキーをマップ
                     const translationKey = `siteAnalysis.metadataDescriptions.${key}`;
                     const hasDescription = t(translationKey, language) !== translationKey;
-                    
+
                     return (
                       <TableRow key={key}>
                         <TableCell>
                           <Text fontWeight="bold" textTransform="capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            {key
+                              .replace(/([A-Z])/g, ' $1')
+                              .replace(/^./, (str) => str.toUpperCase())}
                           </Text>
                           {hasDescription && (
                             <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
@@ -430,9 +424,7 @@ const SiteAnalysisPage: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Text>
-                            {value !== null && value !== undefined ? String(value) : '-'}
-                          </Text>
+                          <Text>{value !== null && value !== undefined ? String(value) : '-'}</Text>
                         </TableCell>
                       </TableRow>
                     );

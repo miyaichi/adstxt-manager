@@ -9,7 +9,7 @@ describe('OpenSinceraService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock axios.create to return a properly mocked instance
     const mockAxiosInstance = {
       get: jest.fn(),

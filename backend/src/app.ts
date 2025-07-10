@@ -125,7 +125,7 @@ app.use(cors(corsOptions));
 // Increase JSON request body size limit to 10MB to handle large ads.txt files
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(i18nextMiddleware.handle(i18next));
+app.use(i18nextMiddleware.handle(i18next) as any);
 
 // Get filtered environment variables - exclude any containing secrets
 const getFilteredEnvVars = () => {
@@ -194,7 +194,7 @@ app.use('/api', apiRoutes);
 app.use('/api/v1', apiV1Routes);
 
 // Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.use('/api-docs', swaggerUi.serve as any, swaggerUi.setup(specs) as any);
 
 // Health check route
 app.get('/health', (req, res) => {
