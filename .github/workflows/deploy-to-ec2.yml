@@ -366,13 +366,19 @@ jobs:
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
               echo "Attempting to create deployment (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
               
-              # Try to create deployment
+              # Try to create deployment with detailed error capture
+              set +e  # Don't exit on error
               DEPLOYMENT_RESULT=$(aws deploy create-deployment \
                 --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
                 --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
                 --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
                 --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
                 --output text --query 'deploymentId' 2>&1)
+              DEPLOY_EXIT_CODE=$?
+              set -e  # Re-enable exit on error
+              
+              echo "AWS CLI exit code: $DEPLOY_EXIT_CODE"
+              echo "AWS CLI output: $DEPLOYMENT_RESULT"
               
               if [[ "$DEPLOYMENT_RESULT" == *"DeploymentLimitExceededException"* ]]; then
                 echo "⚠️ Active deployment in progress, waiting before retry..."
@@ -394,10 +400,29 @@ jobs:
                 DEPLOYMENT_ID="$DEPLOYMENT_RESULT"
                 echo "✅ Deployment created successfully with ID: $DEPLOYMENT_ID"
                 break
+              elif [ $DEPLOY_EXIT_CODE -eq 0 ]; then
+                # Success but unexpected format
+                DEPLOYMENT_ID="$DEPLOYMENT_RESULT"
+                echo "✅ Deployment created successfully with ID: $DEPLOYMENT_ID"
+                break
               else
                 # Other error
                 echo "❌ Deployment creation failed with error: $DEPLOYMENT_RESULT"
-                exit 1
+                echo "❌ Exit code: $DEPLOY_EXIT_CODE"
+                
+                # Check if it's a retryable error
+                if [[ "$DEPLOYMENT_RESULT" == *"DeploymentLimitExceededException"* ]] || [[ "$DEPLOYMENT_RESULT" == *"Throttling"* ]]; then
+                  echo "⚠️ Retryable error detected, continuing retry loop..."
+                  RETRY_COUNT=$((RETRY_COUNT + 1))
+                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                    WAIT_TIME=$((30 * (2 ** (RETRY_COUNT - 1))))
+                    echo "Waiting ${WAIT_TIME} seconds before retry..."
+                    sleep $WAIT_TIME
+                  fi
+                else
+                  echo "❌ Non-retryable error, exiting..."
+                  exit 1
+                fi
               fi
             done
             
