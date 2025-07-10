@@ -4,13 +4,15 @@ import AdsTxtRecordModel, { CreateAdsTxtRecordDTO } from '../models/AdsTxtRecord
 import RequestModel, { CreateRequestDTO } from '../models/Request';
 import emailService from '../services/emailService';
 import tokenService from '../services/tokenService';
+import { fetchSellersJsonWithCache } from './sellersJsonController';
+import SellersJsonCacheModel from '../models/SellersJsonCache';
 import {
   isValidEmail,
   parseAdsTxtContent,
   crossCheckAdsTxtRecords,
   isAdsTxtRecord,
   isAdsTxtVariable,
-} from '../utils/validation';
+} from '@adstxt-manager/ads-txt-validator';
 import logger from '../utils/logger';
 
 /**
@@ -80,8 +82,65 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
 
       // Parse the content (pass the publisher domain for default OWNERDOMAIN)
       const parsedRecords = parseAdsTxtContent(fileContent, publisher_domain);
-      // Cross-check records against publisher domain
-      const crossCheckedRecords = await crossCheckAdsTxtRecords(publisher_domain, parsedRecords);
+
+      // Create optimized sellers.json provider
+      const sellersJsonProvider = {
+        async batchGetSellers(domain: string, sellerIds: string[]) {
+          const result = await SellersJsonCacheModel.batchGetSellersOptimized(domain, sellerIds);
+
+          if (!result) {
+            throw new Error(`No sellers.json data found for domain: ${domain}`);
+          }
+
+          return {
+            domain,
+            requested_count: sellerIds.length,
+            found_count: result.foundCount,
+            results: result.results.map((r) => ({
+              sellerId: r.sellerId,
+              seller: r.seller,
+              found: r.found,
+              source: 'cache' as const,
+            })),
+            metadata: result.metadata,
+            cache: {
+              is_cached: true,
+              last_updated: result.cacheRecord.updated_at,
+              status:
+                result.cacheRecord.status === 'success' ? ('success' as const) : ('error' as const),
+              expires_at: undefined, // Can be implemented based on cache expiration logic
+            },
+          };
+        },
+
+        async getMetadata(domain: string) {
+          const summary = await SellersJsonCacheModel.getMetadataAndSummarizedSellers(domain);
+          return summary?.metadata || {};
+        },
+
+        async hasSellerJson(domain: string) {
+          const cache = await SellersJsonCacheModel.getByDomain(domain);
+          return cache?.status === 'success';
+        },
+
+        async getCacheInfo(domain: string) {
+          const cache = await SellersJsonCacheModel.getByDomain(domain);
+          return {
+            is_cached: !!cache,
+            last_updated: cache?.updated_at,
+            status: cache?.status === 'success' ? ('success' as const) : ('error' as const),
+            expires_at: undefined, // Can be implemented based on cache expiration logic
+          };
+        },
+      };
+
+      // Cross-check records against publisher domain using optimized provider
+      const crossCheckedRecords = await crossCheckAdsTxtRecords(
+        publisher_domain,
+        parsedRecords,
+        null, // cachedAdsTxtContent - not available in this context
+        sellersJsonProvider
+      );
       // Filter for valid records and only non-variable entries (standard records)
       const validRecords = crossCheckedRecords
         .filter((record) => record.is_valid)
