@@ -4,7 +4,7 @@
   "description": "Backend for Ads.txt Manager application",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "mkdir -p dist/i18n/locales && cp -r src/i18n/locales dist/i18n/",

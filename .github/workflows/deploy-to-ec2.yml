@@ -210,8 +210,6 @@ jobs:
           cp Procfile deploy/
           # Copy packages directory for monorepo dependencies
           cp -r packages deploy/
-          # Copy root package.json for workspace configuration
-          cp package.json deploy/root-package.json
 
           # Add API integration settings to .env file
           echo "" >> backend/.env
