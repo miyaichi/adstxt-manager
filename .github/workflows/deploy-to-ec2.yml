@@ -200,7 +200,18 @@ jobs:
         run: |
           # Create app directories
           mkdir -p deploy
-          cp -r backend/dist/* deploy/
+          # Copy only the root level files from backend/dist (not the nested backend/src structure)
+          cp backend/dist/server.js deploy/
+          cp -r backend/dist/config deploy/
+          cp -r backend/dist/controllers deploy/
+          cp -r backend/dist/db deploy/
+          cp -r backend/dist/i18n deploy/
+          cp -r backend/dist/middleware deploy/
+          cp -r backend/dist/models deploy/
+          cp -r backend/dist/routes deploy/
+          cp -r backend/dist/services deploy/
+          cp -r backend/dist/utils deploy/
+          cp backend/dist/app.js deploy/
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
           # Copy package-lock.json if it exists
