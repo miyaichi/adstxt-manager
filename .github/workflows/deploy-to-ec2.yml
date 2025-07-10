@@ -192,8 +192,20 @@ jobs:
           cp -r backend/dist deploy/
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
-          cp backend/package-lock.json deploy/
+          # Copy package-lock.json if it exists, otherwise skip
+          if [ -f backend/package-lock.json ]; then
+            cp backend/package-lock.json deploy/
+          else
+            echo "Warning: backend/package-lock.json not found, skipping copy"
+          fi
           cp Procfile deploy/
+          
+          # Copy the ads-txt-validator package to maintain local dependency
+          mkdir -p deploy/packages
+          cp -r packages/ads-txt-validator deploy/packages/
+          
+          # Update package.json to use the correct relative path for ads-txt-validator
+          sed -i 's|"file:../packages/ads-txt-validator"|"file:./packages/ads-txt-validator"|g' deploy/package.json
 
           # Add API integration settings to .env file
           echo "" >> backend/.env
