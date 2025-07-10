@@ -28,6 +28,11 @@ jobs:
           echo "REACT_APP_API_URL=${{ vars.REACT_APP_API_URL }}" > frontend/.env
           echo "REACT_APP_ENVIRONMENT=${{ vars.REACT_APP_ENVIRONMENT }}" >> frontend/.env
 
+      - name: Install monorepo dependencies
+        run: |
+          # Install root dependencies first to set up workspaces
+          npm install
+
       - name: Install and build backend
         run: |
           cd backend
@@ -194,6 +199,10 @@ jobs:
           cp backend/package.json deploy/
           cp backend/package-lock.json deploy/
           cp Procfile deploy/
+          # Copy packages directory for monorepo dependencies
+          cp -r packages deploy/
+          # Copy root package.json for workspace configuration
+          cp package.json deploy/root-package.json
 
           # Add API integration settings to .env file
           echo "" >> backend/.env
@@ -228,6 +237,12 @@ jobs:
           # Copy SQL migration files
           mkdir -p deploy/src/db/migrations
           cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
+
+          # Build ads-txt-validator package
+          cd packages/ads-txt-validator
+          npm install
+          npm run build
+          cd ../../
 
           # Install production dependencies
           cd deploy
