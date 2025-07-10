@@ -301,6 +301,46 @@ jobs:
           if [ -n "${{ vars.CODEDEPLOY_APP_NAME }}" ] && [ -n "${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}" ]; then
             echo "Creating CodeDeploy deployment..."
             
+            # Check for existing active deployments
+            echo "Checking for existing active deployments..."
+            EXISTING_DEPLOYMENTS=$(aws deploy list-deployments \
+              --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
+              --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+              --include-only-statuses Created InProgress Queued Ready \
+              --query 'deployments' --output text)
+            
+            if [ -n "$EXISTING_DEPLOYMENTS" ] && [ "$EXISTING_DEPLOYMENTS" != "None" ]; then
+              echo "⚠️ Found existing active deployment(s): $EXISTING_DEPLOYMENTS"
+              echo "Waiting for existing deployments to complete..."
+              
+              # Wait for existing deployments to complete (max 10 minutes)
+              WAIT_COUNT=0
+              MAX_WAIT=60  # 10 minutes in 10-second intervals
+              
+              while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+                ACTIVE_DEPLOYMENTS=$(aws deploy list-deployments \
+                  --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
+                  --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+                  --include-only-statuses Created InProgress Queued Ready \
+                  --query 'deployments' --output text)
+                
+                if [ -z "$ACTIVE_DEPLOYMENTS" ] || [ "$ACTIVE_DEPLOYMENTS" = "None" ]; then
+                  echo "✅ All active deployments completed"
+                  break
+                fi
+                
+                echo "Still waiting for deployments to complete... ($((WAIT_COUNT * 10))s elapsed)"
+                sleep 10
+                WAIT_COUNT=$((WAIT_COUNT + 1))
+              done
+              
+              if [ $WAIT_COUNT -eq $MAX_WAIT ]; then
+                echo "❌ Timeout waiting for existing deployments to complete"
+                echo "🔗 Please check the CodeDeploy console: https://${{ vars.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/applications/${{ vars.CODEDEPLOY_APP_NAME }}/deployment-groups/${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}/deployments"
+                exit 1
+              fi
+            fi
+            
             # Create deployment
             DEPLOYMENT_ID=$(aws deploy create-deployment \
               --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
