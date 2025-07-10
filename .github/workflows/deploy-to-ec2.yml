@@ -354,20 +354,53 @@ jobs:
               fi
             fi
             
-            # Create deployment
-            DEPLOYMENT_ID=$(aws deploy create-deployment \
-              --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
-              --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
-              --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
-              --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
-              --output text --query 'deploymentId')
+            # Create deployment with retry logic
+            DEPLOYMENT_ID=""
+            RETRY_COUNT=0
+            MAX_RETRIES=6  # Maximum 6 retries (about 15 minutes total)
+            
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              echo "Attempting to create deployment (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
+              
+              # Try to create deployment
+              DEPLOYMENT_RESULT=$(aws deploy create-deployment \
+                --application-name ${{ vars.CODEDEPLOY_APP_NAME }} \
+                --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
+                --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
+                --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
+                --output text --query 'deploymentId' 2>&1)
+              
+              if [[ "$DEPLOYMENT_RESULT" == *"DeploymentLimitExceededException"* ]]; then
+                echo "⚠️ Active deployment in progress, waiting before retry..."
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  # Exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s
+                  WAIT_TIME=$((30 * (2 ** (RETRY_COUNT - 1))))
+                  echo "Waiting ${WAIT_TIME} seconds before retry..."
+                  sleep $WAIT_TIME
+                else
+                  echo "❌ Maximum retries reached. Active deployment is taking too long."
+                  echo "🔗 Please check the CodeDeploy console manually:"
+                  echo "   https://${{ vars.AWS_REGION }}.console.aws.amazon.com/codesuite/codedeploy/applications/${{ vars.CODEDEPLOY_APP_NAME }}/deployment-groups/${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }}/deployments"
+                  exit 1
+                fi
+              elif [[ "$DEPLOYMENT_RESULT" == d-* ]]; then
+                # Success - deployment ID returned
+                DEPLOYMENT_ID="$DEPLOYMENT_RESULT"
+                echo "✅ Deployment created successfully with ID: $DEPLOYMENT_ID"
+                break
+              else
+                # Other error
+                echo "❌ Deployment creation failed with error: $DEPLOYMENT_RESULT"
+                exit 1
+              fi
+            done
             
             if [ -n "$DEPLOYMENT_ID" ]; then
-              echo "✅ Deployment initiated with ID: $DEPLOYMENT_ID"
-              
               # Check initial status
               sleep 10
-              STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text)
+              STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID --query 'deploymentInfo.status' --output text 2>/dev/null || echo "UNKNOWN")
               echo "Current status: $STATUS"
               
               # Show console link
@@ -379,7 +412,7 @@ jobs:
                 exit 1
               fi
             else
-              echo "❌ Failed to create deployment"
+              echo "❌ Failed to create deployment after all retries"
               exit 1
             fi
           else
