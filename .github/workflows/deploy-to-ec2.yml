@@ -202,7 +202,7 @@ jobs:
           mkdir -p deploy
           cp -r backend/dist/* deploy/
           cp -r frontend/build deploy/public
-          cp backend/package.json deploy/
+          cp package.json deploy/
           # Copy package-lock.json if it exists
           if [ -f backend/package-lock.json ]; then
             cp backend/package-lock.json deploy/
