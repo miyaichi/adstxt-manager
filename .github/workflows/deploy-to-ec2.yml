@@ -200,9 +200,13 @@ jobs:
         run: |
           # Create app directories
           mkdir -p deploy
-          cp -r backend/dist/* deploy/
+          # Copy built backend files maintaining directory structure that matches EC2
+          mkdir -p deploy/backend/src
+          cp -r backend/dist/* deploy/backend/src/
+          # Copy frontend build
           cp -r frontend/build deploy/public
-          cp package.json deploy/
+          # Use backend package.json which has correct start script
+          cp backend/package.json deploy/
           # Copy package-lock.json if it exists
           if [ -f backend/package-lock.json ]; then
             cp backend/package-lock.json deploy/
