@@ -33,6 +33,12 @@ jobs:
           # Install root dependencies first to set up workspaces
           npm install
 
+      - name: Build ads-txt-validator package
+        run: |
+          cd packages/ads-txt-validator
+          npm install
+          npm run build
+
       - name: Install and build backend
         run: |
           cd backend
@@ -241,11 +247,6 @@ jobs:
           mkdir -p deploy/src/db/migrations
           cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
 
-          # Build ads-txt-validator package
-          cd packages/ads-txt-validator
-          npm install
-          npm run build
-          cd ../../
 
           # Install production dependencies
           cd deploy

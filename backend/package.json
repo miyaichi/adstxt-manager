@@ -26,7 +26,7 @@
   "author": "Yoshihiko Miyaichi",
   "license": "MIT",
   "dependencies": {
-    "@adstxt-manager/ads-txt-validator": "1.0.0",
+    "@adstxt-manager/ads-txt-validator": "file:../packages/ads-txt-validator",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
