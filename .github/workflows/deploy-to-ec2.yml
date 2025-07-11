@@ -189,7 +189,7 @@ jobs:
         run: |
           # Create app directories
           mkdir -p deploy
-          cp -r backend/dist deploy/
+          cp -r backend/dist/* deploy/
           cp -r frontend/build deploy/public
           cp backend/package.json deploy/
           # Copy package-lock.json if it exists, otherwise skip
