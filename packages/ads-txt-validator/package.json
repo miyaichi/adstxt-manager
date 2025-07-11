@@ -1,10 +1,35 @@
 {
-  "name": "@adstxt-manager/ads-txt-validator",
+  "name": "@miyaichi/ads-txt-validator",
   "version": "1.0.0",
+  "description": "A TypeScript library for validating ads.txt files and sellers.json files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Tests will be implemented in future versions\" && exit 0"
+  },
+  "keywords": [
+    "ads.txt",
+    "sellers.json",
+    "advertising",
+    "validation",
+    "typescript"
+  ],
+  "author": "Yoshihiko Miyaichi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miyaichi/adstxt-manager.git",
+    "directory": "packages/ads-txt-validator"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
     "psl": "^1.9.0"

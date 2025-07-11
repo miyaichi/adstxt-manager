@@ -1,6 +1,8 @@
-# @adstxt-manager/ads-txt-validator
+# @miyaichi/ads-txt-validator
 
 A comprehensive TypeScript library for parsing, validating, and cross-checking ads.txt files against sellers.json data. This package provides robust validation capabilities with detailed error reporting and optimization features.
+
+> **Note**: This package is available on GitHub Packages. For internal use within the adstxt-manager monorepo, the package is also available as `@adstxt-manager/ads-txt-validator`.
 
 ## Features
 
@@ -13,6 +15,14 @@ A comprehensive TypeScript library for parsing, validating, and cross-checking a
 
 ## Installation
 
+### From GitHub Packages
+
+```bash
+npm install @miyaichi/ads-txt-validator
+```
+
+### From internal monorepo
+
 ```bash
 npm install @adstxt-manager/ads-txt-validator
 ```
@@ -22,7 +32,7 @@ npm install @adstxt-manager/ads-txt-validator
 ### Basic Usage
 
 ```typescript
-import { parseAdsTxtContent, crossCheckAdsTxtRecords } from '@adstxt-manager/ads-txt-validator';
+import { parseAdsTxtContent, crossCheckAdsTxtRecords } from '@miyaichi/ads-txt-validator';
 
 // Parse ads.txt content
 const adsTxtContent = `
@@ -56,7 +66,7 @@ import {
   parseAdsTxtContent, 
   crossCheckAdsTxtRecords,
   SellersJsonProvider 
-} from '@adstxt-manager/ads-txt-validator';
+} from '@miyaichi/ads-txt-validator';
 
 // Create optimized provider
 const sellersJsonProvider: SellersJsonProvider = {
@@ -430,7 +440,7 @@ The package uses comprehensive error keys for different validation scenarios:
 ### Basic Parsing
 
 ```typescript
-import { parseAdsTxtContent } from '@adstxt-manager/ads-txt-validator';
+import { parseAdsTxtContent } from '@miyaichi/ads-txt-validator';
 
 const adsTxtContent = `
 # Ads.txt file
@@ -453,7 +463,7 @@ console.log(`Found ${validRecords.length} valid records`);
 ### Cross-checking with Sellers.json
 
 ```typescript
-import { crossCheckAdsTxtRecords, parseAdsTxtContent } from '@adstxt-manager/ads-txt-validator';
+import { crossCheckAdsTxtRecords, parseAdsTxtContent } from '@miyaichi/ads-txt-validator';
 
 const getSellersJson = async (domain: string) => {
   try {
@@ -487,7 +497,7 @@ validatedEntries.forEach(entry => {
 ### Content Optimization
 
 ```typescript
-import { optimizeAdsTxt } from '@adstxt-manager/ads-txt-validator';
+import { optimizeAdsTxt } from '@miyaichi/ads-txt-validator';
 
 const messyAdsTxtContent = `
 # Ads.txt file
@@ -506,7 +516,7 @@ console.log(optimizedContent);
 ### Error Handling
 
 ```typescript
-import { parseAdsTxtContent, isAdsTxtRecord } from '@adstxt-manager/ads-txt-validator';
+import { parseAdsTxtContent, isAdsTxtRecord } from '@miyaichi/ads-txt-validator';
 
 const parsedEntries = parseAdsTxtContent(adsTxtContent);
 
