@@ -38,6 +38,60 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 - **メール送信**: SMTP
 - **自動化**: cron（sellers.json自動更新）
 - **開発ツール**: Claude Code (vibe coding)
+- **パッケージ**: ads-txt-validator (独立したバリデーションライブラリ)
+
+## ads-txt-validator パッケージ
+
+このプロジェクトで開発された ads-txt-validator ライブラリは、独立したnpmパッケージとして利用可能です。
+
+### GitHub Packages
+
+**パッケージ名**: `@miyaichi/ads-txt-validator`  
+**パッケージURL**: https://github.com/miyaichi/adstxt-manager/pkgs/npm/ads-txt-validator
+
+### インストール
+
+```bash
+npm install @miyaichi/ads-txt-validator
+```
+
+### 主な機能
+
+- **ads.txt解析**: IAB標準に準拠したads.txtファイルの解析
+- **sellers.json対応**: 高度なsellers.jsonとの相互チェック機能
+- **TypeScript完全対応**: 完全な型定義を含む
+- **最適化機能**: 重複除去、フォーマット標準化
+- **バリデーション**: 包括的なエラーチェックと警告機能
+
+### 使用例
+
+```typescript
+import { parseAdsTxtContent, crossCheckAdsTxtRecords } from '@miyaichi/ads-txt-validator';
+
+// ads.txt内容の解析
+const adsTxtContent = `
+google.com, pub-1234567890, DIRECT, f08c47fec0942fa0
+facebook.com, 123456789, DIRECT
+`;
+
+const parsedEntries = parseAdsTxtContent(adsTxtContent, 'example.com');
+
+// sellers.jsonとの相互チェック
+const validatedEntries = await crossCheckAdsTxtRecords(
+  'publisher.com',
+  parsedEntries,
+  null,
+  sellersJsonProvider
+);
+```
+
+### 詳細なドキュメント
+
+包括的なAPIドキュメントと使用例は、[パッケージのREADME](https://github.com/miyaichi/adstxt-manager/blob/main/packages/ads-txt-validator/README.md)で確認できます。
+
+### 他のプロジェクトでの利用
+
+このパッケージは、adstxt-managerプロジェクトから独立して、他のプロジェクトでも利用できます。ads.txtファイルのバリデーションや解析が必要な場合は、ぜひご利用ください。
 
 ## セットアップ手順
 
