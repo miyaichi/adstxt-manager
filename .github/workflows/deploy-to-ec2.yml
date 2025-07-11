@@ -206,9 +206,18 @@ jobs:
           fi
           cp Procfile deploy/
           
-          # Copy the ads-txt-validator package to maintain local dependency
+          # Copy the ads-txt-validator package to maintain local dependency (including dist folder)
           mkdir -p deploy/packages
           cp -r packages/ads-txt-validator deploy/packages/
+          
+          # Ensure ads-txt-validator dist folder exists in deployment package
+          if [ ! -d "deploy/packages/ads-txt-validator/dist" ]; then
+            echo "ads-txt-validator dist folder not found, rebuilding..."
+            cd deploy/packages/ads-txt-validator
+            npm install --no-save
+            npm run build
+            cd ../../..
+          fi
           
           # Update package.json to use the correct relative path for ads-txt-validator
           sed -i 's|"file:../packages/ads-txt-validator"|"file:./packages/ads-txt-validator"|g' deploy/package.json
