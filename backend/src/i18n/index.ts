@@ -16,6 +16,8 @@ function getLocalesPath() {
     join(__dirname, '../src/i18n/locales'),
     join(process.cwd(), 'dist/i18n/locales'),
     join(process.cwd(), 'src/i18n/locales'),
+    join(process.cwd(), 'i18n/locales'), // デプロイメント構造用
+    join(process.cwd(), 'backend/src/i18n/locales'), // デプロイメント構造用
   ];
 
   logger.debug('[i18n] Looking for locales in the following paths:');
