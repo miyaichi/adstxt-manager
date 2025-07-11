@@ -11,6 +11,8 @@ export function resolveMigrationPath(sqlFileName: string): string {
     path.join(__dirname, '../../../src/db/migrations', sqlFileName),
     path.join(process.cwd(), 'src/db/migrations', sqlFileName), // デプロイメント構造用
     path.join(process.cwd(), 'backend/src/db/migrations', sqlFileName), // デプロイメント構造用
+    path.join(process.cwd(), 'db/migrations', sqlFileName), // デプロイメント構造用 - 実際のSQL配置場所
+    path.join(__dirname, '../../../../db/migrations', sqlFileName), // デプロイメント構造用 - 相対パス
   ];
   
   for (const p of possiblePaths) {
