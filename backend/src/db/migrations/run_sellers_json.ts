@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import db from '../../config/database/index';
+import { readMigrationFile } from './pathHelper';
 
 export const runSellersJsonMigration = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -9,12 +10,7 @@ export const runSellersJsonMigration = (): Promise<void> => {
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
 
       // Always use the SQLite schema file for now - we'll handle PostgreSQL separately
-      let sqlPath = path.join(__dirname, 'sellers_json_cache.sql');
-      if (!fs.existsSync(sqlPath)) {
-        sqlPath = path.join(__dirname, '../../../src/db/migrations/sellers_json_cache.sql');
-      }
-
-      const sql = fs.readFileSync(sqlPath, 'utf8');
+      const sql = readMigrationFile('sellers_json_cache.sql');
       console.log(
         `Running sellers_json migration for ${dbProvider} (using SQLite-compatible schema)`
       );

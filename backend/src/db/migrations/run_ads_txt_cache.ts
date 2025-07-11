@@ -2,19 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import db from '../../config/database/index';
 import { logger } from '../../utils/logger';
-
-// Try to locate the SQL file
-let sqlFilePath = path.join(__dirname, 'ads_txt_cache.sql');
-
-// If file doesn't exist (in dist), try src path
-if (!fs.existsSync(sqlFilePath)) {
-  sqlFilePath = path.join(__dirname, '../../../src/db/migrations/ads_txt_cache.sql');
-}
+import { readMigrationFile } from './pathHelper';
 
 export const runAdsTxtCacheMigration = async (): Promise<void> => {
   try {
     // Read SQL file
-    const sql = fs.readFileSync(sqlFilePath, 'utf8');
+    const sql = readMigrationFile('ads_txt_cache.sql');
 
     // Execute the SQL
     await db.execute(sql);
