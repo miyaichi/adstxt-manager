@@ -300,6 +300,7 @@ jobs:
               --deployment-group-name ${{ vars.CODEDEPLOY_DEPLOYMENT_GROUP }} \
               --s3-location bucket=${{ secrets.S3_BUCKET }},key=adstxt-manager-latest.zip,bundleType=zip \
               --description "Deployment from GitHub Actions - Commit: ${{ github.sha }}" \
+              --file-exists-behavior OVERWRITE \
               --output text --query 'deploymentId')
             
             if [ -n "$DEPLOYMENT_ID" ]; then

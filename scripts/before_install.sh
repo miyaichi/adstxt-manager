@@ -30,6 +30,12 @@ else
     echo "PM2 is already installed: $(pm2 -v)"
 fi
 
+# Remove existing node_modules to prevent conflicts with new package structure
+if [ -d /home/ec2-user/adstxt-manager/node_modules ]; then
+  echo "Removing existing node_modules to prevent deployment conflicts..."
+  rm -rf /home/ec2-user/adstxt-manager/node_modules
+fi
+
 # Create data directory
 mkdir -p /home/ec2-user/adstxt-manager/data
 chmod 755 /home/ec2-user/adstxt-manager/data
