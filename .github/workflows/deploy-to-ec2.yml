@@ -252,9 +252,9 @@ jobs:
           # Final verification
           echo "Final .env file size: $(wc -c < deploy/.env) bytes"
 
-          # Copy SQL migration files
-          mkdir -p deploy/src/db/migrations
-          cp backend/src/db/migrations/*.sql deploy/src/db/migrations/
+          # Copy SQL migration files to the same directory as compiled JS files
+          mkdir -p deploy/db/migrations
+          cp backend/src/db/migrations/*.sql deploy/db/migrations/
 
           # Install production dependencies
           cd deploy
