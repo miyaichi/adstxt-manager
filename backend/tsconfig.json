@@ -17,5 +17,5 @@
     "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": ["src/**/*", "types/**/*", "../packages/ads-txt-validator/src/**/*"],
-  "exclude": ["node_modules", "src/**/*.test.ts", "src/**/__tests__"]
+  "exclude": ["node_modules", "src/**/*.test.ts", "src/**/__tests__", "../packages/ads-txt-validator/src/**/*.test.ts", "../packages/ads-txt-validator/src/**/__tests__"]
 }
