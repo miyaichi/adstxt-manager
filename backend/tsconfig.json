@@ -4,7 +4,6 @@
     "module": "commonjs",
     "lib": ["es2022"],
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -17,6 +16,6 @@
     "noImplicitAny": false,
     "typeRoots": ["./node_modules/@types", "./types"]
   },
-  "include": ["src/**/*", "types/**/*"],
+  "include": ["src/**/*", "types/**/*", "../packages/ads-txt-validator/src/**/*"],
   "exclude": ["node_modules", "src/**/*.test.ts", "src/**/__tests__"]
 }

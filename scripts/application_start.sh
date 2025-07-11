@@ -22,19 +22,19 @@ if grep -q "DB_PROVIDER=postgres" .env 2>/dev/null || grep -q "DATABASE_URL=post
     fi
     
     # Run PostgreSQL migrations
-    node db/migrations/run_ads_txt_cache.js || echo "⚠️ ads_txt_cache migration failed, continuing..."
-    node db/migrations/run_alter_ads_txt_cache.js || echo "⚠️ alter_ads_txt_cache migration failed, continuing..."
-    node db/migrations/run_sellers_json_postgres.js || echo "⚠️ sellers_json migration failed, continuing..."
+    node backend/src/db/migrations/run_ads_txt_cache.js || echo "⚠️ ads_txt_cache migration failed, continuing..."
+    node backend/src/db/migrations/run_alter_ads_txt_cache.js || echo "⚠️ alter_ads_txt_cache migration failed, continuing..."
+    node backend/src/db/migrations/run_sellers_json_postgres.js || echo "⚠️ sellers_json migration failed, continuing..."
 else
     echo "SQLite detected, running SQLite migrations..."
-    node db/migrations/run.js || echo "⚠️ Database initialization failed, continuing anyway..."
+    node backend/src/db/migrations/run.js || echo "⚠️ Database initialization failed, continuing anyway..."
 fi
 
 # Start application with PM2
 echo "Starting application with PM2..."
-pm2 start server.js --name "adstxt-manager" --log adstxt-manager.log || {
+pm2 start backend/src/server.js --name "adstxt-manager" --log adstxt-manager.log || {
     echo "Failed to start with PM2, trying direct Node.js start..."
-    nohup node server.js > adstxt-manager.log 2>&1 &
+    nohup node backend/src/server.js > adstxt-manager.log 2>&1 &
 }
 
 # Save PM2 configuration for persistence across reboots
