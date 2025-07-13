@@ -585,7 +585,7 @@ configureMessages({
 // Now validation messages will have complete URLs
 const message = createValidationMessage('domainMismatch', ['example.com', 'google.com']);
 console.log(message.helpUrl);
-// Output: https://your-app.com/help?warning=domain-mismatch#domain-mismatch
+// Output: https://your-app.com/help/#domain-mismatch
 
 // For deployment environments, use environment variables
 if (process.env.APP_URL) {
@@ -594,6 +594,150 @@ if (process.env.APP_URL) {
     baseUrl: process.env.APP_URL,
   });
 }
+```
+
+#### Help URL Generation
+
+The package automatically generates help URLs based on validation keys using the following format:
+
+```
+{baseUrl}/help/#{validation-key}
+```
+
+**Validation Key to URL Fragment Mapping:**
+
+| Validation Key | URL Fragment | Description |
+|----------------|--------------|-------------|
+| `missingFields` | `missing-fields` | Missing required fields error |
+| `invalidFormat` | `invalid-format` | Invalid line format error |
+| `invalidRelationship` | `invalid-relationship` | Invalid relationship type |
+| `invalidDomain` | `invalid-domain` | Invalid domain format |
+| `emptyAccountId` | `empty-account-id` | Empty account ID error |
+| `noValidEntries` | `no-valid-entries` | No valid entries found |
+| `whitespaceInFields` | `whitespace-in-fields` | Whitespace in fields error |
+| `implimented` | `implimented-entry` | Duplicate entry warning |
+| `noSellersJson` | `no-sellers-json` | Missing sellers.json file |
+| `directAccountIdNotInSellersJson` | `direct-account-id-not-in-sellers-json` | Direct account not in sellers.json |
+| `resellerAccountIdNotInSellersJson` | `reseller-account-id-not-in-sellers-json` | Reseller account not in sellers.json |
+| `domainMismatch` | `domain-mismatch` | Domain mismatch with sellers.json |
+| `directNotPublisher` | `direct-not-publisher` | Direct entry not marked as publisher |
+| `sellerIdNotUnique` | `seller-id-not-unique` | Seller ID not unique |
+| `resellerNotIntermediary` | `reseller-not-intermediary` | Reseller not marked as intermediary |
+
+#### Implementing Help Pages
+
+To implement help pages in your application, create a help page that supports URL fragments:
+
+```typescript
+// Example React component for help page
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+export const HelpPage: React.FC = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Highlight section based on URL fragment
+    const fragment = location.hash.replace('#', '');
+    if (fragment) {
+      const element = document.getElementById(fragment);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        // Add highlight effect
+        element.classList.add('highlight-section');
+        setTimeout(() => {
+          element.classList.remove('highlight-section');
+        }, 5000);
+      }
+    }
+  }, [location.hash]);
+
+  return (
+    <div>
+      <h1>Ads.txt Validation Help</h1>
+      
+      <section id="domain-mismatch">
+        <h2>Domain Mismatch</h2>
+        <p>This error occurs when the domain in sellers.json doesn't match...</p>
+      </section>
+      
+      <section id="missing-fields">
+        <h2>Missing Fields</h2>
+        <p>Ads.txt entries require at least three fields...</p>
+      </section>
+      
+      {/* Add more sections for each validation key */}
+    </div>
+  );
+};
+```
+
+#### Static Help Page Example
+
+For static HTML applications, you can implement fragment-based navigation:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ads.txt Validation Help</title>
+    <style>
+        .highlight-section {
+            background-color: rgba(255, 193, 7, 0.3);
+            border-radius: 4px;
+            padding: 8px;
+            margin: -8px;
+            transition: all 0.3s ease-in-out;
+            animation: highlight-fade 5s ease-out forwards;
+        }
+        
+        @keyframes highlight-fade {
+            0% { background-color: rgba(255, 193, 7, 0.4); }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Ads.txt Validation Help</h1>
+    
+    <section>
+        <a id="domain-mismatch"></a>
+        <h2>Domain Mismatch</h2>
+        <p>This error occurs when...</p>
+    </section>
+    
+    <script>
+        // Handle fragment highlighting
+        function highlightSection() {
+            const fragment = window.location.hash.replace('#', '');
+            if (fragment) {
+                const element = document.getElementById(fragment);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // If it's an empty anchor, highlight the next heading
+                    let elementToHighlight = element;
+                    if (element.tagName === 'A' && !element.textContent.trim()) {
+                        const nextHeading = element.nextElementSibling;
+                        if (nextHeading && nextHeading.tagName.match(/^H[1-6]$/)) {
+                            elementToHighlight = nextHeading;
+                        }
+                    }
+                    
+                    elementToHighlight.classList.add('highlight-section');
+                    setTimeout(() => {
+                        elementToHighlight.classList.remove('highlight-section');
+                    }, 5000);
+                }
+            }
+        }
+        
+        // Highlight on page load and hash change
+        window.addEventListener('load', highlightSection);
+        window.addEventListener('hashchange', highlightSection);
+    </script>
+</body>
+</html>
 ```
 
 ### Content Optimization
