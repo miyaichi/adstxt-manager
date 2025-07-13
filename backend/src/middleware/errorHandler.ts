@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import i18next from '../i18n';
+import { messageService } from '../services/messageService';
 
 /**
  * Custom error class for API errors
@@ -55,9 +56,19 @@ export function errorHandler(
   if (err instanceof ApiError) {
     statusCode = err.statusCode;
 
-    // Use i18n key if available, otherwise use the message directly
+    // Use enhanced message service if available, otherwise fall back to i18n
     if (err.i18nKey) {
-      message = i18next.t(err.i18nKey, { ...err.i18nParams, lng: req.language });
+      const enhancedError = messageService.formatApiError(
+        err.i18nKey,
+        err.i18nParams ? Object.values(err.i18nParams).map(String) : [],
+        req.language || 'ja'
+      );
+      message = enhancedError.message;
+
+      // Include additional information in development
+      if (process.env.NODE_ENV === 'development' && enhancedError.helpUrl) {
+        message += ` (Help: ${enhancedError.helpUrl})`;
+      }
     } else {
       message = err.message;
     }

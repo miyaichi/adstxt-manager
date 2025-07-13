@@ -14,15 +14,17 @@ export function resolveMigrationPath(sqlFileName: string): string {
     path.join(process.cwd(), 'db/migrations', sqlFileName), // デプロイメント構造用 - 実際のSQL配置場所
     path.join(__dirname, '../../../../db/migrations', sqlFileName), // デプロイメント構造用 - 相対パス
   ];
-  
+
   for (const p of possiblePaths) {
     if (fs.existsSync(p)) {
       console.log(`Found migration file: ${p}`);
       return p;
     }
   }
-  
-  throw new Error(`Migration file '${sqlFileName}' not found in any of the expected locations: ${possiblePaths.join(', ')}`);
+
+  throw new Error(
+    `Migration file '${sqlFileName}' not found in any of the expected locations: ${possiblePaths.join(', ')}`
+  );
 }
 
 /**

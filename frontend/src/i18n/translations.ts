@@ -1,5 +1,49 @@
 // Define translations
 export const translations = {
+  validation: {
+    summary: {
+      title: {
+        en: 'Validation Summary',
+        ja: '検証サマリー',
+      },
+      total: {
+        en: 'Total',
+        ja: '総数',
+      },
+      errors: {
+        en: 'Errors',
+        ja: 'エラー',
+      },
+      warnings: {
+        en: 'Warnings',
+        ja: '警告',
+      },
+      info: {
+        en: 'Info',
+        ja: '情報',
+      },
+      codes: {
+        en: 'Codes',
+        ja: 'コード',
+      },
+      learnMore: {
+        en: 'Learn more',
+        ja: '詳細を見る',
+      },
+      overallValid: {
+        en: 'Overall Valid',
+        ja: '全体的に有効',
+      },
+      overallInvalid: {
+        en: 'Overall Invalid',
+        ja: '全体的に無効',
+      },
+      noRecords: {
+        en: 'No records to validate',
+        ja: '検証するレコードがありません',
+      },
+    },
+  },
   warnings: {
     invalidFormat: {
       title: {

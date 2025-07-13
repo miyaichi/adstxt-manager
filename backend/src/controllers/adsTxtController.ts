@@ -7,6 +7,7 @@ import {
   parseAdsTxtContent,
   crossCheckAdsTxtRecords,
 } from '@adstxt-manager/ads-txt-validator';
+import { createValidationApiError } from '../utils/validationHelper';
 
 // Import the shared fetch function for sellers.json data
 import { fetchSellersJsonWithCache } from '../controllers/sellersJsonController';
@@ -1123,14 +1124,7 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
       return;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-      throw new ApiError(
-        400,
-        `Error parsing Ads.txt file: ${errorMessage}`,
-        'errors:parsingError',
-        {
-          message: errorMessage,
-        }
-      );
+      throw createValidationApiError(400, 'parsingError', [errorMessage], 'ja');
     }
   }
 
@@ -1237,14 +1231,7 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-    throw new ApiError(
-      400,
-      `Error parsing Ads.txt content: ${errorMessage}`,
-      'errors:parsingError',
-      {
-        message: errorMessage,
-      }
-    );
+    throw createValidationApiError(400, 'parsingError', [errorMessage], 'ja');
   }
 });
 

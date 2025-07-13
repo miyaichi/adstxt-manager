@@ -185,10 +185,8 @@ export class PostgresDatabase implements IDatabaseAdapter {
       try {
         // Run the sellers.json migration
         // await runSellersJsonMigration();
-
         // Run the ads.txt cache migration
         // await runAdsTxtCacheMigration();
-
         // Run the ads.txt cache alteration migration
         // await runAlterAdsTxtCacheMigration();
       } catch (error) {

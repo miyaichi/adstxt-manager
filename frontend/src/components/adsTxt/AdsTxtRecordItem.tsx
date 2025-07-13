@@ -1,4 +1,4 @@
-import { Badge, Button, Card, Flex, Loader, Text } from '@aws-amplify/ui-react';
+import { Badge, Button, Card, Flex, Link, Loader, Text } from '@aws-amplify/ui-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import api from '../../api';
@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 import { AdsTxtRecord, ParsedAdsTxtRecord, SellersJsonSellerResponse } from '../../models';
 import WarningPopover from '../common/WarningPopover';
+import { getRecordValidationMessage } from '../../services/messageService';
 
 /**
  * 様々な形式のis_confidential値を評価する関数
@@ -317,21 +318,46 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
 
                           // Check for new validation_key format first
                           if (parsedRecord.validation_key) {
-                            // Use new validation_key and severity format
+                            // Get enhanced validation message
+                            const enhancedMessage = getRecordValidationMessage(
+                              parsedRecord,
+                              language
+                            );
+
+                            if (enhancedMessage) {
+                              return (
+                                <Flex direction="column" gap="xs">
+                                  <Text color="orange" fontSize="0.875rem">
+                                    {enhancedMessage.message}
+                                  </Text>
+                                  {enhancedMessage.description && (
+                                    <Text
+                                      fontSize="xs"
+                                      color="var(--amplify-colors-font-secondary)"
+                                    >
+                                      {enhancedMessage.description}
+                                    </Text>
+                                  )}
+                                  {enhancedMessage.helpUrl && (
+                                    <Link
+                                      href={enhancedMessage.helpUrl}
+                                      fontSize="xs"
+                                      color="var(--amplify-colors-brand-primary)"
+                                      isExternal={true}
+                                    >
+                                      詳細を見る →
+                                    </Link>
+                                  )}
+                                </Flex>
+                              );
+                            }
+
+                            // Fallback to legacy format
                             const params = parsedRecord.warning_params || {};
-
-                            // Add standard parameters that might be needed
-                            if (!params.domain && record.domain) {
-                              params.domain = record.domain;
-                            }
-
-                            if (!params.account_id && record.account_id) {
+                            if (!params.domain && record.domain) params.domain = record.domain;
+                            if (!params.account_id && record.account_id)
                               params.account_id = record.account_id;
-                            }
 
-                            // Convert the validation_key to warningId format
-                            // 1. Replace dots with dashes
-                            // 2. Convert camelCase to kebab-case (e.g. directAccountId -> direct-account-id)
                             const warningId = parsedRecord.validation_key
                               .replace(/\./g, '-')
                               .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -426,87 +452,118 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             ) : (
               <Flex direction="column" width="100%">
                 <Badge variation="error">{t('common.invalid', language)}</Badge>
-                <Text color="red" fontSize="0.875rem">
-                  {(() => {
-                    const parsedRecord = record as ParsedAdsTxtRecord;
+                {(() => {
+                  const parsedRecord = record as ParsedAdsTxtRecord;
 
-                    // Check for new validation_key format first
-                    if (parsedRecord.validation_key) {
-                      const params = parsedRecord.warning_params || {};
+                  // Check for new validation_key format first
+                  if (parsedRecord.validation_key) {
+                    // Get enhanced validation message
+                    const enhancedMessage = getRecordValidationMessage(parsedRecord, language);
 
-                      // Add standard parameters that might be needed
-                      if (!params.domain && record.domain) {
-                        params.domain = record.domain;
-                      }
-
-                      if (!params.account_id && record.account_id) {
-                        params.account_id = record.account_id;
-                      }
-
-                      // Use warnings title instead of errors.adsTxtValidation
-                      return t(`warnings.${parsedRecord.validation_key}.title`, language, params);
+                    if (enhancedMessage) {
+                      return (
+                        <Flex direction="column" gap="xs">
+                          <Text color="red" fontSize="0.875rem">
+                            {enhancedMessage.message}
+                          </Text>
+                          {enhancedMessage.description && (
+                            <Text fontSize="xs" color="var(--amplify-colors-font-secondary)">
+                              {enhancedMessage.description}
+                            </Text>
+                          )}
+                          {enhancedMessage.helpUrl && (
+                            <Link
+                              href={enhancedMessage.helpUrl}
+                              fontSize="xs"
+                              color="var(--amplify-colors-brand-primary)"
+                              isExternal={true}
+                            >
+                              詳細を見る →
+                            </Link>
+                          )}
+                        </Flex>
+                      );
                     }
 
-                    // Fall back to legacy error format
-                    const errorMessage = parsedRecord.error;
-                    if (!errorMessage) return '';
-
-                    if (
-                      errorMessage.startsWith('errors:adsTxtValidation.') ||
-                      errorMessage.startsWith('errors.adsTxtValidation.')
-                    ) {
-                      // Handle specific error messages
-                      const errType = errorMessage
-                        .replace('errors:adsTxtValidation.', '')
-                        .replace('errors.adsTxtValidation.', '');
-                      // Get possible parameter values from record
-                      const params: Record<string, any> = {};
-
-                      // Extract domain from record for all messages that need it
-                      params.domain = record.domain;
-
-                      // Extract account_id
+                    // Fallback to legacy format
+                    const params = parsedRecord.warning_params || {};
+                    if (!params.domain && record.domain) params.domain = record.domain;
+                    if (!params.account_id && record.account_id)
                       params.account_id = record.account_id;
 
-                      // Extract relationship
-                      params.relationship = record.relationship;
+                    return (
+                      <Text color="red" fontSize="0.875rem">
+                        {t(`warnings.${parsedRecord.validation_key}.title`, language, params)}
+                      </Text>
+                    );
+                  }
 
-                      // For misspelled relationship
-                      if (errType === 'misspelledRelationship') {
-                        params.value =
-                          (record as ParsedAdsTxtRecord).raw_line?.split(',')[3]?.trim() || '';
-                      }
+                  // Fall back to legacy error format
+                  const errorMessage = parsedRecord.error;
+                  if (!errorMessage) return '';
 
-                      // For domain mismatch
-                      if (errType === 'domainMismatch' && (record as any).warning_params) {
-                        const wParams = (record as any).warning_params;
-                        params.seller_domain = wParams.seller_domain;
-                        params.publisher_domain = wParams.publisher_domain;
-                      }
+                  if (
+                    errorMessage.startsWith('errors:adsTxtValidation.') ||
+                    errorMessage.startsWith('errors.adsTxtValidation.')
+                  ) {
+                    // Handle specific error messages
+                    const errType = errorMessage
+                      .replace('errors:adsTxtValidation.', '')
+                      .replace('errors.adsTxtValidation.', '');
+                    // Get possible parameter values from record
+                    const params: Record<string, any> = {};
 
-                      // For seller type warnings
-                      if (
-                        (errType === 'directNotPublisher' ||
-                          errType === 'resellerNotIntermediary') &&
-                        (record as any).warning_params
-                      ) {
-                        params.seller_type = (record as any).warning_params.seller_type;
-                      }
+                    // Extract domain from record for all messages that need it
+                    params.domain = record.domain;
 
-                      // For sellers.json validation error
-                      if (
-                        errType === 'sellersJsonValidationError' &&
-                        (record as any).warning_params
-                      ) {
-                        params.message = (record as any).warning_params.message;
-                      }
+                    // Extract account_id
+                    params.account_id = record.account_id;
 
-                      return t(`warnings.${errType}.title`, language, params);
-                    } else {
-                      return errorMessage;
+                    // Extract relationship
+                    params.relationship = record.relationship;
+
+                    // For misspelled relationship
+                    if (errType === 'misspelledRelationship') {
+                      params.value =
+                        (record as ParsedAdsTxtRecord).raw_line?.split(',')[3]?.trim() || '';
                     }
-                  })()}
-                </Text>
+
+                    // For domain mismatch
+                    if (errType === 'domainMismatch' && (record as any).warning_params) {
+                      const wParams = (record as any).warning_params;
+                      params.seller_domain = wParams.seller_domain;
+                      params.publisher_domain = wParams.publisher_domain;
+                    }
+
+                    // For seller type warnings
+                    if (
+                      (errType === 'directNotPublisher' || errType === 'resellerNotIntermediary') &&
+                      (record as any).warning_params
+                    ) {
+                      params.seller_type = (record as any).warning_params.seller_type;
+                    }
+
+                    // For sellers.json validation error
+                    if (
+                      errType === 'sellersJsonValidationError' &&
+                      (record as any).warning_params
+                    ) {
+                      params.message = (record as any).warning_params.message;
+                    }
+
+                    return (
+                      <Text color="red" fontSize="0.875rem">
+                        {t(`warnings.${errType}.title`, language, params)}
+                      </Text>
+                    );
+                  } else {
+                    return (
+                      <Text color="red" fontSize="0.875rem">
+                        {errorMessage}
+                      </Text>
+                    );
+                  }
+                })()}
               </Flex>
             )}
           </Flex>

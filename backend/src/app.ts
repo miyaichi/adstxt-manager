@@ -16,6 +16,20 @@ import { logger } from './utils/logger';
 // Load environment variables
 dotenv.config();
 
+// Configure ads-txt-validator message system with baseUrl
+import { configureMessages } from '@adstxt-manager/ads-txt-validator';
+
+// Configure the message system with APP_URL if available
+if (process.env.APP_URL) {
+  configureMessages({
+    defaultLocale: 'ja',
+    baseUrl: process.env.APP_URL,
+  });
+  logger.info(`Configured ads-txt-validator with baseUrl: ${process.env.APP_URL}`);
+} else {
+  logger.warn('APP_URL not configured - ads-txt-validator help URLs will be relative');
+}
+
 // Initialize the Express application
 const app = express();
 

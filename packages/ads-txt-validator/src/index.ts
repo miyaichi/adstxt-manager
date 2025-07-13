@@ -27,10 +27,29 @@ export const VALIDATION_KEYS = {
   SELLER_ID_NOT_UNIQUE: 'sellerIdNotUnique',
   RESELLER_NOT_INTERMEDIARY: 'resellerNotIntermediary',
   SELLERS_JSON_VALIDATION_ERROR: 'sellersJsonValidationError',
+  // Content validation
+  EMPTY_FILE: 'emptyFile',
+  INVALID_CHARACTERS: 'invalidCharacters',
 };
 
 // For backward compatibility
 export const ERROR_KEYS = VALIDATION_KEYS;
+
+// Export message system
+export {
+  ValidationMessage,
+  MessageData,
+  MessageProvider,
+  MessageConfig,
+  DefaultMessageProvider,
+  SupportedLocale,
+  setMessageProvider,
+  getMessageProvider,
+  createValidationMessage,
+  configureMessages,
+  isSupportedLocale,
+  getSupportedLocales,
+} from './messages';
 
 // New efficient sellers.json provider interface
 export interface SellersJsonProvider {
@@ -226,12 +245,42 @@ export function parseAdsTxtVariable(line: string, lineNumber: number): ParsedAds
 }
 
 /**
+ * Validate line for invalid characters
+ * @param line - The raw line from the file
+ * @returns true if line contains invalid characters
+ */
+function hasInvalidCharacters(line: string): boolean {
+  // Check for control characters (except tab and newline which are already handled)
+  // ASCII control characters: 0x00-0x1F (except 0x09 tab and 0x0A newline) and 0x7F
+  const controlCharRegex = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
+
+  // Check for non-printable Unicode characters
+  // This includes various Unicode control and format characters
+  const nonPrintableRegex =
+    /[\u0000-\u001F\u007F-\u009F\u2000-\u200F\u2028-\u202F\u205F-\u206F\uFEFF]/;
+
+  return controlCharRegex.test(line) || nonPrintableRegex.test(line);
+}
+
+/**
  * Parse and validate a line from an Ads.txt file
  * @param line - The raw line from the file
  * @param lineNumber - The line number in the file (for error reporting)
  * @returns A parsed record or variable, or null for comments and empty lines
  */
 export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtEntry | null {
+  // Check for invalid characters first
+  if (hasInvalidCharacters(line)) {
+    return createInvalidRecord(
+      {
+        line_number: lineNumber,
+        raw_line: line,
+      },
+      VALIDATION_KEYS.INVALID_CHARACTERS,
+      Severity.ERROR
+    );
+  }
+
   // Trim whitespace and ignore empty lines or comments
   const trimmedLine = line.trim();
   if (!trimmedLine || trimmedLine.startsWith('#')) {
@@ -400,6 +449,25 @@ function processRelationship(
  * @returns Array of parsed records and variables with validation status
  */
 export function parseAdsTxtContent(content: string, publisherDomain?: string): ParsedAdsTxtEntry[] {
+  // Check for empty file
+  if (!content || content.trim().length === 0) {
+    return [
+      {
+        line_number: 1,
+        raw_line: '',
+        is_valid: false,
+        error: VALIDATION_KEYS.EMPTY_FILE,
+        validation_key: VALIDATION_KEYS.EMPTY_FILE,
+        severity: Severity.ERROR,
+        domain: '',
+        account_id: '',
+        account_type: '',
+        relationship: 'DIRECT' as const,
+        is_variable: false,
+      },
+    ];
+  }
+
   const lines = content.split('\n');
   const entries: ParsedAdsTxtEntry[] = [];
 
@@ -546,7 +614,6 @@ export interface CrossCheckValidationResult {
   error?: string;
 }
 
-
 /**
  * Optimized cross-check function using SellersJsonProvider
  * This is the new preferred method for performance-critical applications
@@ -576,7 +643,9 @@ export async function crossCheckAdsTxtRecords(
   publisherDomain: string | undefined,
   parsedEntries: ParsedAdsTxtEntry[],
   cachedAdsTxtContent: string | null,
-  sellersJsonProviderOrGetSellersJson: SellersJsonProvider | ((domain: string) => Promise<any | null>)
+  sellersJsonProviderOrGetSellersJson:
+    | SellersJsonProvider
+    | ((domain: string) => Promise<any | null>)
 ): Promise<ParsedAdsTxtEntry[]> {
   const logger = createLogger();
 
@@ -829,21 +898,38 @@ async function validateAgainstSellersJson(
 async function validateAgainstSellersJsonOptimized(
   publisherDomain: string,
   records: ParsedAdsTxtRecord[],
-  sellersJsonProviderOrGetSellersJson: SellersJsonProvider | ((domain: string) => Promise<any | null>),
+  sellersJsonProviderOrGetSellersJson:
+    | SellersJsonProvider
+    | ((domain: string) => Promise<any | null>),
   logger: Logger,
   allEntries: ParsedAdsTxtEntry[] = []
 ): Promise<ParsedAdsTxtRecord[]> {
   // Check if we have the new optimized provider
-  const isOptimizedProvider = typeof sellersJsonProviderOrGetSellersJson === 'object' && 
+  const isOptimizedProvider =
+    typeof sellersJsonProviderOrGetSellersJson === 'object' &&
     'batchGetSellers' in sellersJsonProviderOrGetSellersJson;
 
   if (isOptimizedProvider) {
     const provider = sellersJsonProviderOrGetSellersJson as SellersJsonProvider;
-    return await validateWithOptimizedProvider(publisherDomain, records, provider, logger, allEntries);
+    return await validateWithOptimizedProvider(
+      publisherDomain,
+      records,
+      provider,
+      logger,
+      allEntries
+    );
   } else {
     // Fall back to legacy function for backward compatibility
-    const getSellersJson = sellersJsonProviderOrGetSellersJson as (domain: string) => Promise<any | null>;
-    return await validateAgainstSellersJson(publisherDomain, records, getSellersJson, logger, allEntries);
+    const getSellersJson = sellersJsonProviderOrGetSellersJson as (
+      domain: string
+    ) => Promise<any | null>;
+    return await validateAgainstSellersJson(
+      publisherDomain,
+      records,
+      getSellersJson,
+      logger,
+      allEntries
+    );
   }
 }
 
@@ -863,17 +949,17 @@ async function validateWithOptimizedProvider(
   const domainToSellerIds = new Map<string, string[]>();
   const domainToRecords = new Map<string, ParsedAdsTxtRecord[]>();
 
-  records.forEach(record => {
+  records.forEach((record) => {
     if (!record.is_valid) return; // Skip invalid records
 
     const domain = record.domain.toLowerCase();
-    
+
     // Initialize arrays if not exists
     if (!domainToSellerIds.has(domain)) {
       domainToSellerIds.set(domain, []);
       domainToRecords.set(domain, []);
     }
-    
+
     // Add seller ID and record to respective maps
     domainToSellerIds.get(domain)!.push(record.account_id);
     domainToRecords.get(domain)!.push(record);
@@ -886,7 +972,7 @@ async function validateWithOptimizedProvider(
   for (const [domain, sellerIds] of domainToSellerIds) {
     try {
       logger.info(`Fetching ${sellerIds.length} sellers for domain: ${domain}`);
-      
+
       // Check if domain has sellers.json first
       const hasSellerJson = await provider.hasSellerJson(domain);
       if (!hasSellerJson) {
@@ -898,19 +984,21 @@ async function validateWithOptimizedProvider(
 
       // Batch fetch sellers
       const batchResult = await provider.batchGetSellers(domain, sellerIds);
-      
+
       // Convert to Map for efficient lookup
       const sellersMap = new Map<string, Seller>();
-      batchResult.results.forEach(result => {
+      batchResult.results.forEach((result) => {
         if (result.found && result.seller) {
           sellersMap.set(result.sellerId, result.seller);
         }
       });
-      
+
       domainSellersMap.set(domain, sellersMap);
       domainMetadataMap.set(domain, batchResult.metadata);
-      
-      logger.info(`Found ${batchResult.found_count}/${batchResult.requested_count} sellers for domain: ${domain}`);
+
+      logger.info(
+        `Found ${batchResult.found_count}/${batchResult.requested_count} sellers for domain: ${domain}`
+      );
     } catch (error) {
       logger.error(`Error fetching sellers for domain ${domain}:`, error);
       domainSellersMap.set(domain, new Map());
@@ -920,7 +1008,7 @@ async function validateWithOptimizedProvider(
 
   // Validate each record using the fetched data
   const validatedRecords = await Promise.all(
-    records.map(async record => {
+    records.map(async (record) => {
       if (!record.is_valid) {
         return record; // Skip invalid records
       }
@@ -960,10 +1048,10 @@ async function validateSingleRecordOptimized(
 ): Promise<ParsedAdsTxtRecord> {
   // Initialize validation result
   const validationResult = createInitialValidationResult();
-  
+
   // Check if sellers.json exists for this domain
   validationResult.hasSellerJson = sellersMap.size > 0 || Object.keys(metadata).length > 0;
-  
+
   if (!validationResult.hasSellerJson) {
     return createWarningRecord(
       record,

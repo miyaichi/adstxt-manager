@@ -1,0 +1,89 @@
+{
+  "validation_errors": {
+    "missingFields": {
+      "message": "Missing required fields",
+      "description": "Ads.txt entries require three mandatory fields: domain, account ID, and relationship",
+      "helpUrl": "/help?warning=missing-fields#missing-fields"
+    },
+    "invalidFormat": {
+      "message": "Invalid format",
+      "description": "The ads.txt entry format is incorrect. Please use comma-separated format",
+      "helpUrl": "/help?warning=invalid-format#invalid-format"
+    },
+    "invalidRelationship": {
+      "message": "Invalid relationship",
+      "description": "Relationship must be either 'DIRECT' or 'RESELLER'",
+      "helpUrl": "/help?warning=invalid-relationship#invalid-relationship"
+    },
+    "invalidDomain": {
+      "message": "Invalid domain",
+      "description": "The specified domain '{{domain}}' is not a valid domain format",
+      "helpUrl": "/help?warning=invalid-domain#invalid-domain"
+    },
+    "emptyAccountId": {
+      "message": "Account ID is empty",
+      "description": "Account ID is a required field",
+      "helpUrl": "/help?warning=empty-account-id#empty-account-id"
+    },
+    "emptyFile": {
+      "message": "File is empty",
+      "description": "The ads.txt file contains no content",
+      "helpUrl": "/help?warning=empty-file#empty-file"
+    },
+    "invalidCharacters": {
+      "message": "Contains invalid characters",
+      "description": "The ads.txt file contains non-printable or control characters",
+      "helpUrl": "/help?warning=invalid-characters#invalid-characters"
+    },
+    "noSellersJson": {
+      "message": "sellers.json file not found for {{domain}}",
+      "description": "The specified advertising system does not have a sellers.json file",
+      "helpUrl": "/help?warning=no-sellers-json#no-sellers-json"
+    },
+    "directAccountIdNotInSellersJson": {
+      "message": "DIRECT entry account ID '{{accountId}}' not found in sellers.json",
+      "description": "DIRECT relationship entries must have their account ID registered in the corresponding sellers.json file",
+      "helpUrl": "/help?warning=direct-account-id-not-in-sellers-json#direct-account-id-not-in-sellers-json"
+    },
+    "resellerAccountIdNotInSellersJson": {
+      "message": "RESELLER entry account ID '{{accountId}}' not found in sellers.json",
+      "description": "RESELLER relationship entries must have their account ID registered in the corresponding sellers.json file",
+      "helpUrl": "/help?warning=reseller-account-id-not-in-sellers-json#reseller-account-id-not-in-sellers-json"
+    },
+    "domainMismatch": {
+      "message": "Domain mismatch: {{sellerDomain}}",
+      "description": "The domain in sellers.json does not match the OWNERDOMAIN/MANAGERDOMAIN in ads.txt",
+      "helpUrl": "/help?warning=domain-mismatch#domain-mismatch"
+    },
+    "directNotPublisher": {
+      "message": "DIRECT entry seller_type is not 'PUBLISHER'",
+      "description": "DIRECT relationship entries should have seller_type as 'PUBLISHER' or 'BOTH' in sellers.json",
+      "helpUrl": "/help?warning=direct-not-publisher#direct-not-publisher"
+    },
+    "sellerIdNotUnique": {
+      "message": "Account ID '{{accountId}}' is duplicated",
+      "description": "The same account ID is used in multiple entries",
+      "helpUrl": "/help?warning=seller-id-not-unique#seller-id-not-unique"
+    },
+    "resellerNotIntermediary": {
+      "message": "RESELLER entry seller_type is not 'INTERMEDIARY'",
+      "description": "RESELLER relationship entries should have seller_type as 'INTERMEDIARY' or 'BOTH' in sellers.json",
+      "helpUrl": "/help?warning=reseller-not-intermediary#reseller-not-intermediary"
+    },
+    "implimentedEntry": {
+      "message": "Duplicate entry",
+      "description": "Multiple ads.txt entries with the same content exist",
+      "helpUrl": "/help?warning=implimented-entry#implimented-entry"
+    },
+    "noValidRecords": {
+      "message": "No valid records found",
+      "description": "The uploaded file or provided data does not contain any valid ads.txt records",
+      "helpUrl": "/help?warning=no-valid-records#no-valid-records"
+    },
+    "parsingError": {
+      "message": "Parsing error: {{message}}",
+      "description": "An error occurred while parsing the file or data",
+      "helpUrl": "/help?warning=parsing-error#parsing-error"
+    }
+  }
+}

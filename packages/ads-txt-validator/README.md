@@ -11,6 +11,8 @@ A comprehensive TypeScript library for parsing, validating, and cross-checking a
 - **Duplicate detection**: Identify duplicate entries across ads.txt files
 - **Content optimization**: Remove duplicates and standardize format
 - **Comprehensive validation**: Multiple validation levels with detailed error reporting
+- **Internationalized messages**: Multi-language support with configurable help URLs
+- **External URL configuration**: Configure base URLs for help links when used as external library
 - **TypeScript support**: Full TypeScript support with detailed type definitions
 
 ## Installation
@@ -62,10 +64,10 @@ const validatedEntries = await crossCheckAdsTxtRecords(
 For better performance, especially with large sellers.json files, use the new `SellersJsonProvider` interface:
 
 ```typescript
-import { 
-  parseAdsTxtContent, 
+import {
+  parseAdsTxtContent,
   crossCheckAdsTxtRecords,
-  SellersJsonProvider 
+  SellersJsonProvider,
 } from '@miyaichi/ads-txt-validator';
 
 // Create optimized provider
@@ -79,21 +81,21 @@ const sellersJsonProvider: SellersJsonProvider = {
       found_count: result.foundCount,
       results: result.sellers,
       metadata: result.metadata,
-      cache: result.cacheInfo
+      cache: result.cacheInfo,
     };
   },
-  
+
   async hasSellerJson(domain: string) {
     return await checkSellerJsonExists(domain);
   },
-  
+
   async getMetadata(domain: string) {
     return await getSellerJsonMetadata(domain);
   },
-  
+
   async getCacheInfo(domain: string) {
     return await getCacheInformation(domain);
-  }
+  },
 };
 
 // Use optimized validation
@@ -114,6 +116,7 @@ const validatedEntries = await crossCheckAdsTxtRecords(
 Parses complete ads.txt file content and returns an array of parsed entries.
 
 **Parameters:**
+
 - `content`: Raw ads.txt file content
 - `publisherDomain`: Optional publisher domain for default OWNERDOMAIN
 
@@ -124,6 +127,7 @@ Parses complete ads.txt file content and returns an array of parsed entries.
 Parses a single line from an ads.txt file.
 
 **Parameters:**
+
 - `line`: Single line from ads.txt file
 - `lineNumber`: Line number for error reporting
 
@@ -134,6 +138,7 @@ Parses a single line from an ads.txt file.
 **Optimized cross-check function (recommended)** - Cross-checks parsed entries against existing ads.txt and sellers.json data using efficient selective queries.
 
 **Parameters:**
+
 - `publisherDomain`: Publisher's domain for validation
 - `parsedEntries`: Array of parsed ads.txt entries
 - `cachedAdsTxtContent`: Existing ads.txt content for duplicate detection
@@ -146,6 +151,7 @@ Parses a single line from an ads.txt file.
 **Legacy cross-check function** - Cross-checks parsed entries against existing ads.txt and sellers.json data.
 
 **Parameters:**
+
 - `publisherDomain`: Publisher's domain for validation
 - `parsedEntries`: Array of parsed ads.txt entries
 - `cachedAdsTxtContent`: Existing ads.txt content for duplicate detection
@@ -160,6 +166,7 @@ Parses a single line from an ads.txt file.
 Optimizes ads.txt content by removing duplicates and standardizing format.
 
 **Parameters:**
+
 - `content`: Raw ads.txt content
 - `publisherDomain`: Optional publisher domain
 
@@ -170,9 +177,46 @@ Optimizes ads.txt content by removing duplicates and standardizing format.
 Validates email addresses with comprehensive regex.
 
 **Parameters:**
+
 - `email`: Email address to validate
 
 **Returns:** Boolean indicating validity
+
+### Message System Functions
+
+#### `configureMessages(config: MessageConfig): void`
+
+Configures the global message provider with base URL and locale settings.
+
+**Parameters:**
+
+- `config`: Configuration object with optional `defaultLocale` and `baseUrl`
+
+#### `createValidationMessage(key: string, placeholders?: string[], locale?: string): ValidationMessage | null`
+
+Creates a localized validation message with formatted help URLs.
+
+**Parameters:**
+
+- `key`: Validation error key (e.g., 'domainMismatch')
+- `placeholders`: Array of values to substitute in message templates
+- `locale`: Target locale (defaults to configured locale)
+
+**Returns:** `ValidationMessage` object or null if key not found
+
+#### `setMessageProvider(provider: MessageProvider): void`
+
+Sets a custom message provider for advanced usage.
+
+**Parameters:**
+
+- `provider`: Custom message provider implementation
+
+#### `getMessageProvider(): MessageProvider`
+
+Gets the current message provider.
+
+**Returns:** Current `MessageProvider` instance
 
 ### Type Definitions
 
@@ -301,7 +345,12 @@ interface ParsedAdsTxtVariable {
   line_number: number;
   raw_line: string;
   is_valid: boolean;
-  variable_type: 'CONTACT' | 'SUBDOMAIN' | 'INVENTORYPARTNERDOMAIN' | 'OWNERDOMAIN' | 'MANAGERDOMAIN';
+  variable_type:
+    | 'CONTACT'
+    | 'SUBDOMAIN'
+    | 'INVENTORYPARTNERDOMAIN'
+    | 'OWNERDOMAIN'
+    | 'MANAGERDOMAIN';
   value: string;
   is_variable: true;
   error?: string;
@@ -338,7 +387,33 @@ Validation severity levels:
 enum Severity {
   ERROR = 'error',
   WARNING = 'warning',
-  INFO = 'info'
+  INFO = 'info',
+}
+```
+
+#### `MessageConfig`
+
+Configuration interface for message system:
+
+```typescript
+interface MessageConfig {
+  defaultLocale?: 'ja' | 'en';
+  baseUrl?: string;
+}
+```
+
+#### `ValidationMessage`
+
+Complete validation message with localized content:
+
+```typescript
+interface ValidationMessage {
+  key: string;
+  severity: Severity;
+  message: string;
+  description?: string;
+  helpUrl?: string;
+  placeholders: string[];
 }
 ```
 
@@ -388,12 +463,12 @@ The package implements comprehensive sellers.json validation based on IAB standa
 
 The new `SellersJsonProvider` interface offers significant performance improvements over the legacy approach:
 
-| Aspect | Legacy Approach | SellersJsonProvider |
-|--------|----------------|-------------------|
-| **Memory Usage** | Loads entire sellers.json (100MB+) | Loads only needed sellers (few KB) |
-| **Network Transfer** | Downloads complete files | Selective database queries |
-| **Processing Time** | O(n) linear search | O(log n) indexed lookups |
-| **Scalability** | Poor for large files | Excellent for any size |
+| Aspect               | Legacy Approach                    | SellersJsonProvider                |
+| -------------------- | ---------------------------------- | ---------------------------------- |
+| **Memory Usage**     | Loads entire sellers.json (100MB+) | Loads only needed sellers (few KB) |
+| **Network Transfer** | Downloads complete files           | Selective database queries         |
+| **Processing Time**  | O(n) linear search                 | O(log n) indexed lookups           |
+| **Scalability**      | Poor for large files               | Excellent for any size             |
 
 ### Performance Metrics
 
@@ -406,12 +481,14 @@ For a typical sellers.json file with 10,000 sellers:
 ### When to Use Each Approach
 
 **Use SellersJsonProvider when:**
+
 - Working with large sellers.json files (>1MB)
 - Performance is critical
 - Database/cache infrastructure is available
 - Processing multiple ads.txt files
 
 **Use Legacy approach when:**
+
 - Simple one-off validations
 - No database infrastructure
 - Working with small sellers.json files
@@ -453,9 +530,7 @@ OWNERDOMAIN=example.com
 const parsedEntries = parseAdsTxtContent(adsTxtContent, 'example.com');
 
 // Filter only valid records
-const validRecords = parsedEntries
-  .filter(entry => entry.is_valid)
-  .filter(isAdsTxtRecord);
+const validRecords = parsedEntries.filter((entry) => entry.is_valid).filter(isAdsTxtRecord);
 
 console.log(`Found ${validRecords.length} valid records`);
 ```
@@ -484,7 +559,7 @@ const validatedEntries = await crossCheckAdsTxtRecords(
 );
 
 // Check validation results
-validatedEntries.forEach(entry => {
+validatedEntries.forEach((entry) => {
   if (entry.has_warning) {
     console.warn(`Warning for ${entry.raw_line}: ${entry.warning}`);
   }
@@ -492,6 +567,33 @@ validatedEntries.forEach(entry => {
     console.log('Validation details:', entry.validation_results);
   }
 });
+```
+
+### Configuring Help URLs for External Applications
+
+When using this package as an external library, you can configure the base URL for help links:
+
+```typescript
+import { configureMessages, createValidationMessage } from '@miyaichi/ads-txt-validator';
+
+// Configure the message system with your application's base URL
+configureMessages({
+  defaultLocale: 'ja', // or 'en'
+  baseUrl: 'https://your-app.com',
+});
+
+// Now validation messages will have complete URLs
+const message = createValidationMessage('domainMismatch', ['example.com', 'google.com']);
+console.log(message.helpUrl);
+// Output: https://your-app.com/help?warning=domain-mismatch#domain-mismatch
+
+// For deployment environments, use environment variables
+if (process.env.APP_URL) {
+  configureMessages({
+    defaultLocale: 'ja',
+    baseUrl: process.env.APP_URL,
+  });
+}
 ```
 
 ### Content Optimization
@@ -520,15 +622,15 @@ import { parseAdsTxtContent, isAdsTxtRecord } from '@miyaichi/ads-txt-validator'
 
 const parsedEntries = parseAdsTxtContent(adsTxtContent);
 
-parsedEntries.forEach(entry => {
+parsedEntries.forEach((entry) => {
   if (!entry.is_valid) {
     console.error(`Line ${entry.line_number}: ${entry.error}`);
   }
-  
+
   if (entry.has_warning) {
     console.warn(`Line ${entry.line_number}: ${entry.warning}`);
   }
-  
+
   if (isAdsTxtRecord(entry) && entry.validation_results) {
     if (!entry.validation_results.hasSellerJson) {
       console.warn(`No sellers.json found for ${entry.domain}`);

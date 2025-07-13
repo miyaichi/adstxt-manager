@@ -13,6 +13,8 @@ import {
   isAdsTxtRecord,
   isAdsTxtVariable,
 } from '@adstxt-manager/ads-txt-validator';
+import { validateAdsTxtWithMessages, createValidationApiError } from '../utils/validationHelper';
+import { messageService } from '../services/messageService';
 import logger from '../utils/logger';
 
 /**
@@ -25,16 +27,22 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
 
   // Validate required fields
   if (!publisher_email || !requester_email || !requester_name) {
-    throw new ApiError(
+    throw createValidationApiError(
       400,
-      'Publisher email, requester email, and requester name are required',
-      'errors:missingFields.request'
+      'missingFields',
+      ['publisher_email', 'requester_email', 'requester_name'],
+      req.language || 'ja'
     );
   }
 
   // Validate email addresses
   if (!isValidEmail(publisher_email) || !isValidEmail(requester_email)) {
-    throw new ApiError(400, 'Invalid email address', 'errors:invalidEmail');
+    throw createValidationApiError(
+      400,
+      'invalidEmail',
+      [!isValidEmail(publisher_email) ? publisher_email : requester_email],
+      req.language || 'ja'
+    );
   }
 
   // Parse records if it's a string (from FormData)
@@ -53,11 +61,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
 
   // Check for Ads.txt records in the request
   if (!req.file && recordsArray.length === 0) {
-    throw new ApiError(
-      400,
-      'Ads.txt records are required (either file upload or JSON data)',
-      'errors:missingFields.records'
-    );
+    throw createValidationApiError(400, 'noValidRecords', [], req.language || 'ja');
   }
 
   // Create the request
@@ -147,11 +151,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
         .filter(isAdsTxtRecord);
 
       if (validRecords.length === 0) {
-        throw new ApiError(
-          400,
-          'No valid Ads.txt records found in the uploaded file',
-          'errors:noValidRecords'
-        );
+        throw createValidationApiError(400, 'noValidRecords', [], req.language || 'ja');
       }
 
       // Convert to DTOs (we know these are all record types now)
@@ -165,12 +165,7 @@ export const createRequest = asyncHandler(async (req: Request, res: Response) =>
       }));
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid format';
-      throw new ApiError(
-        400,
-        `Error parsing Ads.txt file: ${errorMessage}`,
-        'errors:parsingError',
-        { message: errorMessage }
-      );
+      throw createValidationApiError(400, 'parsingError', [errorMessage], req.language || 'ja');
     }
   } else if (recordsArray.length > 0) {
     // Process JSON records
