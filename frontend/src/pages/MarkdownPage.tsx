@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import rehypeRaw from 'rehype-raw';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
@@ -17,11 +17,37 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
 }) => {
   const [markdown, setMarkdown] = useState('');
   const [searchParams] = useSearchParams();
-  const sectionId = searchParams.get(sectionParam);
+  const location = useLocation();
+  const sectionIdFromParam = searchParams.get(sectionParam);
+  const sectionIdFromHash = location.hash.replace('#', '');
+  // Priority: URL hash > query parameter
+  const sectionId = sectionIdFromHash || sectionIdFromParam;
   const langParam = searchParams.get('lang');
   const { language, setLanguage } = useApp();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Function to highlight a section element
+  const highlightSection = React.useCallback((targetId: string) => {
+    if (!targetId || isLoading) return;
+    
+    setTimeout(() => {
+      const sectionElement = document.getElementById(targetId);
+      if (sectionElement) {
+        // Remove any existing highlight first
+        document.querySelectorAll('.highlight-section').forEach(el => {
+          el.classList.remove('highlight-section');
+        });
+        
+        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a highlight class temporarily
+        sectionElement.classList.add('highlight-section');
+        setTimeout(() => {
+          sectionElement.classList.remove('highlight-section');
+        }, 5000);
+      }
+    }, 100); // Small delay to ensure the DOM is ready
+  }, [isLoading]);
 
   // Map pageType to directory
   const getPageDirectory = React.useCallback(() => {
@@ -88,20 +114,23 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
 
   useEffect(() => {
     // Scroll to the specific section if provided
-    if (sectionId && !isLoading) {
-      setTimeout(() => {
-        const sectionElement = document.getElementById(sectionId);
-        if (sectionElement) {
-          sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add a highlight class temporarily
-          sectionElement.classList.add('highlight-section');
-          setTimeout(() => {
-            sectionElement.classList.remove('highlight-section');
-          }, 5000);
-        }
-      }, 100); // Small delay to ensure the DOM is ready
+    if (sectionId) {
+      highlightSection(sectionId);
     }
-  }, [sectionId, isLoading, markdown]);
+  }, [sectionId, highlightSection, markdown]);
+
+  // Listen for hash changes to handle browser navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newHash = window.location.hash.replace('#', '');
+      if (newHash) {
+        highlightSection(newHash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [highlightSection]);
 
   // Modify the markdown content to remove the top-level header
   const processMarkdown = (content: string) => {
