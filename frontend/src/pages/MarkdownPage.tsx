@@ -18,10 +18,10 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   const [markdown, setMarkdown] = useState('');
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const sectionIdFromParam = searchParams.get(sectionParam);
   const sectionIdFromHash = location.hash.replace('#', '');
-  // Priority: URL hash > query parameter
-  const sectionId = sectionIdFromHash || sectionIdFromParam;
+  // Use only hash fragment for section navigation
+  const sectionId = sectionIdFromHash;
+  
   const langParam = searchParams.get('lang');
   const { language, setLanguage } = useApp();
   const [isLoading, setIsLoading] = useState(true);
@@ -33,20 +33,41 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
     
     setTimeout(() => {
       const sectionElement = document.getElementById(targetId);
+      
       if (sectionElement) {
         // Remove any existing highlight first
         document.querySelectorAll('.highlight-section').forEach(el => {
           el.classList.remove('highlight-section');
         });
         
+        // If the element is an empty anchor, try to highlight the next heading element
+        let elementToHighlight = sectionElement;
+        if (sectionElement.tagName === 'A' && (!sectionElement.textContent || sectionElement.textContent.trim() === '')) {
+          // Look for the next heading element after the anchor
+          let nextElement = sectionElement.nextElementSibling;
+          
+          // If no direct sibling, try parent's next sibling
+          if (!nextElement && sectionElement.parentElement) {
+            nextElement = sectionElement.parentElement.nextElementSibling;
+          }
+          
+          // Find the next heading
+          while (nextElement) {
+            if (nextElement.nodeType === Node.ELEMENT_NODE && ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(nextElement.tagName)) {
+              elementToHighlight = nextElement as HTMLElement;
+              break;
+            }
+            nextElement = nextElement.nextElementSibling;
+          }
+        }
+        
         sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add a highlight class temporarily
-        sectionElement.classList.add('highlight-section');
+        elementToHighlight.classList.add('highlight-section');
         setTimeout(() => {
-          sectionElement.classList.remove('highlight-section');
+          elementToHighlight.classList.remove('highlight-section');
         }, 5000);
       }
-    }, 100); // Small delay to ensure the DOM is ready
+    }, 100);
   }, [isLoading]);
 
   // Map pageType to directory
