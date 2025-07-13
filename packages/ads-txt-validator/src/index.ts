@@ -189,7 +189,7 @@ export interface ParsedAdsTxtRecord extends ParsedAdsTxtEntryBase {
 function createInvalidRecord(
   partialRecord: Partial<ParsedAdsTxtRecord>,
   validationKey: string,
-  severity: Severity = Severity.WARNING // Default to WARNING for all validation issues
+  severity: Severity = Severity.ERROR // Default to ERROR for validation issues
 ): ParsedAdsTxtRecord {
   return {
     domain: partialRecord.domain || '',
@@ -308,7 +308,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
         raw_line: line,
       },
       VALIDATION_KEYS.MISSING_FIELDS,
-      Severity.WARNING
+      Severity.ERROR
     );
   }
 
@@ -321,7 +321,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
         raw_line: line,
       },
       VALIDATION_KEYS.INVALID_FORMAT,
-      Severity.WARNING
+      Severity.ERROR
     );
   }
 
@@ -343,7 +343,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
         raw_line: line,
       },
       error,
-      Severity.WARNING
+      Severity.ERROR
     );
   }
 
@@ -360,7 +360,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
         raw_line: line,
       },
       VALIDATION_KEYS.INVALID_DOMAIN,
-      Severity.WARNING
+      Severity.ERROR
     );
   }
 
@@ -377,7 +377,7 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
         raw_line: line,
       },
       VALIDATION_KEYS.EMPTY_ACCOUNT_ID,
-      Severity.WARNING
+      Severity.ERROR
     );
   }
 
