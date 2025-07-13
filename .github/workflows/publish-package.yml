@@ -38,11 +38,16 @@ jobs:
           cd packages/ads-txt-validator
           npm run build
 
+      - name: Clean npm cache
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          npm cache clean --force
+
       - name: Update version if workflow_dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
           cd packages/ads-txt-validator
-          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version --allow-same-version
 
       - name: Publish package
         run: |
