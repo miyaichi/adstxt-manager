@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { detectLanguage } from '../utils/language';
 import {
   AdsTxtCacheResponse,
   AdsTxtRecord,
@@ -30,25 +31,6 @@ declare global {
 // Create a logger for the API module
 const logger = createLogger('API');
 
-// Get current language preference based on URL param, sessionStorage or browser
-const getLanguage = (): string => {
-  // First priority: Check URL parameter
-  const urlParams = new URLSearchParams(window.location.search);
-  const langParam = urlParams.get('lang');
-  if (langParam && ['en', 'ja'].includes(langParam)) {
-    return langParam;
-  }
-
-  // Second priority: sessionStorage
-  const savedLanguage = sessionStorage.getItem('userLanguage');
-  if (savedLanguage && ['en', 'ja'].includes(savedLanguage)) {
-    return savedLanguage;
-  }
-
-  // Last resort: browser language
-  const browserLanguage = navigator.language.split('-')[0];
-  return ['en', 'ja'].includes(browserLanguage) ? browserLanguage : 'en';
-};
 
 // Configure axios
 // Use relative path - let the React proxy handle the redirection in development
@@ -63,7 +45,7 @@ const api = axios.create({
 
 // Add request interceptor to update language on each request
 api.interceptors.request.use((config) => {
-  config.headers['Accept-Language'] = getLanguage();
+  config.headers['Accept-Language'] = detectLanguage();
   return config;
 });
 
@@ -92,7 +74,7 @@ export const requestApi = {
     }
 
     // Add current language to request URL
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const langParam = `?lang=${currentLang}`;
 
     const response = await api.post<ApiResponse<RequestResponse>>(
@@ -110,7 +92,7 @@ export const requestApi = {
   // Get a request by ID
   async getRequest(id: string, token: string): Promise<ApiResponse<RequestWithRecords>> {
     // Add current language to request
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const response = await api.get<ApiResponse<RequestWithRecords>>(
       `/requests/${id}?token=${token}&lang=${currentLang}`
     );
@@ -124,7 +106,7 @@ export const requestApi = {
     token: string
   ): Promise<ApiResponse<Request>> {
     // Add current language to request URL
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const langParam = `?lang=${currentLang}`;
 
     const response = await api.patch<ApiResponse<Request>>(`/requests/${id}/status${langParam}`, {
@@ -142,7 +124,7 @@ export const requestApi = {
     token: string
   ): Promise<ApiResponse<Request>> {
     // Add current language to request URL
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const langParam = `?lang=${currentLang}`;
 
     const response = await api.patch<ApiResponse<Request>>(
@@ -163,7 +145,7 @@ export const requestApi = {
     token?: string
   ): Promise<ApiResponse<Request[]>> {
     // Add current language to request URL
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const roleParam = role ? `role=${role}&` : '';
     const tokenParam = token ? `token=${encodeURIComponent(token)}&` : '';
     const url = `/requests/email/${email}?${roleParam}${tokenParam}lang=${currentLang}`;
@@ -184,7 +166,7 @@ export const requestApi = {
     }
   ): Promise<ApiResponse<RequestResponse>> {
     // Add current language to request URL
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const langParam = `?lang=${currentLang}`;
 
     const response = await api.put<ApiResponse<RequestResponse>>(
@@ -200,7 +182,7 @@ export const messageApi = {
   // Create a new message
   async createMessage(data: CreateMessageData): Promise<ApiResponse<Message>> {
     // Get current language to send with request
-    const currentLang = getLanguage();
+    const currentLang = detectLanguage();
     const langParam = `?lang=${currentLang}`;
 
     // Add language parameter to URL
@@ -214,7 +196,7 @@ export const messageApi = {
     try {
       const encodedToken = encodeURIComponent(token);
       // Add current language to request
-      const currentLang = getLanguage();
+      const currentLang = detectLanguage();
       const url = `/messages/${requestId}?token=${encodedToken}&lang=${currentLang}`;
       logger.debug('Request URL:', url);
 
