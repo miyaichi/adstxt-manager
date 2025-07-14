@@ -12,7 +12,7 @@ import { t } from '../i18n/translations';
  */
 export const useTranslation = () => {
   const { language } = useApp();
-  
+
   /**
    * Translate a key to current language
    * @param key Translation key (e.g., 'common.status.approved')
@@ -22,6 +22,6 @@ export const useTranslation = () => {
   const translate = (key: string, placeholders?: any[]): string => {
     return t(key, language, placeholders);
   };
-  
+
   return translate;
 };

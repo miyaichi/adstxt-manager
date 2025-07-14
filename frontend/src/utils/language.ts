@@ -4,7 +4,7 @@
  */
 
 const SUPPORTED_LANGUAGES = ['en', 'ja'] as const;
-type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**
  * Detects user's preferred language based on priority:
@@ -49,14 +49,14 @@ export const isSupportedLanguage = (lang: string): lang is SupportedLanguage => 
  */
 export const getInitialLanguage = (): SupportedLanguage => {
   const language = detectLanguage();
-  
+
   // Save URL language parameter to sessionStorage for persistence
   const urlParams = new URLSearchParams(window.location.search);
   const urlLang = urlParams.get('lang');
   if (urlLang && isSupportedLanguage(urlLang)) {
     sessionStorage.setItem('userLanguage', urlLang);
   }
-  
+
   return language;
 };
 

@@ -280,9 +280,7 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">
-                    {translate('siteAnalysis.results.publisherDomain')}
-                  </Text>
+                  <Text fontWeight="bold">{translate('siteAnalysis.results.publisherDomain')}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                     {translate('siteAnalysis.fieldDescriptions.publisherDomain')}
                   </Text>
@@ -325,10 +323,14 @@ const SiteAnalysisPage: React.FC = () => {
                     <Badge
                       variation={getVerificationBadgeVariation(publisherData.verificationStatus)}
                     >
-                      {translate(`siteAnalysis.verificationValues.${publisherData.verificationStatus}`)}
+                      {translate(
+                        `siteAnalysis.verificationValues.${publisherData.verificationStatus}`
+                      )}
                     </Badge>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {translate(`siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`)}
+                      {translate(
+                        `siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`
+                      )}
                     </Text>
                   </Flex>
                 </TableCell>
@@ -349,9 +351,7 @@ const SiteAnalysisPage: React.FC = () => {
               {publisherData.contactEmail && (
                 <TableRow>
                   <TableCell>
-                    <Text fontWeight="bold">
-                      {translate('siteAnalysis.results.contactEmail')}
-                    </Text>
+                    <Text fontWeight="bold">{translate('siteAnalysis.results.contactEmail')}</Text>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
                       {translate('siteAnalysis.fieldDescriptions.contactEmail')}
                     </Text>

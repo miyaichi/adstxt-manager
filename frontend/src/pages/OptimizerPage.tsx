@@ -416,21 +416,27 @@ const OptimizerPage: React.FC = () => {
               {/* 基本統計情報 */}
               {stats && (
                 <Card variation="outlined">
-                  <Heading level={5}>
-                    {translate('optimizerPage.resultSection.statsLabel')}
-                  </Heading>
+                  <Heading level={5}>{translate('optimizerPage.resultSection.statsLabel')}</Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.recordsBefore', [stats.beforeCount.toString()])}
+                      {translate('optimizerPage.resultSection.recordsBefore', [
+                        stats.beforeCount.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.recordsAfter', [stats.afterCount.toString()])}
+                      {translate('optimizerPage.resultSection.recordsAfter', [
+                        stats.afterCount.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.duplicatesRemoved', [stats.duplicatesRemoved.toString()])}
+                      {translate('optimizerPage.resultSection.duplicatesRemoved', [
+                        stats.duplicatesRemoved.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.variablesOrganized', [stats.variablesOrganized.toString()])}
+                      {translate('optimizerPage.resultSection.variablesOrganized', [
+                        stats.variablesOrganized.toString(),
+                      ])}
                     </Badge>
                   </Flex>
                 </Card>
@@ -444,16 +450,24 @@ const OptimizerPage: React.FC = () => {
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.categoryOther', [categories.other.toString()])}
+                      {translate('optimizerPage.resultSection.categoryOther', [
+                        categories.other.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.categoryConfidential', [categories.confidential.toString()])}
+                      {translate('optimizerPage.resultSection.categoryConfidential', [
+                        categories.confidential.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryMissingSellerId', [categories.missing_seller_id.toString()])}
+                      {translate('optimizerPage.resultSection.categoryMissingSellerId', [
+                        categories.missing_seller_id.toString(),
+                      ])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryNoSellerJson', [categories.no_seller_json.toString()])}
+                      {translate('optimizerPage.resultSection.categoryNoSellerJson', [
+                        categories.no_seller_json.toString(),
+                      ])}
                     </Badge>
                   </Flex>
                 </Card>
@@ -476,9 +490,7 @@ const OptimizerPage: React.FC = () => {
                 </View>
 
                 <View flex="1">
-                  <Heading level={5}>
-                    {translate('optimizerPage.resultSection.afterLabel')}
-                  </Heading>
+                  <Heading level={5}>{translate('optimizerPage.resultSection.afterLabel')}</Heading>
                   <TextAreaField
                     label=""
                     labelHidden={true}

@@ -14,10 +14,7 @@ interface ValidationSummaryProps {
   showDetails?: boolean;
 }
 
-const ValidationSummary: React.FC<ValidationSummaryProps> = ({
-  records,
-  showDetails = false,
-}) => {
+const ValidationSummary: React.FC<ValidationSummaryProps> = ({ records, showDetails = false }) => {
   const translate = useTranslation();
   const { language } = useApp();
   const summary = formatValidationSummary(records, language);

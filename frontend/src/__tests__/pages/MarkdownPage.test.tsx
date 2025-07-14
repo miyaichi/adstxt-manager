@@ -37,7 +37,7 @@ describe('MarkdownPage Fragment Highlighting', () => {
   afterEach(() => {
     jest.clearAllMocks();
     // Remove any highlight classes that might persist
-    document.querySelectorAll('.highlight-section').forEach(el => {
+    document.querySelectorAll('.highlight-section').forEach((el) => {
       el.classList.remove('highlight-section');
     });
   });
@@ -61,10 +61,13 @@ describe('MarkdownPage Fragment Highlighting', () => {
     });
 
     // Wait a bit more for the highlight effect to be applied
-    await waitFor(() => {
-      const highlightedElement = document.querySelector('.highlight-section');
-      expect(highlightedElement).toBeInTheDocument();
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        const highlightedElement = document.querySelector('.highlight-section');
+        expect(highlightedElement).toBeInTheDocument();
+      },
+      { timeout: 500 }
+    );
   });
 
   it('should highlight section when URL contains query parameter', async () => {
@@ -76,10 +79,13 @@ describe('MarkdownPage Fragment Highlighting', () => {
     });
 
     // Wait for the highlight effect to be applied
-    await waitFor(() => {
-      const highlightedElement = document.querySelector('.highlight-section');
-      expect(highlightedElement).toBeInTheDocument();
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        const highlightedElement = document.querySelector('.highlight-section');
+        expect(highlightedElement).toBeInTheDocument();
+      },
+      { timeout: 500 }
+    );
   });
 
   it('should prioritize hash fragment over query parameter', async () => {
@@ -101,12 +107,15 @@ describe('MarkdownPage Fragment Highlighting', () => {
     });
 
     // The hash fragment should take priority, so custom-anchor should be targeted
-    await waitFor(() => {
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(scrollIntoViewMock).toHaveBeenCalledWith({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      },
+      { timeout: 500 }
+    );
 
     // Clean up
     document.body.removeChild(mockElement);
@@ -137,23 +146,29 @@ describe('MarkdownPage Fragment Highlighting', () => {
     window.location.hash = '#section1';
     window.dispatchEvent(new HashChangeEvent('hashchange'));
 
-    await waitFor(() => {
-      expect(scrollIntoViewMock1).toHaveBeenCalledWith({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(scrollIntoViewMock1).toHaveBeenCalledWith({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      },
+      { timeout: 500 }
+    );
 
     // Simulate another hash change
     window.location.hash = '#section2';
     window.dispatchEvent(new HashChangeEvent('hashchange'));
 
-    await waitFor(() => {
-      expect(scrollIntoViewMock2).toHaveBeenCalledWith({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(scrollIntoViewMock2).toHaveBeenCalledWith({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      },
+      { timeout: 500 }
+    );
 
     // Clean up
     document.body.removeChild(section1Element);
@@ -184,12 +199,15 @@ describe('MarkdownPage Fragment Highlighting', () => {
     window.location.hash = '#section2';
     window.dispatchEvent(new HashChangeEvent('hashchange'));
 
-    await waitFor(() => {
-      // The old highlight should be removed
-      expect(element1.classList.contains('highlight-section')).toBe(false);
-      // The new element should be highlighted
-      expect(element2.classList.contains('highlight-section')).toBe(true);
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        // The old highlight should be removed
+        expect(element1.classList.contains('highlight-section')).toBe(false);
+        // The new element should be highlighted
+        expect(element2.classList.contains('highlight-section')).toBe(true);
+      },
+      { timeout: 500 }
+    );
 
     // Clean up
     document.body.removeChild(element1);

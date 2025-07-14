@@ -175,14 +175,18 @@ const RequestListPage: React.FC = () => {
                 <>
                   <Flex justifyContent="flex-end" gap="0.5rem">
                     <Text>
-                      {translate('requestListPage.totalRequests', [filteredRequests.length.toString()])}
+                      {translate('requestListPage.totalRequests', [
+                        filteredRequests.length.toString(),
+                      ])}
                     </Text>
                   </Flex>
 
                   {pendingRequests.length > 0 && (
                     <Flex direction="column" gap="1rem">
                       <Heading level={3}>
-                        {translate('requestListPage.pendingTitle', [pendingRequests.length.toString()])}
+                        {translate('requestListPage.pendingTitle', [
+                          pendingRequests.length.toString(),
+                        ])}
                       </Heading>
                       <Divider />
                       {pendingRequests.map((request) => (
@@ -194,7 +198,9 @@ const RequestListPage: React.FC = () => {
                   {updatedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {translate('requestListPage.updatedTitle', [updatedRequests.length.toString()])}
+                        {translate('requestListPage.updatedTitle', [
+                          updatedRequests.length.toString(),
+                        ])}
                       </Heading>
                       <Divider />
                       {updatedRequests.map((request) => (
@@ -206,7 +212,9 @@ const RequestListPage: React.FC = () => {
                   {approvedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {translate('requestListPage.approvedTitle', [approvedRequests.length.toString()])}
+                        {translate('requestListPage.approvedTitle', [
+                          approvedRequests.length.toString(),
+                        ])}
                       </Heading>
                       <Divider />
                       {approvedRequests.map((request) => (
@@ -218,7 +226,9 @@ const RequestListPage: React.FC = () => {
                   {rejectedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {translate('requestListPage.rejectedTitle', [rejectedRequests.length.toString()])}
+                        {translate('requestListPage.rejectedTitle', [
+                          rejectedRequests.length.toString(),
+                        ])}
                       </Heading>
                       <Divider />
                       {rejectedRequests.map((request) => (

@@ -31,7 +31,6 @@ declare global {
 // Create a logger for the API module
 const logger = createLogger('API');
 
-
 // Configure axios
 // Use relative path - let the React proxy handle the redirection in development
 // In development mode, the proxy in package.json will redirect /api to http://localhost:3001/api

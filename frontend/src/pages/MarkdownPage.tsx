@@ -21,7 +21,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   const sectionIdFromHash = location.hash.replace('#', '');
   // Use only hash fragment for section navigation
   const sectionId = sectionIdFromHash;
-  
+
   const langParam = searchParams.get('lang');
   const { language, setLanguage } = useApp();
   const translate = useTranslation();
@@ -29,47 +29,56 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Function to highlight a section element
-  const highlightSection = React.useCallback((targetId: string) => {
-    if (!targetId || isLoading) return;
-    
-    setTimeout(() => {
-      const sectionElement = document.getElementById(targetId);
-      
-      if (sectionElement) {
-        // Remove any existing highlight first
-        document.querySelectorAll('.highlight-section').forEach(el => {
-          el.classList.remove('highlight-section');
-        });
-        
-        // If the element is an empty anchor, try to highlight the next heading element
-        let elementToHighlight = sectionElement;
-        if (sectionElement.tagName === 'A' && (!sectionElement.textContent || sectionElement.textContent.trim() === '')) {
-          // Look for the next heading element after the anchor
-          let nextElement = sectionElement.nextElementSibling;
-          
-          // If no direct sibling, try parent's next sibling
-          if (!nextElement && sectionElement.parentElement) {
-            nextElement = sectionElement.parentElement.nextElementSibling;
-          }
-          
-          // Find the next heading
-          while (nextElement) {
-            if (nextElement.nodeType === Node.ELEMENT_NODE && ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(nextElement.tagName)) {
-              elementToHighlight = nextElement as HTMLElement;
-              break;
+  const highlightSection = React.useCallback(
+    (targetId: string) => {
+      if (!targetId || isLoading) return;
+
+      setTimeout(() => {
+        const sectionElement = document.getElementById(targetId);
+
+        if (sectionElement) {
+          // Remove any existing highlight first
+          document.querySelectorAll('.highlight-section').forEach((el) => {
+            el.classList.remove('highlight-section');
+          });
+
+          // If the element is an empty anchor, try to highlight the next heading element
+          let elementToHighlight = sectionElement;
+          if (
+            sectionElement.tagName === 'A' &&
+            (!sectionElement.textContent || sectionElement.textContent.trim() === '')
+          ) {
+            // Look for the next heading element after the anchor
+            let nextElement = sectionElement.nextElementSibling;
+
+            // If no direct sibling, try parent's next sibling
+            if (!nextElement && sectionElement.parentElement) {
+              nextElement = sectionElement.parentElement.nextElementSibling;
             }
-            nextElement = nextElement.nextElementSibling;
+
+            // Find the next heading
+            while (nextElement) {
+              if (
+                nextElement.nodeType === Node.ELEMENT_NODE &&
+                ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(nextElement.tagName)
+              ) {
+                elementToHighlight = nextElement as HTMLElement;
+                break;
+              }
+              nextElement = nextElement.nextElementSibling;
+            }
           }
+
+          sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          elementToHighlight.classList.add('highlight-section');
+          setTimeout(() => {
+            elementToHighlight.classList.remove('highlight-section');
+          }, 5000);
         }
-        
-        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        elementToHighlight.classList.add('highlight-section');
-        setTimeout(() => {
-          elementToHighlight.classList.remove('highlight-section');
-        }, 5000);
-      }
-    }, 100);
-  }, [isLoading]);
+      }, 100);
+    },
+    [isLoading]
+  );
 
   // Map pageType to directory
   const getPageDirectory = React.useCallback(() => {

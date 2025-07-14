@@ -114,7 +114,9 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
                     <Text fontSize="xs">
                       •{' '}
                       {translate('common.andMore', [
-                        (request.records_summary.filter((record) => record.has_warning).length - 3).toString()
+                        (
+                          request.records_summary.filter((record) => record.has_warning).length - 3
+                        ).toString(),
                       ])}
                     </Text>
                   )}

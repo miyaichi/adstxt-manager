@@ -15,7 +15,6 @@ interface AppProviderProps {
   children: ReactNode;
 }
 
-
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [searchParams] = useSearchParams();
   const urlLang = searchParams.get('lang');
