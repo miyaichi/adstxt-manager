@@ -14,8 +14,8 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adsTxtApi, messageApi, requestApi } from '../../api';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
 import { Message, RequestWithRecords } from '../../models';
 import { createLogger } from '../../utils/logger';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
@@ -33,6 +33,7 @@ const logger = createLogger('RequestDetail');
 
 const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initialRole }) => {
   logger.debug('Rendering with props:', { requestId, token, initialRole });
+  const translate = useTranslation();
   const { language } = useApp();
 
   const [request, setRequest] = useState<RequestWithRecords | null>(null);
@@ -72,10 +73,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
           }
         }
       } else {
-        setError(response.error?.message || t('requests.detail.error.fetchError', language));
+        setError(response.error?.message || translate('requests.detail.error.fetchError'));
       }
     } catch (err) {
-      setError(t('requests.detail.error.fetchError', language));
+      setError(translate('requests.detail.error.fetchError'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -107,7 +108,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
       setAdsTxtContent(content);
       setShowAdsTxtContent(true);
     } catch (err) {
-      console.error(t('requests.detail.error.generateError', language), err);
+      console.error(translate('requests.detail.error.generateError'), err);
     }
   };
 
@@ -133,10 +134,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
             : null
         );
       } else {
-        setError(response.error?.message || t('requests.detail.error.updateError', language));
+        setError(response.error?.message || translate('requests.detail.error.updateError'));
       }
     } catch (err) {
-      setError(t('requests.detail.error.updateError', language));
+      setError(translate('requests.detail.error.updateError'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -165,10 +166,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
           };
         });
       } else {
-        setError(response.error?.message || t('requests.detail.error.updateError', language));
+        setError(response.error?.message || translate('requests.detail.error.updateError'));
       }
     } catch (err) {
-      setError(t('requests.detail.error.updateError', language));
+      setError(translate('requests.detail.error.updateError'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -182,13 +183,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variation="success">{t('common.status.approved', language)}</Badge>;
+        return <Badge variation="success">{translate('common.status.approved')}</Badge>;
       case 'rejected':
-        return <Badge variation="error">{t('common.status.rejected', language)}</Badge>;
+        return <Badge variation="error">{translate('common.status.rejected')}</Badge>;
       case 'pending':
-        return <Badge variation="warning">{t('common.status.pending', language)}</Badge>;
+        return <Badge variation="warning">{translate('common.status.pending')}</Badge>;
       case 'updated':
-        return <Badge variation="info">{t('common.status.updated', language)}</Badge>;
+        return <Badge variation="info">{translate('common.status.updated')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -276,7 +277,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
   }
 
   if (!request) {
-    return <Alert variation="warning">{t('requests.detail.error.fetchError', language)}</Alert>;
+    return <Alert variation="warning">{translate('requests.detail.error.fetchError')}</Alert>;
   }
 
   const approvedRecords = request.records.filter((record) => record.status === 'approved');
@@ -294,13 +295,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     <Card padding="1.5rem" variation="outlined">
       <Flex direction="column" gap="1.5rem">
         <Flex justifyContent="space-between" alignItems="center">
-          <Heading level={2}>{t('requests.detail.title', language)}</Heading>
+          <Heading level={2}>{translate('requests.detail.title')}</Heading>
           <Flex gap="1rem" alignItems="center">
             {userRole && (
               <Badge variation="info">
                 {userRole === 'publisher'
-                  ? t('common.roles.publisher', language)
-                  : t('common.roles.requester', language)}
+                  ? translate('common.roles.publisher')
+                  : translate('common.roles.requester')}
               </Badge>
             )}
             {getStatusBadge(request.request.status)}
@@ -310,37 +311,37 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
         <Divider />
 
         <Flex direction="column" gap="1rem">
-          <Heading level={3}>{t('requests.form.basicInfo', language)}</Heading>
+          <Heading level={3}>{translate('requests.form.basicInfo')}</Heading>
 
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>{t('requests.detail.publisher.title', language)}</Heading>
+              <Heading level={5}>{translate('requests.detail.publisher.title')}</Heading>
               <Text>
-                <strong>{t('requests.detail.publisher.email', language)}</strong>{' '}
+                <strong>{translate('requests.detail.publisher.email')}</strong>{' '}
                 {request.request.publisher_email}
               </Text>
               {request.request.publisher_name && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.name', language)}</strong>{' '}
+                  <strong>{translate('requests.detail.publisher.name')}</strong>{' '}
                   {request.request.publisher_name}
                 </Text>
               )}
               {request.request.publisher_domain && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.domain', language)}</strong>{' '}
+                  <strong>{translate('requests.detail.publisher.domain')}</strong>{' '}
                   {request.request.publisher_domain}
                 </Text>
               )}
             </Card>
 
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>{t('requests.detail.requester.title', language)}</Heading>
+              <Heading level={5}>{translate('requests.detail.requester.title')}</Heading>
               <Text>
-                <strong>{t('requests.detail.requester.email', language)}</strong>{' '}
+                <strong>{translate('requests.detail.requester.email')}</strong>{' '}
                 {request.request.requester_email}
               </Text>
               <Text>
-                <strong>{t('requests.detail.requester.name', language)}</strong>{' '}
+                <strong>{translate('requests.detail.requester.name')}</strong>{' '}
                 {request.request.requester_name}
               </Text>
             </Card>
@@ -348,33 +349,33 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
 
           <Flex gap="1rem" wrap="wrap">
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>{t('requests.detail.title', language)}</Heading>
+              <Heading level={5}>{translate('requests.detail.title')}</Heading>
               <Text>
                 <strong>ID:</strong> {request.request.id}
               </Text>
               <Text>
-                <strong>{t('requests.detail.created', language)}</strong> {createdDate}
+                <strong>{translate('requests.detail.created')}</strong> {createdDate}
               </Text>
               <Text>
-                <strong>{t('requests.detail.updated', language)}</strong> {updatedDate}
+                <strong>{translate('requests.detail.updated')}</strong> {updatedDate}
               </Text>
             </Card>
 
             <Card variation="outlined" padding="1rem" flex="1" minWidth="250px">
-              <Heading level={5}>{t('requests.detail.records.title', language)}</Heading>
+              <Heading level={5}>{translate('requests.detail.records.title')}</Heading>
               <Text>
                 <strong>
-                  {t('requests.item.recordCount', language, { count: request.records.length })}
+                  {translate('requests.item.recordCount', [request.records.length.toString()])}
                 </strong>
               </Text>
               <Text>
-                <strong>{t('common.status.approved', language)}:</strong> {approvedRecords.length}
+                <strong>{translate('common.status.approved')}:</strong> {approvedRecords.length}
               </Text>
               <Text>
-                <strong>{t('common.status.pending', language)}:</strong> {pendingRecords.length}
+                <strong>{translate('common.status.pending')}:</strong> {pendingRecords.length}
               </Text>
               <Text>
-                <strong>{t('common.status.rejected', language)}:</strong> {rejectedRecords.length}
+                <strong>{translate('common.status.rejected')}:</strong> {rejectedRecords.length}
               </Text>
             </Card>
           </Flex>
@@ -385,26 +386,26 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
               <Button
                 variation="primary"
                 onClick={() => {
-                  if (window.confirm(t('requests.detail.actions.approveConfirm', language))) {
+                  if (window.confirm(translate('requests.detail.actions.approveConfirm'))) {
                     handleStatusChange('approved');
                   }
                 }}
                 isLoading={loading}
                 flex="1"
               >
-                {t('requests.detail.actions.approve', language)}
+                {translate('requests.detail.actions.approve')}
               </Button>
               <Button
                 variation="destructive"
                 onClick={() => {
-                  if (window.confirm(t('requests.detail.actions.rejectConfirm', language))) {
+                  if (window.confirm(translate('requests.detail.actions.rejectConfirm'))) {
                     handleStatusChange('rejected');
                   }
                 }}
                 isLoading={loading}
                 flex="1"
               >
-                {t('requests.detail.actions.reject', language)}
+                {translate('requests.detail.actions.reject')}
               </Button>
             </Flex>
           )}
@@ -414,7 +415,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
             (request.request.status === 'pending' || request.request.status === 'rejected') && (
               <Flex gap="1rem" marginTop="1rem">
                 <Button variation="primary" onClick={handleEditRequest} isLoading={loading}>
-                  {t('requests.detail.actions.edit', language)}
+                  {translate('requests.detail.actions.edit')}
                 </Button>
               </Flex>
             )}
@@ -429,7 +430,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
               variation={activeTab === 0 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
             >
-              {t('requests.detail.records.title', language)}
+              {translate('requests.detail.records.title')}
             </Button>
             <Button
               onClick={() => {
@@ -442,7 +443,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
               variation={activeTab === 1 ? 'primary' : 'link'}
               className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
             >
-              {t('messages.list.title', language)}
+              {translate('messages.list.title')}
             </Button>
           </Flex>
 
@@ -461,9 +462,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
 
                 {approvedRecords.length > 0 && (
                   <Card variation="outlined" padding="1rem" marginTop="1rem">
-                    <Heading level={4}>{t('requests.detail.approvedContent', language)}</Heading>
+                    <Heading level={4}>{translate('requests.detail.approvedContent')}</Heading>
                     <Text marginBottom="1rem">
-                      {t('requests.detail.approvedContentDescription', language)}
+                      {translate('requests.detail.approvedContentDescription')}
                     </Text>
 
                     <Flex gap="1rem" marginBottom="1rem">
@@ -473,7 +474,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                         flex="1"
                         isDisabled={showAdsTxtContent}
                       >
-                        {t('requests.detail.actions.showContent', language)}
+                        {translate('requests.detail.actions.showContent')}
                       </Button>
 
                       {showAdsTxtContent && (
@@ -484,15 +485,15 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                                 navigator.clipboard.writeText(adsTxtContent);
                                 // Show success toast or feedback here if needed
                                 alert(
-                                  t('requests.detail.copySuccess', language) ||
-                                    t('common.copySuccess', language)
+                                  translate('requests.detail.copySuccess') ||
+                                    translate('common.copySuccess')
                                 );
                               }
                             }}
                             variation="menu"
                             flex="1"
                           >
-                            {t('requests.detail.actions.copyToClipboard', language)}
+                            {translate('requests.detail.actions.copyToClipboard')}
                           </Button>
 
                           <Button
@@ -511,7 +512,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                             variation="menu"
                             flex="1"
                           >
-                            {t('requests.detail.actions.download', language)}
+                            {translate('requests.detail.actions.download')}
                           </Button>
                         </>
                       )}
@@ -542,7 +543,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                           marginTop="0.5rem"
                           color={tokens.colors.font.tertiary}
                         >
-                          {t('requests.detail.contentHelp', language)}
+                          {translate('requests.detail.contentHelp')}
                         </Text>
                       </Card>
                     )}
@@ -561,7 +562,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                 {messageTabSelected ? (
                   messageLoading ? (
                     <Flex direction="column" alignItems="center" padding="2rem">
-                      <Text>{t('requests.detail.loading', language)}</Text>
+                      <Text>{translate('requests.detail.loading')}</Text>
                       <Loader size="large" />
                     </Flex>
                   ) : (
@@ -580,7 +581,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                   )
                 ) : (
                   <Flex direction="column" alignItems="center" padding="2rem">
-                    <Text>{t('common.selectTabToViewMessages', language)}</Text>
+                    <Text>{translate('common.selectTabToViewMessages')}</Text>
                     <Button
                       onClick={() => {
                         logger.debug('Manual message loading button clicked');
@@ -588,7 +589,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
                       }}
                       marginTop="1rem"
                     >
-                      {t('common.loadMessages', language)}
+                      {translate('common.loadMessages')}
                     </Button>
                   </Flex>
                 )}

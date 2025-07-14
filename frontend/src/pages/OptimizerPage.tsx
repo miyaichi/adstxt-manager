@@ -16,11 +16,10 @@ import {
 } from '@aws-amplify/ui-react';
 import React, { useState } from 'react';
 import { adsTxtApi } from '../api';
-import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const OptimizerPage: React.FC = () => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [domain, setDomain] = useState<string>('');
   const [optimizationLevel, setOptimizationLevel] = useState<string>('level1');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -95,7 +94,7 @@ const OptimizerPage: React.FC = () => {
 
   const fetchFromDomain = async (signal?: AbortSignal) => {
     if (!domain) {
-      setError(t('optimizerPage.errors.invalidDomain', language));
+      setError(translate('optimizerPage.errors.invalidDomain'));
       return null;
     }
 
@@ -114,7 +113,7 @@ const OptimizerPage: React.FC = () => {
       if (response.success && response.data.content) {
         return response.data.content;
       } else {
-        setError(t('optimizerPage.errors.fetchFailed', language));
+        setError(translate('optimizerPage.errors.fetchFailed'));
         return null;
       }
     } catch (err) {
@@ -124,7 +123,7 @@ const OptimizerPage: React.FC = () => {
       }
 
       console.error(err);
-      setError(t('optimizerPage.errors.fetchFailed', language));
+      setError(translate('optimizerPage.errors.fetchFailed'));
       return null;
     }
   };
@@ -160,7 +159,7 @@ const OptimizerPage: React.FC = () => {
     setCurrentPhase(phases.idle);
     setProgressValue(0);
     setSuccess(
-      t('optimizerPage.success.operationCancelled', language, {
+      translate('optimizerPage.success.operationCancelled', language, {
         defaultValue: 'Operation cancelled',
       })
     );
@@ -237,14 +236,14 @@ const OptimizerPage: React.FC = () => {
 
         setCurrentPhase(phases.completed);
         setProgressValue(100);
-        setSuccess(t('optimizerPage.success.optimizeSuccess', language));
+        setSuccess(translate('optimizerPage.success.optimizeSuccess'));
       } else {
         console.error('Optimization failed:', response.error);
-        setError(t('optimizerPage.errors.optimizeFailed', language));
+        setError(translate('optimizerPage.errors.optimizeFailed'));
       }
     } catch (err) {
       console.error('Error during optimization:', err);
-      setError(t('optimizerPage.errors.optimizeFailed', language));
+      setError(translate('optimizerPage.errors.optimizeFailed'));
     } finally {
       setIsLoading(false);
       setAbortController(null);
@@ -256,7 +255,7 @@ const OptimizerPage: React.FC = () => {
       navigator.clipboard
         .writeText(optimizedContent)
         .then(() => {
-          setSuccess(t('optimizerPage.success.copySuccess', language));
+          setSuccess(translate('optimizerPage.success.copySuccess'));
 
           // Disable the success message after 3 seconds
           setTimeout(() => {
@@ -286,27 +285,27 @@ const OptimizerPage: React.FC = () => {
   const getPhaseMessage = () => {
     switch (currentPhase) {
       case phases.fetchingAdsTxt:
-        return t('optimizerPage.phase.fetchingAdsTxt', language, {
+        return translate('optimizerPage.phase.fetchingAdsTxt', language, {
           defaultValue: 'Fetching ads.txt from domain...',
         });
       case phases.parsingAdsTxt:
-        return t('optimizerPage.phase.parsingAdsTxt', language, {
+        return translate('optimizerPage.phase.parsingAdsTxt', language, {
           defaultValue: 'Parsing ads.txt content...',
         });
       case phases.fetchingSellersJson:
-        return t('optimizerPage.phase.fetchingSellersJson', language, {
+        return translate('optimizerPage.phase.fetchingSellersJson', language, {
           defaultValue: 'Fetching sellers.json data...',
         });
       case phases.optimizingAdsTxt:
-        return t('optimizerPage.phase.optimizingAdsTxt', language, {
+        return translate('optimizerPage.phase.optimizingAdsTxt', language, {
           defaultValue: 'Optimizing ads.txt content...',
         });
       case phases.completed:
-        return t('optimizerPage.phase.completed', language, {
+        return translate('optimizerPage.phase.completed', language, {
           defaultValue: 'Optimization completed!',
         });
       default:
-        return t('optimizerPage.loadingMessage', language, {
+        return translate('optimizerPage.loadingMessage', language, {
           defaultValue: 'Processing...',
         });
     }
@@ -317,35 +316,35 @@ const OptimizerPage: React.FC = () => {
       <Flex direction="column" gap="2rem">
         <Breadcrumbs
           items={[
-            { label: t('common.home', language), href: '/' },
+            { label: translate('common.home'), href: '/' },
             {
-              label: t('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }),
+              label: translate('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }),
               isCurrent: true,
             },
           ]}
         />
 
-        <Heading level={1}>{t('optimizerPage.title', language)}</Heading>
-        <Text>{t('optimizerPage.description', language)}</Text>
+        <Heading level={1}>{translate('optimizerPage.title')}</Heading>
+        <Text>{translate('optimizerPage.description')}</Text>
 
         <Card variation="outlined">
-          <Heading level={3}>{t('optimizerPage.inputSection.title', language)}</Heading>
+          <Heading level={3}>{translate('optimizerPage.inputSection.title')}</Heading>
           <Divider marginBlock="1rem" />
 
           <Flex direction="column" gap="1.5rem">
             <TextField
-              label={t('optimizerPage.inputSection.urlLabel', language)}
-              placeholder={t('optimizerPage.inputSection.urlPlaceholder', language)}
+              label={translate('optimizerPage.inputSection.urlLabel')}
+              placeholder={translate('optimizerPage.inputSection.urlPlaceholder')}
               value={domain}
               onChange={(e) => handleDomainChange(e)}
               marginBottom="1rem"
-              descriptiveText={t('optimizerPage.inputSection.urlHelperText', language)}
+              descriptiveText={translate('optimizerPage.inputSection.urlHelperText')}
               isDisabled={isLoading} // Input field is disabled while loading
               isRequired={true}
             />
 
             <RadioGroupField
-              label={t('optimizerPage.optimizationLevels.label', language)}
+              label={translate('optimizerPage.optimizationLevels.label')}
               name="optimizationLevel"
               value={optimizationLevel}
               onChange={handleLevelChange}
@@ -354,10 +353,10 @@ const OptimizerPage: React.FC = () => {
               <Radio value="level1">
                 <Flex direction="column">
                   <Text fontWeight="bold">
-                    {t('optimizerPage.optimizationLevels.level1.title', language)}
+                    {translate('optimizerPage.optimizationLevels.level1.title')}
                   </Text>
                   <Text fontSize="small">
-                    {t('optimizerPage.optimizationLevels.level1.description', language)}
+                    {translate('optimizerPage.optimizationLevels.level1.description')}
                   </Text>
                 </Flex>
               </Radio>
@@ -365,10 +364,10 @@ const OptimizerPage: React.FC = () => {
                 <Flex direction="row" alignItems="center" gap="0.5rem">
                   <Flex direction="column">
                     <Text fontWeight="bold">
-                      {t('optimizerPage.optimizationLevels.level2.title', language)}
+                      {translate('optimizerPage.optimizationLevels.level2.title')}
                     </Text>
                     <Text fontSize="small">
-                      {t('optimizerPage.optimizationLevels.level2.description', language)}
+                      {translate('optimizerPage.optimizationLevels.level2.description')}
                     </Text>
                   </Flex>
                 </Flex>
@@ -413,11 +412,11 @@ const OptimizerPage: React.FC = () => {
                   onClick={handleOptimize}
                   isDisabled={!domain} // Disable button if domain is empty
                 >
-                  {t('optimizerPage.inputSection.optimizeButton', language)}
+                  {translate('optimizerPage.inputSection.optimizeButton')}
                 </Button>
               ) : (
                 <Button variation="warning" onClick={handleCancelOptimize}>
-                  {t('optimizerPage.inputSection.cancelButton', language, {
+                  {translate('optimizerPage.inputSection.cancelButton', language, {
                     defaultValue: 'Cancel',
                   })}
                 </Button>
@@ -428,7 +427,7 @@ const OptimizerPage: React.FC = () => {
 
         {optimizedContent && (
           <Card variation="outlined">
-            <Heading level={3}>{t('optimizerPage.resultSection.title', language)}</Heading>
+            <Heading level={3}>{translate('optimizerPage.resultSection.title')}</Heading>
             <Divider marginBlock="1rem" />
 
             <Flex direction="column" gap="1rem">
@@ -436,26 +435,26 @@ const OptimizerPage: React.FC = () => {
               {stats && (
                 <Card variation="outlined">
                   <Heading level={5}>
-                    {t('optimizerPage.resultSection.statsLabel', language)}
+                    {translate('optimizerPage.resultSection.statsLabel')}
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="info">
-                      {t('optimizerPage.resultSection.recordsBefore', language, {
+                      {translate('optimizerPage.resultSection.recordsBefore', language, {
                         count: stats.beforeCount,
                       })}
                     </Badge>
                     <Badge variation="success">
-                      {t('optimizerPage.resultSection.recordsAfter', language, {
+                      {translate('optimizerPage.resultSection.recordsAfter', language, {
                         count: stats.afterCount,
                       })}
                     </Badge>
                     <Badge variation="warning">
-                      {t('optimizerPage.resultSection.duplicatesRemoved', language, {
+                      {translate('optimizerPage.resultSection.duplicatesRemoved', language, {
                         count: stats.duplicatesRemoved,
                       })}
                     </Badge>
                     <Badge variation="info">
-                      {t('optimizerPage.resultSection.variablesOrganized', language, {
+                      {translate('optimizerPage.resultSection.variablesOrganized', language, {
                         count: stats.variablesOrganized,
                       })}
                     </Badge>
@@ -467,31 +466,31 @@ const OptimizerPage: React.FC = () => {
               {categories && (
                 <Card variation="outlined">
                   <Heading level={5}>
-                    {t('optimizerPage.resultSection.categoriesLabel', language, {
+                    {translate('optimizerPage.resultSection.categoriesLabel', language, {
                       defaultValue: 'Category Breakdown',
                     })}
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="success">
-                      {t('optimizerPage.resultSection.categoryOther', language, {
+                      {translate('optimizerPage.resultSection.categoryOther', language, {
                         defaultValue: 'Standard Records: {count}',
                         count: categories.other,
                       })}
                     </Badge>
                     <Badge variation="info">
-                      {t('optimizerPage.resultSection.categoryConfidential', language, {
+                      {translate('optimizerPage.resultSection.categoryConfidential', language, {
                         defaultValue: 'Confidential Sellers: {count}',
                         count: categories.confidential,
                       })}
                     </Badge>
                     <Badge variation="warning">
-                      {t('optimizerPage.resultSection.categoryMissingSellerId', language, {
+                      {translate('optimizerPage.resultSection.categoryMissingSellerId', language, {
                         defaultValue: 'Not in Sellers.json: {count}',
                         count: categories.missing_seller_id,
                       })}
                     </Badge>
                     <Badge variation="warning">
-                      {t('optimizerPage.resultSection.categoryNoSellerJson', language, {
+                      {translate('optimizerPage.resultSection.categoryNoSellerJson', language, {
                         defaultValue: 'No Sellers.json: {count}',
                         count: categories.no_seller_json,
                       })}
@@ -504,7 +503,7 @@ const OptimizerPage: React.FC = () => {
               <Flex direction={{ base: 'column', large: 'row' }} gap="1rem">
                 <View flex="1">
                   <Heading level={5}>
-                    {t('optimizerPage.resultSection.beforeLabel', language)}
+                    {translate('optimizerPage.resultSection.beforeLabel')}
                   </Heading>
                   <TextAreaField
                     label=""
@@ -518,7 +517,7 @@ const OptimizerPage: React.FC = () => {
 
                 <View flex="1">
                   <Heading level={5}>
-                    {t('optimizerPage.resultSection.afterLabel', language)}
+                    {translate('optimizerPage.resultSection.afterLabel')}
                   </Heading>
                   <TextAreaField
                     label=""
@@ -534,10 +533,10 @@ const OptimizerPage: React.FC = () => {
               {/* コピー/ダウンロードボタン */}
               <Flex gap="1rem">
                 <Button onClick={handleCopyToClipboard} isDisabled={isLoading}>
-                  {t('optimizerPage.inputSection.copyButton', language)}
+                  {translate('optimizerPage.inputSection.copyButton')}
                 </Button>
                 <Button variation="primary" onClick={handleDownload} isDisabled={isLoading}>
-                  {t('optimizerPage.inputSection.downloadButton', language)}
+                  {translate('optimizerPage.inputSection.downloadButton')}
                 </Button>
               </Flex>
             </Flex>

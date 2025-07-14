@@ -15,8 +15,8 @@ import { useSearchParams } from 'react-router-dom';
 import { requestApi } from '../api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import RequestItem from '../components/requests/RequestItem';
+import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
 import { Request } from '../models';
 
 const RequestListPage: React.FC = () => {
@@ -24,6 +24,7 @@ const RequestListPage: React.FC = () => {
   const email = searchParams.get('email');
   const role = searchParams.get('role') as 'publisher' | 'requester' | null;
   const token = searchParams.get('token');
+  const translate = useTranslation();
   const { language } = useApp();
 
   // Email検証が必要かどうかを示す状態
@@ -61,7 +62,7 @@ const RequestListPage: React.FC = () => {
           setVerificationSent(true);
           setError(null);
         } else {
-          setError(response.error?.message || t('requestListPage.errors.fetchError', language));
+          setError(response.error?.message || translate('requestListPage.errors.fetchError'));
         }
       } catch (err: any) {
         console.error('Error fetching requests:', err);
@@ -69,9 +70,9 @@ const RequestListPage: React.FC = () => {
         // APIエラーの場合は、エラーメッセージを表示
         if (err.response?.status === 401) {
           // トークンが無効または期限切れの場合
-          setError(t('requestListPage.errors.authRequired', language));
+          setError(translate('requestListPage.errors.authRequired'));
         } else {
-          setError(t('requestListPage.errors.fetchError', language));
+          setError(translate('requestListPage.errors.fetchError'));
         }
       } finally {
         setLoading(false);
@@ -84,8 +85,8 @@ const RequestListPage: React.FC = () => {
   if (!email) {
     return (
       <ErrorMessage
-        title={t('requestListPage.errors.noEmail', language)}
-        message={t('requestListPage.errors.noEmailDescription', language)}
+        title={translate('requestListPage.errors.noEmail')}
+        message={translate('requestListPage.errors.noEmailDescription')}
       />
     );
   }
@@ -112,25 +113,25 @@ const RequestListPage: React.FC = () => {
 
   // Get role name based on current language
   const getRoleName = (roleType: 'publisher' | 'requester') => {
-    return t(`common.role.${roleType}`, language);
+    return translate(`common.role.${roleType}`);
   };
 
   return (
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: t('common.home', language), href: '/' },
-          { label: t('requestListPage.breadcrumb', language), isCurrent: true },
+          { label: translate('common.home'), href: '/' },
+          { label: translate('requestListPage.breadcrumb'), isCurrent: true },
         ]}
       />
 
       <Card variation="outlined" padding="1.5rem">
         <Flex direction="column" gap="1.5rem">
           <Flex justifyContent="space-between" alignItems="center" wrap="wrap" gap="1rem">
-            <Heading level={2}>{t('requestListPage.title', language)}</Heading>
+            <Heading level={2}>{translate('requestListPage.title')}</Heading>
             <Flex gap="0.5rem" alignItems="center">
               <Text>
-                {t('requestListPage.emailLabel', language)} {email}
+                {translate('requestListPage.emailLabel')} {email}
               </Text>
               {role && <Badge variation="info">{getRoleName(role)}</Badge>}
             </Flex>
@@ -143,15 +144,15 @@ const RequestListPage: React.FC = () => {
           ) : needsVerification ? (
             <Alert variation="info">
               <Heading level={3}>
-                {t('requestListPage.verification.title', language) || '認証が必要です'}
+                {translate('requestListPage.verification.title') || '認証が必要です'}
               </Heading>
               <Text>
-                {t('requestListPage.verification.description', language) ||
+                {translate('requestListPage.verification.description') ||
                   'アクセスするためにはメールアドレスの認証が必要です。'}
               </Text>
               {verificationSent && (
                 <Text fontWeight="bold" marginTop="1rem">
-                  {t('requestListPage.verification.emailSent', language) ||
+                  {translate('requestListPage.verification.emailSent') ||
                     '認証メールを送信しました。メールを確認して、リンクをクリックしてください。'}
                 </Text>
               )}
@@ -161,33 +162,29 @@ const RequestListPage: React.FC = () => {
           ) : (
             <Flex direction="column" gap="1.5rem">
               <TextField
-                label={t('requestListPage.searchLabel', language)}
-                placeholder={t('requestListPage.searchPlaceholder', language)}
+                label={translate('requestListPage.searchLabel')}
+                placeholder={translate('requestListPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
 
               {filteredRequests.length === 0 ? (
                 <Alert variation="warning">
-                  <Text>{t('requestListPage.noRequests', language)}</Text>
-                  {searchQuery && <Text>{t('requestListPage.changeSearch', language)}</Text>}
+                  <Text>{translate('requestListPage.noRequests')}</Text>
+                  {searchQuery && <Text>{translate('requestListPage.changeSearch')}</Text>}
                 </Alert>
               ) : (
                 <>
                   <Flex justifyContent="flex-end" gap="0.5rem">
                     <Text>
-                      {t('requestListPage.totalRequests', language, {
-                        count: filteredRequests.length,
-                      })}
+                      {translate('requestListPage.totalRequests', [filteredRequests.length.toString()])}
                     </Text>
                   </Flex>
 
                   {pendingRequests.length > 0 && (
                     <Flex direction="column" gap="1rem">
                       <Heading level={3}>
-                        {t('requestListPage.pendingTitle', language, {
-                          count: pendingRequests.length,
-                        })}
+                        {translate('requestListPage.pendingTitle', [pendingRequests.length.toString()])}
                       </Heading>
                       <Divider />
                       {pendingRequests.map((request) => (
@@ -199,9 +196,7 @@ const RequestListPage: React.FC = () => {
                   {updatedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {t('requestListPage.updatedTitle', language, {
-                          count: updatedRequests.length,
-                        })}
+                        {translate('requestListPage.updatedTitle', [updatedRequests.length.toString()])}
                       </Heading>
                       <Divider />
                       {updatedRequests.map((request) => (
@@ -213,9 +208,7 @@ const RequestListPage: React.FC = () => {
                   {approvedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {t('requestListPage.approvedTitle', language, {
-                          count: approvedRequests.length,
-                        })}
+                        {translate('requestListPage.approvedTitle', [approvedRequests.length.toString()])}
                       </Heading>
                       <Divider />
                       {approvedRequests.map((request) => (
@@ -227,9 +220,7 @@ const RequestListPage: React.FC = () => {
                   {rejectedRequests.length > 0 && (
                     <Flex direction="column" gap="1rem" marginTop="2rem">
                       <Heading level={3}>
-                        {t('requestListPage.rejectedTitle', language, {
-                          count: rejectedRequests.length,
-                        })}
+                        {translate('requestListPage.rejectedTitle', [rejectedRequests.length.toString()])}
                       </Heading>
                       <Divider />
                       {rejectedRequests.map((request) => (

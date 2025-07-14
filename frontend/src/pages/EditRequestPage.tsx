@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ErrorMessage from '../components/common/ErrorMessage';
 import AdsTxtTextInput from '../components/adsTxt/AdsTxtTextInput';
+import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
 import { requestApi } from '../api';
 import { AdsTxtRecord, RequestWithRecords } from '../models';
 
@@ -12,6 +12,7 @@ const EditRequestPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const translate = useTranslation();
   const { language } = useApp();
   const navigate = useNavigate();
 
@@ -45,11 +46,11 @@ const EditRequestPage: React.FC = () => {
             }))
           );
         } else {
-          setError(response.error?.message || t('editRequest.error.fetchFailed', language));
+          setError(response.error?.message || translate('editRequest.error.fetchFailed'));
         }
       } catch (err) {
         console.error('Error fetching request for editing:', err);
-        setError(t('editRequest.error.fetchFailed', language));
+        setError(translate('editRequest.error.fetchFailed'));
       } finally {
         setLoading(false);
       }
@@ -68,7 +69,7 @@ const EditRequestPage: React.FC = () => {
     if (!id || !token || !request) return;
 
     if (records.length === 0) {
-      setError(t('editRequest.error.noRecords', language));
+      setError(translate('editRequest.error.noRecords'));
       return;
     }
 
@@ -86,17 +87,17 @@ const EditRequestPage: React.FC = () => {
       });
 
       if (response.success) {
-        setSuccessMessage(t('editRequest.success', language));
+        setSuccessMessage(translate('editRequest.success'));
         // 成功後、少し待ってからリクエスト詳細ページに戻る
         setTimeout(() => {
           navigate(`/request/${id}?token=${token}`);
         }, 2000);
       } else {
-        setError(response.error?.message || t('editRequest.error.updateFailed', language));
+        setError(response.error?.message || translate('editRequest.error.updateFailed'));
       }
     } catch (err) {
       console.error('Error updating request:', err);
-      setError(t('editRequest.error.updateFailed', language));
+      setError(translate('editRequest.error.updateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -111,8 +112,8 @@ const EditRequestPage: React.FC = () => {
   if (!id || !token) {
     return (
       <ErrorMessage
-        title={t('editRequest.error.missingParams', language)}
-        message={t('editRequest.error.missingParamsDescription', language)}
+        title={translate('editRequest.error.missingParams')}
+        message={translate('editRequest.error.missingParamsDescription')}
       />
     );
   }
@@ -122,7 +123,7 @@ const EditRequestPage: React.FC = () => {
     return (
       <Flex direction="column" alignItems="center" padding="2rem">
         <Loader size="large" />
-        <Text marginTop="1rem">{t('common.loading', language)}</Text>
+        <Text marginTop="1rem">{translate('common.loading')}</Text>
       </Flex>
     );
   }
@@ -131,8 +132,8 @@ const EditRequestPage: React.FC = () => {
   if (!request) {
     return (
       <ErrorMessage
-        title={t('editRequest.error.notFound', language)}
-        message={t('editRequest.error.notFoundDescription', language)}
+        title={translate('editRequest.error.notFound')}
+        message={translate('editRequest.error.notFoundDescription')}
       />
     );
   }
@@ -141,8 +142,8 @@ const EditRequestPage: React.FC = () => {
   if (request.request.status !== 'pending' && request.request.status !== 'rejected') {
     return (
       <ErrorMessage
-        title={t('editRequest.error.cannotEdit', language)}
-        message={t('editRequest.error.cannotEditDescription', language)}
+        title={translate('editRequest.error.cannotEdit')}
+        message={translate('editRequest.error.cannotEditDescription')}
       />
     );
   }
@@ -151,18 +152,18 @@ const EditRequestPage: React.FC = () => {
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: t('common.home', language), href: '/' },
+          { label: translate('common.home'), href: '/' },
           {
-            label: t('requestDetailPage.breadcrumb', language),
+            label: translate('requestDetailPage.breadcrumb'),
             href: `/request/${id}?token=${token}`,
           },
-          { label: t('editRequest.breadcrumb', language), isCurrent: true },
+          { label: translate('editRequest.breadcrumb'), isCurrent: true },
         ]}
       />
 
       <Card padding="1.5rem" variation="outlined">
         <Flex direction="column" gap="1.5rem">
-          <Heading level={2}>{t('editRequest.title', language)}</Heading>
+          <Heading level={2}>{translate('editRequest.title')}</Heading>
 
           {error && (
             <Text color="red" fontWeight="bold">
@@ -178,39 +179,39 @@ const EditRequestPage: React.FC = () => {
 
           <Flex direction="column" gap="1rem">
             <Card variation="outlined" padding="1rem">
-              <Heading level={4}>{t('editRequest.publisherInfo', language)}</Heading>
+              <Heading level={4}>{translate('editRequest.publisherInfo')}</Heading>
               <Text>
-                <strong>{t('requests.detail.publisher.email', language)}</strong>{' '}
+                <strong>{translate('requests.detail.publisher.email')}</strong>{' '}
                 {request.request.publisher_email}
               </Text>
               {request.request.publisher_name && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.name', language)}</strong>{' '}
+                  <strong>{translate('requests.detail.publisher.name')}</strong>{' '}
                   {request.request.publisher_name}
                 </Text>
               )}
               {request.request.publisher_domain && (
                 <Text>
-                  <strong>{t('requests.detail.publisher.domain', language)}</strong>{' '}
+                  <strong>{translate('requests.detail.publisher.domain')}</strong>{' '}
                   {request.request.publisher_domain}
                 </Text>
               )}
             </Card>
 
             <Card variation="outlined" padding="1rem">
-              <Heading level={4}>{t('editRequest.requesterInfo', language)}</Heading>
+              <Heading level={4}>{translate('editRequest.requesterInfo')}</Heading>
               <Text>
-                <strong>{t('requests.detail.requester.email', language)}</strong>{' '}
+                <strong>{translate('requests.detail.requester.email')}</strong>{' '}
                 {request.request.requester_email}
               </Text>
               <Text>
-                <strong>{t('requests.detail.requester.name', language)}</strong>{' '}
+                <strong>{translate('requests.detail.requester.name')}</strong>{' '}
                 {request.request.requester_name}
               </Text>
             </Card>
           </Flex>
 
-          <Heading level={3}>{t('editRequest.records', language)}</Heading>
+          <Heading level={3}>{translate('editRequest.records')}</Heading>
 
           <AdsTxtTextInput
             onRecordsSelected={handleRecordsSelected}
@@ -224,7 +225,7 @@ const EditRequestPage: React.FC = () => {
                 onClick={() => navigate(`/request/${id}?token=${token}`)}
                 className="amplify-button amplify-button--link"
               >
-                {t('common.cancel', language)}
+                {translate('common.cancel')}
               </button>
 
               <button
@@ -233,8 +234,8 @@ const EditRequestPage: React.FC = () => {
                 disabled={!isFormValid() || isSubmitting}
               >
                 {isSubmitting
-                  ? t('common.updating', language)
-                  : t('editRequest.submitButton', language)}
+                  ? translate('common.updating')
+                  : translate('editRequest.submitButton')}
               </button>
             </Flex>
           </Flex>

@@ -17,8 +17,7 @@ import {
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adsTxtApi, requestApi } from '../../api';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 import { AdsTxtRecord, CreateRequestData } from '../../models';
 import { createLogger } from '../../utils/logger';
 import AdsTxtRecordList from '../adsTxt/AdsTxtRecordList';
@@ -40,7 +39,7 @@ const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) =
 };
 
 const RequestForm: React.FC = () => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [formData, setFormData] = useState<CreateRequestData>({
     publisher_email: '',
     requester_email: '',
@@ -82,7 +81,7 @@ const RequestForm: React.FC = () => {
     const domainRegex = /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})$/;
     if (!domainRegex.test(domain)) {
       setDomainValidationStatus('invalid');
-      setDomainValidationMessage(t('requests.form.domainValidation.invalidFormat', language));
+      setDomainValidationMessage(translate('requests.form.domainValidation.invalidFormat'));
       return;
     }
 
@@ -97,23 +96,23 @@ const RequestForm: React.FC = () => {
 
         if (status === 'success') {
           setDomainValidationStatus('success');
-          setDomainValidationMessage(t('requests.form.domainValidation.success', language));
+          setDomainValidationMessage(translate('requests.form.domainValidation.success'));
         } else {
           setDomainValidationStatus('error');
           setDomainValidationMessage(
-            response.data.error_message || t('requests.form.domainValidation.error', language)
+            response.data.error_message || translate('requests.form.domainValidation.error')
           );
         }
       } else {
         setDomainValidationStatus('error');
         setDomainValidationMessage(
-          response.error?.message || t('requests.form.domainValidation.error', language)
+          response.error?.message || translate('requests.form.domainValidation.error')
         );
       }
     } catch (err) {
       logger.error('Domain validation error:', err);
       setDomainValidationStatus('error');
-      setDomainValidationMessage(t('requests.form.domainValidation.error', language));
+      setDomainValidationMessage(translate('requests.form.domainValidation.error'));
     } finally {
       setIsDomainValidating(false);
     }
@@ -143,12 +142,12 @@ const RequestForm: React.FC = () => {
 
   const validateForm = () => {
     if (!formData.publisher_email || !formData.requester_email || !formData.requester_name) {
-      setError(t('requests.form.requiredFieldsError', language));
+      setError(translate('requests.form.requiredFieldsError'));
       return false;
     }
 
     if (records.length === 0) {
-      setError(t('requests.form.recordsRequiredError', language));
+      setError(translate('requests.form.recordsRequiredError'));
       return false;
     }
 
@@ -156,7 +155,7 @@ const RequestForm: React.FC = () => {
     if (formData.publisher_domain) {
       if (domainValidationStatus === 'invalid' || domainValidationStatus === 'error') {
         setError(
-          domainValidationMessage || t('requests.form.domainValidation.invalidFormat', language)
+          domainValidationMessage || translate('requests.form.domainValidation.invalidFormat')
         );
         return false;
       }
@@ -202,10 +201,10 @@ const RequestForm: React.FC = () => {
         });
         setRecords([]);
       } else {
-        setError(response.error?.message || t('requests.form.processingError', language));
+        setError(response.error?.message || translate('requests.form.processingError'));
       }
     } catch (err) {
-      setError(t('requests.form.processingError', language));
+      setError(translate('requests.form.processingError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -224,8 +223,8 @@ const RequestForm: React.FC = () => {
     return (
       <Card padding="2rem" variation="elevated">
         <Flex direction="column" gap="1rem" alignItems="center">
-          <Heading level={2}>{t('requests.success.title', language)}</Heading>
-          <Alert variation="success">{t('requests.success.message', language)}</Alert>
+          <Heading level={2}>{translate('requests.success.title')}</Heading>
+          <Alert variation="success">{translate('requests.success.message')}</Alert>
 
           <Flex
             direction="column"
@@ -233,17 +232,17 @@ const RequestForm: React.FC = () => {
             width="100%"
             backgroundColor={tokens.colors.background.secondary}
           >
-            <Text fontWeight="bold">{t('requests.success.requestId', language)}</Text>
+            <Text fontWeight="bold">{translate('requests.success.requestId')}</Text>
             <Text fontFamily="monospace">{success.requestId}</Text>
           </Flex>
 
           <Text>
-            {t('requests.success.emailNotification', language) ||
+            {translate('requests.success.emailNotification') ||
               'Email notifications with request details have been sent to both parties.'}
           </Text>
 
           <Button onClick={handleViewRequest} variation="primary">
-            {t('requests.success.viewRequest', language)}
+            {translate('requests.success.viewRequest')}
           </Button>
         </Flex>
       </Card>
@@ -254,20 +253,20 @@ const RequestForm: React.FC = () => {
     <Card padding="1.5rem" variation="outlined">
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1.5rem">
-          <Heading level={2}>{t('requests.form.title', language)}</Heading>
+          <Heading level={2}>{translate('requests.form.title')}</Heading>
 
-          <Text>{t('requests.form.description', language)}</Text>
+          <Text>{translate('requests.form.description')}</Text>
 
           {error && <Alert variation="error">{error}</Alert>}
 
           <Divider />
 
-          <Heading level={3}>{t('requests.form.basicInfo', language)}</Heading>
+          <Heading level={3}>{translate('requests.form.basicInfo')}</Heading>
 
           <Flex direction="column" gap="1rem">
             <TextField
               name="publisher_email"
-              label={t('requests.form.publisherEmail', language)}
+              label={translate('requests.form.publisherEmail')}
               placeholder="publisher@example.com"
               value={formData.publisher_email}
               onChange={handleInputChange}
@@ -276,7 +275,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="publisher_name"
-              label={t('requests.form.publisherName', language)}
+              label={translate('requests.form.publisherName')}
               placeholder="Example Media Inc."
               value={formData.publisher_name}
               onChange={handleInputChange}
@@ -284,7 +283,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="publisher_domain"
-              label={t('requests.form.publisherDomain', language)}
+              label={translate('requests.form.publisherDomain')}
               placeholder="example.com"
               value={formData.publisher_domain}
               onChange={handleInputChange}
@@ -300,7 +299,7 @@ const RequestForm: React.FC = () => {
                   <Flex alignItems="center" gap="0.5rem">
                     <Loader size="small" />
                     <Text fontSize="0.8rem">
-                      {t('requests.form.domainValidation.loading', language)}
+                      {translate('requests.form.domainValidation.loading')}
                     </Text>
                   </Flex>
                 ) : domainValidationStatus === 'success' ? (
@@ -311,7 +310,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="requester_email"
-              label={t('requests.form.requesterEmail', language)}
+              label={translate('requests.form.requesterEmail')}
               placeholder="requester@adnetwork.com"
               value={formData.requester_email}
               onChange={handleInputChange}
@@ -320,7 +319,7 @@ const RequestForm: React.FC = () => {
 
             <TextField
               name="requester_name"
-              label={t('requests.form.requesterName', language)}
+              label={translate('requests.form.requesterName')}
               placeholder="Ad Network Inc."
               value={formData.requester_name}
               onChange={handleInputChange}
@@ -330,25 +329,25 @@ const RequestForm: React.FC = () => {
 
           <Divider />
 
-          <Heading level={3}>{t('requests.form.adsTxtRecords', language)}</Heading>
+          <Heading level={3}>{translate('requests.form.adsTxtRecords')}</Heading>
 
           <Tabs>
-            <TabItem title={t('requests.form.uploadTab', language)}>
+            <TabItem title={translate('requests.form.uploadTab')}>
               <AdsTxtTextInput
                 onRecordsSelected={handleRecordsSelected}
                 onHasInvalidRecords={(hasInvalid) => setHasInvalidRecords(hasInvalid)}
               />
             </TabItem>
 
-            <TabItem title={t('requests.form.selectedRecordsTab', language)}>
+            <TabItem title={translate('requests.form.selectedRecordsTab')}>
               <View padding="1rem">
                 <AdsTxtRecordList
                   records={records}
-                  title={t('requests.form.selectedRecords', language)}
+                  title={translate('requests.form.selectedRecords')}
                 />
 
                 {records.length === 0 && (
-                  <Text>{t('requests.form.noRecordsSelected', language)}</Text>
+                  <Text>{translate('requests.form.noRecordsSelected')}</Text>
                 )}
               </View>
             </TabItem>
@@ -362,12 +361,12 @@ const RequestForm: React.FC = () => {
             isLoading={isLoading}
             isDisabled={records.length === 0 || hasInvalidRecords}
           >
-            {t('requests.form.submitRequest', language)}
+            {translate('requests.form.submitRequest')}
           </Button>
 
           {hasInvalidRecords && (
             <Alert variation="warning" marginTop="1rem">
-              {t('requests.form.invalidRecordsWarning', language) ||
+              {translate('requests.form.invalidRecordsWarning') ||
                 'Please fix invalid records before submitting the request.'}
             </Alert>
           )}
