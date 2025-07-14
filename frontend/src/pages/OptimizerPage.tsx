@@ -158,11 +158,7 @@ const OptimizerPage: React.FC = () => {
     setIsLoading(false);
     setCurrentPhase(phases.idle);
     setProgressValue(0);
-    setSuccess(
-      translate('optimizerPage.success.operationCancelled', language, {
-        defaultValue: 'Operation cancelled',
-      })
-    );
+    setSuccess(translate('optimizerPage.success.operationCancelled'));
   };
 
   const handleOptimize = async () => {
@@ -285,29 +281,17 @@ const OptimizerPage: React.FC = () => {
   const getPhaseMessage = () => {
     switch (currentPhase) {
       case phases.fetchingAdsTxt:
-        return translate('optimizerPage.phase.fetchingAdsTxt', language, {
-          defaultValue: 'Fetching ads.txt from domain...',
-        });
+        return translate('optimizerPage.phase.fetchingAdsTxt');
       case phases.parsingAdsTxt:
-        return translate('optimizerPage.phase.parsingAdsTxt', language, {
-          defaultValue: 'Parsing ads.txt content...',
-        });
+        return translate('optimizerPage.phase.parsingAdsTxt');
       case phases.fetchingSellersJson:
-        return translate('optimizerPage.phase.fetchingSellersJson', language, {
-          defaultValue: 'Fetching sellers.json data...',
-        });
+        return translate('optimizerPage.phase.fetchingSellersJson');
       case phases.optimizingAdsTxt:
-        return translate('optimizerPage.phase.optimizingAdsTxt', language, {
-          defaultValue: 'Optimizing ads.txt content...',
-        });
+        return translate('optimizerPage.phase.optimizingAdsTxt');
       case phases.completed:
-        return translate('optimizerPage.phase.completed', language, {
-          defaultValue: 'Optimization completed!',
-        });
+        return translate('optimizerPage.phase.completed');
       default:
-        return translate('optimizerPage.loadingMessage', language, {
-          defaultValue: 'Processing...',
-        });
+        return translate('optimizerPage.loadingMessage');
     }
   };
 
@@ -318,7 +302,7 @@ const OptimizerPage: React.FC = () => {
           items={[
             { label: translate('common.home'), href: '/' },
             {
-              label: translate('optimizerPage.breadcrumb', language, { defaultValue: 'Ads.txt Optimizer' }),
+              label: translate('optimizerPage.breadcrumb'),
               isCurrent: true,
             },
           ]}
@@ -416,9 +400,7 @@ const OptimizerPage: React.FC = () => {
                 </Button>
               ) : (
                 <Button variation="warning" onClick={handleCancelOptimize}>
-                  {translate('optimizerPage.inputSection.cancelButton', language, {
-                    defaultValue: 'Cancel',
-                  })}
+                  {translate('optimizerPage.inputSection.cancelButton')}
                 </Button>
               )}
             </Flex>
@@ -439,24 +421,16 @@ const OptimizerPage: React.FC = () => {
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.recordsBefore', language, {
-                        count: stats.beforeCount,
-                      })}
+                      {translate('optimizerPage.resultSection.recordsBefore', [stats.beforeCount.toString()])}
                     </Badge>
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.recordsAfter', language, {
-                        count: stats.afterCount,
-                      })}
+                      {translate('optimizerPage.resultSection.recordsAfter', [stats.afterCount.toString()])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.duplicatesRemoved', language, {
-                        count: stats.duplicatesRemoved,
-                      })}
+                      {translate('optimizerPage.resultSection.duplicatesRemoved', [stats.duplicatesRemoved.toString()])}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.variablesOrganized', language, {
-                        count: stats.variablesOrganized,
-                      })}
+                      {translate('optimizerPage.resultSection.variablesOrganized', [stats.variablesOrganized.toString()])}
                     </Badge>
                   </Flex>
                 </Card>
@@ -466,34 +440,20 @@ const OptimizerPage: React.FC = () => {
               {categories && (
                 <Card variation="outlined">
                   <Heading level={5}>
-                    {translate('optimizerPage.resultSection.categoriesLabel', language, {
-                      defaultValue: 'Category Breakdown',
-                    })}
+                    {translate('optimizerPage.resultSection.categoriesLabel')}
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.categoryOther', language, {
-                        defaultValue: 'Standard Records: {count}',
-                        count: categories.other,
-                      })}
+                      {translate('optimizerPage.resultSection.categoryOther', [categories.other.toString()])}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.categoryConfidential', language, {
-                        defaultValue: 'Confidential Sellers: {count}',
-                        count: categories.confidential,
-                      })}
+                      {translate('optimizerPage.resultSection.categoryConfidential', [categories.confidential.toString()])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryMissingSellerId', language, {
-                        defaultValue: 'Not in Sellers.json: {count}',
-                        count: categories.missing_seller_id,
-                      })}
+                      {translate('optimizerPage.resultSection.categoryMissingSellerId', [categories.missing_seller_id.toString()])}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryNoSellerJson', language, {
-                        defaultValue: 'No Sellers.json: {count}',
-                        count: categories.no_seller_json,
-                      })}
+                      {translate('optimizerPage.resultSection.categoryNoSellerJson', [categories.no_seller_json.toString()])}
                     </Badge>
                   </Flex>
                 </Card>
