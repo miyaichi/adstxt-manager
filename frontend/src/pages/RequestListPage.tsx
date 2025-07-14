@@ -16,7 +16,6 @@ import { requestApi } from '../api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import RequestItem from '../components/requests/RequestItem';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../context/AppContext';
 import { Request } from '../models';
 
 const RequestListPage: React.FC = () => {
@@ -25,7 +24,6 @@ const RequestListPage: React.FC = () => {
   const role = searchParams.get('role') as 'publisher' | 'requester' | null;
   const token = searchParams.get('token');
   const translate = useTranslation();
-  const { language } = useApp();
 
   // Email検証が必要かどうかを示す状態
   const [needsVerification, setNeedsVerification] = useState(false);
@@ -80,7 +78,7 @@ const RequestListPage: React.FC = () => {
     };
 
     fetchRequests();
-  }, [email, role, token, language]);
+  }, [email, role, token, translate]);
 
   if (!email) {
     return (

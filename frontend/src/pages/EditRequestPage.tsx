@@ -4,7 +4,6 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ErrorMessage from '../components/common/ErrorMessage';
 import AdsTxtTextInput from '../components/adsTxt/AdsTxtTextInput';
 import { useTranslation } from '../hooks/useTranslation';
-import { useApp } from '../context/AppContext';
 import { requestApi } from '../api';
 import { AdsTxtRecord, RequestWithRecords } from '../models';
 
@@ -13,7 +12,6 @@ const EditRequestPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const translate = useTranslation();
-  const { language } = useApp();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -57,7 +55,7 @@ const EditRequestPage: React.FC = () => {
     };
 
     fetchRequestData();
-  }, [id, token, language]);
+  }, [id, token, translate]);
 
   // レコードが選択されたときのハンドラー
   const handleRecordsSelected = (selectedRecords: AdsTxtRecord[]) => {

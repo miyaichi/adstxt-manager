@@ -81,7 +81,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, token, initial
     } finally {
       setLoading(false);
     }
-  }, [requestId, token, language]);
+  }, [requestId, token, translate]);
 
   const fetchMessages = useCallback(async () => {
     try {
