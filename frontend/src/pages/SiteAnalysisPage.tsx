@@ -20,10 +20,11 @@ import {
 import React, { useState } from 'react';
 import { openSinceraApi } from '../api';
 import { PublisherMetadata } from '../models';
+import { useTranslation } from '../hooks/useTranslation';
 import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
 
 const SiteAnalysisPage: React.FC = () => {
+  const translate = useTranslation();
   const { language } = useApp();
   const [searchType, setSearchType] = useState<'domain' | 'publisherId'>('domain');
   const [domain, setDomain] = useState<string>('');
@@ -47,16 +48,16 @@ const SiteAnalysisPage: React.FC = () => {
     // バリデーション
     if (searchType === 'domain') {
       if (!domain.trim()) {
-        setError(t('siteAnalysis.errors.searchRequired', language));
+        setError(translate('siteAnalysis.errors.searchRequired'));
         return;
       }
       if (!validateDomain(domain.trim())) {
-        setError(t('siteAnalysis.errors.invalidDomain', language));
+        setError(translate('siteAnalysis.errors.invalidDomain'));
         return;
       }
     } else {
       if (!publisherId.trim()) {
-        setError(t('siteAnalysis.errors.searchRequired', language));
+        setError(translate('siteAnalysis.errors.searchRequired'));
         return;
       }
     }
@@ -74,19 +75,19 @@ const SiteAnalysisPage: React.FC = () => {
       if (response.success && response.data) {
         setPublisherData(response.data);
       } else {
-        setError(t('siteAnalysis.results.noResults', language));
+        setError(translate('siteAnalysis.results.noResults'));
       }
     } catch (err: any) {
       console.error('Search error:', err);
 
       if (err.response?.status === 404) {
-        setError(t('siteAnalysis.results.noResults', language));
+        setError(translate('siteAnalysis.results.noResults'));
       } else if (err.response?.status === 429) {
-        setError(t('siteAnalysis.errors.apiError', language, { message: 'Rate limit exceeded' }));
+        setError(translate('siteAnalysis.errors.apiError', ['Rate limit exceeded']));
       } else if (err.message?.includes('Network Error')) {
-        setError(t('siteAnalysis.errors.networkError', language));
+        setError(translate('siteAnalysis.errors.networkError'));
       } else {
-        setError(t('siteAnalysis.errors.searchFailed', language));
+        setError(translate('siteAnalysis.errors.searchFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -146,11 +147,11 @@ const SiteAnalysisPage: React.FC = () => {
         items={[
           {
             href: '/',
-            label: t('common.home', language),
+            label: translate('common.home'),
           },
           {
             href: '/site-analysis',
-            label: t('siteAnalysis.pageTitle', language),
+            label: translate('siteAnalysis.pageTitle'),
             isCurrent: true,
           },
         ]}
@@ -159,21 +160,21 @@ const SiteAnalysisPage: React.FC = () => {
 
       {/* ページヘッダー */}
       <Heading level={1} marginBottom="0.5rem">
-        {t('siteAnalysis.pageTitle', language)}
+        {translate('siteAnalysis.pageTitle')}
       </Heading>
       <Text color="font.secondary" marginBottom="2rem">
-        {t('siteAnalysis.subtitle', language)}
+        {translate('siteAnalysis.subtitle')}
       </Text>
 
       {/* 検索フォーム */}
       <Card marginBottom="2rem">
         <Heading level={3} marginBottom="1rem">
-          {t('siteAnalysis.searchForm.title', language)}
+          {translate('siteAnalysis.searchForm.title')}
         </Heading>
 
         {/* 検索タイプ選択 */}
         <RadioGroupField
-          label={t('siteAnalysis.searchForm.searchType', language)}
+          label={translate('siteAnalysis.searchForm.searchType')}
           name="searchType"
           value={searchType}
           onChange={(e) => {
@@ -182,9 +183,9 @@ const SiteAnalysisPage: React.FC = () => {
           }}
           marginBottom="1rem"
         >
-          <Radio value="domain">{t('siteAnalysis.searchForm.searchByDomain', language)}</Radio>
+          <Radio value="domain">{translate('siteAnalysis.searchForm.searchByDomain')}</Radio>
           <Radio value="publisherId">
-            {t('siteAnalysis.searchForm.searchByPublisherId', language)}
+            {translate('siteAnalysis.searchForm.searchByPublisherId')}
           </Radio>
         </RadioGroupField>
 
@@ -192,8 +193,8 @@ const SiteAnalysisPage: React.FC = () => {
         <Flex direction="row" gap="1rem" alignItems="end">
           {searchType === 'domain' ? (
             <TextField
-              label={t('siteAnalysis.searchForm.domainLabel', language)}
-              placeholder={t('siteAnalysis.searchForm.domainPlaceholder', language)}
+              label={translate('siteAnalysis.searchForm.domainLabel')}
+              placeholder={translate('siteAnalysis.searchForm.domainPlaceholder')}
               value={domain}
               onChange={(e) => {
                 setDomain(e.target.value);
@@ -204,8 +205,8 @@ const SiteAnalysisPage: React.FC = () => {
             />
           ) : (
             <TextField
-              label={t('siteAnalysis.searchForm.publisherIdLabel', language)}
-              placeholder={t('siteAnalysis.searchForm.publisherIdPlaceholder', language)}
+              label={translate('siteAnalysis.searchForm.publisherIdLabel')}
+              placeholder={translate('siteAnalysis.searchForm.publisherIdPlaceholder')}
               value={publisherId}
               onChange={(e) => {
                 setPublisherId(e.target.value);
@@ -219,14 +220,14 @@ const SiteAnalysisPage: React.FC = () => {
           <Button
             onClick={handleSearch}
             isLoading={isLoading}
-            loadingText={t('siteAnalysis.loading.searching', language)}
+            loadingText={translate('siteAnalysis.loading.searching')}
             variation="primary"
           >
-            {t('siteAnalysis.searchForm.searchButton', language)}
+            {translate('siteAnalysis.searchForm.searchButton')}
           </Button>
 
           <Button onClick={handleClear} variation="link" isDisabled={isLoading}>
-            {t('siteAnalysis.searchForm.clearButton', language)}
+            {translate('siteAnalysis.searchForm.clearButton')}
           </Button>
         </Flex>
       </Card>
@@ -242,22 +243,22 @@ const SiteAnalysisPage: React.FC = () => {
       {publisherData && (
         <Card>
           <Heading level={3} marginBottom="1rem">
-            {t('siteAnalysis.results.title', language)}
+            {translate('siteAnalysis.results.title')}
           </Heading>
 
           <Table caption="" marginBottom="2rem">
             <TableHead>
               <TableRow>
-                <TableCell as="th">{t('common.details', language)}</TableCell>
-                <TableCell as="th">{t('common.value', language)}</TableCell>
+                <TableCell as="th">{translate('common.details')}</TableCell>
+                <TableCell as="th">{translate('common.value')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">{t('siteAnalysis.results.publisherId', language)}</Text>
+                  <Text fontWeight="bold">{translate('siteAnalysis.results.publisherId')}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.publisherId', language)}
+                    {translate('siteAnalysis.fieldDescriptions.publisherId')}
                   </Text>
                 </TableCell>
                 <TableCell>
@@ -267,9 +268,9 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">{t('siteAnalysis.results.publisherName', language)}</Text>
+                  <Text fontWeight="bold">{translate('siteAnalysis.results.publisherName')}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.publisherName', language)}
+                    {translate('siteAnalysis.fieldDescriptions.publisherName')}
                   </Text>
                 </TableCell>
                 <TableCell>
@@ -280,10 +281,10 @@ const SiteAnalysisPage: React.FC = () => {
               <TableRow>
                 <TableCell>
                   <Text fontWeight="bold">
-                    {t('siteAnalysis.results.publisherDomain', language)}
+                    {translate('siteAnalysis.results.publisherDomain')}
                   </Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.publisherDomain', language)}
+                    {translate('siteAnalysis.fieldDescriptions.publisherDomain')}
                   </Text>
                 </TableCell>
                 <TableCell>
@@ -293,18 +294,18 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">{t('siteAnalysis.results.status', language)}</Text>
+                  <Text fontWeight="bold">{translate('siteAnalysis.results.status')}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.status', language)}
+                    {translate('siteAnalysis.fieldDescriptions.status')}
                   </Text>
                 </TableCell>
                 <TableCell>
                   <Flex direction="column" gap="0.5rem">
                     <Badge variation={getStatusBadgeVariation(publisherData.status)}>
-                      {t(`siteAnalysis.statusValues.${publisherData.status}`, language)}
+                      {translate(`siteAnalysis.statusValues.${publisherData.status}`)}
                     </Badge>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {t(`siteAnalysis.statusDescriptions.${publisherData.status}`, language)}
+                      {translate(`siteAnalysis.statusDescriptions.${publisherData.status}`)}
                     </Text>
                   </Flex>
                 </TableCell>
@@ -313,10 +314,10 @@ const SiteAnalysisPage: React.FC = () => {
               <TableRow>
                 <TableCell>
                   <Text fontWeight="bold">
-                    {t('siteAnalysis.results.verificationStatus', language)}
+                    {translate('siteAnalysis.results.verificationStatus')}
                   </Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.verificationStatus', language)}
+                    {translate('siteAnalysis.fieldDescriptions.verificationStatus')}
                   </Text>
                 </TableCell>
                 <TableCell>
@@ -324,16 +325,10 @@ const SiteAnalysisPage: React.FC = () => {
                     <Badge
                       variation={getVerificationBadgeVariation(publisherData.verificationStatus)}
                     >
-                      {t(
-                        `siteAnalysis.verificationValues.${publisherData.verificationStatus}`,
-                        language
-                      )}
+                      {translate(`siteAnalysis.verificationValues.${publisherData.verificationStatus}`)}
                     </Badge>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {t(
-                        `siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`,
-                        language
-                      )}
+                      {translate(`siteAnalysis.verificationDescriptions.${publisherData.verificationStatus}`)}
                     </Text>
                   </Flex>
                 </TableCell>
@@ -341,9 +336,9 @@ const SiteAnalysisPage: React.FC = () => {
 
               <TableRow>
                 <TableCell>
-                  <Text fontWeight="bold">{t('siteAnalysis.results.lastUpdated', language)}</Text>
+                  <Text fontWeight="bold">{translate('siteAnalysis.results.lastUpdated')}</Text>
                   <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                    {t('siteAnalysis.fieldDescriptions.lastUpdated', language)}
+                    {translate('siteAnalysis.fieldDescriptions.lastUpdated')}
                   </Text>
                 </TableCell>
                 <TableCell>
@@ -355,10 +350,10 @@ const SiteAnalysisPage: React.FC = () => {
                 <TableRow>
                   <TableCell>
                     <Text fontWeight="bold">
-                      {t('siteAnalysis.results.contactEmail', language)}
+                      {translate('siteAnalysis.results.contactEmail')}
                     </Text>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {t('siteAnalysis.fieldDescriptions.contactEmail', language)}
+                      {translate('siteAnalysis.fieldDescriptions.contactEmail')}
                     </Text>
                   </TableCell>
                   <TableCell>
@@ -370,9 +365,9 @@ const SiteAnalysisPage: React.FC = () => {
               {publisherData.categories && publisherData.categories.length > 0 && (
                 <TableRow>
                   <TableCell>
-                    <Text fontWeight="bold">{t('siteAnalysis.results.categories', language)}</Text>
+                    <Text fontWeight="bold">{translate('siteAnalysis.results.categories')}</Text>
                     <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                      {t('siteAnalysis.fieldDescriptions.categories', language)}
+                      {translate('siteAnalysis.fieldDescriptions.categories')}
                     </Text>
                   </TableCell>
                   <TableCell>
@@ -393,21 +388,21 @@ const SiteAnalysisPage: React.FC = () => {
           {publisherData.metadata && Object.keys(publisherData.metadata).length > 0 && (
             <>
               <Heading level={4} marginTop="2rem" marginBottom="1rem">
-                {t('siteAnalysis.results.additionalMetadata', language)}
+                {translate('siteAnalysis.results.additionalMetadata')}
               </Heading>
 
               <Table caption="">
                 <TableHead>
                   <TableRow>
-                    <TableCell as="th">{t('common.details', language)}</TableCell>
-                    <TableCell as="th">{t('common.value', language)}</TableCell>
+                    <TableCell as="th">{translate('common.details')}</TableCell>
+                    <TableCell as="th">{translate('common.value')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {Object.entries(publisherData.metadata).map(([key, value]) => {
                     // 翻訳キーとしてキーをマップ
                     const translationKey = `siteAnalysis.metadataDescriptions.${key}`;
-                    const hasDescription = t(translationKey, language) !== translationKey;
+                    const hasDescription = translate(translationKey) !== translationKey;
 
                     return (
                       <TableRow key={key}>
@@ -419,7 +414,7 @@ const SiteAnalysisPage: React.FC = () => {
                           </Text>
                           {hasDescription && (
                             <Text fontSize="small" color="font.secondary" whiteSpace="pre-line">
-                              {t(translationKey, language)}
+                              {translate(translationKey)}
                             </Text>
                           )}
                         </TableCell>
