@@ -2,12 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Flex, Heading, Button, useTheme } from '@aws-amplify/ui-react';
 import LanguageSwitcher from './LanguageSwitcher';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const Header: React.FC = () => {
   const { tokens } = useTheme();
-  const { language } = useApp();
+  const translate = useTranslation();
 
   return (
     <Flex
@@ -21,7 +20,7 @@ const Header: React.FC = () => {
     >
       <Flex alignItems="center" gap="1rem">
         <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Heading level={3}>{t('homePage.title', language)}</Heading>
+          <Heading level={3}>{translate('homePage.title')}</Heading>
         </Link>
       </Flex>
 
@@ -29,11 +28,11 @@ const Header: React.FC = () => {
         <LanguageSwitcher />
 
         <Button as={Link} to="/new-request" variation="primary">
-          {t('newRequestPage.breadcrumb', language)}
+          {translate('newRequestPage.breadcrumb')}
         </Button>
 
         <Button as={Link} to="/" variation="link">
-          {t('common.home', language)}
+          {translate('common.home')}
         </Button>
       </Flex>
     </Flex>

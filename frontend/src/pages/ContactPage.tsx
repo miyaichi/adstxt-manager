@@ -10,11 +10,10 @@ import {
 } from '@aws-amplify/ui-react';
 import axios from 'axios';
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const ContactPage: React.FC = () => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,19 +22,19 @@ const ContactPage: React.FC = () => {
 
   const validateForm = () => {
     if (!email.trim()) {
-      setError(t('contact.form.emailRequired', language));
+      setError(translate('contact.form.emailRequired'));
       return false;
     }
 
     if (!message.trim()) {
-      setError(t('contact.form.messageRequired', language));
+      setError(translate('contact.form.messageRequired'));
       return false;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError(t('contact.form.invalidEmail', language));
+      setError(translate('contact.form.invalidEmail'));
       return false;
     }
 
@@ -64,7 +63,7 @@ const ContactPage: React.FC = () => {
       setMessage('');
     } catch (err) {
       console.error('Error sending contact form:', err);
-      setError(t('contact.form.submitError', language));
+      setError(translate('contact.form.submitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -77,11 +76,11 @@ const ContactPage: React.FC = () => {
           variation="success"
           isDismissible={false}
           hasIcon={true}
-          heading={t('contact.success.title', language)}
+          heading={translate('contact.success.title')}
         >
-          <Text>{t('contact.success.message', language)}</Text>
+          <Text>{translate('contact.success.message')}</Text>
           <Button onClick={() => setSuccess(false)} marginTop="1rem">
-            {t('contact.success.newMessage', language)}
+            {translate('contact.success.newMessage')}
           </Button>
         </Alert>
       </View>
@@ -91,17 +90,17 @@ const ContactPage: React.FC = () => {
   return (
     <Flex as="main" direction="column" padding="2rem" maxWidth="800px" margin="0 auto">
       <Heading level={1} marginBottom="1rem">
-        {t('contact.title', language)}
+        {translate('contact.title')}
       </Heading>
 
-      <Text marginBottom="2rem">{t('contact.description', language)}</Text>
+      <Text marginBottom="2rem">{translate('contact.description')}</Text>
 
       {error && (
         <Alert
           variation="error"
           isDismissible={true}
           hasIcon={true}
-          heading={t('common.error', language)}
+          heading={translate('common.error')}
           onDismiss={() => setError(null)}
           marginBottom="1rem"
         >
@@ -111,8 +110,8 @@ const ContactPage: React.FC = () => {
 
       <form onSubmit={handleSubmit}>
         <TextField
-          label={t('contact.form.emailLabel', language)}
-          placeholder={t('contact.form.emailPlaceholder', language)}
+          label={translate('contact.form.emailLabel')}
+          placeholder={translate('contact.form.emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           isRequired
@@ -120,8 +119,8 @@ const ContactPage: React.FC = () => {
         />
 
         <TextAreaField
-          label={t('contact.form.messageLabel', language)}
-          placeholder={t('contact.form.messagePlaceholder', language)}
+          label={translate('contact.form.messageLabel')}
+          placeholder={translate('contact.form.messagePlaceholder')}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           isRequired
@@ -134,9 +133,9 @@ const ContactPage: React.FC = () => {
           variation="primary"
           isFullWidth
           isLoading={isSubmitting}
-          loadingText={t('common.sending', language)}
+          loadingText={translate('common.sending')}
         >
-          {t('contact.form.submitButton', language)}
+          {translate('contact.form.submitButton')}
         </Button>
       </form>
     </Flex>

@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Flex, Heading, Text, Button, Card } from '@aws-amplify/ui-react';
-import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const NotFoundPage: React.FC = () => {
-  const { language } = useApp();
+  const translate = useTranslation();
 
   return (
     <Flex direction="column" justifyContent="center" alignItems="center" padding="2rem" gap="2rem">
@@ -14,13 +13,13 @@ const NotFoundPage: React.FC = () => {
           404
         </Heading>
         <Heading level={3} marginBottom="1rem">
-          {t('notFoundPage.title', language)}
+          {translate('notFoundPage.title')}
         </Heading>
 
-        <Text marginBottom="2rem">{t('notFoundPage.description', language)}</Text>
+        <Text marginBottom="2rem">{translate('notFoundPage.description')}</Text>
 
         <Button as={Link} to="/" variation="primary">
-          {t('notFoundPage.button', language)}
+          {translate('notFoundPage.button')}
         </Button>
       </Card>
     </Flex>

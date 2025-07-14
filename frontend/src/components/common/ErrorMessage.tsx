@@ -1,8 +1,7 @@
 import { Alert, Button, Flex, Text } from '@aws-amplify/ui-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface ErrorMessageProps {
   title?: string;
@@ -11,8 +10,8 @@ interface ErrorMessageProps {
 }
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ title, message, showHomeButton = true }) => {
-  const { language } = useApp();
-  const defaultTitle = t('errorMessage.defaultTitle', language);
+  const translate = useTranslation();
+  const defaultTitle = translate('errorMessage.defaultTitle');
 
   return (
     <Alert variation="error" isDismissible={false} hasIcon={true} heading={title || defaultTitle}>
@@ -21,7 +20,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ title, message, showHomeBut
 
         {showHomeButton && (
           <Button as={Link} to="/" variation="primary">
-            {t('common.backToHome', language)}
+            {translate('common.backToHome')}
           </Button>
         )}
       </Flex>

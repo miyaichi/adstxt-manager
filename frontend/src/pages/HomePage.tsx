@@ -11,21 +11,20 @@ import {
 } from '@aws-amplify/ui-react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const HomePage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { language } = useApp();
+  const translate = useTranslation();
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
-      setError(t('homePage.errors.emailRequired', language));
+      setError(translate('homePage.errors.emailRequired'));
       return;
     }
 
@@ -36,7 +35,7 @@ const HomePage: React.FC = () => {
       // 検証が必要ない場合はリダイレクト
       navigate(`/requests?email=${encodeURIComponent(email)}`);
     } catch (err) {
-      setError(t('homePage.errors.fetchError', language));
+      setError(translate('homePage.errors.fetchError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -47,34 +46,34 @@ const HomePage: React.FC = () => {
     <View padding={{ base: '1rem', medium: '2rem' }}>
       <Flex direction="column" alignItems="center" gap="2rem">
         <Heading level={1} textAlign="center">
-          {t('homePage.title', language)}
+          {translate('homePage.title')}
         </Heading>
 
         <Text textAlign="center" maxWidth="800px">
-          {t('homePage.description', language)}
+          {translate('homePage.description')}
         </Text>
 
         <Flex direction="column" gap="2rem" width="100%" maxWidth="1000px" padding="1rem">
           {/* First row: Two original cards side by side */}
           <Flex direction={{ base: 'column', medium: 'row' }} gap="2rem" width="100%">
             <Card variation="outlined" flex="1">
-              <Heading level={3}>{t('homePage.createRequest.title', language)}</Heading>
+              <Heading level={3}>{translate('homePage.createRequest.title')}</Heading>
               <Divider marginBlock="1rem" />
-              <Text>{t('homePage.createRequest.description', language)}</Text>
+              <Text>{translate('homePage.createRequest.description')}</Text>
               <Button as={Link} to="/new-request" variation="primary" width="100%" marginTop="1rem">
-                {t('homePage.createRequest.button', language)}
+                {translate('homePage.createRequest.button')}
               </Button>
             </Card>
 
             <Card variation="outlined" flex="1">
-              <Heading level={3}>{t('homePage.checkRequest.title', language)}</Heading>
+              <Heading level={3}>{translate('homePage.checkRequest.title')}</Heading>
               <Divider marginBlock="1rem" />
-              <Text marginBottom="1rem">{t('homePage.checkRequest.description', language)}</Text>
+              <Text marginBottom="1rem">{translate('homePage.checkRequest.description')}</Text>
 
               <form onSubmit={handleEmailSubmit}>
                 <Flex direction="column" gap="0.5rem">
                   <TextField
-                    label={t('common.email', language)}
+                    label={translate('common.email')}
                     name="email"
                     placeholder="example@domain.com"
                     value={email}
@@ -84,7 +83,7 @@ const HomePage: React.FC = () => {
                   />
                   {error && <Alert variation="error">{error}</Alert>}
                   <Button type="submit" variation="primary" width="100%" isLoading={isLoading}>
-                    {t('homePage.checkRequest.button', language)}
+                    {translate('homePage.checkRequest.button')}
                   </Button>
                 </Flex>
               </form>
@@ -94,20 +93,20 @@ const HomePage: React.FC = () => {
           {/* Second row: Tool cards side by side */}
           <Flex direction={{ base: 'column', medium: 'row' }} gap="2rem" width="100%">
             <Card variation="outlined" flex="1">
-              <Heading level={3}>{t('homePage.optimizeAdsTxt.title', language)}</Heading>
+              <Heading level={3}>{translate('homePage.optimizeAdsTxt.title')}</Heading>
               <Divider marginBlock="1rem" />
-              <Text marginBottom="1rem">{t('homePage.optimizeAdsTxt.description', language)}</Text>
+              <Text marginBottom="1rem">{translate('homePage.optimizeAdsTxt.description')}</Text>
               <Button as={Link} to="/optimizer" variation="primary" width="auto">
-                {t('homePage.optimizeAdsTxt.button', language)}
+                {translate('homePage.optimizeAdsTxt.button')}
               </Button>
             </Card>
 
             <Card variation="outlined" flex="1">
-              <Heading level={3}>{t('homePage.siteAnalysis.title', language)}</Heading>
+              <Heading level={3}>{translate('homePage.siteAnalysis.title')}</Heading>
               <Divider marginBlock="1rem" />
-              <Text marginBottom="1rem">{t('homePage.siteAnalysis.description', language)}</Text>
+              <Text marginBottom="1rem">{translate('homePage.siteAnalysis.description')}</Text>
               <Button as={Link} to="/site-analysis" variation="primary" width="auto">
-                {t('homePage.siteAnalysis.button', language)}
+                {translate('homePage.siteAnalysis.button')}
               </Button>
             </Card>
           </Flex>

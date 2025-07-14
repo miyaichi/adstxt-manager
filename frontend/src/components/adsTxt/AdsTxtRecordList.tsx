@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Flex, Heading, Text, Divider, SearchField, Pagination } from '@aws-amplify/ui-react';
 import AdsTxtRecordItem from './AdsTxtRecordItem';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface AdsTxtRecordListProps {
   records: (AdsTxtRecord | (ParsedAdsTxtRecord & { id: string; status: string }))[];
@@ -20,12 +19,12 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
   isEditable = false,
   title,
 }) => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
 
-  const defaultTitle = t('adsTxt.recordList.title', language);
+  const defaultTitle = translate('adsTxt.recordList.title');
 
   // Filter records based on search query
   const filteredRecords = records.filter((record) => {
@@ -52,23 +51,23 @@ const AdsTxtRecordList: React.FC<AdsTxtRecordListProps> = ({
       <Divider />
 
       {records.length === 0 ? (
-        <Text>{t('adsTxt.recordList.noRecords', language)}</Text>
+        <Text>{translate('adsTxt.recordList.noRecords')}</Text>
       ) : (
         <>
           <SearchField
-            label={t('adsTxt.recordList.searchLabel', language)}
-            placeholder={t('adsTxt.recordList.searchPlaceholder', language)}
+            label={translate('adsTxt.recordList.searchLabel')}
+            placeholder={translate('adsTxt.recordList.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             marginBottom="1rem"
           />
 
           {filteredRecords.length === 0 ? (
-            <Text>{t('adsTxt.recordList.noMatchingRecords', language)}</Text>
+            <Text>{translate('adsTxt.recordList.noMatchingRecords')}</Text>
           ) : (
             <>
               <Text>
-                {t('adsTxt.recordList.totalRecords', language, { count: filteredRecords.length })}
+                {translate('adsTxt.recordList.totalRecords', [filteredRecords.length.toString()])}
               </Text>
 
               {currentRecords.map((record) => (

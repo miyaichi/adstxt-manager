@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Card, Flex, TextField, Button, Alert, Heading } from '@aws-amplify/ui-react';
 import { messageApi } from '../../api';
 import { Message, RequestWithRecords } from '../../models';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface MessageFormProps {
   requestId: string;
@@ -13,7 +12,7 @@ interface MessageFormProps {
 }
 
 const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSent, request }) => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +22,7 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
     e.preventDefault();
 
     if (!content) {
-      setError(t('messages.form.requiredFields', language));
+      setError(translate('messages.form.requiredFields'));
       return;
     }
 
@@ -49,10 +48,10 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
           onMessageSent(response.data);
         }
       } else {
-        setError(response.error?.message || t('messages.form.sendError', language));
+        setError(response.error?.message || translate('messages.form.sendError'));
       }
     } catch (err) {
-      setError(t('messages.form.sendError', language));
+      setError(translate('messages.form.sendError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -61,26 +60,26 @@ const MessageForm: React.FC<MessageFormProps> = ({ requestId, token, onMessageSe
 
   return (
     <Card variation="outlined" padding="1rem">
-      <Heading level={4}>{t('messages.form.title', language)}</Heading>
+      <Heading level={4}>{translate('messages.form.title')}</Heading>
 
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1rem" marginTop="1rem">
           {error && <Alert variation="error">{error}</Alert>}
 
-          {success && <Alert variation="success">{t('messages.form.sendSuccess', language)}</Alert>}
+          {success && <Alert variation="success">{translate('messages.form.sendSuccess')}</Alert>}
 
           <TextField
-            label={t('messages.form.messageLabel', language)}
+            label={translate('messages.form.messageLabel')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={t('messages.form.messagePlaceholder', language)}
+            placeholder={translate('messages.form.messagePlaceholder')}
             isRequired
             as="textarea"
             rows={4}
           />
 
           <Button type="submit" variation="primary" isLoading={isLoading} isDisabled={!content}>
-            {t('common.send', language)}
+            {translate('common.send')}
           </Button>
         </Flex>
       </form>

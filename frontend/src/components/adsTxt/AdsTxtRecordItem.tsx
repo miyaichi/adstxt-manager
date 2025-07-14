@@ -2,6 +2,7 @@ import { Badge, Button, Card, Flex, Link, Loader, Text } from '@aws-amplify/ui-r
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import api from '../../api';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useApp } from '../../context/AppContext';
 import { t } from '../../i18n/translations';
 import { AdsTxtRecord, ParsedAdsTxtRecord, SellersJsonSellerResponse } from '../../models';
@@ -51,6 +52,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   onStatusChange,
   isEditable = false,
 }) => {
+  const translate = useTranslation();
   const { language } = useApp();
   const [sellerInfo, setSellerInfo] = useState<SellersJsonSellerResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -61,11 +63,11 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variation="success">{t('common.status.approved', language)}</Badge>;
+        return <Badge variation="success">{translate('common.status.approved')}</Badge>;
       case 'rejected':
-        return <Badge variation="error">{t('common.status.rejected', language)}</Badge>;
+        return <Badge variation="error">{translate('common.status.rejected')}</Badge>;
       case 'pending':
-        return <Badge variation="warning">{t('common.status.pending', language)}</Badge>;
+        return <Badge variation="warning">{translate('common.status.pending')}</Badge>;
       default:
         return <Badge variation="info">{status}</Badge>;
     }
@@ -219,7 +221,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [record, getSellersDomain, language]);
+  }, [record, getSellersDomain]);
 
   return (
     <Card variation="outlined" padding="1rem" marginBottom="0.5rem">
@@ -232,16 +234,16 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
         {/* Record Information */}
         <Flex gap="1rem" wrap="wrap">
           <Text>
-            <strong>{t('adsTxt.recordItem.accountId', language)}: </strong>
+            <strong>{translate('adsTxt.recordItem.accountId')}: </strong>
             {record.account_id}
           </Text>
           <Text>
-            <strong>{t('adsTxt.recordItem.relationship', language)}: </strong>
+            <strong>{translate('adsTxt.recordItem.relationship')}: </strong>
             {record.relationship}
           </Text>
           {record.certification_authority_id && (
             <Text>
-              <strong>{t('adsTxt.recordItem.certificationAuthorityId', language)}: </strong>
+              <strong>{translate('adsTxt.recordItem.certificationAuthorityId')}: </strong>
               {record.certification_authority_id}
             </Text>
           )}
@@ -253,14 +255,14 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
             <Flex direction="row" gap="0.25rem" alignItems="center">
               <Loader size="small" />
               <Text fontSize="0.875rem" color="gray">
-                {t('adsTxt.recordItem.fetchingSellerInfo', language)}
+                {translate('adsTxt.recordItem.fetchingSellerInfo')}
               </Text>
             </Flex>
           )}
 
           {!loading && (!sellerInfo || !sellerInfo.seller || error) && (
             <Text color="var(--amplify-colors-font-warning)">
-              {t('adsTxt.recordItem.noSellerInfo', language)}
+              {translate('adsTxt.recordItem.noSellerInfo')}
             </Text>
           )}
 
@@ -269,7 +271,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
               <Flex direction="column" gap="0.5rem">
                 {/* Seller details - 型安全に様々な形式のis_confidentialを評価 */}
                 {isConfidentialValue(sellerInfo.seller.is_confidential) ? (
-                  <Text>{t('adsTxt.recordItem.confidentialInfo', language)}</Text>
+                  <Text>{translate('adsTxt.recordItem.confidentialInfo')}</Text>
                 ) : (
                   <>
                     {sellerInfo.seller.name && (
@@ -279,12 +281,12 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
                     <Flex gap="1rem" wrap="wrap">
                       {sellerInfo.seller.domain && (
                         <Text>
-                          <strong>{t('adsTxt.recordItem.sellerDomain', language)}: </strong>
+                          <strong>{translate('adsTxt.recordItem.sellerDomain')}: </strong>
                           {sellerInfo.seller.domain}
                         </Text>
                       )}
                       <Text>
-                        <strong>{t('adsTxt.recordItem.sellerType', language)}: </strong>
+                        <strong>{translate('adsTxt.recordItem.sellerType')}: </strong>
                         {sellerInfo.seller.seller_type}
                       </Text>
                     </Flex>
@@ -301,7 +303,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           <Flex gap="0.5rem" alignItems="center" marginTop="0.5rem">
             {record.is_valid !== false ? (
               <Flex direction="column" width="100%">
-                <Badge variation="success">{t('common.valid', language)}</Badge>
+                <Badge variation="success">{translate('common.valid')}</Badge>
 
                 {/* Display warning if record has one */}
                 {record.has_warning && (
@@ -451,7 +453,7 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
               </Flex>
             ) : (
               <Flex direction="column" width="100%">
-                <Badge variation="error">{t('common.invalid', language)}</Badge>
+                <Badge variation="error">{translate('common.invalid')}</Badge>
                 {(() => {
                   const parsedRecord = record as ParsedAdsTxtRecord;
 
@@ -575,12 +577,12 @@ const AdsTxtRecordItem: React.FC<AdsTxtRecordItemProps> = ({
           <Flex justifyContent="flex-end" gap="0.5rem" marginTop="0.5rem">
             {record.status !== 'approved' && (
               <Button size="small" variation="primary" onClick={handleApprove}>
-                {t('common.approve', language)}
+                {translate('common.approve')}
               </Button>
             )}
             {record.status !== 'rejected' && (
               <Button size="small" variation="destructive" onClick={handleReject}>
-                {t('common.reject', language)}
+                {translate('common.reject')}
               </Button>
             )}
           </Flex>

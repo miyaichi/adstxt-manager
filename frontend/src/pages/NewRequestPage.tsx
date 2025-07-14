@@ -1,18 +1,17 @@
 import { Breadcrumbs, Flex } from '@aws-amplify/ui-react';
 import React from 'react';
 import RequestForm from '../components/requests/RequestForm';
-import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const NewRequestPage: React.FC = () => {
-  const { language } = useApp();
+  const translate = useTranslation();
 
   return (
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: t('common.home', language), href: '/' },
-          { label: t('newRequestPage.breadcrumb', language), isCurrent: true },
+          { label: translate('common.home'), href: '/' },
+          { label: translate('newRequestPage.breadcrumb'), isCurrent: true },
         ]}
       />
 

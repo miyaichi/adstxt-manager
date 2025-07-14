@@ -1,12 +1,11 @@
 import React from 'react';
 import { Flex, Text, Divider, useTheme, Link } from '@aws-amplify/ui-react';
 import { Link as RouterLink } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const Footer: React.FC = () => {
   const { tokens } = useTheme();
-  const { language } = useApp();
+  const translate = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -25,20 +24,20 @@ const Footer: React.FC = () => {
         wrap="wrap"
         gap="1rem"
       >
-        <Text>{t('footer.copyright', language, { year: currentYear })}</Text>
+        <Text>{translate('footer.copyright', [currentYear.toString()])}</Text>
 
         <Flex gap="1rem">
           <Link as={RouterLink} to="/terms">
-            {t('common.termsOfService', language)}
+            {translate('common.termsOfService')}
           </Link>
           <Link as={RouterLink} to="/privacy">
-            {t('common.privacyPolicy', language)}
+            {translate('common.privacyPolicy')}
           </Link>
           <Link as={RouterLink} to="/help">
-            {t('common.help', language)}
+            {translate('common.help')}
           </Link>
           <Link as={RouterLink} to="/contact">
-            {t('common.contact', language)}
+            {translate('common.contact')}
           </Link>
         </Flex>
       </Flex>

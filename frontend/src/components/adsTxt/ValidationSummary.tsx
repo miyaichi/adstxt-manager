@@ -6,19 +6,20 @@ import React from 'react';
 import { Badge, Card, Flex, Heading, Link, Text } from '@aws-amplify/ui-react';
 import { formatValidationSummary } from '../../services/messageService';
 import { Severity } from '@adstxt-manager/ads-txt-validator';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useApp } from '../../context/AppContext';
 
 interface ValidationSummaryProps {
   records: any[];
-  language: string;
   showDetails?: boolean;
 }
 
 const ValidationSummary: React.FC<ValidationSummaryProps> = ({
   records,
-  language,
   showDetails = false,
 }) => {
+  const translate = useTranslation();
+  const { language } = useApp();
   const summary = formatValidationSummary(records, language);
 
   const getSeverityColor = (severity: Severity) => {
@@ -37,11 +38,11 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
   const getSeverityLabel = (severity: Severity): string => {
     switch (severity) {
       case Severity.ERROR:
-        return t('validation.summary.errors', language);
+        return translate('validation.summary.errors');
       case Severity.WARNING:
-        return t('validation.summary.warnings', language);
+        return translate('validation.summary.warnings');
       case Severity.INFO:
-        return t('validation.summary.info', language);
+        return translate('validation.summary.info');
       default:
         return 'Unknown';
     }
@@ -50,7 +51,7 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
   if (summary.total === 0) {
     return (
       <Card variation="outlined" padding="medium">
-        <Text>{t('validation.summary.noRecords', language)}</Text>
+        <Text>{translate('validation.summary.noRecords')}</Text>
       </Card>
     );
   }
@@ -59,12 +60,12 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
     <Card variation="outlined" padding="medium">
       <Flex direction="column" gap="medium">
         {/* Summary Header */}
-        <Heading level={4}>{t('validation.summary.title', language)}</Heading>
+        <Heading level={4}>{translate('validation.summary.title')}</Heading>
 
         {/* Summary Stats */}
         <Flex gap="medium" wrap="wrap">
           <Badge variation="info" size="large">
-            {t('validation.summary.total', language)}: {summary.total}
+            {translate('validation.summary.total')}: {summary.total}
           </Badge>
 
           {summary.errors.length > 0 && (
@@ -113,7 +114,7 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
                           fontSize="small"
                           color="var(--amplify-colors-red-80)"
                         >
-                          {t('validation.summary.learnMore', language)} →
+                          {translate('validation.summary.learnMore')} →
                         </Link>
                       )}
                     </Flex>
@@ -142,7 +143,7 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
                       {warning.codes && warning.codes.length > 0 && (
                         <Flex gap="xs">
                           <Text fontSize="xs" color="var(--amplify-colors-orange-60)">
-                            {t('validation.summary.codes', language)}:
+                            {translate('validation.summary.codes')}:
                           </Text>
                           {warning.codes.map((code, codeIndex) => (
                             <Badge key={codeIndex} variation="warning" size="small">
@@ -158,7 +159,7 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
                           fontSize="small"
                           color="var(--amplify-colors-orange-80)"
                         >
-                          {t('validation.summary.learnMore', language)} →
+                          {translate('validation.summary.learnMore')} →
                         </Link>
                       )}
                     </Flex>
@@ -191,7 +192,7 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
                           fontSize="small"
                           color="var(--amplify-colors-blue-80)"
                         >
-                          {t('validation.summary.learnMore', language)} →
+                          {translate('validation.summary.learnMore')} →
                         </Link>
                       )}
                     </Flex>
@@ -206,11 +207,11 @@ const ValidationSummary: React.FC<ValidationSummaryProps> = ({
         <Flex justifyContent="center">
           {summary.errors.length === 0 ? (
             <Badge variation="success" size="large">
-              {t('validation.summary.overallValid', language)}
+              {translate('validation.summary.overallValid')}
             </Badge>
           ) : (
             <Badge variation="error" size="large">
-              {t('validation.summary.overallInvalid', language)}
+              {translate('validation.summary.overallInvalid')}
             </Badge>
           )}
         </Flex>

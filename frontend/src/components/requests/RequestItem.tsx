@@ -2,6 +2,7 @@ import { Badge, Button, Card, Flex, Heading, Text } from '@aws-amplify/ui-react'
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import { t } from '../../i18n/translations';
 import { Request } from '../../models';
 
@@ -11,6 +12,7 @@ interface RequestItemProps {
 
 const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const { language } = useApp();
+  const translate = useTranslation();
   const createdDate = new Date(request.created_at).toLocaleString(
     language === 'ja' ? 'ja-JP' : 'en-US'
   );
@@ -28,13 +30,13 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge variation="success">{t('common.status.approved', language)}</Badge>;
+        return <Badge variation="success">{translate('common.status.approved')}</Badge>;
       case 'rejected':
-        return <Badge variation="error">{t('common.status.rejected', language)}</Badge>;
+        return <Badge variation="error">{translate('common.status.rejected')}</Badge>;
       case 'pending':
-        return <Badge variation="warning">{t('common.status.pending', language)}</Badge>;
+        return <Badge variation="warning">{translate('common.status.pending')}</Badge>;
       case 'updated':
-        return <Badge variation="info">{t('common.status.updated', language)}</Badge>;
+        return <Badge variation="info">{translate('common.status.updated')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -55,34 +57,34 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
 
         <Flex direction={{ base: 'column', medium: 'row' }} gap="1rem" wrap="wrap">
           <Flex direction="column" flex="1" minWidth="200px">
-            <Text fontWeight="bold">{t('requests.item.publisher', language)}</Text>
+            <Text fontWeight="bold">{translate('requests.item.publisher')}</Text>
             <Text>{request.publisher_email}</Text>
             {request.publisher_name && <Text>{request.publisher_name}</Text>}
             {request.publisher_domain && (
               <Text>
-                {t('requests.item.domain', language)} {request.publisher_domain}
+                {translate('requests.item.domain')} {request.publisher_domain}
               </Text>
             )}
           </Flex>
 
           <Flex direction="column" flex="1" minWidth="200px">
-            <Text fontWeight="bold">{t('requests.item.requester', language)}</Text>
+            <Text fontWeight="bold">{translate('requests.item.requester')}</Text>
             <Text>{request.requester_email}</Text>
             <Text>{request.requester_name}</Text>
-            <Text>{t('requests.item.recordCount', language, { count: recordCount })}</Text>
+            <Text>{translate('requests.item.recordCount', [recordCount.toString()])}</Text>
             {request.validation_stats && (
               <Flex gap="0.5rem" marginTop="0.5rem">
                 <Badge variation="success">
-                  {t('common.valid', language)}: {request.validation_stats.valid || 0}
+                  {translate('common.valid')}: {request.validation_stats.valid || 0}
                 </Badge>
                 {request.validation_stats.invalid > 0 && (
                   <Badge variation="error">
-                    {t('common.invalid', language)}: {request.validation_stats.invalid}
+                    {translate('common.invalid')}: {request.validation_stats.invalid}
                   </Badge>
                 )}
                 {request.validation_stats.warnings > 0 && (
                   <Badge variation="warning">
-                    {t('common.warning', language)}: {request.validation_stats.warnings}
+                    {translate('common.warning')}: {request.validation_stats.warnings}
                   </Badge>
                 )}
               </Flex>
@@ -93,7 +95,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
               request.records_summary.some((record) => record.has_warning) && (
                 <Flex direction="column" gap="0.25rem" marginTop="0.5rem">
                   <Text fontWeight="semibold">
-                    {t('common.warning', language)} {t('common.details', language)}:
+                    {translate('common.warning')} {translate('common.details')}:
                   </Text>
                   {request.records_summary
                     .filter((record) => record.has_warning)
@@ -111,10 +113,9 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
                   {request.records_summary.filter((record) => record.has_warning).length > 3 && (
                     <Text fontSize="xs">
                       •{' '}
-                      {t('common.andMore', language, {
-                        count:
-                          request.records_summary.filter((record) => record.has_warning).length - 3,
-                      })}
+                      {translate('common.andMore', [
+                        (request.records_summary.filter((record) => record.has_warning).length - 3).toString()
+                      ])}
                     </Text>
                   )}
                 </Flex>
@@ -122,9 +123,9 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
           </Flex>
 
           <Flex direction="column" flex="1" minWidth="200px">
-            <Text fontWeight="bold">{t('requests.item.status', language)}</Text>
-            <Text>{t(`common.status.${request.status}`, language)}</Text>
-            <Text fontWeight="bold">{t('requests.item.created', language)}</Text>
+            <Text fontWeight="bold">{translate('requests.item.status')}</Text>
+            <Text>{translate(`common.status.${request.status}`)}</Text>
+            <Text fontWeight="bold">{translate('requests.item.created')}</Text>
             <Text>{createdDate}</Text>
           </Flex>
         </Flex>
@@ -136,7 +137,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request }) => {
             variation="primary"
             size="small"
           >
-            {t('requests.item.viewDetails', language)}
+            {translate('requests.item.viewDetails')}
           </Button>
         </Flex>
       </Flex>

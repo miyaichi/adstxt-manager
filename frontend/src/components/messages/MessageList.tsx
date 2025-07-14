@@ -4,8 +4,7 @@ import { messageApi } from '../../api';
 import { Message } from '../../models';
 import { createLogger } from '../../utils/logger';
 import MessageItem from './MessageItem';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface MessageListProps {
   requestId: string;
@@ -21,7 +20,7 @@ const MessageList: React.FC<MessageListProps> = ({
   token,
   messages: initialMessages,
 }) => {
-  const { language } = useApp();
+  const translate = useTranslation();
   logger.debug('Rendered with props:', {
     requestId,
     token,
@@ -57,10 +56,10 @@ const MessageList: React.FC<MessageListProps> = ({
           setMessages(response.data || []);
         } else {
           logger.error('Error fetching messages:', response.error);
-          setError(response.error?.message || t('messages.list.fetchError', language));
+          setError(response.error?.message || translate('messages.list.fetchError'));
         }
       } catch (err) {
-        setError(t('messages.list.fetchError', language));
+        setError(translate('messages.list.fetchError'));
         logger.error('Error fetching messages:', err);
       } finally {
         setLoading(false);
@@ -68,7 +67,7 @@ const MessageList: React.FC<MessageListProps> = ({
     };
 
     fetchMessages();
-  }, [requestId, token, initialMessages, language]);
+  }, [requestId, token, initialMessages, translate]);
 
   if (loading) {
     return (
@@ -84,11 +83,11 @@ const MessageList: React.FC<MessageListProps> = ({
 
   return (
     <Flex direction="column" gap="1rem">
-      <Heading level={4}>{t('messages.list.title', language)}</Heading>
+      <Heading level={4}>{translate('messages.list.title')}</Heading>
       <Divider />
 
       {messages.length === 0 ? (
-        <Text>{t('messages.list.noMessages', language)}</Text>
+        <Text>{translate('messages.list.noMessages')}</Text>
       ) : (
         <Flex direction="column" gap="0.5rem">
           {messages.map((message) => (

@@ -10,8 +10,7 @@ import {
 } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react';
 import { adsTxtApi } from '../../api';
-import { useApp } from '../../context/AppContext';
-import { t } from '../../i18n/translations';
+import { useTranslation } from '../../hooks/useTranslation';
 import { AdsTxtRecord, ParsedAdsTxtRecord } from '../../models';
 import AdsTxtRecordList from './AdsTxtRecordList';
 
@@ -26,7 +25,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
   onHasInvalidRecords,
   initialRecords,
 }) => {
-  const { language } = useApp();
+  const translate = useTranslation();
   const [adsTxtContent, setAdsTxtContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +116,7 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
 
   const handleProcess = async () => {
     if (!adsTxtContent.trim()) {
-      setError(t('common.contentRequired', language));
+      setError(translate('common.contentRequired'));
       return;
     }
 
@@ -167,10 +166,10 @@ const AdsTxtTextInput: React.FC<AdsTxtTextInputProps> = ({
 
         onRecordsSelected(validRecords);
       } else {
-        setError(response.error?.message || t('common.parseError', language));
+        setError(response.error?.message || translate('common.parseError'));
       }
     } catch (err) {
-      setError(t('common.parseError', language));
+      setError(translate('common.parseError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -204,12 +203,12 @@ appnexus.com, 1234, DIRECT
   return (
     <Card variation="outlined" padding="1.5rem">
       <Heading level={3} marginBottom="1rem">
-        {t('adsTxt.input.title', language) || 'Ads.txt Input'}
+        {translate('adsTxt.input.title') || 'Ads.txt Input'}
       </Heading>
 
       <TextAreaField
-        label={t('adsTxt.input.label', language) || 'Ads.txt Content'}
-        placeholder={t('adsTxt.input.placeholder', language) || 'Enter Ads.txt content here...'}
+        label={translate('adsTxt.input.label') || 'Ads.txt Content'}
+        placeholder={translate('adsTxt.input.placeholder') || 'Enter Ads.txt content here...'}
         rows={10}
         value={adsTxtContent}
         onChange={handleInputChange}
@@ -223,7 +222,7 @@ appnexus.com, 1234, DIRECT
           onClick={handleProcess}
           flex="1"
         >
-          {isLoading ? <Loader size="small" /> : t('common.process', language) || 'Process'}
+          {isLoading ? <Loader size="small" /> : translate('common.process') || 'Process'}
         </Button>
         <Button
           variation="destructive"
@@ -231,10 +230,10 @@ appnexus.com, 1234, DIRECT
           onClick={handleClear}
           flex="1"
         >
-          {t('common.clear', language) || 'Clear'}
+          {translate('common.clear') || 'Clear'}
         </Button>
         <Button variation="link" onClick={handlePasteExample} isDisabled={isLoading}>
-          {t('adsTxt.input.example', language) || 'Example'}
+          {translate('adsTxt.input.example') || 'Example'}
         </Button>
       </Flex>
 
@@ -247,11 +246,11 @@ appnexus.com, 1234, DIRECT
       {stats && (
         <Flex direction="column" marginBottom="1rem">
           <Text>
-            {t('adsTxt.textInput.stats', language, {
-              total: stats.total,
-              valid: stats.valid,
-              invalid: stats.invalid,
-            }) || `Total: ${stats.total}, Valid: ${stats.valid}, Invalid: ${stats.invalid}`}
+            {translate('adsTxt.textInput.stats', [
+              stats.total.toString(),
+              stats.valid.toString(),
+              stats.invalid.toString(),
+            ]) || `Total: ${stats.total}, Valid: ${stats.valid}, Invalid: ${stats.invalid}`}
           </Text>
         </Flex>
       )}
@@ -260,7 +259,7 @@ appnexus.com, 1234, DIRECT
         <>
           {stats && stats.invalid > 0 && (
             <Alert variation="warning" marginBottom="1rem">
-              {t('adsTxt.textInput.invalidRecordsWarning', language, { invalid: stats.invalid })}
+              {translate('adsTxt.textInput.invalidRecordsWarning', [stats.invalid.toString()])}
             </Alert>
           )}
           <AdsTxtRecordList

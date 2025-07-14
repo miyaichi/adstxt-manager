@@ -1,6 +1,7 @@
 import React, { CSSProperties, useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { WarningInfo } from '../../data/warnings';
+import { useTranslation } from '../../hooks/useTranslation';
 import { t } from '../../i18n/translations';
 import '../adsTxt/WarningDisplay.css';
 // Import from the warnings data file
@@ -22,6 +23,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { language } = useApp();
+  const translate = useTranslation();
 
   // Use a state to store the timer ID
   const [closeTimer, setCloseTimer] = useState<NodeJS.Timeout | null>(null);
@@ -169,7 +171,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({
             <p className="warning-description">{description}</p>
             {recommendation && (
               <p className="warning-recommendation">
-                <strong>{t('common.recommendation', language)}:</strong> {recommendation}
+                <strong>{translate('common.recommendation')}:</strong> {recommendation}
               </p>
             )}
             <a
@@ -187,7 +189,7 @@ const WarningPopover: React.FC<WarningPopoverProps> = ({
                 }
               }}
             >
-              {t('common.learnMore', language)}
+              {translate('common.learnMore')}
             </a>
           </div>
         </div>

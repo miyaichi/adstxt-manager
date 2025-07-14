@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import ErrorMessage from '../components/common/ErrorMessage';
 import RequestDetail from '../components/requests/RequestDetail';
 import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 
 const RequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +13,7 @@ const RequestDetailPage: React.FC = () => {
   const role = searchParams.get('role');
   const langParam = searchParams.get('lang');
   const { language, setLanguage } = useApp();
+  const translate = useTranslation();
 
   // If there's a lang parameter in the URL, use it to update the app language
   React.useEffect(() => {
@@ -24,8 +25,8 @@ const RequestDetailPage: React.FC = () => {
   if (!id) {
     return (
       <ErrorMessage
-        title={t('requestDetailPage.errors.noId', language)}
-        message={t('requestDetailPage.errors.noIdDescription', language)}
+        title={translate('requestDetailPage.errors.noId')}
+        message={translate('requestDetailPage.errors.noIdDescription')}
       />
     );
   }
@@ -33,8 +34,8 @@ const RequestDetailPage: React.FC = () => {
   if (!token) {
     return (
       <ErrorMessage
-        title={t('requestDetailPage.errors.noToken', language)}
-        message={t('requestDetailPage.errors.noTokenDescription', language)}
+        title={translate('requestDetailPage.errors.noToken')}
+        message={translate('requestDetailPage.errors.noTokenDescription')}
       />
     );
   }
@@ -43,8 +44,8 @@ const RequestDetailPage: React.FC = () => {
     <Flex direction="column" gap="1.5rem">
       <Breadcrumbs
         items={[
-          { label: t('common.home', language), href: '/' },
-          { label: t('requestDetailPage.breadcrumb', language), isCurrent: true },
+          { label: translate('common.home'), href: '/' },
+          { label: translate('requestDetailPage.breadcrumb'), isCurrent: true },
         ]}
       />
 

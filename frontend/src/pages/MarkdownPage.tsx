@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import rehypeRaw from 'rehype-raw';
 import { useApp } from '../context/AppContext';
-import { t } from '../i18n/translations';
+import { useTranslation } from '../hooks/useTranslation';
 import './MarkdownPage.css';
 
 export interface MarkdownPageProps {
@@ -24,6 +24,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   
   const langParam = searchParams.get('lang');
   const { language, setLanguage } = useApp();
+  const translate = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,10 +129,10 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
       })
       .catch((err) => {
         console.error(`Failed to load ${pageType} content`, err);
-        setError(t('common.loadingError', language));
+        setError(translate('common.loadingError'));
         setIsLoading(false);
       });
-  }, [language, pageType, getPageDirectory, getPageFilename]);
+  }, [language, pageType, getPageDirectory, getPageFilename, translate]);
 
   useEffect(() => {
     // Scroll to the specific section if provided
@@ -162,7 +163,7 @@ export const MarkdownPage: React.FC<MarkdownPageProps> = ({
   return (
     <div className="markdown-page-container">
       {isLoading ? (
-        <div className="loading">{t('common.loading', language)}</div>
+        <div className="loading">{translate('common.loading')}</div>
       ) : error ? (
         <div className="error">{error}</div>
       ) : (
