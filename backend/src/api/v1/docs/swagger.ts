@@ -1,6 +1,11 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { definitions } from './definitions';
 import { tags } from './tags';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 /**
  * Swagger configuration options
