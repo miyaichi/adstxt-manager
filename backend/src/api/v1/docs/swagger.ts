@@ -45,10 +45,19 @@ const options = {
     ],
   },
   apis: [
-    process.env.NODE_ENV === 'production' 
-      ? './api/v1/routes/*.js'
-      : './src/api/v1/routes/*.ts',
+    // 開発環境用
+    './src/api/v1/routes/*.ts',
+    // 本番環境用（複数のパスを試す）
+    './api/v1/routes/*.js',
+    './backend/src/api/v1/routes/*.js',
+    './dist/api/v1/routes/*.js',
   ],
 };
 
+console.log('Current working directory:', process.cwd());
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Swagger API paths:', options.apis);
+
 export const specs = swaggerJsdoc(options);
+
+console.log('Swagger specs generated:', Object.keys(specs.paths || {}).length, 'paths found');
