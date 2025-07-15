@@ -19,8 +19,12 @@ const options = {
     },
     servers: [
       {
-        url: '/api/v1',
-        description: 'Development server',
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://adstxt-manager.jp/api/v1'
+          : '/api/v1',
+        description: process.env.NODE_ENV === 'production' 
+          ? 'Production server'
+          : 'Development server',
       },
     ],
     tags,
