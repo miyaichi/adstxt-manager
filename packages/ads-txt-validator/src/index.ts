@@ -282,9 +282,19 @@ export function parseAdsTxtLine(line: string, lineNumber: number): ParsedAdsTxtE
   }
 
   // Trim whitespace and ignore empty lines or comments
-  const trimmedLine = line.trim();
+  let trimmedLine = line.trim();
   if (!trimmedLine || trimmedLine.startsWith('#')) {
     return null;
+  }
+
+  // Strip inline comments (everything after #)
+  const commentIndex = trimmedLine.indexOf('#');
+  if (commentIndex !== -1) {
+    trimmedLine = trimmedLine.substring(0, commentIndex).trim();
+    // If the line becomes empty after removing the comment, ignore it
+    if (!trimmedLine) {
+      return null;
+    }
   }
 
   // Check if this is a variable definition

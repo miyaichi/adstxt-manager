@@ -22,6 +22,26 @@ const testCases = [
     input: 'example com, 2145, DIRECT, 7f4ea9029ac04e53',
     description: 'Invalid domain format with space',
   },
+  {
+    input: 'improvedigital.com, 1863, RESELLER # Premium video demand from Outbrain',
+    description: 'Valid entry with inline comment',
+  },
+  {
+    input: 'google.com, pub-123, DIRECT, f08c47fec0942fa0 # Google AdSense',
+    description: 'Valid entry with inline comment and certification authority',
+  },
+  {
+    input: 'example.com, 456, RESELLER #Comment only',
+    description: 'Valid entry with inline comment, no certification authority',
+  },
+  {
+    input: '# This is a full line comment',
+    description: 'Full line comment (should be ignored)',
+  },
+  {
+    input: 'domain.com, 789, DIRECT # ',
+    description: 'Entry with empty inline comment',
+  },
 ];
 
 console.log('Testing Ads.txt validation for domain formats:');
