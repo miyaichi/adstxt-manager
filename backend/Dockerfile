@@ -14,8 +14,8 @@ RUN apk add --no-cache --virtual .build-deps \
 
 # 開発環境ではvolumesでマウントするため不要
 # 本番環境用にはコメントを外す
-# COPY . .
-# RUN npm run build
+COPY . .
+RUN npm run build
 
 EXPOSE 3001
 

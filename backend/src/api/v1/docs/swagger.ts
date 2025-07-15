@@ -40,7 +40,14 @@ const options = {
       },
     ],
   },
-  apis: ['./src/api/v1/routes/*.ts', './dist/api/v1/routes/*.js'],
+  apis: [
+    // 開発環境用
+    './src/api/v1/routes/*.ts',
+    // 本番環境用（ビルド後）
+    './dist/api/v1/routes/*.js',
+    // 本番環境での絶対パス
+    '/app/dist/api/v1/routes/*.js',
+  ],
 };
 
 export const specs = swaggerJsdoc(options);
