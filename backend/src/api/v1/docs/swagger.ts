@@ -21,7 +21,9 @@ const options = {
       {
         url: process.env.NODE_ENV === 'production' 
           ? 'https://adstxt-manager.jp/api/v1'
-          : '/api/v1',
+          : process.env.PORT === '3002' 
+            ? 'http://localhost:3002/api/v1'
+            : '/api/v1',
         description: process.env.NODE_ENV === 'production' 
           ? 'Production server'
           : 'Development server',
