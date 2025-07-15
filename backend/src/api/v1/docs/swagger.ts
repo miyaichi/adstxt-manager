@@ -46,7 +46,7 @@ const options = {
   },
   apis: [
     process.env.NODE_ENV === 'production' 
-      ? './backend/src/api/v1/routes/*.js'
+      ? './api/v1/routes/*.js'
       : './src/api/v1/routes/*.ts',
   ],
 };
