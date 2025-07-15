@@ -1,6 +1,6 @@
 {
   "name": "@miyaichi/ads-txt-validator",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A TypeScript library for validating ads.txt files and sellers.json files",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

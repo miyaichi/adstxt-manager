@@ -250,14 +250,16 @@ export function parseAdsTxtVariable(line: string, lineNumber: number): ParsedAds
  * @returns true if line contains invalid characters
  */
 function hasInvalidCharacters(line: string): boolean {
-  // Check for control characters (except tab and newline which are already handled)
-  // ASCII control characters: 0x00-0x1F (except 0x09 tab and 0x0A newline) and 0x7F
+  // Check for control characters (except tab, newline, and carriage return which are normal)
+  // ASCII control characters: 0x00-0x1F (except 0x09 tab, 0x0A newline, 0x0D carriage return) and 0x7F
   const controlCharRegex = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
 
-  // Check for non-printable Unicode characters
-  // This includes various Unicode control and format characters
+  // Check for non-printable Unicode characters, but exclude normal whitespace and line endings
+  // This includes various Unicode control and format characters but excludes:
+  // - 0x09 (tab), 0x0A (newline), 0x0D (carriage return)
+  // - Regular space characters in the 0x2000-0x200F range
   const nonPrintableRegex =
-    /[\u0000-\u001F\u007F-\u009F\u2000-\u200F\u2028-\u202F\u205F-\u206F\uFEFF]/;
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u2028-\u202F\u205F-\u206F\uFEFF]/;
 
   return controlCharRegex.test(line) || nonPrintableRegex.test(line);
 }
