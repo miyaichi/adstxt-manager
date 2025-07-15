@@ -14,7 +14,10 @@ import apiRoutes from './routes';
 import { logger } from './utils/logger';
 
 // Load environment variables
-dotenv.config({ path: '.env' });
+const path = require('path');
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+console.log('Loaded .env from:', path.join(process.cwd(), '.env'));
+console.log('NODE_ENV after dotenv:', process.env.NODE_ENV);
 
 // Configure ads-txt-validator message system with baseUrl
 import { configureMessages } from '@adstxt-manager/ads-txt-validator';
