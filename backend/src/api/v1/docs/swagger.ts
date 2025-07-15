@@ -47,13 +47,9 @@ const options = {
     ],
   },
   apis: [
-    // 開発環境用
-    './src/api/v1/routes/*.ts',
-    // 本番環境用（ビルド後）
-    './dist/api/v1/routes/*.js',
-    './backend/src/api/v1/routes/*.js',
-    // 本番環境での絶対パス
-    '/app/dist/api/v1/routes/*.js',
+    process.env.NODE_ENV === 'production' 
+      ? './backend/src/api/v1/routes/*.js'
+      : './src/api/v1/routes/*.ts',
   ],
 };
 
