@@ -286,6 +286,7 @@ if (process.env.NODE_ENV === 'production') {
     // Skip API and status routes
     if (
       req.path.startsWith('/api/') ||
+      req.path.startsWith('/api-docs') ||
       req.path === '/status' ||
       req.path === '/health' ||
       req.path.includes('.hot-update.')

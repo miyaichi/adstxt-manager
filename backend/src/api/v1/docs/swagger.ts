@@ -1,6 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
-import { tags } from './tags';
 import { definitions } from './definitions';
+import { tags } from './tags';
 
 /**
  * Swagger configuration options
@@ -23,7 +23,7 @@ const options = {
           ? 'https://adstxt-manager.jp/api/v1'
           : process.env.PORT === '3002' 
             ? 'http://localhost:3002/api/v1'
-            : '/api/v1',
+            : 'http://localhost:3000/api/v1',
         description: process.env.NODE_ENV === 'production' 
           ? 'Production server'
           : 'Development server',

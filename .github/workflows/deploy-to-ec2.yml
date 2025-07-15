@@ -50,7 +50,7 @@ jobs:
         run: |
           # Create backend .env file
           echo "NODE_ENV=production" > backend/.env
-          echo "PORT=${{ vars.PORT || '3001' }}" >> backend/.env
+          echo "PORT=${{ vars.PORT || '3000' }}" >> backend/.env
           echo "APP_URL=${{ vars.APP_URL || vars.REACT_APP_API_URL }}" >> backend/.env
 
           # Save a backup copy of the environment file
