@@ -1,6 +1,6 @@
 import express from 'express';
 import { getSellerById, batchGetSellers } from '../../../controllers/sellersJsonController';
-import { validateApiKey } from '../middleware/auth';
+import { validateApiKeyOrExtension } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -101,7 +101,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:domain/sellers/batch', validateApiKey, batchGetSellers);
+router.post('/:domain/sellers/batch', validateApiKeyOrExtension, batchGetSellers);
 
 /**
  * @swagger
@@ -171,6 +171,6 @@ router.post('/:domain/sellers/batch', validateApiKey, batchGetSellers);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:domain/seller/:sellerId', validateApiKey, getSellerById);
+router.get('/:domain/seller/:sellerId', validateApiKeyOrExtension, getSellerById);
 
 export default router;

@@ -64,8 +64,9 @@ const corsOptions =
               logger.info(`Authorized Chrome extension access: ${extensionId}`);
               return callback(null, true);
             } else {
-              logger.warn(`Unauthorized Chrome extension blocked: ${extensionId}`);
-              return callback(new Error('Chrome extension not authorized'));
+              // Allow Chrome extension requests to proceed for API key validation
+              logger.info(`Chrome extension not in allowed list, will check API key: ${extensionId}`);
+              return callback(null, true);
             }
           }
 
