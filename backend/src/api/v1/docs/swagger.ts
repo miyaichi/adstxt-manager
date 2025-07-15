@@ -47,10 +47,8 @@ const options = {
   apis: [
     // 開発環境用
     './src/api/v1/routes/*.ts',
-    // 本番環境用（複数のパスを試す）
-    './api/v1/routes/*.js',
+    // 本番環境用
     './backend/src/api/v1/routes/*.js',
-    './dist/api/v1/routes/*.js',
   ],
 };
 
