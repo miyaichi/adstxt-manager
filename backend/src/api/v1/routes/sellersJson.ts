@@ -64,6 +64,109 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/BatchSellersResponse'
+ *             examples:
+ *               success_all_found:
+ *                 summary: All sellers found
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     domain: "example.com"
+ *                     requested_count: 2
+ *                     found_count: 2
+ *                     results:
+ *                       - sellerId: "1001"
+ *                         seller:
+ *                           seller_id: "1001"
+ *                           seller_type: "PUBLISHER"
+ *                           name: "Example Publisher 1"
+ *                           domain: "example.com"
+ *                         found: true
+ *                         source: "cache"
+ *                       - sellerId: "1002"
+ *                         seller:
+ *                           seller_id: "1002"
+ *                           seller_type: "INTERMEDIARY"
+ *                           name: "Example Intermediary"
+ *                           domain: "example.com"
+ *                         found: true
+ *                         source: "cache"
+ *                     metadata:
+ *                       seller_count: 50
+ *                       status: "success"
+ *                     cache:
+ *                       is_cached: true
+ *                       last_updated: "2025-07-15T10:00:00.000Z"
+ *                       status: "success"
+ *                       expires_at: "2025-07-16T10:00:00.000Z"
+ *                     processing_time_ms: 45
+ *               partial_found:
+ *                 summary: Some sellers found, some not found
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     domain: "example.com"
+ *                     requested_count: 3
+ *                     found_count: 2
+ *                     results:
+ *                       - sellerId: "1001"
+ *                         seller:
+ *                           seller_id: "1001"
+ *                           seller_type: "PUBLISHER"
+ *                           name: "Example Publisher 1"
+ *                           domain: "example.com"
+ *                         found: true
+ *                         source: "cache"
+ *                       - sellerId: "1002"
+ *                         seller:
+ *                           seller_id: "1002"
+ *                           seller_type: "INTERMEDIARY"
+ *                           name: "Example Intermediary"
+ *                           domain: "example.com"
+ *                         found: true
+ *                         source: "cache"
+ *                       - sellerId: "9999"
+ *                         seller: null
+ *                         found: false
+ *                         error: "Seller not found in sellers.json"
+ *                         source: "cache"
+ *                     metadata:
+ *                       seller_count: 50
+ *                       status: "success"
+ *                     cache:
+ *                       is_cached: true
+ *                       last_updated: "2025-07-15T10:00:00.000Z"
+ *                       status: "success"
+ *                       expires_at: "2025-07-16T10:00:00.000Z"
+ *                     processing_time_ms: 67
+ *               sellers_json_not_found:
+ *                 summary: Domain's sellers.json not found
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     domain: "nonexistent-domain.com"
+ *                     requested_count: 2
+ *                     found_count: 0
+ *                     results:
+ *                       - sellerId: "1001"
+ *                         seller: null
+ *                         found: false
+ *                         error: "sellers.json not found for domain"
+ *                         source: "cache"
+ *                       - sellerId: "1002"
+ *                         seller: null
+ *                         found: false
+ *                         error: "sellers.json not found for domain"
+ *                         source: "cache"
+ *                     metadata:
+ *                       seller_count: 0
+ *                       status: "not_found"
+ *                       error_message: "sellers.json file not found"
+ *                     cache:
+ *                       is_cached: true
+ *                       last_updated: "2025-07-15T10:00:00.000Z"
+ *                       status: "not_found"
+ *                       expires_at: "2025-07-18T10:00:00.000Z"
+ *                     processing_time_ms: 23
  *       400:
  *         description: Bad request - Invalid parameters
  *         content:
@@ -83,7 +186,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Domain's sellers.json not found
+ *         description: Domain's sellers.json not found (Note: This endpoint returns 200 with error details in response body. 404 is only returned for API-level errors)
  *         content:
  *           application/json:
  *             schema:
