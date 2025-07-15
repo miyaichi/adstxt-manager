@@ -51,6 +51,7 @@ const options = {
     './src/api/v1/routes/*.ts',
     // 本番環境用（ビルド後）
     './dist/api/v1/routes/*.js',
+    './backend/src/api/v1/routes/*.js',
     // 本番環境での絶対パス
     '/app/dist/api/v1/routes/*.js',
   ],
