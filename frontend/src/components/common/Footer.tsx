@@ -6,7 +6,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 const Footer: React.FC = () => {
   const { tokens } = useTheme();
   const translate = useTranslation();
-  const currentYear = new Date().getFullYear();
 
   return (
     <Flex
