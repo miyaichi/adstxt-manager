@@ -1345,12 +1345,6 @@ export const translations = {
       },
     },
   },
-  footer: {
-    copyright: {
-      en: '© {{year}} Ads.txt Manager. All rights reserved.',
-      ja: '© {{year}} Ads.txt Manager. All rights reserved.',
-    },
-  },
   contact: {
     title: {
       en: 'Contact Us',

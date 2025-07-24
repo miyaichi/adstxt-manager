@@ -1,5 +1,5 @@
+import { Divider, Flex, Link, Text, useTheme } from '@aws-amplify/ui-react';
 import React from 'react';
-import { Flex, Text, Divider, useTheme, Link } from '@aws-amplify/ui-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
         wrap="wrap"
         gap="1rem"
       >
-        <Text>{translate('footer.copyright', [currentYear.toString()])}</Text>
+        <Text>© 2025 Ads.txt Manager</Text>
 
         <Flex gap="1rem">
           <Link as={RouterLink} to="/terms">
