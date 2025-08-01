@@ -16,10 +16,10 @@ export const useTranslation = () => {
   /**
    * Translate a key to current language
    * @param key Translation key (e.g., 'common.status.approved')
-   * @param placeholders Optional array of values for placeholder substitution
+   * @param placeholders Optional array of values or object with parameters for placeholder substitution
    * @returns Translated string
    */
-  const translate = (key: string, placeholders?: any[]): string => {
+  const translate = (key: string, placeholders?: any[] | Record<string, any>): string => {
     return t(key, language, placeholders);
   };
 

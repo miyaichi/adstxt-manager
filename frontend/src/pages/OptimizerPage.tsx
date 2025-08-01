@@ -419,24 +419,24 @@ const OptimizerPage: React.FC = () => {
                   <Heading level={5}>{translate('optimizerPage.resultSection.statsLabel')}</Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.recordsBefore', [
-                        stats.beforeCount.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.recordsBefore', {
+                        count: stats.beforeCount,
+                      })}
                     </Badge>
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.recordsAfter', [
-                        stats.afterCount.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.recordsAfter', {
+                        count: stats.afterCount,
+                      })}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.duplicatesRemoved', [
-                        stats.duplicatesRemoved.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.duplicatesRemoved', {
+                        count: stats.duplicatesRemoved,
+                      })}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.variablesOrganized', [
-                        stats.variablesOrganized.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.variablesOrganized', {
+                        count: stats.variablesOrganized,
+                      })}
                     </Badge>
                   </Flex>
                 </Card>
@@ -450,24 +450,24 @@ const OptimizerPage: React.FC = () => {
                   </Heading>
                   <Flex gap="1rem" wrap="wrap">
                     <Badge variation="success">
-                      {translate('optimizerPage.resultSection.categoryOther', [
-                        categories.other.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.categoryOther', {
+                        count: categories.other,
+                      })}
                     </Badge>
                     <Badge variation="info">
-                      {translate('optimizerPage.resultSection.categoryConfidential', [
-                        categories.confidential.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.categoryConfidential', {
+                        count: categories.confidential,
+                      })}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryMissingSellerId', [
-                        categories.missing_seller_id.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.categoryMissingSellerId', {
+                        count: categories.missing_seller_id,
+                      })}
                     </Badge>
                     <Badge variation="warning">
-                      {translate('optimizerPage.resultSection.categoryNoSellerJson', [
-                        categories.no_seller_json.toString(),
-                      ])}
+                      {translate('optimizerPage.resultSection.categoryNoSellerJson', {
+                        count: categories.no_seller_json,
+                      })}
                     </Badge>
                   </Flex>
                 </Card>
