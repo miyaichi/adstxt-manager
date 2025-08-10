@@ -15,7 +15,7 @@ export const runSellersJsonPostgresMigration = async (): Promise<void> => {
   try {
     logger.info('Checking if running in PostgreSQL mode...');
     // Check if we are using PostgreSQL
-    const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+    const dbProvider = process.env.DB_PROVIDER || 'postgres';
 
     if (dbProvider !== 'postgres') {
       logger.info('Not using PostgreSQL, skipping sellers.json JSONB migration');

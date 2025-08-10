@@ -34,7 +34,7 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 - **フロントエンド**: React, Amplify UI, TypeScript
 - **バックエンド**: Node.js, Express, TypeScript
-- **データベース**: SQLite, PostgreSQL
+- **データベース**: PostgreSQL
 - **メール送信**: SMTP
 - **自動化**: cron（sellers.json自動更新）
 - **開発ツール**: Claude Code (vibe coding)
@@ -192,11 +192,7 @@ mainブランチへの変更がプッシュされると、自動デプロイパ�
 - `CODEDEPLOY_DEPLOYMENT_GROUP`: デプロイグループ名
 
 **データベース設定** (Secrets):
-- SQLite使用時:
-  - `SQLITE_PATH`: SQLiteファイルのパス
-
-- PostgreSQL使用時 (AWS RDSなど):
-  - **推奨設定** (必須):
+- PostgreSQL設定 (必須):
     - `DB_HOST`: データベースホスト（AWS RDSエンドポイントなど）
     - `DB_PORT`: データベースポート（通常は5432）
     - `DB_NAME`: データベース名
@@ -212,7 +208,6 @@ mainブランチへの変更がプッシュされると、自動デプロイパ�
 
 **アプリケーション環境変数** (Variables):
 - `REACT_APP_API_URL`: フロントエンドがAPIにアクセスするURL
-- `DB_PROVIDER`: データベースプロバイダ（`sqlite`または`postgres`）
 - `PORT`: バックエンドサーバーのポート番号（デフォルト: 3001）
 - `DB_SSL_REQUIRED`: SSL接続を使用するかどうか（`true`または`false`）
 - `DB_SSL_REJECT_UNAUTHORIZED`: 自己署名証明書を許可するかどうか（`true`または`false`）
@@ -270,10 +265,9 @@ CodeDeployを使用せずに手動でデプロイする場合は、以下の手�
 
 ### データベース設定
 
-このアプリケーションは以下のデータベースをサポートしています:
+このアプリケーションはPostgreSQLデータベースを使用します:
 
-- SQLite (開発/テスト用): DB_PROVIDER=sqlite
-- PostgreSQL (本番環境推奨): DB_PROVIDER=postgres
+- PostgreSQL (開発・テスト・本番環境共通): DB_PROVIDER=postgres
 
 #### PostgreSQL設定例
 
@@ -355,7 +349,6 @@ CODEDEPLOY_DEPLOYMENT_GROUP=Production
 
 # アプリケーション設定
 REACT_APP_API_URL=https://api.example.com
-DB_PROVIDER=postgres
 PORT=3001
 
 # PostgreSQL最適化設定

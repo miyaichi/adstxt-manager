@@ -25,7 +25,9 @@ export default {
     emailVerificationExpiry: 24 * 60 * 60 * 1000, // 24時間（ミリ秒）
   },
   database: {
-    path: process.env.DB_PATH || './src/db/database.sqlite',
+    // PostgreSQL is the only supported database
+    // Configuration is handled through environment variables:
+    // DB_PROVIDER, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
   },
   openSincera: {
     baseUrl: process.env.OPENSINCERA_BASE_URL || 'https://open.sincera.io/api',

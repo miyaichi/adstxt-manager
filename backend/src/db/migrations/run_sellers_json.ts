@@ -7,12 +7,12 @@ export const runSellersJsonMigration = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
       // Check if we're using PostgreSQL
-      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+      const dbProvider = process.env.DB_PROVIDER || 'postgres';
 
-      // Always use the SQLite schema file for now - we'll handle PostgreSQL separately
+      // Use PostgreSQL schema (now the default and only option)
       const sql = readMigrationFile('sellers_json_cache.sql');
       console.log(
-        `Running sellers_json migration for ${dbProvider} (using SQLite-compatible schema)`
+        `Running sellers_json migration for ${dbProvider}`
       );
 
       // Run migration

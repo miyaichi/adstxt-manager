@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "src/**/*",
+    "types/**/*",
+    "../packages/ads-txt-validator/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "../packages/ads-txt-validator/src/**/*.test.ts",
+    "../packages/ads-txt-validator/src/**/__tests__"
+  ]
+}

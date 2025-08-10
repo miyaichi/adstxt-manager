@@ -20,6 +20,19 @@ services:
     networks:
       - app-network
 
+  postgres-test:
+    image: postgres:14
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=adstxt_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - app-network
+
   backend:
     build:
       context: .

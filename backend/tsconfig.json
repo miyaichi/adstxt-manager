@@ -14,13 +14,15 @@
     },
     "resolveJsonModule": true,
     "noImplicitAny": false,
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node"]
   },
   "include": ["src/**/*", "types/**/*", "../packages/ads-txt-validator/src/**/*"],
   "exclude": [
     "node_modules",
     "src/**/*.test.ts",
     "src/**/__tests__",
+    "src/**/*.js",
     "../packages/ads-txt-validator/src/**/*.test.ts",
     "../packages/ads-txt-validator/src/**/__tests__"
   ]
