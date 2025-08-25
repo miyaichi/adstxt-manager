@@ -23,6 +23,9 @@ logs/
 npm-cache/
 yarn.lock
 
+# Serena
+.serena/
+
 # Misc
 .tmp*
 *.swp
