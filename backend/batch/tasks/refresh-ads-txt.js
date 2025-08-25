@@ -1,6 +1,7 @@
 /**
- * Refresh expired ads.txt cache entries
- * This task finds expired ads.txt cache entries in the database and attempts to refresh them.
+ * Refresh expired ads.txt/app-ads.txt cache entries
+ * This task finds expired cache entries in the database and attempts to refresh them.
+ * It supports both ads.txt and app-ads.txt files based on the file_type column.
  */
 
 const axios = require('axios');
@@ -8,7 +9,7 @@ const db = require('../utils/database');
 const logger = require('../utils/logger');
 
 /**
- * Find and refresh expired ads.txt cache entries
+ * Find and refresh expired ads.txt/app-ads.txt cache entries
  * @param {Object} options - Task options
  * @param {number} options.limit - Maximum number of records to process
  * @param {number} options.age - Process records older than specified days
@@ -20,7 +21,7 @@ async function run(options = {}) {
   let failed = 0;
 
   try {
-    logger.info('Starting ads.txt cache refresh task', { limit, age });
+    logger.info('Starting ads.txt/app-ads.txt cache refresh task', { limit, age });
     await db.initDatabase();
 
     // Calculate the cutoff date based on age
@@ -37,18 +38,20 @@ async function run(options = {}) {
     const params = [cutoffTimestamp, limit];
     const expiredRecords = await db.executeQuery(query, params);
 
-    logger.info(`Found ${expiredRecords.length} expired ads.txt cache entries`);
+    logger.info(`Found ${expiredRecords.length} expired cache entries`);
 
     // Process each expired record
     for (const record of expiredRecords) {
       processed++;
       const domain = record.domain;
+      const fileType = record.file_type || 'ads.txt';
 
       try {
-        logger.info(`Refreshing ads.txt for domain: ${domain}`);
+        logger.info(`Refreshing ${fileType} for domain: ${domain}`);
 
-        // Fetch the ads.txt content
-        const url = `http://${domain}/ads.txt`;
+        // Fetch the file content based on file_type
+        const fileName = fileType === 'app-ads.txt' ? 'app-ads.txt' : 'ads.txt';
+        const url = `http://${domain}/${fileName}`;
         const response = await axios.get(url, {
           timeout: 10000,
           maxRedirects: 5,
@@ -67,7 +70,7 @@ async function run(options = {}) {
         await db.executeQuery(updateQuery, [content, domain, 200]);
 
         succeeded++;
-        logger.info(`Successfully refreshed ads.txt for domain: ${domain}`);
+        logger.info(`Successfully refreshed ${fileType} for domain: ${domain}`);
       } catch (error) {
         failed++;
 
@@ -79,7 +82,7 @@ async function run(options = {}) {
         // Determine the appropriate status based on the error
         if (statusCode === 404) {
           status = 'not_found';
-          errorMessage = 'ads.txt file not found';
+          errorMessage = `${fileType} file not found`;
         } else if (error.code === 'ENOTFOUND') {
           status = 'not_found';
           errorMessage = `Domain not found: ${domain}`;
@@ -98,7 +101,7 @@ async function run(options = {}) {
           (error.response.data.includes('<!DOCTYPE html>') || error.response.data.includes('<html'))
         ) {
           status = 'invalid_format';
-          errorMessage = 'Response is HTML, not a valid ads.txt file';
+          errorMessage = `Response is HTML, not a valid ${fileType} file`;
           statusCode = error.response.status;
         }
 
@@ -109,7 +112,7 @@ async function run(options = {}) {
 
         await db.executeQuery(updateQuery, [status, domain, statusCode, errorMessage]);
 
-        logger.error(`Failed to refresh ads.txt for domain: ${domain}`, {
+        logger.error(`Failed to refresh ${fileType} for domain: ${domain}`, {
           error: errorMessage,
           status: status,
           statusCode: statusCode,
@@ -121,7 +124,7 @@ async function run(options = {}) {
     throw error;
   } finally {
     // Log summary statistics
-    logger.info('ads.txt cache refresh task summary', {
+    logger.info('ads.txt/app-ads.txt cache refresh task summary', {
       processed,
       succeeded,
       failed,
