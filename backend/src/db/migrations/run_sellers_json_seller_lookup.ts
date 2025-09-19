@@ -80,7 +80,8 @@ if (require.main === module) {
       try {
         createConnection = require('../../../db').createConnection;
       } catch (e3) {
-        console.error('Could not find database connection module:', e3.message);
+        const errorMessage = e3 instanceof Error ? e3.message : String(e3);
+        console.error('Could not find database connection module:', errorMessage);
         process.exit(1);
       }
     }
