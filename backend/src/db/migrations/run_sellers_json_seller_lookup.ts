@@ -69,36 +69,42 @@ export async function runSellersJsonSellerLookupMigration(db: any): Promise<void
 
 // Export for direct execution
 if (require.main === module) {
-  // Try multiple possible paths for database connection
-  let createConnection;
-  try {
-    createConnection = require('../db').createConnection;
-  } catch (e1) {
-    try {
-      createConnection = require('../../db').createConnection;
-    } catch (e2) {
-      try {
-        createConnection = require('../../../db').createConnection;
-      } catch (e3) {
-        const errorMessage = e3 instanceof Error ? e3.message : String(e3);
-        console.error('Could not find database connection module:', errorMessage);
-        process.exit(1);
-      }
-    }
-  }
+  const { Client } = require('pg');
 
   (async () => {
-    let db;
+    let client;
     try {
-      db = await createConnection();
-      await runSellersJsonSellerLookupMigration(db);
+      // Create PostgreSQL client directly using environment variables
+      client = new Client({
+        host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432', 10),
+        database: process.env.DB_NAME || process.env.PGDATABASE || 'adstxt_manager',
+        user: process.env.DB_USER || process.env.PGUSER || 'postgres',
+        password: process.env.DB_PASSWORD || process.env.PGPASSWORD || '',
+        ssl: process.env.DB_SSL_REQUIRED === 'true' ? {
+          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+        } : false
+      });
+
+      await client.connect();
+      console.log('✅ Connected to PostgreSQL database');
+
+      // Create a Knex-like wrapper for the migration function
+      const dbWrapper = {
+        raw: async (sql: string, bindings?: any[]) => {
+          const result = await client.query(sql, bindings);
+          return { rows: result.rows };
+        }
+      };
+
+      await runSellersJsonSellerLookupMigration(dbWrapper);
       console.log('🎉 Migration completed successfully!');
     } catch (error) {
       console.error('💥 Migration failed:', error);
       process.exit(1);
     } finally {
-      if (db) {
-        await db.destroy();
+      if (client) {
+        await client.end();
       }
     }
   })();
