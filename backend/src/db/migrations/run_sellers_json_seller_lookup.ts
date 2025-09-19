@@ -69,7 +69,22 @@ export async function runSellersJsonSellerLookupMigration(db: any): Promise<void
 
 // Export for direct execution
 if (require.main === module) {
-  const { createConnection } = require('../db');
+  // Try multiple possible paths for database connection
+  let createConnection;
+  try {
+    createConnection = require('../db').createConnection;
+  } catch (e1) {
+    try {
+      createConnection = require('../../db').createConnection;
+    } catch (e2) {
+      try {
+        createConnection = require('../../../db').createConnection;
+      } catch (e3) {
+        console.error('Could not find database connection module:', e3.message);
+        process.exit(1);
+      }
+    }
+  }
 
   (async () => {
     let db;
