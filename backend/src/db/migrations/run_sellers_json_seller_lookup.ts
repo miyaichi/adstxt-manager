@@ -114,7 +114,8 @@ async function migrateExistingData(db: any): Promise<void> {
 
               insertedCount++;
             } catch (sellerError) {
-              console.error(`     ⚠️ Failed to insert seller ${seller.seller_id}:`, sellerError.message);
+              const errorMessage = sellerError instanceof Error ? sellerError.message : String(sellerError);
+              console.error(`     ⚠️ Failed to insert seller ${seller.seller_id}:`, errorMessage);
               // Continue with next seller
             }
           }
