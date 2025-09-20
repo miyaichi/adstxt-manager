@@ -71,7 +71,7 @@ async function migrateExistingData(db: any): Promise<void> {
         }
 
         // Insert sellers for this cache record
-        const sellersToInsert = sellers
+        const sellersRaw = sellers
           .filter((seller: any) => seller.seller_id)
           .map((seller: any) => ({
             cache_id: cacheRecord.id,
@@ -80,26 +80,52 @@ async function migrateExistingData(db: any): Promise<void> {
             seller_data: seller
           }));
 
+        // Remove duplicates within the same cache record
+        // Keep the last occurrence of each seller_id for this cache_id
+        const sellerMap = new Map();
+        sellersRaw.forEach(seller => {
+          const key = `${seller.cache_id}:${seller.seller_id}`;
+          sellerMap.set(key, seller);
+        });
+
+        const sellersToInsert = Array.from(sellerMap.values());
+
         if (sellersToInsert.length > 0) {
-          // Use batch insert with conflict resolution
-          const insertQuery = `
-            INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
-            VALUES ${sellersToInsert.map((_, idx) => `($${idx * 4 + 1}, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4})`).join(', ')}
-            ON CONFLICT (cache_id, seller_id) DO UPDATE SET
-              domain = EXCLUDED.domain,
-              seller_data = EXCLUDED.seller_data,
-              updated_at = NOW()
-          `;
+          // Insert sellers one by one to handle individual conflicts gracefully
+          let insertedCount = 0;
 
-          const params: any[] = [];
-          sellersToInsert.forEach(seller => {
-            params.push(seller.cache_id, seller.domain, seller.seller_id, JSON.stringify(seller.seller_data));
-          });
+          for (const seller of sellersToInsert) {
+            try {
+              const insertQuery = `
+                INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+                  domain = EXCLUDED.domain,
+                  seller_data = EXCLUDED.seller_data,
+                  updated_at = NOW()
+              `;
 
-          await db.raw(insertQuery, params);
-          totalSellersInserted += sellersToInsert.length;
+              await db.raw(insertQuery, [
+                seller.cache_id,
+                seller.domain,
+                seller.seller_id,
+                JSON.stringify(seller.seller_data)
+              ]);
 
-          console.log(`   ✅ Inserted ${sellersToInsert.length} sellers from domain: ${cacheRecord.domain}`);
+              insertedCount++;
+            } catch (sellerError) {
+              console.error(`     ⚠️ Failed to insert seller ${seller.seller_id}:`, sellerError.message);
+              // Continue with next seller
+            }
+          }
+
+          totalSellersInserted += insertedCount;
+
+          if (sellersRaw.length !== sellersToInsert.length) {
+            console.log(`   ✅ Inserted ${insertedCount}/${sellersToInsert.length} unique sellers from domain: ${cacheRecord.domain} (removed ${sellersRaw.length - sellersToInsert.length} duplicates)`);
+          } else {
+            console.log(`   ✅ Inserted ${insertedCount}/${sellersToInsert.length} sellers from domain: ${cacheRecord.domain}`);
+          }
         }
 
       } catch (error) {
