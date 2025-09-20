@@ -69,6 +69,13 @@ export async function runSellersJsonSellerLookupMigration(db: any): Promise<void
 
 // Export for direct execution
 if (require.main === module) {
+  // Load environment variables from .env file
+  try {
+    require('dotenv').config();
+  } catch (e) {
+    console.log('dotenv not available, using system environment variables');
+  }
+
   const { Client } = require('pg');
 
   (async () => {
