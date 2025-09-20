@@ -71,7 +71,8 @@ export async function runSellersJsonSellerLookupMigration(db: any): Promise<void
 if (require.main === module) {
   // Load environment variables from .env file
   try {
-    require('dotenv').config();
+    const path = require('path');
+    require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
   } catch (e) {
     console.log('dotenv not available, using system environment variables');
   }
