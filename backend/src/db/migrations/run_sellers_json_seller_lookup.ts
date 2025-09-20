@@ -4,7 +4,133 @@ import { readMigrationFile } from './pathHelper';
  * Migration runner for sellers_json_seller_lookup table creation
  * This creates the normalized lookup table for high-performance seller_id searches
  */
-export async function runSellersJsonSellerLookupMigration(db: any): Promise<void> {
+/**
+ * Migrate existing sellers.json data to the normalized lookup table
+ */
+async function migrateExistingData(db: any): Promise<void> {
+  console.log('📊 Starting data migration from sellers_json_cache to sellers_json_seller_lookup...');
+
+  // Check if there's existing data in the lookup table
+  const existingCount = await db.raw(`
+    SELECT COUNT(*) as count FROM sellers_json_seller_lookup
+  `);
+
+  const existingRecords = parseInt(existingCount.rows[0].count, 10);
+  console.log(`📋 Found ${existingRecords} existing records in sellers_json_seller_lookup`);
+
+  // Get total count of source records
+  const sourceCount = await db.raw(`
+    SELECT COUNT(*) as count
+    FROM sellers_json_cache
+    WHERE status = 'success'
+      AND content IS NOT NULL
+      AND jsonb_array_length(content->'sellers') > 0
+  `);
+
+  const totalSourceRecords = parseInt(sourceCount.rows[0].count, 10);
+  console.log(`📋 Found ${totalSourceRecords} source records in sellers_json_cache`);
+
+  if (totalSourceRecords === 0) {
+    console.log('ℹ️ No source data found for migration');
+    return;
+  }
+
+  const BATCH_SIZE = 100; // Process 100 cache records at a time
+  let processedCacheRecords = 0;
+  let totalSellersInserted = 0;
+  let offset = 0;
+
+  while (processedCacheRecords < totalSourceRecords) {
+    console.log(`🔄 Processing batch ${Math.floor(offset/BATCH_SIZE) + 1}/${Math.ceil(totalSourceRecords/BATCH_SIZE)}...`);
+
+    // Get a batch of cache records
+    const batchResult = await db.raw(`
+      SELECT id, domain, content
+      FROM sellers_json_cache
+      WHERE status = 'success'
+        AND content IS NOT NULL
+        AND jsonb_array_length(content->'sellers') > 0
+      ORDER BY id
+      LIMIT $1 OFFSET $2
+    `, [BATCH_SIZE, offset]);
+
+    const cacheRecords = batchResult.rows;
+
+    if (cacheRecords.length === 0) {
+      break;
+    }
+
+    // Process each cache record in the batch
+    for (const cacheRecord of cacheRecords) {
+      try {
+        const content = cacheRecord.content;
+        const sellers = content.sellers || [];
+
+        if (sellers.length === 0) {
+          continue;
+        }
+
+        // Insert sellers for this cache record
+        const sellersToInsert = sellers
+          .filter((seller: any) => seller.seller_id)
+          .map((seller: any) => ({
+            cache_id: cacheRecord.id,
+            domain: cacheRecord.domain.toLowerCase(),
+            seller_id: seller.seller_id,
+            seller_data: seller
+          }));
+
+        if (sellersToInsert.length > 0) {
+          // Use batch insert with conflict resolution
+          const insertQuery = `
+            INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
+            VALUES ${sellersToInsert.map((_, idx) => `($${idx * 4 + 1}, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4})`).join(', ')}
+            ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+              domain = EXCLUDED.domain,
+              seller_data = EXCLUDED.seller_data,
+              updated_at = NOW()
+          `;
+
+          const params: any[] = [];
+          sellersToInsert.forEach(seller => {
+            params.push(seller.cache_id, seller.domain, seller.seller_id, JSON.stringify(seller.seller_data));
+          });
+
+          await db.raw(insertQuery, params);
+          totalSellersInserted += sellersToInsert.length;
+
+          console.log(`   ✅ Inserted ${sellersToInsert.length} sellers from domain: ${cacheRecord.domain}`);
+        }
+
+      } catch (error) {
+        console.error(`   ❌ Error processing cache record ${cacheRecord.id} (${cacheRecord.domain}):`, error);
+        // Continue with next record instead of failing entire migration
+      }
+    }
+
+    processedCacheRecords += cacheRecords.length;
+    offset += BATCH_SIZE;
+
+    // Show progress
+    const progress = (processedCacheRecords / totalSourceRecords * 100).toFixed(1);
+    console.log(`📈 Progress: ${processedCacheRecords}/${totalSourceRecords} cache records (${progress}%) - ${totalSellersInserted} sellers total`);
+
+    // Small delay to avoid overwhelming the database
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  console.log(`🎉 Data migration completed! Processed ${processedCacheRecords} cache records, inserted ${totalSellersInserted} sellers`);
+
+  // Verify migration results
+  const finalCount = await db.raw(`
+    SELECT COUNT(*) as count FROM sellers_json_seller_lookup
+  `);
+
+  const finalRecords = parseInt(finalCount.rows[0].count, 10);
+  console.log(`📊 Final count in sellers_json_seller_lookup: ${finalRecords} records`);
+}
+
+export async function runSellersJsonSellerLookupMigration(db: any, options: { skipDataMigration?: boolean } = {}): Promise<void> {
   try {
     console.log('🚀 Starting sellers_json_seller_lookup table migration...');
 
@@ -61,6 +187,14 @@ export async function runSellersJsonSellerLookupMigration(db: any): Promise<void
       throw new Error('Table verification failed: sellers_json_seller_lookup was not created');
     }
 
+    // Perform data migration unless explicitly skipped
+    if (!options.skipDataMigration) {
+      console.log('');
+      await migrateExistingData(db);
+    } else {
+      console.log('⏭️ Skipping data migration (skipDataMigration = true)');
+    }
+
   } catch (error) {
     console.error('❌ sellers_json_seller_lookup migration failed:', error);
     throw error;
@@ -105,7 +239,15 @@ if (require.main === module) {
         }
       };
 
-      await runSellersJsonSellerLookupMigration(dbWrapper);
+      // Check for command line arguments
+      const args = process.argv.slice(2);
+      const skipDataMigration = args.includes('--skip-data-migration');
+
+      if (skipDataMigration) {
+        console.log('⚠️ Data migration will be skipped due to --skip-data-migration flag');
+      }
+
+      await runSellersJsonSellerLookupMigration(dbWrapper, { skipDataMigration });
       console.log('🎉 Migration completed successfully!');
     } catch (error) {
       console.error('💥 Migration failed:', error);
