@@ -522,45 +522,336 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
   const statusCode = error.response?.status || null;
   const is404 = statusCode === 404;
   const errorMessage = error.message || 'Unknown error';
+  const isTimeout = error.code === 'ECONNABORTED' || errorMessage.includes('timeout');
 
   let status: SellersJsonCacheStatus = 'error';
+  let errorCode = 'SELLERS_JSON_FETCH_ERROR';
   let detailedErrorMessage = errorMessage;
+  let suggestedAction = 'retry_after_delay';
+  let retryAfter = 300; // 5 minutes default
 
-  // 特定のエラーに対するより詳細な処理
+  // Enhanced error categorization and handling
   if (is404) {
     status = 'not_found';
-    detailedErrorMessage = 'sellers.json file not found';
+    errorCode = 'SELLERS_JSON_NOT_FOUND';
+    detailedErrorMessage = 'sellers.json file not found at expected URL';
+    suggestedAction = 'verify_domain_supports_sellers_json';
+    retryAfter = 3600; // 1 hour for 404s
   } else if (errorMessage.includes('ENOTFOUND')) {
-    // DNSエラー - ドメインが存在しないか、到達できない
+    errorCode = 'DNS_LOOKUP_FAILED';
     detailedErrorMessage = `DNS lookup failed for ${domain}`;
-  } else if (errorMessage.includes('ETIMEDOUT') || errorMessage.includes('timeout')) {
-    // タイムアウトエラー
-    detailedErrorMessage = `Connection timeout for ${domain}`;
+    suggestedAction = 'verify_domain_exists';
+    retryAfter = 1800; // 30 minutes
+  } else if (isTimeout || errorMessage.includes('ETIMEDOUT')) {
+    errorCode = 'CONNECTION_TIMEOUT';
+    detailedErrorMessage = `Connection timeout for ${domain} (exceeded 30s)`;
+    suggestedAction = 'retry_with_smaller_batch';
+    retryAfter = 60; // 1 minute for timeouts
   } else if (errorMessage.includes('certificate')) {
-    // SSL証明書エラー
+    errorCode = 'SSL_CERTIFICATE_ERROR';
     detailedErrorMessage = `SSL certificate issue for ${domain}: ${errorMessage}`;
+    suggestedAction = 'contact_domain_administrator';
+    retryAfter = 1800; // 30 minutes
+  } else if (statusCode === 403) {
+    errorCode = 'ACCESS_FORBIDDEN';
+    detailedErrorMessage = `Access forbidden for ${domain}/sellers.json`;
+    suggestedAction = 'verify_api_permissions';
+    retryAfter = 3600; // 1 hour
+  } else if (statusCode === 500 || statusCode === 502 || statusCode === 503) {
+    errorCode = 'SERVER_ERROR';
+    detailedErrorMessage = `Server error from ${domain} (${statusCode})`;
+    suggestedAction = 'retry_after_delay';
+    retryAfter = 300; // 5 minutes
+  } else if (errorMessage.includes('ECONNRESET')) {
+    errorCode = 'CONNECTION_RESET';
+    detailedErrorMessage = `Connection reset by ${domain}`;
+    suggestedAction = 'retry_after_delay';
+    retryAfter = 120; // 2 minutes
   }
 
-  // Create error cache record
+  // Create enhanced error cache record with detailed metadata
   const errorCacheRecord = {
     domain,
     content: null,
     status: status,
     status_code: statusCode,
     error_message: detailedErrorMessage,
+    error_metadata: {
+      error_code: errorCode,
+      original_error: errorMessage,
+      suggested_action: suggestedAction,
+      retry_after: retryAfter,
+      timestamp: new Date().toISOString(),
+      request_timeout: isTimeout,
+      network_error: errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNRESET'),
+    }
   };
 
   // Save to cache with appropriate status
   await SellersJsonCacheModel.saveCache(errorCacheRecord);
 
-  // For 404 errors, return a more specific message
+  // Throw enhanced ApiError with detailed information
   throw new ApiError(
     is404 ? 404 : 500,
     '', // Empty message as we'll use keys
     is404 ? 'no-sellers-json' : 'sellers-json-fetch-error',
-    { domain, message: detailedErrorMessage }
+    { 
+      domain, 
+      error: {
+        code: errorCode,
+        message: detailedErrorMessage,
+        details: {
+          status_code: statusCode,
+          original_error: errorMessage,
+          suggested_action: suggestedAction,
+          retry_after: retryAfter,
+          is_timeout: isTimeout,
+          is_network_error: errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNRESET'),
+          timestamp: new Date().toISOString()
+        }
+      }
+    }
   );
 }
+
+/**
+ * Add performance monitoring headers to response
+ */
+function addPerformanceHeaders(
+  res: Response, 
+  metrics: {
+    processingTime: number;
+    databaseTime?: number;
+    cacheHitRate?: number;
+    queuePosition?: number;
+    method?: string;
+    concurrentRequests?: number;
+  }
+) {
+  res.set({
+    'X-Processing-Time': `${metrics.processingTime}ms`,
+    'X-Database-Time': metrics.databaseTime ? `${metrics.databaseTime}ms` : '0ms',
+    'X-Cache-Hit-Rate': metrics.cacheHitRate?.toString() || '0',
+    'X-Queue-Position': metrics.queuePosition?.toString() || '0',
+    'X-Processing-Method': metrics.method || 'standard',
+    'X-Concurrent-Requests': metrics.concurrentRequests?.toString() || '1',
+    'X-Response-Timestamp': new Date().toISOString(),
+  });
+}
+
+/**
+ * Calculate system performance metrics
+ */
+async function getSystemPerformanceMetrics(): Promise<{
+  avgResponseTime: number;
+  currentLoad: 'low' | 'medium' | 'high';
+  suggestedBatchSize: number;
+  suggestedDelay: number;
+  cacheStatus: 'healthy' | 'degraded' | 'offline';
+}> {
+  try {
+    // Get recent cache performance data from last hour
+    const recentPerformance = await SellersJsonCacheModel.getPerformanceMetrics?.() || {
+      avgResponseTime: 1000,
+      requestCount: 0,
+      errorRate: 0,
+    };
+
+    // Calculate load based on recent activity and response times
+    let currentLoad: 'low' | 'medium' | 'high' = 'low';
+    let suggestedBatchSize = 100;
+    let suggestedDelay = 0;
+
+    if (recentPerformance.avgResponseTime > 5000) {
+      currentLoad = 'high';
+      suggestedBatchSize = 20;
+      suggestedDelay = 2000;
+    } else if (recentPerformance.avgResponseTime > 2000) {
+      currentLoad = 'medium';
+      suggestedBatchSize = 50;
+      suggestedDelay = 1000;
+    }
+
+    // Check cache health
+    let cacheStatus: 'healthy' | 'degraded' | 'offline' = 'healthy';
+    if (recentPerformance.errorRate > 0.1) {
+      cacheStatus = 'degraded';
+    } else if (recentPerformance.errorRate > 0.5) {
+      cacheStatus = 'offline';
+    }
+
+    return {
+      avgResponseTime: recentPerformance.avgResponseTime,
+      currentLoad,
+      suggestedBatchSize,
+      suggestedDelay,
+      cacheStatus,
+    };
+  } catch (error) {
+    logger.warn('Failed to get system performance metrics:', error);
+    return {
+      avgResponseTime: 1000,
+      currentLoad: 'medium',
+      suggestedBatchSize: 50,
+      suggestedDelay: 1000,
+      cacheStatus: 'degraded',
+    };
+  }
+}
+
+/**
+ * Health check endpoint for sellers.json API
+ * @route GET /api/v1/sellersjson/health
+ */
+export const getHealthCheck = asyncHandler(async (req: Request, res: Response) => {
+  const startTime = Date.now();
+
+  try {
+    // Get system performance metrics
+    const metrics = await getSystemPerformanceMetrics();
+    
+    // Test database connectivity
+    let dbHealthy = true;
+    let dbResponseTime = 0;
+    try {
+      const dbStartTime = Date.now();
+      await SellersJsonCacheModel.testConnection?.() || Promise.resolve();
+      dbResponseTime = Date.now() - dbStartTime;
+    } catch (dbError) {
+      logger.warn('Database health check failed:', dbError);
+      dbHealthy = false;
+    }
+
+    // Determine overall health status
+    const responseTime = Date.now() - startTime;
+    const isHealthy = dbHealthy && 
+                     metrics.cacheStatus !== 'offline' && 
+                     responseTime < 1000 &&
+                     metrics.avgResponseTime < 10000;
+
+    const healthStatus = isHealthy ? 'healthy' : 
+                        (dbHealthy && metrics.cacheStatus !== 'offline') ? 'degraded' : 'unhealthy';
+
+    // Add performance headers
+    addPerformanceHeaders(res, {
+      processingTime: responseTime,
+      databaseTime: dbResponseTime,
+      method: 'health_check'
+    });
+
+    return res.status(isHealthy ? 200 : 503).json({
+      status: healthStatus,
+      timestamp: new Date().toISOString(),
+      response_time_ms: responseTime,
+      metrics: {
+        response_time_avg: metrics.avgResponseTime,
+        load: metrics.currentLoad,
+        recommended_batch_size: metrics.suggestedBatchSize,
+        suggested_delay_ms: metrics.suggestedDelay,
+        cache_status: metrics.cacheStatus,
+        database_healthy: dbHealthy,
+        database_response_time_ms: dbResponseTime,
+      },
+      checks: {
+        database: dbHealthy ? 'pass' : 'fail',
+        cache: metrics.cacheStatus === 'healthy' ? 'pass' : 'warn',
+        response_time: responseTime < 1000 ? 'pass' : 'warn',
+        avg_performance: metrics.avgResponseTime < 5000 ? 'pass' : 'warn',
+      }
+    });
+
+  } catch (error: any) {
+    logger.error('Health check error:', error);
+    
+    return res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      response_time_ms: Date.now() - startTime,
+      error: {
+        message: 'Health check failed',
+        details: error.message
+      }
+    });
+  }
+});
+
+/**
+ * Performance statistics endpoint
+ * @route GET /api/v1/sellersjson/stats
+ */
+export const getPerformanceStats = asyncHandler(async (req: Request, res: Response) => {
+  const startTime = Date.now();
+
+  try {
+    // Get comprehensive performance metrics
+    const metrics = await getSystemPerformanceMetrics();
+    
+    // Get cache statistics
+    const cacheStats = await SellersJsonCacheModel.getCacheStatistics?.() || {
+      totalDomains: 0,
+      successfulCaches: 0,
+      errorCaches: 0,
+      notFoundCaches: 0,
+      lastUpdated: null,
+    };
+
+    // Calculate cache hit rate
+    const totalCacheEntries = cacheStats.successfulCaches + cacheStats.errorCaches + cacheStats.notFoundCaches;
+    const cacheHitRate = totalCacheEntries > 0 ? cacheStats.successfulCaches / totalCacheEntries : 0;
+
+    // Add performance headers
+    addPerformanceHeaders(res, {
+      processingTime: Date.now() - startTime,
+      cacheHitRate,
+      method: 'stats'
+    });
+
+    return res.status(200).json({
+      timestamp: new Date().toISOString(),
+      performance: {
+        avg_response_time_ms: metrics.avgResponseTime,
+        current_load: metrics.currentLoad,
+        suggested_batch_size: metrics.suggestedBatchSize,
+        suggested_delay_ms: metrics.suggestedDelay,
+      },
+      cache: {
+        status: metrics.cacheStatus,
+        hit_rate: Math.round(cacheHitRate * 100) / 100,
+        total_domains: cacheStats.totalDomains,
+        statistics: {
+          successful: cacheStats.successfulCaches,
+          errors: cacheStats.errorCaches,
+          not_found: cacheStats.notFoundCaches,
+          last_updated: cacheStats.lastUpdated,
+        }
+      },
+      recommendations: {
+        optimal_batch_size: metrics.suggestedBatchSize,
+        request_delay_ms: metrics.suggestedDelay,
+        use_streaming: metrics.avgResponseTime > 3000,
+        use_parallel: metrics.currentLoad === 'low',
+      },
+      endpoints: {
+        standard_batch: '/sellersjson/{domain}/sellers/batch',
+        streaming_batch: '/sellersjson/{domain}/sellers/batch/stream',
+        parallel_batch: '/sellersjson/batch/parallel',
+        health_check: '/sellersjson/health',
+        stats: '/sellersjson/stats',
+      }
+    });
+
+  } catch (error: any) {
+    logger.error('Performance stats error:', error);
+    
+    return res.status(500).json({
+      timestamp: new Date().toISOString(),
+      error: {
+        message: 'Failed to retrieve performance statistics',
+        details: error.message
+      }
+    });
+  }
+});
 
 /**
  * Extract metadata from sellers.json content according to IAB spec
@@ -706,6 +997,13 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
           `JSONB batch lookup completed: ${optimizedResult.foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`
         );
 
+        // Add performance monitoring headers
+        addPerformanceHeaders(res, {
+          processingTime,
+          method: 'optimized_jsonb',
+          cacheHitRate: 1.0,
+        });
+
         return res.status(200).json({
           success: true,
           data: {
@@ -798,6 +1096,14 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
       `Batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${processingTime}ms`
     );
 
+    // Add performance monitoring headers for standard processing
+    const cacheHitRate = cacheInfo.isCached ? 1.0 : 0.0;
+    addPerformanceHeaders(res, {
+      processingTime,
+      method: cacheInfo.isCached ? 'cache_fallback' : 'fresh_fetch',
+      cacheHitRate,
+    });
+
     return res.status(200).json({
       success: true,
       data: {
@@ -813,6 +1119,553 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
   } catch (error: any) {
     logger.error(`Batch lookup error for ${domain}:`, error);
     return handleSellersJsonError(domain, error);
+  }
+});
+/**
+ * Enhanced batch get sellers with streaming/progressive response
+ * Addresses 24-45 second response time issues by providing immediate feedback
+ * @route POST /api/v1/sellersjson/:domain/sellers/batch/stream
+ */
+export const batchGetSellersStream = asyncHandler(async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  let { domain } = req.params;
+  const { sellerIds, force = false, priority = 'normal', timeout = 10000, partial_response = true } = req.body;
+
+  if (!domain) {
+    throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
+  }
+
+  domain = domain.toLowerCase().trim();
+
+  // Validate sellerIds array
+  if (!Array.isArray(sellerIds) || sellerIds.length === 0) {
+    throw new ApiError(400, 'sellerIds must be a non-empty array', 'INVALID_SELLER_IDS', {
+      details: `Received ${Array.isArray(sellerIds) ? sellerIds.length : 'non-array'} seller IDs, expected 1-100`,
+    });
+  }
+
+  if (sellerIds.length > 100) {
+    throw new ApiError(400, 'Maximum 100 seller IDs allowed per request', 'TOO_MANY_SELLER_IDS', {
+      details: `Received ${sellerIds.length} seller IDs`,
+    });
+  }
+
+  // Validate and normalize seller IDs
+  const normalizedSellerIds = sellerIds.map((id: any) => {
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      throw new ApiError(
+        400,
+        'All seller IDs must be non-empty strings',
+        'INVALID_SELLER_ID_FORMAT',
+        { details: `Invalid seller ID: ${id}` }
+      );
+    }
+    return String(id).trim();
+  });
+
+  const uniqueSellerIds = [...new Set(normalizedSellerIds)];
+
+  // Set up Server-Sent Events headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control',
+    'X-Processing-Strategy': 'streaming',
+    'X-Requested-Count': uniqueSellerIds.length.toString(),
+  });
+
+  // Send initial processing status
+  res.write(`data: ${JSON.stringify({
+    status: 'processing',
+    progress: 0,
+    eta: Math.max(timeout / 1000, 15) + 's',
+    domain,
+    requested_count: uniqueSellerIds.length,
+    timestamp: new Date().toISOString()
+  })}\n\n`);
+
+  try {
+    logger.info(`Streaming batch lookup for ${uniqueSellerIds.length} sellers from ${domain} (priority: ${priority})`);
+
+    let foundCount = 0;
+    const results: any[] = [];
+    const processedSellerIds = new Set<string>();
+
+    // Try optimized JSONB query first
+    try {
+      const optimizedResult = await SellersJsonCacheModel.batchGetSellersOptimized(domain, uniqueSellerIds);
+
+      if (optimizedResult) {
+        logger.info(`Using optimized JSONB batch query for ${domain}`);
+        
+        foundCount = optimizedResult.foundCount;
+        results.push(...optimizedResult.results.map((result: any) => ({
+          ...result,
+          source: 'cache'
+        })));
+
+        // Add all processed seller IDs
+        optimizedResult.results.forEach((result: any) => {
+          processedSellerIds.add(result.sellerId);
+        });
+
+        // Send partial results
+        res.write(`data: ${JSON.stringify({
+          status: 'partial',
+          progress: 80,
+          found_count: foundCount,
+          processed_count: processedSellerIds.size,
+          results: results,
+          metadata: optimizedResult.metadata,
+          cache: {
+            is_cached: true,
+            last_updated: optimizedResult.cacheRecord.updated_at,
+            status: optimizedResult.cacheRecord.status,
+            expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
+          },
+          processing_time_ms: Date.now() - startTime,
+          timestamp: new Date().toISOString()
+        })}\n\n`);
+
+        // If all sellers found in optimized query, complete immediately
+        if (processedSellerIds.size === uniqueSellerIds.length) {
+          res.write(`data: ${JSON.stringify({
+            status: 'completed',
+            progress: 100,
+            domain,
+            requested_count: uniqueSellerIds.length,
+            found_count: foundCount,
+            results,
+            metadata: optimizedResult.metadata,
+            cache: {
+              is_cached: true,
+              last_updated: optimizedResult.cacheRecord.updated_at,
+              status: optimizedResult.cacheRecord.status,
+              expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
+            },
+            processing_time_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString()
+          })}\n\n`);
+          
+          res.end();
+          return;
+        }
+      }
+    } catch (optimizationError) {
+      logger.warn(`Optimized JSONB batch query failed, proceeding with fallback: ${optimizationError}`);
+      
+      res.write(`data: ${JSON.stringify({
+        status: 'fallback',
+        progress: 20,
+        message: 'Using fallback processing method',
+        timestamp: new Date().toISOString()
+      })}\n\n`);
+    }
+
+    // Fallback processing for remaining sellers
+    const remainingSellerIds = uniqueSellerIds.filter(id => !processedSellerIds.has(id));
+    
+    if (remainingSellerIds.length > 0) {
+      // Set a shorter timeout for HTTP requests to prevent blocking
+      const adjustedTimeout = Math.min(timeout, 8000); // Max 8 seconds for HTTP fetch
+      
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Processing timeout')), adjustedTimeout);
+      });
+
+      const fetchPromise = (async () => {
+        const forceRefresh = force === true;
+        const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
+
+        res.write(`data: ${JSON.stringify({
+          status: 'fetched',
+          progress: 60,
+          cache_status: cacheInfo.status,
+          is_cached: cacheInfo.isCached,
+          timestamp: new Date().toISOString()
+        })}\n\n`);
+
+        const formattedCacheInfo = {
+          is_cached: cacheInfo.isCached,
+          last_updated: cacheInfo.updatedAt,
+          status: cacheInfo.status,
+          expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
+        };
+
+        if (!sellersJsonData) {
+          // No data available - mark all remaining sellers as not found
+          for (const sellerId of remainingSellerIds) {
+            results.push({
+              sellerId,
+              seller: null,
+              found: false,
+              error: 'sellers.json not found for domain',
+              source: cacheInfo.isCached ? 'cache' : 'fresh',
+            });
+          }
+        } else {
+          // Process sellers from sellers.json data
+          const sellers = sellersJsonData.sellers || [];
+          const sellersMap = new Map();
+          
+          sellers.forEach((seller: any) => {
+            if (seller.seller_id) {
+              sellersMap.set(String(seller.seller_id).trim(), seller);
+            }
+          });
+
+          for (const sellerId of remainingSellerIds) {
+            const seller = sellersMap.get(sellerId);
+            if (seller) {
+              foundCount++;
+              results.push({
+                sellerId,
+                seller,
+                found: true,
+                source: cacheInfo.isCached ? 'cache' : 'fresh',
+              });
+            } else {
+              results.push({
+                sellerId,
+                seller: null,
+                found: false,
+                error: 'Seller not found in sellers.json',
+                source: cacheInfo.isCached ? 'cache' : 'fresh',
+              });
+            }
+          }
+        }
+
+        // Extract metadata
+        const metadata = extractMetadata(sellersJsonData);
+
+        const processingTime = Date.now() - startTime;
+
+        // Send final completion
+        res.write(`data: ${JSON.stringify({
+          status: 'completed',
+          progress: 100,
+          domain,
+          requested_count: uniqueSellerIds.length,
+          found_count: foundCount,
+          results,
+          metadata,
+          cache: formattedCacheInfo,
+          processing_time_ms: processingTime,
+          timestamp: new Date().toISOString()
+        })}\n\n`);
+      })();
+
+      try {
+        await Promise.race([fetchPromise, timeoutPromise]);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Processing timeout') {
+          logger.warn(`Streaming batch request timed out after ${adjustedTimeout}ms for ${domain}`);
+          
+          if (partial_response && results.length > 0) {
+            // Return partial results on timeout
+            res.write(`data: ${JSON.stringify({
+              status: 'partial_timeout',
+              progress: 95,
+              domain,
+              requested_count: uniqueSellerIds.length,
+              found_count: foundCount,
+              results,
+              timeout_ms: adjustedTimeout,
+              processing_time_ms: Date.now() - startTime,
+              message: 'Request timed out, returning partial results',
+              timestamp: new Date().toISOString()
+            })}\n\n`);
+          } else {
+            // Send timeout error
+            res.write(`data: ${JSON.stringify({
+              status: 'timeout',
+              progress: 95,
+              error: {
+                code: 'PROCESSING_TIMEOUT',
+                message: 'Request processing timed out',
+                timeout_ms: adjustedTimeout,
+                suggested_action: 'retry_with_smaller_batch'
+              },
+              timestamp: new Date().toISOString()
+            })}\n\n`);
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    logger.info(`Streaming batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${Date.now() - startTime}ms`);
+
+  } catch (error: any) {
+    logger.error(`Streaming batch lookup error for ${domain}:`, error);
+    
+    res.write(`data: ${JSON.stringify({
+      status: 'error',
+      error: {
+        code: 'BATCH_PROCESSING_ERROR',
+        message: error.message || 'Unknown error occurred',
+        details: error.details || {},
+        timestamp: new Date().toISOString()
+      }
+    })}\n\n`);
+  }
+
+  res.end();
+});
+/**
+ * Enhanced batch processing with parallel domain fetching
+ * For cases where multiple domains need to be processed
+ */
+export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const { requests, max_concurrent = 5, fail_fast = false, return_partial = true } = req.body;
+
+  // Validate requests array
+  if (!Array.isArray(requests) || requests.length === 0) {
+    throw new ApiError(400, 'requests must be a non-empty array', 'INVALID_REQUESTS', {
+      details: `Received ${Array.isArray(requests) ? requests.length : 'non-array'} requests, expected 1-10`,
+    });
+  }
+
+  if (requests.length > 10) {
+    throw new ApiError(400, 'Maximum 10 domain requests allowed per parallel batch', 'TOO_MANY_REQUESTS', {
+      details: `Received ${requests.length} requests`,
+    });
+  }
+
+  // Validate each request
+  const validatedRequests = requests.map((request: any, index: number) => {
+    if (!request.domain || !Array.isArray(request.sellerIds)) {
+      throw new ApiError(400, `Invalid request at index ${index}`, 'INVALID_REQUEST_FORMAT', {
+        details: `Request must have domain and sellerIds array`,
+      });
+    }
+
+    return {
+      domain: request.domain.toLowerCase().trim(),
+      sellerIds: [...new Set(request.sellerIds.map((id: any) => String(id).trim()))],
+      force: request.force || false,
+    };
+  });
+
+  const results: any[] = [];
+  const errors: any[] = [];
+  let completedCount = 0;
+
+  try {
+    logger.info(`Processing parallel batch with ${validatedRequests.length} domain requests (max_concurrent: ${max_concurrent})`);
+
+    // Process requests with controlled concurrency
+    const processRequest = async (request: any) => {
+      const { domain, sellerIds, force } = request;
+      const requestStartTime = Date.now();
+
+      try {
+        // Use the optimized JSONB query first
+        let optimizedResult;
+        try {
+          optimizedResult = await SellersJsonCacheModel.batchGetSellersOptimized(domain, sellerIds);
+        } catch (optimizationError) {
+          logger.warn(`Optimized query failed for ${domain}, using fallback: ${optimizationError}`);
+        }
+
+        if (optimizedResult) {
+          logger.info(`Parallel processing: Using optimized JSONB for ${domain}`);
+          
+          return {
+            domain,
+            requested_count: sellerIds.length,
+            found_count: optimizedResult.foundCount,
+            results: optimizedResult.results.map((result: any) => ({
+              ...result,
+              source: 'cache'
+            })),
+            metadata: optimizedResult.metadata,
+            cache: {
+              is_cached: true,
+              last_updated: optimizedResult.cacheRecord.updated_at,
+              status: optimizedResult.cacheRecord.status,
+              expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
+            },
+            processing_time_ms: Date.now() - requestStartTime,
+            processing_method: 'optimized_jsonb'
+          };
+        }
+
+        // Fallback to standard processing
+        const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, force);
+
+        const domainResults: any[] = [];
+        let foundCount = 0;
+
+        if (!sellersJsonData) {
+          for (const sellerId of sellerIds) {
+            domainResults.push({
+              sellerId,
+              seller: null,
+              found: false,
+              error: 'sellers.json not found for domain',
+              source: cacheInfo.isCached ? 'cache' : 'fresh',
+            });
+          }
+        } else {
+          const sellers = sellersJsonData.sellers || [];
+          const sellersMap = new Map();
+          
+          sellers.forEach((seller: any) => {
+            if (seller.seller_id) {
+              sellersMap.set(String(seller.seller_id).trim(), seller);
+            }
+          });
+
+          for (const sellerId of sellerIds) {
+            const seller = sellersMap.get(sellerId);
+            if (seller) {
+              foundCount++;
+              domainResults.push({
+                sellerId,
+                seller,
+                found: true,
+                source: cacheInfo.isCached ? 'cache' : 'fresh',
+              });
+            } else {
+              domainResults.push({
+                sellerId,
+                seller: null,
+                found: false,
+                error: 'Seller not found in sellers.json',
+                source: cacheInfo.isCached ? 'cache' : 'fresh',
+              });
+            }
+          }
+        }
+
+        return {
+          domain,
+          requested_count: sellerIds.length,
+          found_count: foundCount,
+          results: domainResults,
+          metadata: extractMetadata(sellersJsonData),
+          cache: {
+            is_cached: cacheInfo.isCached,
+            last_updated: cacheInfo.updatedAt,
+            status: cacheInfo.status,
+            expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
+          },
+          processing_time_ms: Date.now() - requestStartTime,
+          processing_method: 'standard_fetch'
+        };
+
+      } catch (error: any) {
+        logger.error(`Parallel processing error for ${domain}:`, error);
+        
+        if (fail_fast) {
+          throw error;
+        }
+
+        return {
+          domain,
+          requested_count: sellerIds.length,
+          found_count: 0,
+          results: sellerIds.map((sellerId: string) => ({
+            sellerId,
+            seller: null,
+            found: false,
+            error: error.message || 'Processing error',
+            source: 'error',
+          })),
+          metadata: null,
+          cache: null,
+          processing_time_ms: Date.now() - requestStartTime,
+          processing_method: 'error',
+          error: {
+            code: 'DOMAIN_PROCESSING_ERROR',
+            message: error.message || 'Unknown error',
+            details: error.details || {}
+          }
+        };
+      }
+    };
+
+    // Process with controlled concurrency using Promise.allSettled
+    const chunks: any[][] = [];
+    for (let i = 0; i < validatedRequests.length; i += max_concurrent) {
+      chunks.push(validatedRequests.slice(i, i + max_concurrent));
+    }
+
+    for (const chunk of chunks) {
+      const chunkPromises = chunk.map(processRequest);
+      const chunkResults = await Promise.allSettled(chunkPromises);
+
+      chunkResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          results.push(result.value);
+          completedCount++;
+        } else {
+          const request = chunk[index];
+          errors.push({
+            domain: request.domain,
+            error: result.reason?.message || 'Unknown error',
+            requested_count: request.sellerIds.length
+          });
+
+          if (!return_partial) {
+            throw new ApiError(500, `Processing failed for ${request.domain}`, 'PARALLEL_PROCESSING_ERROR', {
+              error: result.reason?.message
+            });
+          }
+        }
+      });
+    }
+
+    const totalProcessingTime = Date.now() - startTime;
+    const totalRequested = results.reduce((sum, r) => sum + r.requested_count, 0);
+    const totalFound = results.reduce((sum, r) => sum + r.found_count, 0);
+
+    logger.info(`Parallel batch completed: ${completedCount}/${validatedRequests.length} domains processed, ${totalFound}/${totalRequested} sellers found in ${totalProcessingTime}ms`);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        parallel_processing: {
+          total_domains: validatedRequests.length,
+          completed_domains: completedCount,
+          failed_domains: errors.length,
+          max_concurrent,
+          total_requested_sellers: totalRequested,
+          total_found_sellers: totalFound,
+        },
+        results,
+        errors: errors.length > 0 ? errors : undefined,
+        processing_time_ms: totalProcessingTime,
+        performance_headers: {
+          'X-Processing-Strategy': 'parallel',
+          'X-Concurrent-Limit': max_concurrent.toString(),
+          'X-Total-Domains': validatedRequests.length.toString(),
+          'X-Completed-Domains': completedCount.toString(),
+          'X-Processing-Time': totalProcessingTime.toString(),
+        }
+      },
+    });
+
+  } catch (error: any) {
+    logger.error(`Parallel batch processing error:`, error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'PARALLEL_BATCH_ERROR',
+        message: error.message || 'Parallel processing failed',
+        details: {
+          completed_count: completedCount,
+          total_requests: validatedRequests.length,
+          errors: errors
+        }
+      }
+    });
   }
 });
 

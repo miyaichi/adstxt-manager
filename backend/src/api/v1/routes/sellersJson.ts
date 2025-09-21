@@ -1,8 +1,25 @@
 import express from 'express';
-import { getSellerById, batchGetSellers } from '../../../controllers/sellersJsonController';
+import {
+  getSellerById,
+  batchGetSellers,
+  batchGetSellersStream,
+  batchGetSellersParallel,
+  getHealthCheck,
+  getPerformanceStats
+} from '../../../controllers/sellersJsonController';
 import { validateApiKeyOrExtension } from '../middleware/auth';
 
 const router = express.Router();
+// Health check endpoint - no auth required for monitoring
+router.get('/health', getHealthCheck);
+
+// Performance statistics endpoint - no auth required for monitoring  
+router.get('/stats', getPerformanceStats);
+
+// Parallel batch processing endpoint for multiple domains
+router.post('/batch/parallel', validateApiKeyOrExtension, batchGetSellersParallel);
+// Streaming batch endpoint for progressive responses
+router.post('/:domain/sellers/batch/stream', validateApiKeyOrExtension, batchGetSellersStream);
 
 /**
  * @swagger
