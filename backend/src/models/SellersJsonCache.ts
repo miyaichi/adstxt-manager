@@ -1138,6 +1138,103 @@ class SellersJsonCacheModel {
       logger.error(`[SellersJsonCache] Error cleaning up specific sellers cache: ${error}`);
     }
   }
+
+  /**
+   * Test database connection
+   */
+  static async testConnection(): Promise<boolean> {
+    try {
+      // Simple query to test database connection
+      await db.execute('SELECT 1 as test', []);
+      return true;
+    } catch (error) {
+      logger.error('Database connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get performance metrics for the cache
+   */
+  static async getPerformanceMetrics(): Promise<{
+    avgResponseTime: number;
+    requestCount: number;
+    errorRate: number;
+  }> {
+    try {
+      // Get recent performance data from the last hour
+      const results = await db.execute(`
+        SELECT 
+          COUNT(*) as request_count,
+          AVG(CASE 
+            WHEN updated_at > datetime('now', '-1 hour') 
+            THEN (julianday('now') - julianday(updated_at)) * 24 * 60 * 60 * 1000 
+            ELSE NULL 
+          END) as avg_response_time_ms,
+          (COUNT(CASE WHEN status = 'error' THEN 1 END) * 1.0 / COUNT(*)) as error_rate
+        FROM sellers_json_cache
+        WHERE updated_at > datetime('now', '-1 hour')
+      `, []);
+
+      const result = Array.isArray(results) ? results[0] : results;
+      
+      return {
+        avgResponseTime: result?.avg_response_time_ms || 1000,
+        requestCount: result?.request_count || 0,
+        errorRate: result?.error_rate || 0,
+      };
+    } catch (error) {
+      logger.warn('Failed to get performance metrics:', error);
+      return {
+        avgResponseTime: 1000,
+        requestCount: 0,
+        errorRate: 0,
+      };
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  static async getCacheStatistics(): Promise<{
+    totalDomains: number;
+    successfulCaches: number;
+    errorCaches: number;
+    notFoundCaches: number;
+    lastUpdated: string | null;
+  }> {
+    try {
+      const results = await db.execute(`
+        SELECT 
+          COUNT(DISTINCT domain) as total_domains,
+          COUNT(CASE WHEN status = 'success' THEN 1 END) as successful_caches,
+          COUNT(CASE WHEN status = 'error' THEN 1 END) as error_caches,
+          COUNT(CASE WHEN status = 'not_found' THEN 1 END) as not_found_caches,
+          MAX(updated_at) as last_updated
+        FROM sellers_json_cache
+      `, []);
+
+      const result = Array.isArray(results) ? results[0] : results;
+      
+      return {
+        totalDomains: result?.total_domains || 0,
+        successfulCaches: result?.successful_caches || 0,
+        errorCaches: result?.error_caches || 0,
+        notFoundCaches: result?.not_found_caches || 0,
+        lastUpdated: result?.last_updated || null,
+      };
+    } catch (error) {
+      logger.warn('Failed to get cache statistics:', error);
+      return {
+        totalDomains: 0,
+        successfulCaches: 0,
+        errorCaches: 0,
+        notFoundCaches: 0,
+        lastUpdated: null,
+      };
+    }
+  }
 }
 
+export { SellersJsonCacheModel };
 export default new SellersJsonCacheModel();

@@ -3,6 +3,7 @@ import { ApiError, asyncHandler } from '../middleware/errorHandler';
 import SellersJsonCacheModel, {
   SellersJsonCacheStatus,
   SellersJsonContent,
+  SellersJsonCacheModel as SellersJsonCacheClass,
 } from '../models/SellersJsonCache';
 import { logger } from '../utils/logger';
 
@@ -651,7 +652,7 @@ async function getSystemPerformanceMetrics(): Promise<{
 }> {
   try {
     // Get recent cache performance data from last hour
-    const recentPerformance = await SellersJsonCacheModel.getPerformanceMetrics?.() || {
+    const recentPerformance = await SellersJsonCacheClass.getPerformanceMetrics() || {
       avgResponseTime: 1000,
       requestCount: 0,
       errorRate: 0,
@@ -715,7 +716,7 @@ export const getHealthCheck = asyncHandler(async (req: Request, res: Response) =
     let dbResponseTime = 0;
     try {
       const dbStartTime = Date.now();
-      await SellersJsonCacheModel.testConnection?.() || Promise.resolve();
+      dbHealthy = await SellersJsonCacheClass.testConnection();
       dbResponseTime = Date.now() - dbStartTime;
     } catch (dbError) {
       logger.warn('Database health check failed:', dbError);
@@ -787,7 +788,7 @@ export const getPerformanceStats = asyncHandler(async (req: Request, res: Respon
     const metrics = await getSystemPerformanceMetrics();
     
     // Get cache statistics
-    const cacheStats = await SellersJsonCacheModel.getCacheStatistics?.() || {
+    const cacheStats = await SellersJsonCacheClass.getCacheStatistics() || {
       totalDomains: 0,
       successfulCaches: 0,
       errorCaches: 0,
