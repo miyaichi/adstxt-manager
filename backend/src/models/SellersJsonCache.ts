@@ -196,6 +196,7 @@ class SellersJsonCacheModel {
       const existingCache = await this.getByDomain(normalizedDomain);
 
       const now = new Date().toISOString();
+      let savedCache: SellersJsonCache;
 
       if (existingCache) {
         logger.debug(
@@ -203,7 +204,7 @@ class SellersJsonCacheModel {
         );
 
         // Update existing entry
-        const updatedCache = (await db.update(this.getTableName(), existingCache.id, {
+        savedCache = (await db.update(this.getTableName(), existingCache.id, {
           content: data.content,
           status: data.status,
           status_code: data.status_code,
@@ -211,15 +212,11 @@ class SellersJsonCacheModel {
           updated_at: now,
         })) as SellersJsonCache;
 
-        // メモリキャッシュも更新
-        this.saveToMemoryCache(normalizedDomain, updatedCache);
-
-        return updatedCache;
       } else {
         logger.debug(`[SellersJsonCache] Creating new cache for domain: ${normalizedDomain}`);
 
         // Create new entry
-        const newCache = (await db.insert(this.getTableName(), {
+        savedCache = (await db.insert(this.getTableName(), {
           id: uuidv4(),
           domain: normalizedDomain,
           content: data.content,
@@ -229,12 +226,22 @@ class SellersJsonCacheModel {
           created_at: now,
           updated_at: now,
         })) as SellersJsonCache;
-
-        // メモリキャッシュに保存
-        this.saveToMemoryCache(normalizedDomain, newCache);
-
-        return newCache;
       }
+
+      // Update memory cache
+      this.saveToMemoryCache(normalizedDomain, savedCache);
+
+      // Sync with normalized table (async, doesn't block cache save)
+      if (savedCache.status === 'success' && savedCache.content) {
+        setImmediate(() => {
+          this.syncNormalizedTable(savedCache).catch(syncError => {
+            logger.warn(`[SellersJsonCache] Async sync failed for ${normalizedDomain}: ${syncError}`);
+          });
+        });
+      }
+
+      return savedCache;
+
     } catch (error) {
       logger.error(`Error saving sellers.json cache for ${data.domain}:`, error);
       throw error;
@@ -343,6 +350,12 @@ class SellersJsonCacheModel {
    * @param sellerId The seller ID to search for
    * @returns The cache record, seller, metadata and found status if available
    */
+  /**
+   * Get a specific seller from the cache by seller_id using optimized search with fallback strategy
+   * @param domain The domain to search in
+   * @param sellerId The seller ID to search for
+   * @returns The cache record, seller, metadata and found status if available
+   */
   async getSellerByIdOptimized(
     domain: string,
     sellerId: string
@@ -360,6 +373,21 @@ class SellersJsonCacheModel {
       logger.info(
         `[SellersJsonCache] Looking up seller ${normalizedSellerId} in ${normalizedDomain} with optimization`
       );
+
+      // Strategy 1: Try normalized table search first (highest performance)
+      try {
+        const normalizedResult = await this.getSellerByIdNormalized(normalizedDomain, normalizedSellerId);
+        if (normalizedResult) {
+          logger.debug(`[SellersJsonCache] Normalized table hit for ${normalizedSellerId} in ${normalizedDomain}`);
+          return normalizedResult;
+        }
+      } catch (normalizedError) {
+        logger.warn(`[SellersJsonCache] Normalized table search failed: ${normalizedError}`);
+        // Continue to fallback strategy
+      }
+
+      // Strategy 2: Fallback to JSONB optimization
+      logger.debug(`[SellersJsonCache] Falling back to JSONB search for ${normalizedSellerId} in ${normalizedDomain}`);
 
       // Check if we're using PostgreSQL
       const dbProvider = process.env.DB_PROVIDER || 'sqlite';
@@ -392,7 +420,7 @@ class SellersJsonCacheModel {
         return null;
       }
 
-      // Call the optimized method
+      // Call the optimized JSONB method
       const result = await postgres.queryJsonBSellerById(normalizedDomain, normalizedSellerId);
 
       if (!result) {
@@ -403,7 +431,7 @@ class SellersJsonCacheModel {
       }
 
       logger.info(
-        `[SellersJsonCache] Found optimized result for ${normalizedSellerId} in ${normalizedDomain}`
+        `[SellersJsonCache] Found optimized JSONB result for ${normalizedSellerId} in ${normalizedDomain}`
       );
 
       // PostgreSQLアダプタからの結果を直接利用
@@ -417,6 +445,211 @@ class SellersJsonCacheModel {
       logger.error(`[SellersJsonCache] Error in getSellerByIdOptimized: ${error}`);
       // On error, return null to fall back to the standard method
       return null;
+    }
+  }
+
+  /**
+   * Get a specific seller from the normalized lookup table for high-performance search
+   * @param domain The domain to search in
+   * @param sellerId The seller ID to search for
+   * @returns The cache record, seller, metadata and found status if available
+   */
+  async getSellerByIdNormalized(
+    domain: string,
+    sellerId: string
+  ): Promise<{
+    cacheRecord: SellersJsonCache;
+    metadata: any;
+    seller: any;
+    found: boolean;
+  } | null> {
+    try {
+      const normalizedDomain = domain.toLowerCase().trim();
+      const normalizedSellerId = sellerId.toString().trim();
+
+      logger.debug(
+        `[SellersJsonCache] Looking up seller ${normalizedSellerId} in ${normalizedDomain} using normalized table`
+      );
+
+      // Check if we're using PostgreSQL
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+      if (dbProvider !== 'postgres') {
+        logger.debug('[SellersJsonCache] Not using PostgreSQL, normalized table not available');
+        return null;
+      }
+
+      // Get the PostgreSQL database instance
+      let postgres;
+      try {
+        postgres = (db as any).implementation as any;
+        if (!postgres) {
+          logger.warn('[SellersJsonCache] Database implementation not available for normalized lookup');
+          return null;
+        }
+      } catch (implError) {
+        logger.error(
+          `[SellersJsonCache] Error accessing database implementation for normalized lookup: ${implError}`
+        );
+        return null;
+      }
+
+      // Direct SQL query to the normalized table
+      const query = `
+        SELECT
+          c.id, c.domain, c.status, c.status_code, c.error_message,
+          c.created_at, c.updated_at,
+          c.content->>'version' as version,
+          c.content->>'contact_email' as contact_email,
+          c.content->>'contact_address' as contact_address,
+          c.content->'identifiers' as identifiers,
+          jsonb_array_length(c.content->'sellers') as seller_count,
+          sl.seller_data
+        FROM sellers_json_cache c
+        JOIN sellers_json_seller_lookup sl ON c.id = sl.cache_id
+        WHERE sl.domain = $1
+          AND sl.seller_id = $2
+          AND c.status = 'success'
+        LIMIT 1
+      `;
+
+      const result = await postgres.query(query, [normalizedDomain, normalizedSellerId]);
+
+      if (!result || !result.rows || result.rows.length === 0) {
+        logger.debug(
+          `[SellersJsonCache] No normalized result found for ${normalizedSellerId} in ${normalizedDomain}`
+        );
+        return null;
+      }
+
+      const row = result.rows[0];
+
+      logger.debug(
+        `[SellersJsonCache] Found normalized result for ${normalizedSellerId} in ${normalizedDomain}`
+      );
+
+      return {
+        cacheRecord: {
+          id: row.id,
+          domain: row.domain,
+          status: row.status,
+          status_code: row.status_code,
+          error_message: row.error_message,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        },
+        metadata: {
+          version: row.version,
+          contact_email: row.contact_email,
+          contact_address: row.contact_address,
+          identifiers: row.identifiers,
+          seller_count: parseInt(row.seller_count, 10) || 0,
+        },
+        seller: row.seller_data,
+        found: true,
+      };
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error in getSellerByIdNormalized: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Sync sellers.json cache data with the normalized lookup table
+   * @param cache The cache record to sync
+   * @returns Promise that resolves when sync is complete
+   */
+  private async syncNormalizedTable(cache: SellersJsonCache): Promise<void> {
+    try {
+      // Only sync if using PostgreSQL and status is success
+      const dbProvider = process.env.DB_PROVIDER || 'sqlite';
+      if (dbProvider !== 'postgres' || cache.status !== 'success' || !cache.content) {
+        logger.debug(`[SellersJsonCache] Skipping normalized table sync for ${cache.domain}: not applicable`);
+        return;
+      }
+
+      // Get the PostgreSQL database instance
+      let postgres;
+      try {
+        postgres = (db as any).implementation as any;
+        if (!postgres) {
+          logger.warn('[SellersJsonCache] Database implementation not available for sync');
+          return;
+        }
+      } catch (implError) {
+        logger.warn(`[SellersJsonCache] Error accessing database implementation for sync: ${implError}`);
+        return;
+      }
+
+      logger.debug(`[SellersJsonCache] Syncing normalized table for ${cache.domain}`);
+
+      // Parse the content
+      const parsedContent = this.parseContent(cache.content);
+      if (!parsedContent?.sellers || !Array.isArray(parsedContent.sellers)) {
+        logger.debug(`[SellersJsonCache] No sellers data to sync for ${cache.domain}`);
+        return;
+      }
+
+      // Start transaction for atomic updates
+      await postgres.query('BEGIN');
+
+      try {
+        // Delete existing entries for this cache_id
+        await postgres.query(
+          'DELETE FROM sellers_json_seller_lookup WHERE cache_id = $1',
+          [cache.id]
+        );
+
+        // Filter valid sellers
+        const validSellers = parsedContent.sellers.filter(seller => seller.seller_id);
+
+        if (validSellers.length > 0) {
+          // Remove duplicates within the same cache record
+          const sellerMap = new Map();
+          validSellers.forEach(seller => {
+            const key = `${cache.id}:${seller.seller_id}`;
+            sellerMap.set(key, seller);
+          });
+
+          const uniqueSellers = Array.from(sellerMap.values());
+
+          // Insert new sellers one by one to handle any individual errors
+          let insertedCount = 0;
+          for (const seller of uniqueSellers) {
+            try {
+              await postgres.query(
+                `INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+                [
+                  cache.id,
+                  cache.domain.toLowerCase(),
+                  seller.seller_id,
+                  JSON.stringify(seller)
+                ]
+              );
+              insertedCount++;
+            } catch (sellerError) {
+              logger.warn(`[SellersJsonCache] Failed to insert seller ${seller.seller_id} for ${cache.domain}: ${sellerError}`);
+              // Continue with other sellers
+            }
+          }
+
+          logger.debug(`[SellersJsonCache] Synced ${insertedCount}/${uniqueSellers.length} sellers for ${cache.domain}`);
+        }
+
+        // Commit the transaction
+        await postgres.query('COMMIT');
+
+        logger.debug(`[SellersJsonCache] Successfully synced normalized table for ${cache.domain}`);
+
+      } catch (syncError) {
+        // Rollback on error
+        await postgres.query('ROLLBACK');
+        throw syncError;
+      }
+
+    } catch (error) {
+      logger.error(`[SellersJsonCache] Error syncing normalized table for ${cache.domain}:`, error);
+      // Don't throw error - sync failure shouldn't break cache save
     }
   }
 
