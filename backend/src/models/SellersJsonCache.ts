@@ -454,6 +454,12 @@ class SellersJsonCacheModel {
    * @param sellerId The seller ID to search for
    * @returns The cache record, seller, metadata and found status if available
    */
+  /**
+   * Get a specific seller from the normalized lookup table for high-performance search
+   * @param domain The domain to search in
+   * @param sellerId The seller ID to search for
+   * @returns The cache record, seller, metadata and found status if available
+   */
   async getSellerByIdNormalized(
     domain: string,
     sellerId: string
@@ -497,7 +503,7 @@ class SellersJsonCacheModel {
       const query = `
         SELECT
           c.id, c.domain, c.status, c.status_code, c.error_message,
-          c.created_at, c.updated_at,
+          c.created_at, c.updated_at, c.content,
           c.content->>'version' as version,
           c.content->>'contact_email' as contact_email,
           c.content->>'contact_address' as contact_address,
@@ -531,6 +537,7 @@ class SellersJsonCacheModel {
         cacheRecord: {
           id: row.id,
           domain: row.domain,
+          content: row.content,
           status: row.status,
           status_code: row.status_code,
           error_message: row.error_message,
