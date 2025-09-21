@@ -187,11 +187,93 @@ async function processSellersJsonResponse(domain, response) {
 }
 
 /**
+ * Sync sellers.json cache data with the normalized lookup table
+ * @param {string} cacheId - The cache record ID
+ * @param {Object} cacheRecord - The cache record to sync
+ */
+async function syncNormalizedTable(cacheId, cacheRecord) {
+  // Only sync if status is success and content exists
+  if (cacheRecord.status !== 'success' || !cacheRecord.content) {
+    logger.debug(`Skipping normalized table sync for ${cacheRecord.domain}: status is ${cacheRecord.status}`);
+    return;
+  }
+
+  try {
+    const parsedContent = JSON.parse(cacheRecord.content);
+
+    // Delete existing entries for this cache_id
+    const deleteQuery = `DELETE FROM sellers_json_seller_lookup WHERE cache_id = $1`;
+    await db.executeQuery(deleteQuery, [cacheId]);
+
+    // Insert new sellers data
+    if (parsedContent?.sellers && Array.isArray(parsedContent.sellers)) {
+      const BATCH_SIZE = 500;
+      const sellers = parsedContent.sellers.filter(seller => seller.seller_id);
+
+      if (sellers.length > 0) {
+        // Remove duplicates within the same cache record
+        const sellerMap = new Map();
+        sellers.forEach(seller => {
+          const key = `${cacheId}:${seller.seller_id}`;
+          sellerMap.set(key, seller);
+        });
+
+        const uniqueSellers = Array.from(sellerMap.values());
+        let insertedCount = 0;
+
+        // Process in batches to avoid memory issues
+        for (let i = 0; i < uniqueSellers.length; i += BATCH_SIZE) {
+          const batch = uniqueSellers.slice(i, i + BATCH_SIZE);
+
+          // Insert sellers one by one to handle individual conflicts gracefully
+          for (const seller of batch) {
+            try {
+              const insertQuery = `
+                INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+                  domain = EXCLUDED.domain,
+                  seller_data = EXCLUDED.seller_data,
+                  updated_at = CURRENT_TIMESTAMP
+              `;
+
+              await db.executeQuery(insertQuery, [
+                cacheId,
+                cacheRecord.domain.toLowerCase(),
+                seller.seller_id,
+                JSON.stringify(seller)
+              ]);
+
+              insertedCount++;
+            } catch (sellerError) {
+              logger.warn(`Failed to insert seller ${seller.seller_id} for ${cacheRecord.domain}: ${sellerError.message}`);
+              // Continue with other sellers
+            }
+          }
+
+          // Log progress for large datasets
+          if (uniqueSellers.length > BATCH_SIZE) {
+            const progress = Math.min(i + BATCH_SIZE, uniqueSellers.length);
+            logger.debug(`Synced ${progress}/${uniqueSellers.length} sellers for ${cacheRecord.domain}`);
+          }
+        }
+
+        logger.info(`Synced ${insertedCount}/${uniqueSellers.length} sellers to normalized table for ${cacheRecord.domain}`);
+      }
+    }
+  } catch (error) {
+    // Sync failure shouldn't break cache save operation
+    logger.error(`Failed to sync normalized table for ${cacheRecord.domain}:`, error.message);
+  }
+}
+
+/**
  * Save a sellers.json cache record to the database
  * @param {Object} cacheRecord - The cache record to save
  */
 async function saveToCache(cacheRecord) {
   const domain = cacheRecord.domain;
+  let cacheId = null;
 
   try {
     // Check if record already exists
@@ -201,12 +283,12 @@ async function saveToCache(cacheRecord) {
     if (existing.length > 0) {
       // Update existing record
       const updateQuery = `
-        UPDATE sellers_json_cache 
-        SET content = $1, 
-            status = $2, 
-            status_code = $3, 
-            error_message = $4, 
-            updated_at = CURRENT_TIMESTAMP 
+        UPDATE sellers_json_cache
+        SET content = $1,
+            status = $2,
+            status_code = $3,
+            error_message = $4,
+            updated_at = CURRENT_TIMESTAMP
         WHERE domain = $5
         RETURNING id
       `;
@@ -220,8 +302,13 @@ async function saveToCache(cacheRecord) {
       ];
 
       const result = await db.executeQuery(updateQuery, params);
+      cacheId = result[0].id;
+
+      // Sync with normalized table
+      await syncNormalizedTable(cacheId, cacheRecord);
+
       logger.info(`Updated sellers.json cache for ${domain} with status '${cacheRecord.status}'`);
-      return { success: true, status: cacheRecord.status, id: result[0].id };
+      return { success: true, status: cacheRecord.status, id: cacheId };
     } else {
       // Create new record
       // Use the global flag set during database initialization
@@ -230,12 +317,12 @@ async function saveToCache(cacheRecord) {
 
       // Use appropriate query based on UUID extension availability
       const insertQuery = uuidAvailable
-        ? `INSERT INTO sellers_json_cache 
-           (id, domain, content, status, status_code, error_message, created_at, updated_at) 
+        ? `INSERT INTO sellers_json_cache
+           (id, domain, content, status, status_code, error_message, created_at, updated_at)
            VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING id`
-        : `INSERT INTO sellers_json_cache 
-           (id, domain, content, status, status_code, error_message, created_at, updated_at) 
+        : `INSERT INTO sellers_json_cache
+           (id, domain, content, status, status_code, error_message, created_at, updated_at)
            VALUES (md5(random()::text || clock_timestamp()::text)::uuid, $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING id`;
 
@@ -248,10 +335,15 @@ async function saveToCache(cacheRecord) {
       ];
 
       const result = await db.executeQuery(insertQuery, params);
+      cacheId = result[0].id;
+
+      // Sync with normalized table
+      await syncNormalizedTable(cacheId, cacheRecord);
+
       logger.info(
         `Created new sellers.json cache for ${domain} with status '${cacheRecord.status}'`
       );
-      return { success: true, status: cacheRecord.status, id: result[0].id };
+      return { success: true, status: cacheRecord.status, id: cacheId };
     }
   } catch (error) {
     logger.error(`Failed to save sellers.json cache for ${domain}`, { error: error.message });
