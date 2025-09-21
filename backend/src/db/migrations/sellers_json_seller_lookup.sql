@@ -82,14 +82,14 @@ BEGIN
   END IF;
 
   -- Covering index for the most common query pattern (domain + seller_id)
-  -- This includes cache_id to avoid additional lookups
+  -- Only include cache_id to avoid index size limits (seller_data is too large)
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes
     WHERE indexname = 'idx_seller_lookup_covering'
     AND tablename = 'sellers_json_seller_lookup'
   ) THEN
     CREATE INDEX idx_seller_lookup_covering
-    ON sellers_json_seller_lookup (domain, seller_id) INCLUDE (cache_id, seller_data);
+    ON sellers_json_seller_lookup (domain, seller_id) INCLUDE (cache_id);
     RAISE NOTICE 'Created covering index for optimized lookups on sellers_json_seller_lookup';
   END IF;
 END

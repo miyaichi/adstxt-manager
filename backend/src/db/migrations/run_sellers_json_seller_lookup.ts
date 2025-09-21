@@ -214,6 +214,19 @@ export async function runSellersJsonSellerLookupMigration(db: any, options: { sk
       throw new Error('Table verification failed: sellers_json_seller_lookup was not created');
     }
 
+    // Fix covering index if it exists with seller_data
+    try {
+      console.log('🔧 Checking and fixing covering index...');
+      await db.raw(`
+        DROP INDEX IF EXISTS idx_seller_lookup_covering;
+        CREATE INDEX idx_seller_lookup_covering
+        ON sellers_json_seller_lookup (domain, seller_id) INCLUDE (cache_id);
+      `);
+      console.log('✅ Fixed covering index (removed seller_data to avoid size limits)');
+    } catch (indexError) {
+      console.log('ℹ️ Index fix not needed or already applied');
+    }
+
     // Perform data migration unless explicitly skipped
     if (!options.skipDataMigration) {
       console.log('');
