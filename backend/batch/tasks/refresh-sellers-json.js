@@ -187,7 +187,7 @@ async function processSellersJsonResponse(domain, response) {
 }
 
 /**
- * Sync sellers.json cache data with the normalized lookup table
+ * Sync sellers.json cache data with the normalized lookup table (optimized for large datasets)
  * @param {string} cacheId - The cache record ID
  * @param {Object} cacheRecord - The cache record to sync
  */
@@ -201,69 +201,215 @@ async function syncNormalizedTable(cacheId, cacheRecord) {
   try {
     const parsedContent = JSON.parse(cacheRecord.content);
 
+    // Check if sellers data exists
+    if (!parsedContent?.sellers || !Array.isArray(parsedContent.sellers)) {
+      logger.debug(`No sellers data to sync for ${cacheRecord.domain}`);
+      return;
+    }
+
+    const sellers = parsedContent.sellers.filter(seller => seller.seller_id);
+    const sellerCount = sellers.length;
+
+    // Determine sync strategy based on dataset size
+    const LARGE_DATASET_THRESHOLD = 50000; // 5万件以上は大規模データセット
+    const isLargeDataset = sellerCount > LARGE_DATASET_THRESHOLD;
+
+    if (isLargeDataset) {
+      logger.warn(`Large dataset detected for ${cacheRecord.domain}: ${sellerCount} sellers. Using background sync strategy.`);
+
+      // For large datasets, schedule background sync and return immediately
+      setImmediate(() => {
+        syncLargeDatasetInBackground(cacheId, cacheRecord, sellers).catch(error => {
+          logger.error(`Background sync failed for ${cacheRecord.domain}:`, error.message);
+        });
+      });
+
+      logger.info(`Scheduled background sync for ${cacheRecord.domain} (${sellerCount} sellers)`);
+      return;
+    }
+
+    // For smaller datasets, sync immediately
+    await syncSellersImmediate(cacheId, cacheRecord, sellers);
+
+  } catch (error) {
+    // Sync failure shouldn't break cache save operation
+    logger.error(`Failed to sync normalized table for ${cacheRecord.domain}:`, error.message);
+  }
+}
+
+/**
+ * Sync sellers immediately for smaller datasets
+ * @param {string} cacheId - The cache record ID
+ * @param {Object} cacheRecord - The cache record
+ * @param {Array} sellers - Array of seller objects
+ */
+async function syncSellersImmediate(cacheId, cacheRecord, sellers) {
+  const startTime = Date.now();
+
+  // Delete existing entries for this cache_id
+  const deleteQuery = `DELETE FROM sellers_json_seller_lookup WHERE cache_id = $1`;
+  await db.executeQuery(deleteQuery, [cacheId]);
+
+  if (sellers.length === 0) {
+    logger.debug(`No sellers to sync for ${cacheRecord.domain}`);
+    return;
+  }
+
+  // Remove duplicates within the same cache record
+  const sellerMap = new Map();
+  sellers.forEach(seller => {
+    const key = `${cacheId}:${seller.seller_id}`;
+    sellerMap.set(key, seller);
+  });
+
+  const uniqueSellers = Array.from(sellerMap.values());
+  const BATCH_SIZE = 1000; // Larger batch size for immediate sync
+  let insertedCount = 0;
+
+  // Use bulk insert for better performance
+  for (let i = 0; i < uniqueSellers.length; i += BATCH_SIZE) {
+    const batch = uniqueSellers.slice(i, i + BATCH_SIZE);
+
+    try {
+      // Build bulk insert query
+      const values = batch.map((_, idx) =>
+        `($1, $2, $${idx * 2 + 3}, $${idx * 2 + 4})`
+      ).join(', ');
+
+      const bulkInsertQuery = `
+        INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
+        VALUES ${values}
+        ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+          domain = EXCLUDED.domain,
+          seller_data = EXCLUDED.seller_data,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+
+      const params = [cacheId, cacheRecord.domain.toLowerCase()];
+      batch.forEach(seller => {
+        params.push(seller.seller_id, JSON.stringify(seller));
+      });
+
+      await db.executeQuery(bulkInsertQuery, params);
+      insertedCount += batch.length;
+
+    } catch (batchError) {
+      logger.warn(`Bulk insert failed for batch in ${cacheRecord.domain}, falling back to individual inserts: ${batchError.message}`);
+
+      // Fallback to individual inserts for this batch
+      for (const seller of batch) {
+        try {
+          const insertQuery = `
+            INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+              domain = EXCLUDED.domain,
+              seller_data = EXCLUDED.seller_data,
+              updated_at = CURRENT_TIMESTAMP
+          `;
+
+          await db.executeQuery(insertQuery, [
+            cacheId,
+            cacheRecord.domain.toLowerCase(),
+            seller.seller_id,
+            JSON.stringify(seller)
+          ]);
+
+          insertedCount++;
+        } catch (sellerError) {
+          logger.warn(`Failed to insert seller ${seller.seller_id} for ${cacheRecord.domain}: ${sellerError.message}`);
+        }
+      }
+    }
+  }
+
+  const duration = Date.now() - startTime;
+  logger.info(`Synced ${insertedCount}/${uniqueSellers.length} sellers to normalized table for ${cacheRecord.domain} in ${duration}ms`);
+}
+
+/**
+ * Background sync for large datasets to avoid blocking operations
+ * @param {string} cacheId - The cache record ID
+ * @param {Object} cacheRecord - The cache record
+ * @param {Array} sellers - Array of seller objects
+ */
+async function syncLargeDatasetInBackground(cacheId, cacheRecord, sellers) {
+  const startTime = Date.now();
+  logger.info(`Starting background sync for ${cacheRecord.domain} with ${sellers.length} sellers`);
+
+  try {
     // Delete existing entries for this cache_id
     const deleteQuery = `DELETE FROM sellers_json_seller_lookup WHERE cache_id = $1`;
     await db.executeQuery(deleteQuery, [cacheId]);
 
-    // Insert new sellers data
-    if (parsedContent?.sellers && Array.isArray(parsedContent.sellers)) {
-      const BATCH_SIZE = 500;
-      const sellers = parsedContent.sellers.filter(seller => seller.seller_id);
+    // Remove duplicates within the same cache record
+    const sellerMap = new Map();
+    sellers.forEach(seller => {
+      const key = `${cacheId}:${seller.seller_id}`;
+      sellerMap.set(key, seller);
+    });
 
-      if (sellers.length > 0) {
-        // Remove duplicates within the same cache record
-        const sellerMap = new Map();
-        sellers.forEach(seller => {
-          const key = `${cacheId}:${seller.seller_id}`;
-          sellerMap.set(key, seller);
+    const uniqueSellers = Array.from(sellerMap.values());
+    const BATCH_SIZE = 2000; // Larger batch size for background processing
+    let insertedCount = 0;
+    let batchCount = 0;
+
+    logger.info(`Processing ${uniqueSellers.length} unique sellers for ${cacheRecord.domain} in background`);
+
+    // Process in large batches with progress logging
+    for (let i = 0; i < uniqueSellers.length; i += BATCH_SIZE) {
+      const batch = uniqueSellers.slice(i, i + BATCH_SIZE);
+      batchCount++;
+
+      try {
+        // Build bulk insert query
+        const values = batch.map((_, idx) =>
+          `($1, $2, $${idx * 2 + 3}, $${idx * 2 + 4})`
+        ).join(', ');
+
+        const bulkInsertQuery = `
+          INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data)
+          VALUES ${values}
+          ON CONFLICT (cache_id, seller_id) DO UPDATE SET
+            domain = EXCLUDED.domain,
+            seller_data = EXCLUDED.seller_data,
+            updated_at = CURRENT_TIMESTAMP
+        `;
+
+        const params = [cacheId, cacheRecord.domain.toLowerCase()];
+        batch.forEach(seller => {
+          params.push(seller.seller_id, JSON.stringify(seller));
         });
 
-        const uniqueSellers = Array.from(sellerMap.values());
-        let insertedCount = 0;
+        await db.executeQuery(bulkInsertQuery, params);
+        insertedCount += batch.length;
 
-        // Process in batches to avoid memory issues
-        for (let i = 0; i < uniqueSellers.length; i += BATCH_SIZE) {
-          const batch = uniqueSellers.slice(i, i + BATCH_SIZE);
-
-          // Insert sellers one by one to handle individual conflicts gracefully
-          for (const seller of batch) {
-            try {
-              const insertQuery = `
-                INSERT INTO sellers_json_seller_lookup (cache_id, domain, seller_id, seller_data, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT (cache_id, seller_id) DO UPDATE SET
-                  domain = EXCLUDED.domain,
-                  seller_data = EXCLUDED.seller_data,
-                  updated_at = CURRENT_TIMESTAMP
-              `;
-
-              await db.executeQuery(insertQuery, [
-                cacheId,
-                cacheRecord.domain.toLowerCase(),
-                seller.seller_id,
-                JSON.stringify(seller)
-              ]);
-
-              insertedCount++;
-            } catch (sellerError) {
-              logger.warn(`Failed to insert seller ${seller.seller_id} for ${cacheRecord.domain}: ${sellerError.message}`);
-              // Continue with other sellers
-            }
-          }
-
-          // Log progress for large datasets
-          if (uniqueSellers.length > BATCH_SIZE) {
-            const progress = Math.min(i + BATCH_SIZE, uniqueSellers.length);
-            logger.debug(`Synced ${progress}/${uniqueSellers.length} sellers for ${cacheRecord.domain}`);
-          }
+        // Progress logging every 10 batches
+        if (batchCount % 10 === 0) {
+          const progress = Math.min(i + BATCH_SIZE, uniqueSellers.length);
+          const elapsed = Date.now() - startTime;
+          logger.info(`Background sync progress for ${cacheRecord.domain}: ${progress}/${uniqueSellers.length} (${(progress/uniqueSellers.length*100).toFixed(1)}%) - ${elapsed}ms elapsed`);
         }
 
-        logger.info(`Synced ${insertedCount}/${uniqueSellers.length} sellers to normalized table for ${cacheRecord.domain}`);
+        // Small delay to prevent overwhelming the database
+        if (batchCount % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+      } catch (batchError) {
+        logger.error(`Background bulk insert failed for batch ${batchCount} in ${cacheRecord.domain}: ${batchError.message}`);
+        // Continue with next batch instead of falling back to individual inserts
+        // to maintain performance for large datasets
       }
     }
+
+    const duration = Date.now() - startTime;
+    const rate = Math.round(insertedCount / (duration / 1000));
+    logger.info(`Background sync completed for ${cacheRecord.domain}: ${insertedCount}/${uniqueSellers.length} sellers in ${duration}ms (${rate} sellers/sec)`);
+
   } catch (error) {
-    // Sync failure shouldn't break cache save operation
-    logger.error(`Failed to sync normalized table for ${cacheRecord.domain}:`, error.message);
+    const duration = Date.now() - startTime;
+    logger.error(`Background sync failed for ${cacheRecord.domain} after ${duration}ms:`, error.message);
   }
 }
 
