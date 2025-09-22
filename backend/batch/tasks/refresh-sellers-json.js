@@ -40,58 +40,26 @@ function getSellersJsonUrl(domain) {
 
 /**
  * Get HTTP request configuration for sellers.json fetching
- * Matches the configuration in sellersJsonController.ts for consistency
+ * Matches the configuration in fetch-sellers-json.js for consistency
  * @returns {Object} - Axios request configuration
  */
 function getSellersJsonRequestConfig() {
-  // HTTP request configuration matching the one in sellersJsonController.ts
+  // HTTP request configuration matching the one in fetch-sellers-json.js
   const requestConfig = {
-    timeout: 30000, // 30 seconds timeout for slower sites
+    timeout: 30000, // 30 seconds timeout
     maxContentLength: 200 * 1024 * 1024, // 200MB for large files
     decompress: true, // Handle gzipped responses
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'application/json, text/plain, */*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      Connection: 'keep-alive',
-      'Sec-Fetch-Dest': 'empty',
-      'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Site': 'cross-site',
+      'User-Agent': 'AdsTxtManager/1.0',
+      Accept: 'application/json',
     },
-    // Allow significantly more redirects (some sites have many redirects)
+    // Allow redirects (some sites have redirects)
     maxRedirects: 10,
     // Don't throw on 4xx or 5xx responses
     validateStatus: function (status) {
       return status >= 200 && status < 600; // Accept all responses between 200-599
     },
   };
-
-  // Create HTTPS and HTTP agents if needed
-  try {
-    const https = require('https');
-    const http = require('http');
-
-    // Configure a custom HTTPS agent for more control over the connection
-    requestConfig.httpsAgent = new https.Agent({
-      rejectUnauthorized: false, // Allow SSL certificates that don't match hostname
-      keepAlive: true, // Keep connections alive for better performance
-      timeout: 30000, // Match the request timeout
-      maxVersion: 'TLSv1.3', // Support up to TLS 1.3
-      minVersion: 'TLSv1', // Support from TLS 1.0 (for older servers)
-    });
-
-    // Custom HTTP agent for HTTP connections
-    requestConfig.httpAgent = new http.Agent({
-      keepAlive: true,
-      timeout: 30000,
-    });
-  } catch (error) {
-    logger.warn('Failed to create custom HTTP/HTTPS agents, using defaults', {
-      error: error.message,
-    });
-  }
 
   return requestConfig;
 }
