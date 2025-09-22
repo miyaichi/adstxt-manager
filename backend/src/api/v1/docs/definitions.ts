@@ -404,4 +404,404 @@ export const definitions = {
       },
     },
   },
+  HealthCheckResponse: {
+    type: 'object',
+    description: 'System health check response',
+    required: ['status', 'timestamp', 'response_time_ms'],
+    properties: {
+      status: {
+        type: 'string',
+        enum: ['healthy', 'degraded', 'unhealthy'],
+        description: 'Overall system status',
+        example: 'healthy',
+      },
+      timestamp: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Timestamp when health check was performed',
+        example: '2025-09-22T07:30:00.000Z',
+      },
+      response_time_ms: {
+        type: 'integer',
+        description: 'Response time in milliseconds',
+        example: 45,
+        minimum: 0,
+      },
+      metrics: {
+        type: 'object',
+        description: 'Performance metrics and recommendations',
+        properties: {
+          response_time_avg: {
+            type: 'number',
+            description: 'Average response time in milliseconds',
+            example: 1200,
+          },
+          load: {
+            type: 'string',
+            enum: ['low', 'medium', 'high'],
+            description: 'Current system load',
+            example: 'low',
+          },
+          recommended_batch_size: {
+            type: 'integer',
+            description: 'Recommended batch size for optimal performance',
+            example: 50,
+          },
+          suggested_delay_ms: {
+            type: 'integer',
+            description: 'Suggested delay between requests in milliseconds',
+            example: 100,
+          },
+          cache_status: {
+            type: 'string',
+            enum: ['healthy', 'degraded', 'unhealthy'],
+            description: 'Cache system status',
+            example: 'healthy',
+          },
+          database_healthy: {
+            type: 'boolean',
+            description: 'Database connection status',
+            example: true,
+          },
+          database_response_time_ms: {
+            type: 'integer',
+            description: 'Database response time in milliseconds',
+            example: 12,
+          },
+        },
+      },
+      checks: {
+        type: 'object',
+        description: 'Individual system component checks',
+        properties: {
+          database: {
+            type: 'string',
+            enum: ['pass', 'fail'],
+            description: 'Database check result',
+            example: 'pass',
+          },
+          cache: {
+            type: 'string',
+            enum: ['pass', 'fail'],
+            description: 'Cache check result',
+            example: 'pass',
+          },
+          response_time: {
+            type: 'string',
+            enum: ['pass', 'fail'],
+            description: 'Response time check result',
+            example: 'pass',
+          },
+          avg_performance: {
+            type: 'string',
+            enum: ['pass', 'fail'],
+            description: 'Average performance check result',
+            example: 'pass',
+          },
+        },
+      },
+    },
+  },
+  PerformanceStatsResponse: {
+    type: 'object',
+    description: 'Performance statistics and optimization recommendations',
+    required: ['timestamp', 'performance', 'cache', 'recommendations', 'endpoints'],
+    properties: {
+      timestamp: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Timestamp when statistics were collected',
+        example: '2025-09-22T07:30:00.000Z',
+      },
+      performance: {
+        type: 'object',
+        description: 'Current performance metrics',
+        properties: {
+          avg_response_time_ms: {
+            type: 'number',
+            description: 'Average response time in milliseconds',
+            example: 1200,
+          },
+          current_load: {
+            type: 'string',
+            enum: ['low', 'medium', 'high'],
+            description: 'Current system load',
+            example: 'low',
+          },
+          suggested_batch_size: {
+            type: 'integer',
+            description: 'Suggested batch size for current conditions',
+            example: 50,
+          },
+          suggested_delay_ms: {
+            type: 'integer',
+            description: 'Suggested delay between requests',
+            example: 100,
+          },
+        },
+      },
+      cache: {
+        type: 'object',
+        description: 'Cache performance and statistics',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['healthy', 'degraded', 'unhealthy'],
+            description: 'Cache system status',
+            example: 'healthy',
+          },
+          hit_rate: {
+            type: 'number',
+            description: 'Cache hit rate (0.0 to 1.0)',
+            example: 0.95,
+            minimum: 0,
+            maximum: 1,
+          },
+          total_domains: {
+            type: 'integer',
+            description: 'Total number of cached domains',
+            example: 1250,
+          },
+          statistics: {
+            type: 'object',
+            properties: {
+              successful: {
+                type: 'integer',
+                description: 'Number of successful cache entries',
+                example: 1150,
+              },
+              errors: {
+                type: 'integer',
+                description: 'Number of error cache entries',
+                example: 50,
+              },
+              not_found: {
+                type: 'integer',
+                description: 'Number of not found cache entries',
+                example: 50,
+              },
+              last_updated: {
+                type: 'string',
+                format: 'date-time',
+                description: 'Last cache update timestamp',
+                example: '2025-09-22T06:00:00.000Z',
+              },
+            },
+          },
+        },
+      },
+      recommendations: {
+        type: 'object',
+        description: 'Performance optimization recommendations',
+        properties: {
+          optimal_batch_size: {
+            type: 'integer',
+            description: 'Optimal batch size for current conditions',
+            example: 50,
+          },
+          request_delay_ms: {
+            type: 'integer',
+            description: 'Recommended delay between requests',
+            example: 100,
+          },
+          use_streaming: {
+            type: 'boolean',
+            description: 'Whether to use streaming for large requests',
+            example: false,
+          },
+          use_parallel: {
+            type: 'boolean',
+            description: 'Whether to use parallel processing',
+            example: true,
+          },
+        },
+      },
+      endpoints: {
+        type: 'object',
+        description: 'Available API endpoints',
+        properties: {
+          standard_batch: {
+            type: 'string',
+            description: 'Standard batch endpoint',
+            example: '/sellersjson/{domain}/sellers/batch',
+          },
+          streaming_batch: {
+            type: 'string',
+            description: 'Streaming batch endpoint',
+            example: '/sellersjson/{domain}/sellers/batch/stream',
+          },
+          parallel_batch: {
+            type: 'string',
+            description: 'Parallel batch endpoint',
+            example: '/sellersjson/batch/parallel',
+          },
+          health_check: {
+            type: 'string',
+            description: 'Health check endpoint',
+            example: '/sellersjson/health',
+          },
+          stats: {
+            type: 'string',
+            description: 'Statistics endpoint',
+            example: '/sellersjson/stats',
+          },
+        },
+      },
+    },
+  },
+  ParallelBatchRequest: {
+    type: 'object',
+    description: 'Request for parallel batch processing of multiple domains',
+    required: ['requests'],
+    properties: {
+      requests: {
+        type: 'array',
+        description: 'Array of domain requests to process in parallel',
+        items: {
+          type: 'object',
+          required: ['domain', 'sellerIds'],
+          properties: {
+            domain: {
+              type: 'string',
+              description: 'Domain to query for sellers.json',
+              example: 'google.com',
+            },
+            sellerIds: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'Array of seller IDs to find in this domain',
+              example: ['pub-1234567890123456', 'pub-0987654321'],
+              minItems: 1,
+              maxItems: 100,
+            },
+          },
+        },
+        minItems: 1,
+        maxItems: 10,
+      },
+      max_concurrent: {
+        type: 'integer',
+        description: 'Maximum number of concurrent requests (1-10)',
+        example: 5,
+        minimum: 1,
+        maximum: 10,
+        default: 5,
+      },
+      fail_fast: {
+        type: 'boolean',
+        description: 'Whether to stop processing on first error',
+        example: false,
+        default: false,
+      },
+      return_partial: {
+        type: 'boolean',
+        description: 'Whether to return partial results if some requests fail',
+        example: true,
+        default: true,
+      },
+    },
+  },
+  ParallelBatchResponse: {
+    type: 'object',
+    description: 'Response from parallel batch processing',
+    required: ['success', 'data'],
+    properties: {
+      success: {
+        type: 'boolean',
+        description: 'Whether the request was successful',
+        example: true,
+      },
+      data: {
+        type: 'object',
+        description: 'Parallel processing results',
+        required: ['parallel_processing', 'results', 'processing_time_ms'],
+        properties: {
+          parallel_processing: {
+            type: 'object',
+            description: 'Summary of parallel processing',
+            properties: {
+              total_domains: {
+                type: 'integer',
+                description: 'Total number of domains requested',
+                example: 2,
+              },
+              completed_domains: {
+                type: 'integer',
+                description: 'Number of domains successfully processed',
+                example: 2,
+              },
+              failed_domains: {
+                type: 'integer',
+                description: 'Number of domains that failed processing',
+                example: 0,
+              },
+              max_concurrent: {
+                type: 'integer',
+                description: 'Maximum concurrent requests used',
+                example: 5,
+              },
+              total_requested_sellers: {
+                type: 'integer',
+                description: 'Total number of sellers requested across all domains',
+                example: 4,
+              },
+              total_found_sellers: {
+                type: 'integer',
+                description: 'Total number of sellers found across all domains',
+                example: 3,
+              },
+            },
+          },
+          results: {
+            type: 'array',
+            description: 'Results for each domain',
+            items: {
+              type: 'object',
+              properties: {
+                domain: {
+                  type: 'string',
+                  description: 'Domain that was processed',
+                  example: 'google.com',
+                },
+                requested_count: {
+                  type: 'integer',
+                  description: 'Number of sellers requested for this domain',
+                  example: 2,
+                },
+                found_count: {
+                  type: 'integer',
+                  description: 'Number of sellers found for this domain',
+                  example: 2,
+                },
+                results: {
+                  type: 'array',
+                  description: 'Seller results for this domain',
+                  items: {
+                    $ref: '#/components/schemas/SellerResult',
+                  },
+                },
+                processing_time_ms: {
+                  type: 'integer',
+                  description: 'Processing time for this domain',
+                  example: 234,
+                },
+                processing_method: {
+                  type: 'string',
+                  description: 'Processing method used',
+                  example: 'optimized_jsonb',
+                },
+              },
+            },
+          },
+          processing_time_ms: {
+            type: 'integer',
+            description: 'Total processing time for all domains',
+            example: 456,
+          },
+        },
+      },
+    },
+  },
 };

@@ -19,4 +19,17 @@ export const tags = [
     description:
       'High-performance batch operations for sellers.json data retrieval. Key Features: Retrieve up to 100 sellers in a single request, Significant performance improvement over individual requests, Built-in caching with force refresh option, Detailed metadata and cache information, Comprehensive error handling. Performance improvement: ~80% faster than individual requests.',
   },
+  {
+    name: 'SellersJson Monitoring',
+    description: 'System health monitoring and performance statistics for sellers.json API',
+  },
+  {
+    name: 'SellersJson Parallel',
+    description:
+      'Parallel processing operations for multiple domains with up to 70-80% performance improvement',
+  },
+  {
+    name: 'SellersJson Streaming',
+    description: 'Streaming responses for large datasets with real-time progress updates',
+  },
 ];

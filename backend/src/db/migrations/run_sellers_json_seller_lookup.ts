@@ -8,7 +8,9 @@ import { readMigrationFile } from './pathHelper';
  * Migrate existing sellers.json data to the normalized lookup table
  */
 async function migrateExistingData(db: any): Promise<void> {
-  console.log('📊 Starting data migration from sellers_json_cache to sellers_json_seller_lookup...');
+  console.log(
+    '📊 Starting data migration from sellers_json_cache to sellers_json_seller_lookup...'
+  );
 
   // Check if there's existing data in the lookup table
   const existingCount = await db.raw(`
@@ -41,10 +43,13 @@ async function migrateExistingData(db: any): Promise<void> {
   let offset = 0;
 
   while (processedCacheRecords < totalSourceRecords) {
-    console.log(`🔄 Processing batch ${Math.floor(offset/BATCH_SIZE) + 1}/${Math.ceil(totalSourceRecords/BATCH_SIZE)}...`);
+    console.log(
+      `🔄 Processing batch ${Math.floor(offset / BATCH_SIZE) + 1}/${Math.ceil(totalSourceRecords / BATCH_SIZE)}...`
+    );
 
     // Get a batch of cache records
-    const batchResult = await db.raw(`
+    const batchResult = await db.raw(
+      `
       SELECT id, domain, content
       FROM sellers_json_cache
       WHERE status = 'success'
@@ -52,7 +57,9 @@ async function migrateExistingData(db: any): Promise<void> {
         AND jsonb_array_length(content->'sellers') > 0
       ORDER BY id
       LIMIT $1 OFFSET $2
-    `, [BATCH_SIZE, offset]);
+    `,
+      [BATCH_SIZE, offset]
+    );
 
     const cacheRecords = batchResult.rows;
 
@@ -77,13 +84,13 @@ async function migrateExistingData(db: any): Promise<void> {
             cache_id: cacheRecord.id,
             domain: cacheRecord.domain.toLowerCase(),
             seller_id: seller.seller_id,
-            seller_data: seller
+            seller_data: seller,
           }));
 
         // Remove duplicates within the same cache record
         // Keep the last occurrence of each seller_id for this cache_id
         const sellerMap = new Map();
-        sellersRaw.forEach(seller => {
+        sellersRaw.forEach((seller) => {
           const key = `${seller.cache_id}:${seller.seller_id}`;
           sellerMap.set(key, seller);
         });
@@ -109,12 +116,13 @@ async function migrateExistingData(db: any): Promise<void> {
                 seller.cache_id,
                 seller.domain,
                 seller.seller_id,
-                JSON.stringify(seller.seller_data)
+                JSON.stringify(seller.seller_data),
               ]);
 
               insertedCount++;
             } catch (sellerError) {
-              const errorMessage = sellerError instanceof Error ? sellerError.message : String(sellerError);
+              const errorMessage =
+                sellerError instanceof Error ? sellerError.message : String(sellerError);
               console.error(`     ⚠️ Failed to insert seller ${seller.seller_id}:`, errorMessage);
               // Continue with next seller
             }
@@ -123,14 +131,20 @@ async function migrateExistingData(db: any): Promise<void> {
           totalSellersInserted += insertedCount;
 
           if (sellersRaw.length !== sellersToInsert.length) {
-            console.log(`   ✅ Inserted ${insertedCount}/${sellersToInsert.length} unique sellers from domain: ${cacheRecord.domain} (removed ${sellersRaw.length - sellersToInsert.length} duplicates)`);
+            console.log(
+              `   ✅ Inserted ${insertedCount}/${sellersToInsert.length} unique sellers from domain: ${cacheRecord.domain} (removed ${sellersRaw.length - sellersToInsert.length} duplicates)`
+            );
           } else {
-            console.log(`   ✅ Inserted ${insertedCount}/${sellersToInsert.length} sellers from domain: ${cacheRecord.domain}`);
+            console.log(
+              `   ✅ Inserted ${insertedCount}/${sellersToInsert.length} sellers from domain: ${cacheRecord.domain}`
+            );
           }
         }
-
       } catch (error) {
-        console.error(`   ❌ Error processing cache record ${cacheRecord.id} (${cacheRecord.domain}):`, error);
+        console.error(
+          `   ❌ Error processing cache record ${cacheRecord.id} (${cacheRecord.domain}):`,
+          error
+        );
         // Continue with next record instead of failing entire migration
       }
     }
@@ -139,14 +153,18 @@ async function migrateExistingData(db: any): Promise<void> {
     offset += BATCH_SIZE;
 
     // Show progress
-    const progress = (processedCacheRecords / totalSourceRecords * 100).toFixed(1);
-    console.log(`📈 Progress: ${processedCacheRecords}/${totalSourceRecords} cache records (${progress}%) - ${totalSellersInserted} sellers total`);
+    const progress = ((processedCacheRecords / totalSourceRecords) * 100).toFixed(1);
+    console.log(
+      `📈 Progress: ${processedCacheRecords}/${totalSourceRecords} cache records (${progress}%) - ${totalSellersInserted} sellers total`
+    );
 
     // Small delay to avoid overwhelming the database
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  console.log(`🎉 Data migration completed! Processed ${processedCacheRecords} cache records, inserted ${totalSellersInserted} sellers`);
+  console.log(
+    `🎉 Data migration completed! Processed ${processedCacheRecords} cache records, inserted ${totalSellersInserted} sellers`
+  );
 
   // Verify migration results
   const finalCount = await db.raw(`
@@ -157,7 +175,10 @@ async function migrateExistingData(db: any): Promise<void> {
   console.log(`📊 Final count in sellers_json_seller_lookup: ${finalRecords} records`);
 }
 
-export async function runSellersJsonSellerLookupMigration(db: any, options: { skipDataMigration?: boolean } = {}): Promise<void> {
+export async function runSellersJsonSellerLookupMigration(
+  db: any,
+  options: { skipDataMigration?: boolean } = {}
+): Promise<void> {
   try {
     console.log('🚀 Starting sellers_json_seller_lookup table migration...');
 
@@ -209,7 +230,6 @@ export async function runSellersJsonSellerLookupMigration(db: any, options: { sk
           console.log(`   - ${fk.conname} -> ${fk.referenced_table}`);
         });
       }
-
     } else {
       throw new Error('Table verification failed: sellers_json_seller_lookup was not created');
     }
@@ -234,7 +254,6 @@ export async function runSellersJsonSellerLookupMigration(db: any, options: { sk
     } else {
       console.log('⏭️ Skipping data migration (skipDataMigration = true)');
     }
-
   } catch (error) {
     console.error('❌ sellers_json_seller_lookup migration failed:', error);
     throw error;
@@ -263,9 +282,12 @@ if (require.main === module) {
         database: process.env.DB_NAME || process.env.PGDATABASE || 'adstxt_manager',
         user: process.env.DB_USER || process.env.PGUSER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.PGPASSWORD || '',
-        ssl: process.env.DB_SSL_REQUIRED === 'true' ? {
-          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
-        } : false
+        ssl:
+          process.env.DB_SSL_REQUIRED === 'true'
+            ? {
+                rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+              }
+            : false,
       });
 
       await client.connect();
@@ -276,7 +298,7 @@ if (require.main === module) {
         raw: async (sql: string, bindings?: any[]) => {
           const result = await client.query(sql, bindings);
           return { rows: result.rows };
-        }
+        },
       };
 
       // Check for command line arguments

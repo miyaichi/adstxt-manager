@@ -5,19 +5,357 @@ import {
   batchGetSellersStream,
   batchGetSellersParallel,
   getHealthCheck,
-  getPerformanceStats
+  getPerformanceStats,
 } from '../../../controllers/sellersJsonController';
 import { validateApiKeyOrExtension } from '../middleware/auth';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * /sellersjson/health:
+ *   get:
+ *     summary: System health check
+ *     description: |
+ *       Returns the current system health status and performance metrics.
+ *       This endpoint provides real-time monitoring information including:
+ *       - Overall system status (healthy/degraded/unhealthy)
+ *       - Performance metrics and recommendations
+ *       - Individual component health checks
+ *       - Suggested optimization parameters
+ *     tags: [SellersJson Monitoring]
+ *     responses:
+ *       200:
+ *         description: Health check completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheckResponse'
+ *             examples:
+ *               healthy:
+ *                 summary: System is healthy
+ *                 value:
+ *                   status: "healthy"
+ *                   timestamp: "2025-09-22T07:30:00.000Z"
+ *                   response_time_ms: 45
+ *                   metrics:
+ *                     response_time_avg: 1200
+ *                     load: "low"
+ *                     recommended_batch_size: 50
+ *                     suggested_delay_ms: 100
+ *                     cache_status: "healthy"
+ *                     database_healthy: true
+ *                     database_response_time_ms: 12
+ *                   checks:
+ *                     database: "pass"
+ *                     cache: "pass"
+ *                     response_time: "pass"
+ *                     avg_performance: "pass"
+ *               degraded:
+ *                 summary: System is degraded
+ *                 value:
+ *                   status: "degraded"
+ *                   timestamp: "2025-09-22T07:30:00.000Z"
+ *                   response_time_ms: 1500
+ *                   metrics:
+ *                     response_time_avg: 2500
+ *                     load: "high"
+ *                     recommended_batch_size: 20
+ *                     suggested_delay_ms: 500
+ *                     cache_status: "healthy"
+ *                     database_healthy: true
+ *                     database_response_time_ms: 45
+ *                   checks:
+ *                     database: "pass"
+ *                     cache: "pass"
+ *                     response_time: "fail"
+ *                     avg_performance: "fail"
+ *       500:
+ *         description: Health check failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Health check endpoint - no auth required for monitoring
 router.get('/health', getHealthCheck);
 
-// Performance statistics endpoint - no auth required for monitoring  
+/**
+ * @swagger
+ * /sellersjson/stats:
+ *   get:
+ *     summary: Performance statistics and recommendations
+ *     description: |
+ *       Returns detailed performance statistics and optimization recommendations.
+ *       This endpoint provides:
+ *       - Current performance metrics
+ *       - Cache statistics and hit rates
+ *       - Optimization recommendations
+ *       - Available endpoint information
+ *     tags: [SellersJson Monitoring]
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PerformanceStatsResponse'
+ *             examples:
+ *               normal_load:
+ *                 summary: Normal system load
+ *                 value:
+ *                   timestamp: "2025-09-22T07:30:00.000Z"
+ *                   performance:
+ *                     avg_response_time_ms: 1200
+ *                     current_load: "low"
+ *                     suggested_batch_size: 50
+ *                     suggested_delay_ms: 100
+ *                   cache:
+ *                     status: "healthy"
+ *                     hit_rate: 0.95
+ *                     total_domains: 1250
+ *                     statistics:
+ *                       successful: 1150
+ *                       errors: 50
+ *                       not_found: 50
+ *                       last_updated: "2025-09-22T06:00:00.000Z"
+ *                   recommendations:
+ *                     optimal_batch_size: 50
+ *                     request_delay_ms: 100
+ *                     use_streaming: false
+ *                     use_parallel: true
+ *                   endpoints:
+ *                     standard_batch: "/sellersjson/{domain}/sellers/batch"
+ *                     streaming_batch: "/sellersjson/{domain}/sellers/batch/stream"
+ *                     parallel_batch: "/sellersjson/batch/parallel"
+ *                     health_check: "/sellersjson/health"
+ *                     stats: "/sellersjson/stats"
+ *       500:
+ *         description: Failed to retrieve statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Performance statistics endpoint - no auth required for monitoring
 router.get('/stats', getPerformanceStats);
 
+/**
+ * @swagger
+ * /sellersjson/batch/parallel:
+ *   post:
+ *     summary: Parallel batch processing for multiple domains
+ *     description: |
+ *       Process sellers.json data from multiple domains in parallel.
+ *
+ *       **Key Features:**
+ *       - Process up to 10 domains simultaneously
+ *       - 70-80% performance improvement over sequential processing
+ *       - Configurable concurrency level (1-10 concurrent requests)
+ *       - Partial result support - returns successful results even if some domains fail
+ *       - Fail-fast option for early termination on errors
+ *
+ *       **Performance Benefits:**
+ *       - Significantly reduced total processing time
+ *       - Optimal for bulk data processing
+ *       - Efficient resource utilization
+ *
+ *       **Rate Limits:**
+ *       - Maximum 10 domains per request
+ *       - Maximum 100 seller IDs per domain
+ *       - 1000 requests per hour per API key
+ *     tags: [SellersJson Parallel]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ParallelBatchRequest'
+ *           examples:
+ *             multiple_domains:
+ *               summary: Multiple domains with different sellers
+ *               value:
+ *                 requests:
+ *                   - domain: "google.com"
+ *                     sellerIds: ["pub-1234567890123456", "pub-0987654321"]
+ *                   - domain: "amazon.com"
+ *                     sellerIds: ["amazon-123", "amazon-456"]
+ *                 max_concurrent: 5
+ *                 fail_fast: false
+ *                 return_partial: true
+ *     responses:
+ *       200:
+ *         description: Parallel processing completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ParallelBatchResponse'
+ *             examples:
+ *               success_all:
+ *                 summary: All domains processed successfully
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     parallel_processing:
+ *                       total_domains: 2
+ *                       completed_domains: 2
+ *                       failed_domains: 0
+ *                       max_concurrent: 5
+ *                       total_requested_sellers: 4
+ *                       total_found_sellers: 3
+ *                     results:
+ *                       - domain: "google.com"
+ *                         requested_count: 2
+ *                         found_count: 2
+ *                         results: []
+ *                         processing_time_ms: 234
+ *                         processing_method: "optimized_jsonb"
+ *                     processing_time_ms: 456
+ *       400:
+ *         description: Bad request - Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - Missing API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Too many requests - Rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Parallel batch processing endpoint for multiple domains
 router.post('/batch/parallel', validateApiKeyOrExtension, batchGetSellersParallel);
+
+/**
+ * @swagger
+ * /sellersjson/{domain}/sellers/batch/stream:
+ *   post:
+ *     summary: Streaming batch processing for large datasets
+ *     description: |
+ *       Process large batches of seller IDs with streaming response.
+ *
+ *       **Key Features:**
+ *       - Real-time progressive response delivery
+ *       - Memory-efficient processing of large datasets
+ *       - Live progress updates during processing
+ *       - Ideal for requests with 50+ seller IDs
+ *
+ *       **Benefits:**
+ *       - Reduced perceived response time
+ *       - Better user experience for large requests
+ *       - Lower memory consumption
+ *       - Early result availability
+ *
+ *       **Use Cases:**
+ *       - Processing 50-100 seller IDs
+ *       - Real-time data analysis
+ *       - Progressive data loading
+ *     tags: [SellersJson Streaming]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: domain
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Domain to get sellers.json from
+ *         example: impact-ad.jp
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sellerIds
+ *             properties:
+ *               sellerIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 100
+ *                 description: Array of seller IDs to fetch (recommended 50+ for streaming)
+ *                 example: ["3305", "pub-1234567890123456", "9876543210"]
+ *                 minItems: 1
+ *                 maxItems: 100
+ *               force:
+ *                 type: boolean
+ *                 description: Force refresh cache
+ *                 default: false
+ *                 example: false
+ *           examples:
+ *             large_batch:
+ *               summary: Large batch for streaming
+ *               value:
+ *                 sellerIds: ["seller1", "seller2", "seller3", "seller4", "seller5"]
+ *                 force: false
+ *     responses:
+ *       200:
+ *         description: Streaming response with progressive results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BatchSellersResponse'
+ *         headers:
+ *           Transfer-Encoding:
+ *             description: Chunked transfer encoding for streaming
+ *             schema:
+ *               type: string
+ *               example: "chunked"
+ *       400:
+ *         description: Bad request - Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - Missing API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Too many requests - Rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Streaming batch endpoint for progressive responses
 router.post('/:domain/sellers/batch/stream', validateApiKeyOrExtension, batchGetSellersStream);
 

@@ -1,7 +1,11 @@
 /**
  * Setup for running tests (JavaScript version to avoid TypeScript compilation issues)
  */
-const { initTestDatabase, clearTestDatabase, closeTestDatabase } = require('./testDatabasePostgres');
+const {
+  initTestDatabase,
+  clearTestDatabase,
+  closeTestDatabase,
+} = require('./testDatabasePostgres');
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';

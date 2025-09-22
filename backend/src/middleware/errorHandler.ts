@@ -132,7 +132,12 @@ export function notFoundHandler(req: Request, res: Response, next: NextFunction)
   }
 
   // Skip API or status routes, let them handle 404s through the API error handler
-  if (req.path.startsWith('/api/') || req.path.startsWith('/api-docs') || req.path === '/status' || req.path === '/health') {
+  if (
+    req.path.startsWith('/api/') ||
+    req.path.startsWith('/api-docs') ||
+    req.path === '/status' ||
+    req.path === '/health'
+  ) {
     const error = new ApiError(404, `Not Found - ${req.originalUrl}`, 'common:errors.notFound', {
       url: req.originalUrl,
     });

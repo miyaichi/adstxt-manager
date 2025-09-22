@@ -23,13 +23,13 @@ let testPool = null;
 const initTestDatabase = async () => {
   try {
     console.log('Initializing test PostgreSQL database...');
-    
+
     // Create connection pool
     testPool = new Pool(TEST_DB_CONFIG);
-    
+
     // Test connection
     const client = await testPool.connect();
-    
+
     try {
       await client.query('BEGIN');
 
@@ -113,14 +113,12 @@ const initTestDatabase = async () => {
 
       await client.query('COMMIT');
       console.log('Test database schema created successfully');
-      
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
     } finally {
       client.release();
     }
-    
   } catch (error) {
     console.error('Error initializing test database:', error);
     throw error;
@@ -130,21 +128,20 @@ const initTestDatabase = async () => {
 // Clear all data from tables
 const clearTestDatabase = async () => {
   if (!testPool) return;
-  
+
   const client = await testPool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Clear all tables in reverse dependency order
     await client.query('DELETE FROM messages');
     await client.query('DELETE FROM ads_txt_records');
     await client.query('DELETE FROM requests');
     await client.query('DELETE FROM ads_txt_cache');
     await client.query('DELETE FROM sellers_json_cache');
-    
+
     await client.query('COMMIT');
-    
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error clearing test database:', error);

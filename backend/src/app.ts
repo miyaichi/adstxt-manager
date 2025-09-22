@@ -65,7 +65,9 @@ const corsOptions =
               return callback(null, true);
             } else {
               // Allow Chrome extension requests to proceed for API key validation
-              logger.info(`Chrome extension not in allowed list, will check API key: ${extensionId}`);
+              logger.info(
+                `Chrome extension not in allowed list, will check API key: ${extensionId}`
+              );
               return callback(null, true);
             }
           }

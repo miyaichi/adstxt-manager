@@ -11,9 +11,7 @@ export const runSellersJsonMigration = (): Promise<void> => {
 
       // Use PostgreSQL schema (now the default and only option)
       const sql = readMigrationFile('sellers_json_cache.sql');
-      console.log(
-        `Running sellers_json migration for ${dbProvider}`
-      );
+      console.log(`Running sellers_json migration for ${dbProvider}`);
 
       // Run migration
       db.execute(sql)

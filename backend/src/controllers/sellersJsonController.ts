@@ -585,7 +585,7 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
       timestamp: new Date().toISOString(),
       request_timeout: isTimeout,
       network_error: errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNRESET'),
-    }
+    },
   };
 
   // Save to cache with appropriate status
@@ -596,8 +596,8 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
     is404 ? 404 : 500,
     '', // Empty message as we'll use keys
     is404 ? 'no-sellers-json' : 'sellers-json-fetch-error',
-    { 
-      domain, 
+    {
+      domain,
       error: {
         code: errorCode,
         message: detailedErrorMessage,
@@ -607,10 +607,11 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
           suggested_action: suggestedAction,
           retry_after: retryAfter,
           is_timeout: isTimeout,
-          is_network_error: errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNRESET'),
-          timestamp: new Date().toISOString()
-        }
-      }
+          is_network_error:
+            errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNRESET'),
+          timestamp: new Date().toISOString(),
+        },
+      },
     }
   );
 }
@@ -619,7 +620,7 @@ async function handleSellersJsonError(domain: string, error: any): Promise<never
  * Add performance monitoring headers to response
  */
 function addPerformanceHeaders(
-  res: Response, 
+  res: Response,
   metrics: {
     processingTime: number;
     databaseTime?: number;
@@ -652,7 +653,7 @@ async function getSystemPerformanceMetrics(): Promise<{
 }> {
   try {
     // Get recent cache performance data from last hour
-    const recentPerformance = await SellersJsonCacheClass.getPerformanceMetrics() || {
+    const recentPerformance = (await SellersJsonCacheClass.getPerformanceMetrics()) || {
       avgResponseTime: 1000,
       requestCount: 0,
       errorRate: 0,
@@ -710,7 +711,7 @@ export const getHealthCheck = asyncHandler(async (req: Request, res: Response) =
   try {
     // Get system performance metrics
     const metrics = await getSystemPerformanceMetrics();
-    
+
     // Test database connectivity
     let dbHealthy = true;
     let dbResponseTime = 0;
@@ -725,19 +726,23 @@ export const getHealthCheck = asyncHandler(async (req: Request, res: Response) =
 
     // Determine overall health status
     const responseTime = Date.now() - startTime;
-    const isHealthy = dbHealthy && 
-                     metrics.cacheStatus !== 'offline' && 
-                     responseTime < 1000 &&
-                     metrics.avgResponseTime < 10000;
+    const isHealthy =
+      dbHealthy &&
+      metrics.cacheStatus !== 'offline' &&
+      responseTime < 1000 &&
+      metrics.avgResponseTime < 10000;
 
-    const healthStatus = isHealthy ? 'healthy' : 
-                        (dbHealthy && metrics.cacheStatus !== 'offline') ? 'degraded' : 'unhealthy';
+    const healthStatus = isHealthy
+      ? 'healthy'
+      : dbHealthy && metrics.cacheStatus !== 'offline'
+        ? 'degraded'
+        : 'unhealthy';
 
     // Add performance headers
     addPerformanceHeaders(res, {
       processingTime: responseTime,
       databaseTime: dbResponseTime,
-      method: 'health_check'
+      method: 'health_check',
     });
 
     return res.status(isHealthy ? 200 : 503).json({
@@ -758,20 +763,19 @@ export const getHealthCheck = asyncHandler(async (req: Request, res: Response) =
         cache: metrics.cacheStatus === 'healthy' ? 'pass' : 'warn',
         response_time: responseTime < 1000 ? 'pass' : 'warn',
         avg_performance: metrics.avgResponseTime < 5000 ? 'pass' : 'warn',
-      }
+      },
     });
-
   } catch (error: any) {
     logger.error('Health check error:', error);
-    
+
     return res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       response_time_ms: Date.now() - startTime,
       error: {
         message: 'Health check failed',
-        details: error.message
-      }
+        details: error.message,
+      },
     });
   }
 });
@@ -786,9 +790,9 @@ export const getPerformanceStats = asyncHandler(async (req: Request, res: Respon
   try {
     // Get comprehensive performance metrics
     const metrics = await getSystemPerformanceMetrics();
-    
+
     // Get cache statistics
-    const cacheStats = await SellersJsonCacheClass.getCacheStatistics() || {
+    const cacheStats = (await SellersJsonCacheClass.getCacheStatistics()) || {
       totalDomains: 0,
       successfulCaches: 0,
       errorCaches: 0,
@@ -797,14 +801,16 @@ export const getPerformanceStats = asyncHandler(async (req: Request, res: Respon
     };
 
     // Calculate cache hit rate
-    const totalCacheEntries = cacheStats.successfulCaches + cacheStats.errorCaches + cacheStats.notFoundCaches;
-    const cacheHitRate = totalCacheEntries > 0 ? cacheStats.successfulCaches / totalCacheEntries : 0;
+    const totalCacheEntries =
+      cacheStats.successfulCaches + cacheStats.errorCaches + cacheStats.notFoundCaches;
+    const cacheHitRate =
+      totalCacheEntries > 0 ? cacheStats.successfulCaches / totalCacheEntries : 0;
 
     // Add performance headers
     addPerformanceHeaders(res, {
       processingTime: Date.now() - startTime,
       cacheHitRate,
-      method: 'stats'
+      method: 'stats',
     });
 
     return res.status(200).json({
@@ -824,7 +830,7 @@ export const getPerformanceStats = asyncHandler(async (req: Request, res: Respon
           errors: cacheStats.errorCaches,
           not_found: cacheStats.notFoundCaches,
           last_updated: cacheStats.lastUpdated,
-        }
+        },
       },
       recommendations: {
         optimal_batch_size: metrics.suggestedBatchSize,
@@ -838,18 +844,17 @@ export const getPerformanceStats = asyncHandler(async (req: Request, res: Respon
         parallel_batch: '/sellersjson/batch/parallel',
         health_check: '/sellersjson/health',
         stats: '/sellersjson/stats',
-      }
+      },
     });
-
   } catch (error: any) {
     logger.error('Performance stats error:', error);
-    
+
     return res.status(500).json({
       timestamp: new Date().toISOString(),
       error: {
         message: 'Failed to retrieve performance statistics',
-        details: error.message
-      }
+        details: error.message,
+      },
     });
   }
 });
@@ -1130,7 +1135,13 @@ export const batchGetSellers = asyncHandler(async (req: Request, res: Response) 
 export const batchGetSellersStream = asyncHandler(async (req: Request, res: Response) => {
   const startTime = Date.now();
   let { domain } = req.params;
-  const { sellerIds, force = false, priority = 'normal', timeout = 10000, partial_response = true } = req.body;
+  const {
+    sellerIds,
+    force = false,
+    priority = 'normal',
+    timeout = 10000,
+    partial_response = true,
+  } = req.body;
 
   if (!domain) {
     throw new ApiError(400, 'Domain parameter is required', 'errors:domainRequired');
@@ -1170,7 +1181,7 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Cache-Control',
     'X-Processing-Strategy': 'streaming',
@@ -1178,17 +1189,21 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
   });
 
   // Send initial processing status
-  res.write(`data: ${JSON.stringify({
-    status: 'processing',
-    progress: 0,
-    eta: Math.max(timeout / 1000, 15) + 's',
-    domain,
-    requested_count: uniqueSellerIds.length,
-    timestamp: new Date().toISOString()
-  })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      status: 'processing',
+      progress: 0,
+      eta: Math.max(timeout / 1000, 15) + 's',
+      domain,
+      requested_count: uniqueSellerIds.length,
+      timestamp: new Date().toISOString(),
+    })}\n\n`
+  );
 
   try {
-    logger.info(`Streaming batch lookup for ${uniqueSellerIds.length} sellers from ${domain} (priority: ${priority})`);
+    logger.info(
+      `Streaming batch lookup for ${uniqueSellerIds.length} sellers from ${domain} (priority: ${priority})`
+    );
 
     let foundCount = 0;
     const results: any[] = [];
@@ -1196,16 +1211,21 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
 
     // Try optimized JSONB query first
     try {
-      const optimizedResult = await SellersJsonCacheModel.batchGetSellersOptimized(domain, uniqueSellerIds);
+      const optimizedResult = await SellersJsonCacheModel.batchGetSellersOptimized(
+        domain,
+        uniqueSellerIds
+      );
 
       if (optimizedResult) {
         logger.info(`Using optimized JSONB batch query for ${domain}`);
-        
+
         foundCount = optimizedResult.foundCount;
-        results.push(...optimizedResult.results.map((result: any) => ({
-          ...result,
-          source: 'cache'
-        })));
+        results.push(
+          ...optimizedResult.results.map((result: any) => ({
+            ...result,
+            source: 'cache',
+          }))
+        );
 
         // Add all processed seller IDs
         optimizedResult.results.forEach((result: any) => {
@@ -1213,32 +1233,13 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
         });
 
         // Send partial results
-        res.write(`data: ${JSON.stringify({
-          status: 'partial',
-          progress: 80,
-          found_count: foundCount,
-          processed_count: processedSellerIds.size,
-          results: results,
-          metadata: optimizedResult.metadata,
-          cache: {
-            is_cached: true,
-            last_updated: optimizedResult.cacheRecord.updated_at,
-            status: optimizedResult.cacheRecord.status,
-            expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
-          },
-          processing_time_ms: Date.now() - startTime,
-          timestamp: new Date().toISOString()
-        })}\n\n`);
-
-        // If all sellers found in optimized query, complete immediately
-        if (processedSellerIds.size === uniqueSellerIds.length) {
-          res.write(`data: ${JSON.stringify({
-            status: 'completed',
-            progress: 100,
-            domain,
-            requested_count: uniqueSellerIds.length,
+        res.write(
+          `data: ${JSON.stringify({
+            status: 'partial',
+            progress: 80,
             found_count: foundCount,
-            results,
+            processed_count: processedSellerIds.size,
+            results: results,
             metadata: optimizedResult.metadata,
             cache: {
               is_cached: true,
@@ -1247,46 +1248,78 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
               expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
             },
             processing_time_ms: Date.now() - startTime,
-            timestamp: new Date().toISOString()
-          })}\n\n`);
-          
+            timestamp: new Date().toISOString(),
+          })}\n\n`
+        );
+
+        // If all sellers found in optimized query, complete immediately
+        if (processedSellerIds.size === uniqueSellerIds.length) {
+          res.write(
+            `data: ${JSON.stringify({
+              status: 'completed',
+              progress: 100,
+              domain,
+              requested_count: uniqueSellerIds.length,
+              found_count: foundCount,
+              results,
+              metadata: optimizedResult.metadata,
+              cache: {
+                is_cached: true,
+                last_updated: optimizedResult.cacheRecord.updated_at,
+                status: optimizedResult.cacheRecord.status,
+                expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
+              },
+              processing_time_ms: Date.now() - startTime,
+              timestamp: new Date().toISOString(),
+            })}\n\n`
+          );
+
           res.end();
           return;
         }
       }
     } catch (optimizationError) {
-      logger.warn(`Optimized JSONB batch query failed, proceeding with fallback: ${optimizationError}`);
-      
-      res.write(`data: ${JSON.stringify({
-        status: 'fallback',
-        progress: 20,
-        message: 'Using fallback processing method',
-        timestamp: new Date().toISOString()
-      })}\n\n`);
+      logger.warn(
+        `Optimized JSONB batch query failed, proceeding with fallback: ${optimizationError}`
+      );
+
+      res.write(
+        `data: ${JSON.stringify({
+          status: 'fallback',
+          progress: 20,
+          message: 'Using fallback processing method',
+          timestamp: new Date().toISOString(),
+        })}\n\n`
+      );
     }
 
     // Fallback processing for remaining sellers
-    const remainingSellerIds = uniqueSellerIds.filter(id => !processedSellerIds.has(id));
-    
+    const remainingSellerIds = uniqueSellerIds.filter((id) => !processedSellerIds.has(id));
+
     if (remainingSellerIds.length > 0) {
       // Set a shorter timeout for HTTP requests to prevent blocking
       const adjustedTimeout = Math.min(timeout, 8000); // Max 8 seconds for HTTP fetch
-      
+
       const timeoutPromise = new Promise<void>((_, reject) => {
         setTimeout(() => reject(new Error('Processing timeout')), adjustedTimeout);
       });
 
       const fetchPromise = (async () => {
         const forceRefresh = force === true;
-        const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(domain, forceRefresh);
+        const { sellersJsonData, cacheInfo } = await fetchSellersJsonWithCache(
+          domain,
+          forceRefresh
+        );
 
-        res.write(`data: ${JSON.stringify({
-          status: 'fetched',
-          progress: 60,
-          cache_status: cacheInfo.status,
-          is_cached: cacheInfo.isCached,
-          timestamp: new Date().toISOString()
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            status: 'fetched',
+            progress: 60,
+            cache_status: cacheInfo.status,
+            is_cached: cacheInfo.isCached,
+            timestamp: new Date().toISOString(),
+          })}\n\n`
+        );
 
         const formattedCacheInfo = {
           is_cached: cacheInfo.isCached,
@@ -1310,7 +1343,7 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
           // Process sellers from sellers.json data
           const sellers = sellersJsonData.sellers || [];
           const sellersMap = new Map();
-          
+
           sellers.forEach((seller: any) => {
             if (seller.seller_id) {
               sellersMap.set(String(seller.seller_id).trim(), seller);
@@ -1345,18 +1378,20 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
         const processingTime = Date.now() - startTime;
 
         // Send final completion
-        res.write(`data: ${JSON.stringify({
-          status: 'completed',
-          progress: 100,
-          domain,
-          requested_count: uniqueSellerIds.length,
-          found_count: foundCount,
-          results,
-          metadata,
-          cache: formattedCacheInfo,
-          processing_time_ms: processingTime,
-          timestamp: new Date().toISOString()
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            status: 'completed',
+            progress: 100,
+            domain,
+            requested_count: uniqueSellerIds.length,
+            found_count: foundCount,
+            results,
+            metadata,
+            cache: formattedCacheInfo,
+            processing_time_ms: processingTime,
+            timestamp: new Date().toISOString(),
+          })}\n\n`
+        );
       })();
 
       try {
@@ -1364,34 +1399,38 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
       } catch (error) {
         if (error instanceof Error && error.message === 'Processing timeout') {
           logger.warn(`Streaming batch request timed out after ${adjustedTimeout}ms for ${domain}`);
-          
+
           if (partial_response && results.length > 0) {
             // Return partial results on timeout
-            res.write(`data: ${JSON.stringify({
-              status: 'partial_timeout',
-              progress: 95,
-              domain,
-              requested_count: uniqueSellerIds.length,
-              found_count: foundCount,
-              results,
-              timeout_ms: adjustedTimeout,
-              processing_time_ms: Date.now() - startTime,
-              message: 'Request timed out, returning partial results',
-              timestamp: new Date().toISOString()
-            })}\n\n`);
+            res.write(
+              `data: ${JSON.stringify({
+                status: 'partial_timeout',
+                progress: 95,
+                domain,
+                requested_count: uniqueSellerIds.length,
+                found_count: foundCount,
+                results,
+                timeout_ms: adjustedTimeout,
+                processing_time_ms: Date.now() - startTime,
+                message: 'Request timed out, returning partial results',
+                timestamp: new Date().toISOString(),
+              })}\n\n`
+            );
           } else {
             // Send timeout error
-            res.write(`data: ${JSON.stringify({
-              status: 'timeout',
-              progress: 95,
-              error: {
-                code: 'PROCESSING_TIMEOUT',
-                message: 'Request processing timed out',
-                timeout_ms: adjustedTimeout,
-                suggested_action: 'retry_with_smaller_batch'
-              },
-              timestamp: new Date().toISOString()
-            })}\n\n`);
+            res.write(
+              `data: ${JSON.stringify({
+                status: 'timeout',
+                progress: 95,
+                error: {
+                  code: 'PROCESSING_TIMEOUT',
+                  message: 'Request processing timed out',
+                  timeout_ms: adjustedTimeout,
+                  suggested_action: 'retry_with_smaller_batch',
+                },
+                timestamp: new Date().toISOString(),
+              })}\n\n`
+            );
           }
         } else {
           throw error;
@@ -1399,20 +1438,23 @@ export const batchGetSellersStream = asyncHandler(async (req: Request, res: Resp
       }
     }
 
-    logger.info(`Streaming batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${Date.now() - startTime}ms`);
-
+    logger.info(
+      `Streaming batch lookup completed: ${foundCount}/${uniqueSellerIds.length} sellers found in ${Date.now() - startTime}ms`
+    );
   } catch (error: any) {
     logger.error(`Streaming batch lookup error for ${domain}:`, error);
-    
-    res.write(`data: ${JSON.stringify({
-      status: 'error',
-      error: {
-        code: 'BATCH_PROCESSING_ERROR',
-        message: error.message || 'Unknown error occurred',
-        details: error.details || {},
-        timestamp: new Date().toISOString()
-      }
-    })}\n\n`);
+
+    res.write(
+      `data: ${JSON.stringify({
+        status: 'error',
+        error: {
+          code: 'BATCH_PROCESSING_ERROR',
+          message: error.message || 'Unknown error occurred',
+          details: error.details || {},
+          timestamp: new Date().toISOString(),
+        },
+      })}\n\n`
+    );
   }
 
   res.end();
@@ -1433,9 +1475,14 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
   }
 
   if (requests.length > 10) {
-    throw new ApiError(400, 'Maximum 10 domain requests allowed per parallel batch', 'TOO_MANY_REQUESTS', {
-      details: `Received ${requests.length} requests`,
-    });
+    throw new ApiError(
+      400,
+      'Maximum 10 domain requests allowed per parallel batch',
+      'TOO_MANY_REQUESTS',
+      {
+        details: `Received ${requests.length} requests`,
+      }
+    );
   }
 
   // Validate each request
@@ -1458,7 +1505,9 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
   let completedCount = 0;
 
   try {
-    logger.info(`Processing parallel batch with ${validatedRequests.length} domain requests (max_concurrent: ${max_concurrent})`);
+    logger.info(
+      `Processing parallel batch with ${validatedRequests.length} domain requests (max_concurrent: ${max_concurrent})`
+    );
 
     // Process requests with controlled concurrency
     const processRequest = async (request: any) => {
@@ -1476,14 +1525,14 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
 
         if (optimizedResult) {
           logger.info(`Parallel processing: Using optimized JSONB for ${domain}`);
-          
+
           return {
             domain,
             requested_count: sellerIds.length,
             found_count: optimizedResult.foundCount,
             results: optimizedResult.results.map((result: any) => ({
               ...result,
-              source: 'cache'
+              source: 'cache',
             })),
             metadata: optimizedResult.metadata,
             cache: {
@@ -1493,7 +1542,7 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
               expires_at: getExpiryTime(optimizedResult.cacheRecord.updated_at),
             },
             processing_time_ms: Date.now() - requestStartTime,
-            processing_method: 'optimized_jsonb'
+            processing_method: 'optimized_jsonb',
           };
         }
 
@@ -1516,7 +1565,7 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
         } else {
           const sellers = sellersJsonData.sellers || [];
           const sellersMap = new Map();
-          
+
           sellers.forEach((seller: any) => {
             if (seller.seller_id) {
               sellersMap.set(String(seller.seller_id).trim(), seller);
@@ -1558,12 +1607,11 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
             expires_at: cacheInfo.updatedAt ? getExpiryTime(cacheInfo.updatedAt) : null,
           },
           processing_time_ms: Date.now() - requestStartTime,
-          processing_method: 'standard_fetch'
+          processing_method: 'standard_fetch',
         };
-
       } catch (error: any) {
         logger.error(`Parallel processing error for ${domain}:`, error);
-        
+
         if (fail_fast) {
           throw error;
         }
@@ -1586,8 +1634,8 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
           error: {
             code: 'DOMAIN_PROCESSING_ERROR',
             message: error.message || 'Unknown error',
-            details: error.details || {}
-          }
+            details: error.details || {},
+          },
         };
       }
     };
@@ -1611,13 +1659,18 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
           errors.push({
             domain: request.domain,
             error: result.reason?.message || 'Unknown error',
-            requested_count: request.sellerIds.length
+            requested_count: request.sellerIds.length,
           });
 
           if (!return_partial) {
-            throw new ApiError(500, `Processing failed for ${request.domain}`, 'PARALLEL_PROCESSING_ERROR', {
-              error: result.reason?.message
-            });
+            throw new ApiError(
+              500,
+              `Processing failed for ${request.domain}`,
+              'PARALLEL_PROCESSING_ERROR',
+              {
+                error: result.reason?.message,
+              }
+            );
           }
         }
       });
@@ -1627,7 +1680,9 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
     const totalRequested = results.reduce((sum, r) => sum + r.requested_count, 0);
     const totalFound = results.reduce((sum, r) => sum + r.found_count, 0);
 
-    logger.info(`Parallel batch completed: ${completedCount}/${validatedRequests.length} domains processed, ${totalFound}/${totalRequested} sellers found in ${totalProcessingTime}ms`);
+    logger.info(
+      `Parallel batch completed: ${completedCount}/${validatedRequests.length} domains processed, ${totalFound}/${totalRequested} sellers found in ${totalProcessingTime}ms`
+    );
 
     return res.status(200).json({
       success: true,
@@ -1649,10 +1704,9 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
           'X-Total-Domains': validatedRequests.length.toString(),
           'X-Completed-Domains': completedCount.toString(),
           'X-Processing-Time': totalProcessingTime.toString(),
-        }
+        },
       },
     });
-
   } catch (error: any) {
     logger.error(`Parallel batch processing error:`, error);
     return res.status(500).json({
@@ -1663,9 +1717,9 @@ export const batchGetSellersParallel = asyncHandler(async (req: Request, res: Re
         details: {
           completed_count: completedCount,
           total_requests: validatedRequests.length,
-          errors: errors
-        }
-      }
+          errors: errors,
+        },
+      },
     });
   }
 });

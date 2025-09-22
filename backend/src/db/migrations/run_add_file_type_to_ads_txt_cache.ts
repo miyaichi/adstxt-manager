@@ -8,7 +8,10 @@ let sqlFilePath = path.join(__dirname, 'add_file_type_to_ads_txt_cache.sql');
 
 // If file doesn't exist (in dist), try src path
 if (!fs.existsSync(sqlFilePath)) {
-  sqlFilePath = path.join(__dirname, '../../../src/db/migrations/add_file_type_to_ads_txt_cache.sql');
+  sqlFilePath = path.join(
+    __dirname,
+    '../../../src/db/migrations/add_file_type_to_ads_txt_cache.sql'
+  );
 }
 
 export const runAddFileTypeToAdsTxtCacheMigration = async (): Promise<void> => {

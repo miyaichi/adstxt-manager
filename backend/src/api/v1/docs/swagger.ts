@@ -63,4 +63,8 @@ console.log('Swagger API paths:', options.apis);
 
 export const specs = swaggerJsdoc(options);
 
-console.log('Swagger specs generated:', Object.keys((specs as any).paths || {}).length, 'paths found');
+console.log(
+  'Swagger specs generated:',
+  Object.keys((specs as any).paths || {}).length,
+  'paths found'
+);
