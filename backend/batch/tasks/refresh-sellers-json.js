@@ -499,7 +499,44 @@ async function handleSellersJsonError(domain, error) {
     detailedErrorMessage = `SSL certificate issue for ${normalizedDomain}: ${errorMessage}`;
   }
 
-  // Create and save error cache record
+  // Check if we have existing valid data that should be preserved
+  try {
+    const existingQuery = `SELECT * FROM sellers_json_cache WHERE domain = $1`;
+    const existingRecords = await db.executeQuery(existingQuery, [normalizedDomain]);
+    
+    if (existingRecords.length > 0) {
+      const existingRecord = existingRecords[0];
+      
+      // If existing record has valid content (status = 'success'), 
+      // check if we should preserve it instead of overwriting with error
+      if (existingRecord.status === 'success' && existingRecord.content) {
+        const lastUpdated = new Date(existingRecord.updated_at);
+        const now = new Date();
+        const daysSinceLastUpdate = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+        
+        // Preserve valid data for up to 7 days when encountering errors
+        // (except for 404 errors which indicate the file truly doesn't exist)
+        if (daysSinceLastUpdate < 7 && !is404) {
+          logger.info(`Preserving valid sellers.json data for ${normalizedDomain} due to temporary error (${daysSinceLastUpdate.toFixed(1)} days old)`);
+          
+          // Return the existing record without updating it
+          // This means the cache entry remains valid and unchanged
+          return {
+            success: false, // Still report as failure for statistics
+            domain: normalizedDomain,
+            status: existingRecord.status, // Keep existing status
+            preserved: true, // Indicate that data was preserved
+            error: detailedErrorMessage
+          };
+        }
+      }
+    }
+  } catch (dbError) {
+    logger.error(`Error checking existing data for ${normalizedDomain}:`, dbError);
+    // Continue with normal error handling if database check fails
+  }
+
+  // Create and save error cache record (existing behavior)
   const errorCacheRecord = {
     domain: normalizedDomain,
     content: null,
@@ -533,7 +570,15 @@ async function refreshSellersJson(domain) {
     return await processSellersJsonResponse(normalizedDomain, response);
   } catch (error) {
     // Handle the error and update cache accordingly
-    return await handleSellersJsonError(normalizedDomain, error);
+    const result = await handleSellersJsonError(normalizedDomain, error);
+
+    // If data was preserved (not updated due to valid existing data),
+    // we still want to report this appropriately
+    if (result.preserved) {
+      logger.info(`Data preserved for ${normalizedDomain}, skipping cache update`);
+    }
+
+    return result;
   }
 }
 
