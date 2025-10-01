@@ -6,6 +6,7 @@ import {
   optimizeAdsTxtContent,
   processAdsTxtFile,
   updateRecordStatus,
+  validateQuick,
 } from '../controllers/adsTxtController';
 
 const router = express.Router();
@@ -20,6 +21,10 @@ const upload = multer({
 
 // Routes
 router.patch('/:id/status', updateRecordStatus);
+
+// Quick validation endpoint - fast syntax-only validation
+router.post('/validate/quick', validateQuick);
+
 // Support both file upload and text content
 router.post(
   '/process',
