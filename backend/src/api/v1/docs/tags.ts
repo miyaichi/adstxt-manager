@@ -32,4 +32,18 @@ export const tags = [
     name: 'SellersJson Streaming',
     description: 'Streaming responses for large datasets with real-time progress updates',
   },
+  {
+    name: 'Ads.txt',
+    description: 'Operations related to ads.txt validation and optimization',
+  },
+  {
+    name: 'Ads.txt Validation',
+    description:
+      'Fast ads.txt validation operations. Quick validation provides 10-20x faster syntax checking without database queries.',
+  },
+  {
+    name: 'Domains',
+    description:
+      'Domain information operations. Get comprehensive domain info (ads.txt + sellers.json status) in a single API call with 60-70% reduction in API calls.',
+  },
 ];

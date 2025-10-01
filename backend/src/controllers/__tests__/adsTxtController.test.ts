@@ -394,4 +394,162 @@ describe('AdsTxt Controller Tests', () => {
       );
     });
   });
+
+  describe('validateQuick', () => {
+    it('should validate ads.txt content quickly without database queries', async () => {
+      const adsTxtContent = `google.com, pub-1234567890, DIRECT, f08c47fec0942fa0
+facebook.com, 123456789, DIRECT
+# Comment line
+contact=admin@example.com`;
+
+      const parsedRecords = [
+        {
+          domain: 'google.com',
+          account_id: 'pub-1234567890',
+          relationship: 'DIRECT',
+          certification_authority_id: 'f08c47fec0942fa0',
+          is_valid: true,
+          line_number: 1,
+        },
+        {
+          domain: 'facebook.com',
+          account_id: '123456789',
+          relationship: 'DIRECT',
+          is_valid: true,
+          line_number: 2,
+        },
+        {
+          variable_type: 'contact',
+          value: 'admin@example.com',
+          is_valid: true,
+          line_number: 4,
+        },
+      ];
+
+      (parseAdsTxtContent as jest.Mock).mockReturnValue(parsedRecords);
+
+      req.body = {
+        content: adsTxtContent,
+        checkDuplicates: true,
+      };
+
+      await adsTxtController.validateQuick(req as Request, res as Response, next);
+
+      expect(parseAdsTxtContent).toHaveBeenCalledWith(adsTxtContent);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: expect.objectContaining({
+          isValid: true,
+          records: expect.arrayContaining([
+            expect.objectContaining({ domain: 'google.com' }),
+            expect.objectContaining({ domain: 'facebook.com' }),
+          ]),
+          errors: [],
+          warnings: [],
+          statistics: expect.objectContaining({
+            validRecords: 2,
+            invalidRecords: 0,
+            variables: 1,
+          }),
+        }),
+      });
+    });
+
+    it('should detect duplicate entries when checkDuplicates is true', async () => {
+      const adsTxtContent = `google.com, pub-123, DIRECT
+google.com, pub-123, DIRECT
+facebook.com, 456, RESELLER`;
+
+      const parsedRecords = [
+        {
+          domain: 'google.com',
+          account_id: 'pub-123',
+          relationship: 'DIRECT',
+          is_valid: true,
+          line_number: 1,
+        },
+        {
+          domain: 'google.com',
+          account_id: 'pub-123',
+          relationship: 'DIRECT',
+          is_valid: true,
+          line_number: 2,
+        },
+        {
+          domain: 'facebook.com',
+          account_id: '456',
+          relationship: 'RESELLER',
+          is_valid: true,
+          line_number: 3,
+        },
+      ];
+
+      (parseAdsTxtContent as jest.Mock).mockReturnValue(parsedRecords);
+
+      req.body = {
+        content: adsTxtContent,
+        checkDuplicates: true,
+      };
+
+      await adsTxtController.validateQuick(req as Request, res as Response, next);
+
+      const jsonCall = (res.json as jest.Mock).mock.calls[0][0];
+      expect(jsonCall.success).toBe(true);
+      expect(jsonCall.data.warnings).toHaveLength(1);
+      expect(jsonCall.data.warnings[0].message).toContain('Duplicate entry');
+      expect(jsonCall.data.statistics.duplicates).toBe(1);
+    });
+
+    it('should handle invalid entries', async () => {
+      const adsTxtContent = `google.com, pub-123, DIRECT
+invalid line
+facebook.com, 456, RESELLER`;
+
+      const parsedRecords = [
+        {
+          domain: 'google.com',
+          account_id: 'pub-123',
+          relationship: 'DIRECT',
+          is_valid: true,
+          line_number: 1,
+        },
+        {
+          is_valid: false,
+          validation_key: 'invalidFormat',
+          severity: 'error',
+          line_number: 2,
+        },
+        {
+          domain: 'facebook.com',
+          account_id: '456',
+          relationship: 'RESELLER',
+          is_valid: true,
+          line_number: 3,
+        },
+      ];
+
+      (parseAdsTxtContent as jest.Mock).mockReturnValue(parsedRecords);
+
+      req.body = {
+        content: adsTxtContent,
+      };
+
+      await adsTxtController.validateQuick(req as Request, res as Response, next);
+
+      const jsonCall = (res.json as jest.Mock).mock.calls[0][0];
+      expect(jsonCall.success).toBe(true);
+      expect(jsonCall.data.isValid).toBe(false);
+      expect(jsonCall.data.errors).toHaveLength(1);
+      expect(jsonCall.data.errors[0].message).toBe('invalidFormat');
+    });
+
+    it('should return error when content is missing', async () => {
+      req.body = {};
+
+      await adsTxtController.validateQuick(req as Request, res as Response, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+    });
+  });
 });

@@ -804,4 +804,369 @@ export const definitions = {
       },
     },
   },
+  AdsTxtRecord: {
+    type: 'object',
+    description: 'Parsed ads.txt record entry',
+    properties: {
+      domain: {
+        type: 'string',
+        description: 'Advertising system domain',
+        example: 'google.com',
+      },
+      account_id: {
+        type: 'string',
+        description: 'Publisher account ID',
+        example: 'pub-1234567890',
+      },
+      relationship: {
+        type: 'string',
+        enum: ['DIRECT', 'RESELLER'],
+        description: 'Relationship type',
+        example: 'DIRECT',
+      },
+      certification_authority_id: {
+        type: 'string',
+        description: 'TAG ID or other certification authority',
+        example: 'f08c47fec0942fa0',
+        nullable: true,
+      },
+      is_valid: {
+        type: 'boolean',
+        description: 'Whether the record is valid',
+        example: true,
+      },
+      line_number: {
+        type: 'integer',
+        description: 'Line number in the file',
+        example: 1,
+      },
+    },
+  },
+  QuickValidationRequest: {
+    type: 'object',
+    description: 'Request for quick ads.txt validation',
+    required: ['content'],
+    properties: {
+      content: {
+        type: 'string',
+        description: 'Ads.txt file content to validate',
+        example: 'google.com, pub-1234567890, DIRECT, f08c47fec0942fa0\nfacebook.com, 123456789, DIRECT',
+      },
+      checkDuplicates: {
+        type: 'boolean',
+        description: 'Whether to check for duplicate entries',
+        example: true,
+        default: true,
+      },
+    },
+  },
+  QuickValidationResponse: {
+    type: 'object',
+    description: 'Response from quick validation',
+    required: ['success', 'data'],
+    properties: {
+      success: {
+        type: 'boolean',
+        description: 'Whether the request was successful',
+        example: true,
+      },
+      data: {
+        type: 'object',
+        required: ['isValid', 'records', 'errors', 'warnings', 'statistics'],
+        properties: {
+          isValid: {
+            type: 'boolean',
+            description: 'Whether the content is valid',
+            example: true,
+          },
+          records: {
+            type: 'array',
+            description: 'Parsed ads.txt records',
+            items: {
+              $ref: '#/components/schemas/AdsTxtRecord',
+            },
+          },
+          errors: {
+            type: 'array',
+            description: 'Validation errors',
+            items: {
+              type: 'object',
+              properties: {
+                line: {
+                  type: 'integer',
+                  description: 'Line number where error occurred',
+                  example: 3,
+                },
+                message: {
+                  type: 'string',
+                  description: 'Error message',
+                  example: 'invalidFormat',
+                },
+                severity: {
+                  type: 'string',
+                  enum: ['error', 'warning'],
+                  description: 'Error severity',
+                  example: 'error',
+                },
+              },
+            },
+          },
+          warnings: {
+            type: 'array',
+            description: 'Validation warnings (e.g., duplicates)',
+            items: {
+              type: 'object',
+              properties: {
+                line: {
+                  type: 'integer',
+                  description: 'Line number',
+                  example: 5,
+                },
+                message: {
+                  type: 'string',
+                  description: 'Warning message',
+                  example: 'Duplicate entry: google.com, pub-123, DIRECT',
+                },
+                severity: {
+                  type: 'string',
+                  enum: ['error', 'warning'],
+                  example: 'warning',
+                },
+                original_line: {
+                  type: 'integer',
+                  description: 'Line number of original entry',
+                  example: 2,
+                },
+              },
+            },
+          },
+          statistics: {
+            type: 'object',
+            description: 'Validation statistics',
+            properties: {
+              totalLines: {
+                type: 'integer',
+                description: 'Total lines in file',
+                example: 25,
+              },
+              validRecords: {
+                type: 'integer',
+                description: 'Number of valid records',
+                example: 20,
+              },
+              invalidRecords: {
+                type: 'integer',
+                description: 'Number of invalid records',
+                example: 0,
+              },
+              variables: {
+                type: 'integer',
+                description: 'Number of variable declarations',
+                example: 2,
+              },
+              comments: {
+                type: 'integer',
+                description: 'Number of comment lines',
+                example: 3,
+              },
+              duplicates: {
+                type: 'integer',
+                description: 'Number of duplicate entries',
+                example: 0,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  DomainInfoResponse: {
+    type: 'object',
+    description: 'Comprehensive domain information',
+    required: ['success', 'data'],
+    properties: {
+      success: {
+        type: 'boolean',
+        description: 'Whether the request was successful',
+        example: true,
+      },
+      data: {
+        type: 'object',
+        required: ['domain', 'ads_txt', 'sellers_json'],
+        properties: {
+          domain: {
+            type: 'string',
+            description: 'Domain name',
+            example: 'example.com',
+          },
+          ads_txt: {
+            type: 'object',
+            description: 'Ads.txt information',
+            properties: {
+              exists: {
+                type: 'boolean',
+                description: 'Whether ads.txt exists',
+                example: true,
+              },
+              last_fetched: {
+                type: 'string',
+                format: 'date-time',
+                description: 'Last fetch timestamp',
+                example: '2024-01-01T00:00:00Z',
+              },
+              status: {
+                type: 'string',
+                enum: ['success', 'not_found', 'error'],
+                description: 'Cache status',
+                example: 'success',
+              },
+              record_count: {
+                type: 'integer',
+                description: 'Number of records',
+                example: 25,
+              },
+            },
+          },
+          sellers_json: {
+            type: 'object',
+            description: 'Sellers.json information',
+            properties: {
+              exists: {
+                type: 'boolean',
+                description: 'Whether sellers.json exists',
+                example: true,
+              },
+              last_fetched: {
+                type: 'string',
+                format: 'date-time',
+                description: 'Last fetch timestamp',
+                example: '2024-01-01T00:00:00Z',
+              },
+              status: {
+                type: 'string',
+                enum: ['success', 'not_found', 'error', 'invalid_format'],
+                description: 'Cache status',
+                example: 'success',
+              },
+              seller_count: {
+                type: 'integer',
+                description: 'Number of sellers',
+                example: 150,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  BatchDomainInfoRequest: {
+    type: 'object',
+    description: 'Request for batch domain information',
+    required: ['domains'],
+    properties: {
+      domains: {
+        type: 'array',
+        description: 'Array of domain names (max 50)',
+        items: {
+          type: 'string',
+          example: 'example.com',
+        },
+        minItems: 1,
+        maxItems: 50,
+      },
+    },
+  },
+  BatchDomainInfoResponse: {
+    type: 'object',
+    description: 'Batch domain information response',
+    required: ['success', 'data'],
+    properties: {
+      success: {
+        type: 'boolean',
+        description: 'Whether the request was successful',
+        example: true,
+      },
+      data: {
+        type: 'object',
+        required: ['domains', 'summary'],
+        properties: {
+          domains: {
+            type: 'array',
+            description: 'Domain information for each requested domain',
+            items: {
+              type: 'object',
+              properties: {
+                domain: {
+                  type: 'string',
+                  example: 'example.com',
+                },
+                ads_txt: {
+                  type: 'object',
+                  properties: {
+                    exists: {
+                      type: 'boolean',
+                      example: true,
+                    },
+                    status: {
+                      type: 'string',
+                      enum: ['success', 'not_found', 'error'],
+                      example: 'success',
+                    },
+                    record_count: {
+                      type: 'integer',
+                      example: 25,
+                    },
+                  },
+                },
+                sellers_json: {
+                  type: 'object',
+                  properties: {
+                    exists: {
+                      type: 'boolean',
+                      example: true,
+                    },
+                    status: {
+                      type: 'string',
+                      enum: ['success', 'not_found', 'error', 'invalid_format'],
+                      example: 'success',
+                    },
+                    seller_count: {
+                      type: 'integer',
+                      example: 150,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          summary: {
+            type: 'object',
+            description: 'Summary statistics',
+            properties: {
+              total_domains: {
+                type: 'integer',
+                description: 'Total domains queried',
+                example: 3,
+              },
+              with_ads_txt: {
+                type: 'integer',
+                description: 'Domains with ads.txt',
+                example: 2,
+              },
+              with_sellers_json: {
+                type: 'integer',
+                description: 'Domains with sellers.json',
+                example: 1,
+              },
+              with_both: {
+                type: 'integer',
+                description: 'Domains with both files',
+                example: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };

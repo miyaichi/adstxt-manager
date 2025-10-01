@@ -541,7 +541,7 @@ router.post('/:domain/sellers/batch/stream', validateApiKeyOrExtension, batchGet
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Domain's sellers.json not found (Note: This endpoint returns 200 with error details in response body. 404 is only returned for API-level errors)
+ *         description: "Domain's sellers.json not found. Note: This endpoint returns 200 with error details in response body. 404 is only returned for API-level errors."
  *         content:
  *           application/json:
  *             schema:
