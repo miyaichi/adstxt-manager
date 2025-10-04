@@ -191,7 +191,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
         parseAdsTxtContent,
         crossCheckAdsTxtRecords,
       } = require('@adstxt-manager/ads-txt-validator');
-      const SellersJsonCacheModel = require('./sellersJsonController').SellersJsonCacheModel;
+      const SellersJsonCacheModel = require('../models/SellersJsonCache').default;
 
       // Parse ads.txt content
       const parsedEntries = parseAdsTxtContent(content, domain);
