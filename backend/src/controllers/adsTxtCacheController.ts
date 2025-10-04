@@ -187,7 +187,10 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       logger.info(`[AdsTxtManager] Starting validation for domain: ${domain}`);
 
       // Import validation functions
-      const { parseAdsTxtContent, crossCheckAdsTxtRecords } = require('@adstxt-manager/ads-txt-validator');
+      const {
+        parseAdsTxtContent,
+        crossCheckAdsTxtRecords,
+      } = require('@adstxt-manager/ads-txt-validator');
       const SellersJsonCacheModel = require('./sellersJsonController').SellersJsonCacheModel;
 
       // Parse ads.txt content
@@ -237,9 +240,14 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       );
 
       validationCompletedAt = new Date().toISOString();
-      logger.info(`[AdsTxtManager] Validation completed for domain: ${domain}, records: ${validatedRecords?.length || 0}`);
+      logger.info(
+        `[AdsTxtManager] Validation completed for domain: ${domain}, records: ${validatedRecords?.length || 0}`
+      );
     } catch (validationError) {
-      logger.error(`[AdsTxtManager] Error during validation for domain: ${domain}`, validationError);
+      logger.error(
+        `[AdsTxtManager] Error during validation for domain: ${domain}`,
+        validationError
+      );
       // Continue without validation results - we'll still cache the content
     }
   }

@@ -1238,12 +1238,12 @@ export const processAdsTxtFile = asyncHandler(async (req: Request, res: Response
 /**
  * Quick validation endpoint - fast syntax-only validation without sellers.json cross-checking
  * Endpoint: POST /api/adsTxt/validate/quick
- * 
+ *
  * This endpoint is optimized for speed:
  * - No database queries
  * - No sellers.json cross-checking
  * - Only syntax validation and duplicate detection
- * 
+ *
  * Use this for real-time validation UX where speed is critical.
  */
 export const validateQuick = asyncHandler(async (req: Request, res: Response) => {
@@ -1281,13 +1281,13 @@ export const validateQuick = asyncHandler(async (req: Request, res: Response) =>
     // Check for internal duplicates if requested
     let duplicateWarnings: any[] = [];
     if (checkDuplicates && recordEntries.length > 0) {
-      const seen = new Map<string, typeof recordEntries[0]>();
-      
+      const seen = new Map<string, (typeof recordEntries)[0]>();
+
       for (const record of recordEntries) {
         if (!record.is_valid) continue;
-        
+
         const key = `${record.domain}|${record.account_id}|${record.relationship}`.toLowerCase();
-        
+
         if (seen.has(key)) {
           duplicateWarnings.push({
             line: record.line_number || 0,

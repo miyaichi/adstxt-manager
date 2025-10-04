@@ -850,7 +850,8 @@ export const definitions = {
       content: {
         type: 'string',
         description: 'Ads.txt file content to validate',
-        example: 'google.com, pub-1234567890, DIRECT, f08c47fec0942fa0\nfacebook.com, 123456789, DIRECT',
+        example:
+          'google.com, pub-1234567890, DIRECT, f08c47fec0942fa0\nfacebook.com, 123456789, DIRECT',
       },
       checkDuplicates: {
         type: 'boolean',

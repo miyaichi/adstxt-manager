@@ -335,7 +335,9 @@ class AdsTxtRecordModel {
       }
 
       // No cached validation or cache expired, perform validation
-      console.log(`No cached validation found for domain: ${request.domain}, performing validation`);
+      console.log(
+        `No cached validation found for domain: ${request.domain}, performing validation`
+      );
       return await this.performValidation(records, request.domain);
     } catch (error) {
       console.error('Error getting enhanced records:', error);

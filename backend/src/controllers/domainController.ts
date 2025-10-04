@@ -36,11 +36,7 @@ export const getDomainInfo = asyncHandler(async (req: Request, res: Response) =>
           record_count: adsTxtCache.content
             ? adsTxtCache.content.split('\n').filter((line) => {
                 const trimmed = line.trim();
-                return (
-                  trimmed.length > 0 &&
-                  !trimmed.startsWith('#') &&
-                  !trimmed.includes('=')
-                );
+                return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.includes('=');
               }).length
             : 0,
         }
@@ -101,12 +97,10 @@ export const getBatchDomainInfo = asyncHandler(async (req: Request, res: Respons
   }
 
   if (domains.length > 50) {
-    throw new ApiError(
-      400,
-      'Maximum 50 domains per request',
-      'errors:validation.tooManyDomains',
-      { max: 50, provided: domains.length }
-    );
+    throw new ApiError(400, 'Maximum 50 domains per request', 'errors:validation.tooManyDomains', {
+      max: 50,
+      provided: domains.length,
+    });
   }
 
   try {
@@ -123,9 +117,7 @@ export const getBatchDomainInfo = asyncHandler(async (req: Request, res: Respons
     const adsTxtResults = await Promise.all(adsTxtPromises);
 
     // Fetch all sellers.json cache entries in parallel
-    const sellersJsonPromises = uniqueDomains.map((domain) =>
-      SellersJsonCache.getByDomain(domain)
-    );
+    const sellersJsonPromises = uniqueDomains.map((domain) => SellersJsonCache.getByDomain(domain));
     const sellersJsonResults = await Promise.all(sellersJsonPromises);
 
     // Combine results
@@ -142,11 +134,7 @@ export const getBatchDomainInfo = asyncHandler(async (req: Request, res: Respons
               record_count: adsTxtCache.content
                 ? adsTxtCache.content.split('\n').filter((line) => {
                     const trimmed = line.trim();
-                    return (
-                      trimmed.length > 0 &&
-                      !trimmed.startsWith('#') &&
-                      !trimmed.includes('=')
-                    );
+                    return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.includes('=');
                   }).length
                 : 0,
             }

@@ -50,7 +50,7 @@ export const validateQuick = asyncHandler(async (req: Request, res: Response) =>
     // Check for internal duplicates if requested
     let duplicateWarnings: any[] = [];
     if (checkDuplicates && recordEntries.length > 0) {
-      const seen = new Map<string, typeof recordEntries[0]>();
+      const seen = new Map<string, (typeof recordEntries)[0]>();
 
       for (const record of recordEntries) {
         if (!record.is_valid) continue;
