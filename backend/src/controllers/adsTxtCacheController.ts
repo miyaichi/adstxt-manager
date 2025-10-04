@@ -237,7 +237,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       );
 
       validationCompletedAt = new Date().toISOString();
-      logger.info(`[AdsTxtManager] Validation completed for domain: ${domain}, records: ${validatedRecords.length}`);
+      logger.info(`[AdsTxtManager] Validation completed for domain: ${domain}, records: ${validatedRecords?.length || 0}`);
     } catch (validationError) {
       logger.error(`[AdsTxtManager] Error during validation for domain: ${domain}`, validationError);
       // Continue without validation results - we'll still cache the content
