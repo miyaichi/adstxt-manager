@@ -12,6 +12,8 @@ export interface AdsTxtCache extends DatabaseRecord {
   status: AdsTxtCacheStatus;
   status_code: number | null;
   error_message: string | null;
+  validated_records: any[] | null; // ParsedAdsTxtEntry[] with validation results
+  validation_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +25,8 @@ export interface AdsTxtCacheDTO {
   status: AdsTxtCacheStatus;
   status_code: number | null;
   error_message: string | null;
+  validated_records?: any[] | null; // Optional: ParsedAdsTxtEntry[] with validation results
+  validation_completed_at?: string | null; // Optional: ISO timestamp
 }
 
 // Use the exported database instance, which implements IDatabaseAdapter
@@ -101,6 +105,8 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
+          validated_records: data.validated_records,
+          validation_completed_at: data.validation_completed_at,
           updated_at: now,
         });
 
@@ -122,6 +128,8 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
+          validated_records: data.validated_records || null,
+          validation_completed_at: data.validation_completed_at || null,
           created_at: now,
           updated_at: now,
         };

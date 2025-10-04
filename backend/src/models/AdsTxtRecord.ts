@@ -282,50 +282,42 @@ class AdsTxtRecordModel {
         return [];
       }
 
-      // Import validation functions
-      const {
-        parseAdsTxtContent,
-        crossCheckAdsTxtRecords,
-      } = require('@adstxt-manager/ads-txt-validator');
+      // Import AdsTxtCache and Request models to get cached validation
+      const AdsTxtCacheModel = require('./AdsTxtCache').default;
+      const RequestModel = require('./Request').default;
 
-      // Generate ads.txt content from records for validation
-      const adsTxtContent = records
-        .map((record) => {
-          let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
-          if (record.certification_authority_id) {
-            line += `, ${record.certification_authority_id}`;
-          }
-          return line;
-        })
-        .join('\n');
+      // Get the request to find the associated domain
+      const request = await RequestModel.getById(requestId);
+      if (!request || !request.domain) {
+        // If no request or domain found, perform validation without cache
+        return await this.performValidation(records, 'unknown');
+      }
 
-      try {
-        // Re-parse and validate the content to find warnings
-        const parsedRecords = parseAdsTxtContent(adsTxtContent);
-        // Use a real domain for cross-checking to trigger validation warnings
-        const validatedRecords = await crossCheckAdsTxtRecords('google.com', parsedRecords);
+      // Try to get cached validation results
+      const cachedAdsTxt = await AdsTxtCacheModel.getByDomain(request.domain);
 
-        // Add some demonstration warnings to a few records for better UI testing
-        if (!validatedRecords.some((record) => record.has_warning)) {
-          // Add warnings to the first two records if available for demonstration
-          if (validatedRecords.length > 0) {
-            validatedRecords[0].has_warning = true;
-            validatedRecords[0].validation_key = 'invalidDomain';
-            validatedRecords[0].severity = 'warning';
-          }
-          if (validatedRecords.length > 1) {
-            validatedRecords[1].has_warning = true;
-            validatedRecords[1].validation_key = 'noSellersJson';
-            validatedRecords[1].severity = 'warning';
-          }
-        }
+      // Check if we have valid cached validation results
+      if (
+        cachedAdsTxt &&
+        cachedAdsTxt.validated_records &&
+        Array.isArray(cachedAdsTxt.validated_records) &&
+        cachedAdsTxt.validated_records.length > 0 &&
+        !AdsTxtCacheModel.isCacheExpired(cachedAdsTxt.updated_at)
+      ) {
+        console.log(`Using cached validation results for domain: ${request.domain}`);
 
-        // Map warning information back to the original records
-        const resultRecords = records.map((record, index) => {
-          if (index < validatedRecords.length) {
-            const validatedRecord = validatedRecords[index];
+        // Map cached validation results to our records
+        const resultRecords = records.map((record) => {
+          // Find matching validated record by domain, account_id, and relationship
+          const validatedRecord = cachedAdsTxt.validated_records!.find(
+            (vr: any) =>
+              vr.domain === record.domain &&
+              vr.account_id === record.account_id &&
+              vr.relationship === record.relationship &&
+              !vr.is_variable // Exclude variable entries
+          );
 
-            // Create an enhanced record with warnings
+          if (validatedRecord) {
             return {
               ...record,
               has_warning: validatedRecord.has_warning || false,
@@ -335,17 +327,81 @@ class AdsTxtRecordModel {
               warning_params: validatedRecord.warning_params || undefined,
             };
           }
+
           return record;
         });
+
         return resultRecords;
-      } catch (validationError) {
-        console.error('Error during validation:', validationError);
-        // If validation fails, just return the original records
-        return records;
       }
+
+      // No cached validation or cache expired, perform validation
+      console.log(`No cached validation found for domain: ${request.domain}, performing validation`);
+      return await this.performValidation(records, request.domain);
     } catch (error) {
       console.error('Error getting enhanced records:', error);
       return [];
+    }
+  }
+
+  private async performValidation(
+    records: AdsTxtRecord[],
+    domain: string
+  ): Promise<
+    Array<
+      AdsTxtRecord & {
+        has_warning?: boolean;
+        warning?: string;
+        validation_key?: string;
+        severity?: string;
+        warning_params?: Record<string, any>;
+      }
+    >
+  > {
+    // Import validation functions
+    const {
+      parseAdsTxtContent,
+      crossCheckAdsTxtRecords,
+    } = require('@adstxt-manager/ads-txt-validator');
+
+    // Generate ads.txt content from records for validation
+    const adsTxtContent = records
+      .map((record) => {
+        let line = `${record.domain}, ${record.account_id}, ${record.relationship}`;
+        if (record.certification_authority_id) {
+          line += `, ${record.certification_authority_id}`;
+        }
+        return line;
+      })
+      .join('\n');
+
+    try {
+      // Re-parse and validate the content to find warnings
+      const parsedRecords = parseAdsTxtContent(adsTxtContent);
+      // Use the domain for cross-checking to trigger validation warnings
+      const validatedRecords = await crossCheckAdsTxtRecords(domain, parsedRecords);
+
+      // Map warning information back to the original records
+      const resultRecords = records.map((record, index) => {
+        if (index < validatedRecords.length) {
+          const validatedRecord = validatedRecords[index];
+
+          // Create an enhanced record with warnings
+          return {
+            ...record,
+            has_warning: validatedRecord.has_warning || false,
+            warning: validatedRecord.warning || undefined,
+            validation_key: validatedRecord.validation_key || undefined,
+            severity: validatedRecord.severity || undefined,
+            warning_params: validatedRecord.warning_params || undefined,
+          };
+        }
+        return record;
+      });
+      return resultRecords;
+    } catch (validationError) {
+      console.error('Error during validation:', validationError);
+      // If validation fails, just return the original records
+      return records;
     }
   }
 }

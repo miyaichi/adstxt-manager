@@ -45,6 +45,8 @@ describe('adsTxtCacheController', () => {
         status: 'success' as AdsTxtCacheStatus,
         status_code: 200,
         error_message: null,
+        validated_records: null,
+        validation_completed_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -90,6 +92,8 @@ describe('adsTxtCacheController', () => {
         status: 'success' as AdsTxtCacheStatus,
         status_code: 200,
         error_message: null,
+        validated_records: null,
+        validation_completed_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -98,6 +102,8 @@ describe('adsTxtCacheController', () => {
         ...cachedData,
         content: 'example.com, 12345, DIRECT, updated',
         error_message: null,
+        validated_records: null,
+        validation_completed_at: null,
         updated_at: new Date().toISOString(),
       };
 
@@ -202,6 +208,8 @@ describe('adsTxtCacheController', () => {
           status: 'not_found',
           status_code: 404,
           error_message: null,
+          validated_records: null,
+          validation_completed_at: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };

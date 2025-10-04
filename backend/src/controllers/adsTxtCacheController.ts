@@ -178,7 +178,73 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  // Save or update the cache
+  // Perform validation if content is available
+  let validatedRecords: any[] | null = null;
+  let validationCompletedAt: string | null = null;
+
+  if (content && status === 'success') {
+    try {
+      logger.info(`[AdsTxtManager] Starting validation for domain: ${domain}`);
+
+      // Import validation functions
+      const { parseAdsTxtContent, crossCheckAdsTxtRecords } = require('@adstxt-manager/ads-txt-validator');
+      const SellersJsonCacheModel = require('./sellersJsonController').SellersJsonCacheModel;
+
+      // Parse ads.txt content
+      const parsedEntries = parseAdsTxtContent(content, domain);
+
+      // Create sellers.json provider
+      const sellersJsonProvider = {
+        async hasSellerJson(adSystemDomain: string): Promise<boolean> {
+          const cache = await SellersJsonCacheModel.getByDomain(adSystemDomain);
+          return cache && cache.status === 'success';
+        },
+        async batchGetSellers(adSystemDomain: string, sellerIds: string[]): Promise<any> {
+          const cache = await SellersJsonCacheModel.getByDomain(adSystemDomain);
+          if (!cache || cache.status !== 'success') {
+            return { results: [], requested_count: sellerIds.length, found_count: 0, metadata: {} };
+          }
+
+          const parsedContent = SellersJsonCacheModel.getParsedContent(cache);
+          if (!parsedContent || !parsedContent.sellers) {
+            return { results: [], requested_count: sellerIds.length, found_count: 0, metadata: {} };
+          }
+
+          const results = sellerIds.map((sellerId) => {
+            const seller = parsedContent.sellers.find((s: any) => s.seller_id === sellerId);
+            return {
+              sellerId,
+              found: !!seller,
+              seller: seller || null,
+            };
+          });
+
+          return {
+            results,
+            requested_count: sellerIds.length,
+            found_count: results.filter((r) => r.found).length,
+            metadata: { seller_count: parsedContent.sellers.length },
+          };
+        },
+      };
+
+      // Perform cross-check validation
+      validatedRecords = await crossCheckAdsTxtRecords(
+        domain,
+        parsedEntries,
+        null, // No cached ads.txt content for duplicate check since this is the current content
+        sellersJsonProvider
+      );
+
+      validationCompletedAt = new Date().toISOString();
+      logger.info(`[AdsTxtManager] Validation completed for domain: ${domain}, records: ${validatedRecords.length}`);
+    } catch (validationError) {
+      logger.error(`[AdsTxtManager] Error during validation for domain: ${domain}`, validationError);
+      // Continue without validation results - we'll still cache the content
+    }
+  }
+
+  // Save or update the cache with validation results
   const cacheData: AdsTxtCacheDTO = {
     domain,
     content,
@@ -186,6 +252,8 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
     status,
     status_code: statusCode,
     error_message: errorMessage,
+    validated_records: validatedRecords,
+    validation_completed_at: validationCompletedAt,
   };
 
   const updatedCache = await AdsTxtCacheModel.saveCache(cacheData);
