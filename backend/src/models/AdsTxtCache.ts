@@ -57,7 +57,23 @@ class AdsTxtCacheModel {
         `[AdsTxtCache] Query results for ${normalizedDomain}: ${results.length} records found`
       );
 
-      return results.length > 0 ? (results[0] as AdsTxtCache) : null;
+      if (results.length === 0) {
+        return null;
+      }
+
+      const cache = results[0] as AdsTxtCache;
+
+      // Parse validated_records from JSON string if it exists
+      if (cache.validated_records && typeof cache.validated_records === 'string') {
+        try {
+          cache.validated_records = JSON.parse(cache.validated_records as any);
+        } catch (parseError) {
+          logger.error(`Error parsing validated_records for ${normalizedDomain}:`, parseError);
+          cache.validated_records = null;
+        }
+      }
+
+      return cache;
     } catch (error) {
       logger.error('Error fetching ads.txt cache:', error);
       throw error;
@@ -94,6 +110,11 @@ class AdsTxtCacheModel {
 
       const existingCache = await this.getByDomain(normalizedDomain);
 
+      // Serialize validated_records to JSON string for PostgreSQL JSONB column
+      const validatedRecordsJson = data.validated_records
+        ? JSON.stringify(data.validated_records)
+        : null;
+
       if (existingCache) {
         // Update existing entry
         logger.info(
@@ -105,7 +126,7 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
-          validated_records: data.validated_records,
+          validated_records: validatedRecordsJson as any,
           validation_completed_at: data.validation_completed_at,
           updated_at: now,
         });
@@ -128,7 +149,7 @@ class AdsTxtCacheModel {
           status: data.status,
           status_code: data.status_code,
           error_message: data.error_message,
-          validated_records: data.validated_records || null,
+          validated_records: validatedRecordsJson as any,
           validation_completed_at: data.validation_completed_at || null,
           created_at: now,
           updated_at: now,
