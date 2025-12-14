@@ -45,3 +45,6 @@ venv/
 *.sqlite
 *.sqlite3
 
+
+# V2 Project (Separate Repository)
+v2/
