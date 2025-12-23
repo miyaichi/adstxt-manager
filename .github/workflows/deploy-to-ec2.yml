@@ -13,19 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Debug Secrets
-        run: echo "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        run: echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        run: echo "${{ secrets.AWS_SECURITY_GROUP_ID }}"
-        run: echo "${{ secrets.AWS_SUBNET_ID }}"
-        run: echo "${{ secrets.DB_HOST }}"
-        run: echo "${{ secrets.DB_NAME }}"
-        run: echo "${{ secrets.DB_PASSWORD }}"
-        run: echo "${{ secrets.DB_USER }}"
-        run: echo "${{ secrets.JWT_SECRET }}"
-        run: echo "${{ secrets.OPENSINCERA_API_KEY }}"
-        run: echo "${{ secrets.S3_BUCKET }}"
-        run: echo "${{ secrets.SMTP_PASS }}"
-        run: echo "${{ secrets.SMTP_USER }}"
+        run: |
+          echo "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "${{ secrets.AWS_SECURITY_GROUP_ID }}"
+          echo "${{ secrets.AWS_SUBNET_ID }}"
+          echo "${{ secrets.DB_HOST }}"
+          echo "${{ secrets.DB_NAME }}"
+          echo "${{ secrets.DB_PASSWORD }}"
+          echo "${{ secrets.DB_USER }}"
+          echo "${{ secrets.JWT_SECRET }}"
+          echo "${{ secrets.OPENSINCERA_API_KEY }}"
+          echo "${{ secrets.S3_BUCKET }}"
+          echo "${{ secrets.SMTP_PASS }}"
+          echo "${{ secrets.SMTP_USER }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,8 +34,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Set npm cache path
         run: |
@@ -95,7 +96,7 @@ jobs:
             echo "PGHOST=localhost" >> backend/.env
             DB_HOST="localhost"
           fi
-          
+
           # Set database port
           if [ -n "${{ secrets.DB_PORT }}" ]; then
             echo "DB_PORT=${{ secrets.DB_PORT }}" >> backend/.env
@@ -106,7 +107,7 @@ jobs:
             echo "PGPORT=5432" >> backend/.env
             DB_PORT="5432"
           fi
-          
+
           # Set database name
           if [ -n "${{ secrets.DB_NAME }}" ]; then
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> backend/.env
@@ -118,7 +119,7 @@ jobs:
             echo "PGDATABASE=adstxt_manager" >> backend/.env
             DB_NAME="adstxt_manager"
           fi
-          
+
           # Set database user
           if [ -n "${{ secrets.DB_USER }}" ]; then
             echo "DB_USER=${{ secrets.DB_USER }}" >> backend/.env
@@ -130,7 +131,7 @@ jobs:
             echo "PGUSER=postgres" >> backend/.env
             DB_USER="postgres"
           fi
-          
+
           # Set database password
           if [ -n "${{ secrets.DB_PASSWORD }}" ]; then
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> backend/.env
@@ -142,31 +143,31 @@ jobs:
             echo "PGPASSWORD=" >> backend/.env
             DB_PASSWORD=""
           fi
-          
+
           # Generate DATABASE_URL from individual parameters
           echo "DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" >> backend/.env
           echo "Generated DATABASE_URL from individual parameters"
-          
+
           # SSL/TLS Configuration for AWS RDS and cloud databases
           echo "DB_SSL_REQUIRED=${{ vars.DB_SSL_REQUIRED || 'true' }}" >> backend/.env
           echo "PG_SSL_REQUIRED=${{ vars.DB_SSL_REQUIRED || 'true' }}" >> backend/.env  # For backward compatibility
-          
+
           echo "DB_SSL_REJECT_UNAUTHORIZED=${{ vars.DB_SSL_REJECT_UNAUTHORIZED || 'false' }}" >> backend/.env
           echo "PG_SSL_REJECT_UNAUTHORIZED=${{ vars.DB_SSL_REJECT_UNAUTHORIZED || 'false' }}" >> backend/.env  # For backward compatibility
-          
+
           # Connection pool settings
           echo "DB_MAX_POOL_SIZE=${{ vars.DB_MAX_POOL_SIZE || '20' }}" >> backend/.env
           echo "PG_MAX_POOL_SIZE=${{ vars.DB_MAX_POOL_SIZE || '20' }}" >> backend/.env  # For backward compatibility
-          
+
           echo "DB_IDLE_TIMEOUT=${{ vars.DB_IDLE_TIMEOUT || '60000' }}" >> backend/.env
           echo "PG_IDLE_TIMEOUT=${{ vars.DB_IDLE_TIMEOUT || '60000' }}" >> backend/.env  # For backward compatibility
-          
+
           echo "DB_CONNECTION_TIMEOUT=${{ vars.DB_CONNECTION_TIMEOUT || '15000' }}" >> backend/.env
           echo "PG_CONNECTION_TIMEOUT=${{ vars.DB_CONNECTION_TIMEOUT || '15000' }}" >> backend/.env  # For backward compatibility
-          
+
           echo "DB_HEALTH_CHECK_INTERVAL=${{ vars.DB_HEALTH_CHECK_INTERVAL || '60000' }}" >> backend/.env
           echo "PG_HEALTH_CHECK_INTERVAL=${{ vars.DB_HEALTH_CHECK_INTERVAL || '60000' }}" >> backend/.env  # For backward compatibility
-          
+
           # Optional SSL Certificate paths (if using custom certificates)
           if [ -n "${{ secrets.DB_SSL_CA }}" ]; then
             echo "DB_SSL_CA=${{ secrets.DB_SSL_CA }}" >> backend/.env
@@ -175,7 +176,7 @@ jobs:
             echo "DB_SSL_CA=${{ secrets.PG_SSL_CA }}" >> backend/.env
             echo "PG_SSL_CA=${{ secrets.PG_SSL_CA }}" >> backend/.env
           fi
-          
+
           if [ -n "${{ secrets.DB_SSL_CERT }}" ]; then
             echo "DB_SSL_CERT=${{ secrets.DB_SSL_CERT }}" >> backend/.env
             echo "PG_SSL_CERT=${{ secrets.DB_SSL_CERT }}" >> backend/.env  # For backward compatibility
@@ -183,7 +184,7 @@ jobs:
             echo "DB_SSL_CERT=${{ secrets.PG_SSL_CERT }}" >> backend/.env
             echo "PG_SSL_CERT=${{ secrets.PG_SSL_CERT }}" >> backend/.env
           fi
-          
+
           if [ -n "${{ secrets.DB_SSL_KEY }}" ]; then
             echo "DB_SSL_KEY=${{ secrets.DB_SSL_KEY }}" >> backend/.env
             echo "PG_SSL_KEY=${{ secrets.PG_SSL_KEY }}" >> backend/.env  # For backward compatibility
@@ -204,7 +205,7 @@ jobs:
           echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> backend/.env
           echo "AWS_REGION=${{ vars.AWS_REGION }}" >> backend/.env
           echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> backend/.env
-          
+
           # OpenSincera API configuration
           echo "OPENSINCERA_API_KEY=${{ secrets.OPENSINCERA_API_KEY }}" >> backend/.env
           echo "OPENSINCERA_BASE_URL=${{ vars.OPENSINCERA_BASE_URL || 'https://open.sincera.io/api' }}" >> backend/.env
@@ -224,7 +225,7 @@ jobs:
             echo "Warning: backend/package-lock.json not found, skipping copy"
           fi
           cp Procfile deploy/
-          
+
           # Add API integration settings to .env file
           echo "" >> backend/.env
           echo "# API Integration Settings" >> backend/.env
