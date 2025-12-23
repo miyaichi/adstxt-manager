@@ -9,21 +9,16 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": {
-      "@adstxt-manager/ads-txt-validator": ["../packages/ads-txt-validator/src"]
-    },
     "resolveJsonModule": true,
     "noImplicitAny": false,
     "typeRoots": ["./node_modules/@types", "./types"],
     "types": ["node"]
   },
-  "include": ["src/**/*", "types/**/*", "../packages/ads-txt-validator/src/**/*"],
+  "include": ["src/**/*", "types/**/*"],
   "exclude": [
     "node_modules",
     "src/**/*.test.ts",
     "src/**/__tests__",
-    "src/**/*.js",
-    "../packages/ads-txt-validator/src/**/*.test.ts",
-    "../packages/ads-txt-validator/src/**/__tests__"
+    "src/**/*.js"
   ]
 }

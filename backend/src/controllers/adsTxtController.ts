@@ -6,7 +6,7 @@ import {
   optimizeAdsTxt,
   parseAdsTxtContent,
   crossCheckAdsTxtRecords,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 import { createValidationApiError } from '../utils/validationHelper';
 
 // Import the shared fetch function for sellers.json data

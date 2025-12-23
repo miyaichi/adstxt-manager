@@ -12,7 +12,7 @@ import {
   crossCheckAdsTxtRecords,
   isAdsTxtRecord,
   isAdsTxtVariable,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 import { validateAdsTxtWithMessages, createValidationApiError } from '../utils/validationHelper';
 import { messageService } from '../services/messageService';
 import logger from '../utils/logger';

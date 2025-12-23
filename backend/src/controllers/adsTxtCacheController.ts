@@ -190,7 +190,7 @@ export const getAdsTxt = asyncHandler(async (req: Request, res: Response) => {
       const {
         parseAdsTxtContent,
         crossCheckAdsTxtRecords,
-      } = require('@adstxt-manager/ads-txt-validator');
+      } = require('adstxt-validator');
       const SellersJsonCacheModel = require('../models/SellersJsonCache').default;
 
       // Parse ads.txt content

@@ -8,7 +8,7 @@ import {
   isAdsTxtRecord,
   ValidationMessage,
   createValidationMessage,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 import { messageService } from '../services/messageService';
 import { ApiError } from '../middleware/errorHandler';
 

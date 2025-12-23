@@ -43,17 +43,17 @@ Ads.txt Manager は、パブリッシャーと広告サービス・代理店間�
 
 ## ads-txt-validator パッケージ
 
-このプロジェクトで開発された ads-txt-validator ライブラリは、独立したnpmパッケージとして利用可能です。
+このプロジェクトで開発された ads-txt-validator ライブラリは、独立したnpmパッケージとして公開されています。
 
-### GitHub Packages
+### npm パッケージ
 
-**パッケージ名**: `@miyaichi/ads-txt-validator`  
-**パッケージURL**: https://github.com/miyaichi/adstxt-manager/pkgs/npm/ads-txt-validator
+**パッケージ名**: `adstxt-validator`  
+**パッケージURL**: https://www.npmjs.com/package/adstxt-validator
 
 ### インストール
 
 ```bash
-npm install @miyaichi/ads-txt-validator
+npm install adstxt-validator
 ```
 
 ### 主な機能
@@ -67,7 +67,7 @@ npm install @miyaichi/ads-txt-validator
 ### 使用例
 
 ```typescript
-import { parseAdsTxtContent, crossCheckAdsTxtRecords } from '@miyaichi/ads-txt-validator';
+import { parseAdsTxtContent, crossCheckAdsTxtRecords } from 'adstxt-validator';
 
 // ads.txt内容の解析
 const adsTxtContent = `
@@ -88,7 +88,7 @@ const validatedEntries = await crossCheckAdsTxtRecords(
 
 ### 詳細なドキュメント
 
-包括的なAPIドキュメントと使用例は、[パッケージのREADME](https://github.com/miyaichi/adstxt-manager/blob/main/packages/ads-txt-validator/README.md)で確認できます。
+包括的なAPIドキュメントと使用例は、[npmパッケージページ](https://www.npmjs.com/package/adstxt-validator)で確認できます。
 
 ### 他のプロジェクトでの利用
 

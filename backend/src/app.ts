@@ -20,7 +20,7 @@ console.log('Loaded .env from:', path.join(process.cwd(), '.env'));
 console.log('NODE_ENV after dotenv:', process.env.NODE_ENV);
 
 // Configure ads-txt-validator message system with baseUrl
-import { configureMessages } from '@adstxt-manager/ads-txt-validator';
+import { configureMessages } from 'adstxt-validator';
 
 // Configure the message system with APP_URL if available
 if (process.env.APP_URL) {

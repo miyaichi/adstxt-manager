@@ -10,7 +10,7 @@ import {
   createValidationMessage,
   SupportedLocale,
   Severity,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 import i18n from '../i18n';
 
 /**

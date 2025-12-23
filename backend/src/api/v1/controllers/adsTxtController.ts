@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { asyncHandler, ApiError } from '../../../middleware/errorHandler';
-import { parseAdsTxtContent } from '@adstxt-manager/ads-txt-validator';
+import { parseAdsTxtContent } from 'adstxt-validator';
 import { createValidationApiError } from '../../../utils/validationHelper';
 import logger from '../../../utils/logger';
 

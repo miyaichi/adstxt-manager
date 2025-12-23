@@ -9,7 +9,7 @@ import {
   ValidationMessage,
   SupportedLocale,
   Severity,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 import { t } from '../i18n/translations';
 import { warningInfos, WarningInfo } from '../data/warnings';
 

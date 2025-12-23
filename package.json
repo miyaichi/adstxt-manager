@@ -4,8 +4,7 @@
   "private": true,
   "workspaces": [
     "backend",
-    "frontend",
-    "packages/*"
+    "frontend"
   ],
   "description": "Ads.txt Manager application",
   "scripts": {

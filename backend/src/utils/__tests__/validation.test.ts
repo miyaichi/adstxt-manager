@@ -10,7 +10,7 @@ import {
   ParsedAdsTxtRecord,
   ParsedAdsTxtVariable,
   ParsedAdsTxtEntry,
-} from '@adstxt-manager/ads-txt-validator';
+} from 'adstxt-validator';
 
 // Use the imported type guards in our tests
 const isRecord = isAdsTxtRecord;
@@ -118,9 +118,9 @@ describe('Validation Utilities', () => {
 
       // Create a spy on parseAdsTxtLine and mock its implementation
       // to ensure all test cases are considered invalid
-      const originalParseAdsTxtLine = require('@adstxt-manager/ads-txt-validator').parseAdsTxtLine;
+      const originalParseAdsTxtLine = require('adstxt-validator').parseAdsTxtLine;
       const parseAdsTxtLineSpy = jest
-        .spyOn(require('@adstxt-manager/ads-txt-validator'), 'parseAdsTxtLine')
+        .spyOn(require('adstxt-validator'), 'parseAdsTxtLine')
         .mockImplementation((line, lineNum) => {
           const result = originalParseAdsTxtLine(line, lineNum);
           // Find the matching test case

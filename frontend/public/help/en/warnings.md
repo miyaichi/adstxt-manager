@@ -308,7 +308,7 @@ II) This seller has listed your relationship as a PUBLISHER, which differs from 
 
 **Description**: More than one managerdomain is only valid if an ISO 3166-1 alpha-2 country code is provided.
 
-**Recommendation**: If there is more than one managerdomain=, each listing must be associated with a country code in the following format: Syntax of the domain is [PSL+1 domain, required], [ISO 3166-1 alpha-2 country code, optional, blank=global].
+**Recommendation**: If there is more than one managerdomain=, each listing must be associated with a country code in the following format: Syntax of the domain is (PSL+1 domain, required), (ISO 3166-1 alpha-2 country code, optional, blank=global).
 
 ---
 
@@ -318,7 +318,7 @@ II) This seller has listed your relationship as a PUBLISHER, which differs from 
 
 **Description**: The Country Code provided is not a valid ISO 3166-1 alpha-2 country code.
 
-**Recommendation**: Syntax of the domain is [PSL+1 domain, required], [ISO 3166-1 alpha-2 country code, optional, blank=global].
+**Recommendation**: Syntax of the domain is (PSL+1 domain, required), (ISO 3166-1 alpha-2 country code, optional, blank=global).
 
 ---
 

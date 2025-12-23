@@ -5,7 +5,7 @@
 import React from 'react';
 import { Badge, Button, Card, Flex, Heading, Link, Text } from '@aws-amplify/ui-react';
 import { UIValidationMessage } from '../../services/messageService';
-import { Severity } from '@adstxt-manager/ads-txt-validator';
+import { Severity } from 'adstxt-validator';
 
 interface EnhancedWarningPopoverProps {
   message: UIValidationMessage;

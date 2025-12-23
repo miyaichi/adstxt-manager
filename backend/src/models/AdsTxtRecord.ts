@@ -220,7 +220,7 @@ class AdsTxtRecordModel {
       const {
         parseAdsTxtContent,
         crossCheckAdsTxtRecords,
-      } = require('@adstxt-manager/ads-txt-validator');
+      } = require('adstxt-validator');
 
       // Generate ads.txt content from records for validation
       const adsTxtContent = records
@@ -363,7 +363,7 @@ class AdsTxtRecordModel {
     const {
       parseAdsTxtContent,
       crossCheckAdsTxtRecords,
-    } = require('@adstxt-manager/ads-txt-validator');
+    } = require('adstxt-validator');
 
     // Generate ads.txt content from records for validation
     const adsTxtContent = records

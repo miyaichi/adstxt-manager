@@ -5,7 +5,7 @@
 import React from 'react';
 import { Badge, Card, Flex, Heading, Link, Text } from '@aws-amplify/ui-react';
 import { formatValidationSummary } from '../../services/messageService';
-import { Severity } from '@adstxt-manager/ads-txt-validator';
+import { Severity } from 'adstxt-validator';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useApp } from '../../context/AppContext';
 

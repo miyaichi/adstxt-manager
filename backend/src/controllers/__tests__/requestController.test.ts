@@ -4,7 +4,7 @@ import RequestModel from '../../models/Request';
 import AdsTxtRecordModel from '../../models/AdsTxtRecord';
 import tokenService from '../../services/tokenService';
 import emailService from '../../services/emailService';
-import { parseAdsTxtContent, isValidEmail } from '@adstxt-manager/ads-txt-validator';
+import { parseAdsTxtContent, isValidEmail } from 'adstxt-validator';
 import { ApiError } from '../../middleware/errorHandler';
 
 // Mock the models and services
@@ -12,7 +12,7 @@ jest.mock('../../models/Request');
 jest.mock('../../models/AdsTxtRecord');
 jest.mock('../../services/tokenService');
 jest.mock('../../services/emailService');
-jest.mock('@adstxt-manager/ads-txt-validator');
+jest.mock('adstxt-validator');
 
 // Mock the asyncHandler middleware
 jest.mock('../../middleware/errorHandler', () => {
