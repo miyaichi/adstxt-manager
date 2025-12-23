@@ -11,9 +11,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,6 +20,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      - name: Set npm cache path
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-cache"
+          echo "NPM_CONFIG_CACHE=$RUNNER_TEMP/npm-cache" >> $GITHUB_ENV
 
       - name: Clear npm cache
         run: npm cache clean --force
