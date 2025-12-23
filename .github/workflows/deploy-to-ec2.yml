@@ -11,6 +11,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
 
     steps:
       - name: Checkout code
@@ -24,6 +26,14 @@ jobs:
 
       - name: Clear npm cache
         run: npm cache clean --force
+
+      - name: Set npm registry and retries
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-mintimeout 10000
+          npm config set fetch-retry-maxtimeout 60000
 
       - name: Create frontend environment file for build
         run: |
