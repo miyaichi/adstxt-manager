@@ -14,15 +14,6 @@ jobs:
     steps:
       - name: Debug Secrets
         run: |
-          echo "${{ secrets.AWS_ACCESS_KEY_ID }}" | sed 's/./& /g'
-          echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}" | sed 's/./& /g'
-          echo "${{ secrets.AWS_SECURITY_GROUP_ID }}" | sed 's/./& /g'
-          echo "${{ secrets.AWS_SUBNET_ID }}" | sed 's/./& /g'
-          echo "${{ secrets.DB_HOST }}" | sed 's/./& /g'
-          echo "${{ secrets.DB_NAME }}" | sed 's/./& /g'
-          echo "${{ secrets.DB_PASSWORD }}" | sed 's/./& /g'
-          echo "${{ secrets.DB_USER }}" | sed 's/./& /g'
-          echo "${{ secrets.JWT_SECRET }}" | sed 's/./& /g'
           echo "${{ secrets.OPENSINCERA_API_KEY }}" | sed 's/./& /g'
           echo "${{ secrets.S3_BUCKET }}" | sed 's/./& /g'
           echo "${{ secrets.SMTP_PASS }}" | sed 's/./& /g'
