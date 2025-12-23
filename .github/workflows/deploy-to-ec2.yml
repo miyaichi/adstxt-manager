@@ -12,13 +12,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug Secrets
-        run: |
-          echo "${{ secrets.OPENSINCERA_API_KEY }}" | sed 's/./& /g'
-          echo "${{ secrets.S3_BUCKET }}" | sed 's/./& /g'
-          echo "${{ secrets.SMTP_PASS }}" | sed 's/./& /g'
-          echo "${{ secrets.SMTP_USER }}" | sed 's/./& /g'
-
       - name: Checkout code
         uses: actions/checkout@v4
 
