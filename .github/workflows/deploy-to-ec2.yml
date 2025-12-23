@@ -12,6 +12,21 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Secrets
+        run: echo "${{ secrets.AWS_ACCESS_KEY_ID }}"
+        run: echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        run: echo "${{ secrets.AWS_SECURITY_GROUP_ID }}"
+        run: echo "${{ secrets.AWS_SUBNET_ID }}"
+        run: echo "${{ secrets.DB_HOST }}"
+        run: echo "${{ secrets.DB_NAME }}"
+        run: echo "${{ secrets.DB_PASSWORD }}"
+        run: echo "${{ secrets.DB_USER }}"
+        run: echo "${{ secrets.JWT_SECRET }}"
+        run: echo "${{ secrets.OPENSINCERA_API_KEY }}"
+        run: echo "${{ secrets.S3_BUCKET }}"
+        run: echo "${{ secrets.SMTP_PASS }}"
+        run: echo "${{ secrets.SMTP_USER }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
