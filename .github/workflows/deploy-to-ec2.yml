@@ -28,12 +28,6 @@ jobs:
           echo "REACT_APP_API_URL=${{ vars.REACT_APP_API_URL }}" > frontend/.env
           echo "REACT_APP_ENVIRONMENT=${{ vars.REACT_APP_ENVIRONMENT }}" >> frontend/.env
 
-      - name: Install and build ads-txt-validator package
-        run: |
-          cd packages/ads-txt-validator
-          npm install
-          npm run build
-
       - name: Install and build backend
         run: |
           cd backend
@@ -201,22 +195,6 @@ jobs:
           fi
           cp Procfile deploy/
           
-          # Copy the ads-txt-validator package to maintain local dependency (including dist folder)
-          mkdir -p deploy/packages
-          cp -r packages/ads-txt-validator deploy/packages/
-          
-          # Ensure ads-txt-validator dist folder exists in deployment package
-          if [ ! -d "deploy/packages/ads-txt-validator/dist" ]; then
-            echo "ads-txt-validator dist folder not found, rebuilding..."
-            cd deploy/packages/ads-txt-validator
-            npm install --no-save
-            npm run build
-            cd ../../..
-          fi
-          
-          # Update package.json to use the correct relative path for ads-txt-validator
-          sed -i 's|"file:../packages/ads-txt-validator"|"file:./packages/ads-txt-validator"|g' deploy/package.json
-
           # Add API integration settings to .env file
           echo "" >> backend/.env
           echo "# API Integration Settings" >> backend/.env
